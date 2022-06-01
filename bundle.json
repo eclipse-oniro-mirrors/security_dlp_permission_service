@@ -1,0 +1,66 @@
+{
+  "name": "@openharmony/dlp_permission_service",
+  "description": "dlp_permission_service",
+  "version": "3.1.0",
+  "license": "Apache License 2.0",
+  "publishAs": "code-segment",
+  "segment": {
+    "destPath": "base/security/dlp_permission_service"
+  },
+  "dirs": {},
+  "scripts": {},
+  "component": {
+    "name": "dlp_permission_service",
+    "subsystem": "security",
+    "syscap": [
+      "SystemCapability.Security.DlpPermissionService"
+    ],
+    "adapted_system_type": [
+      "standard"
+    ],
+    "rom": "2048KB",
+    "ram": "5102KB",
+    "deps": {
+      "components": [
+        "ability_base",
+        "ability_runtime",
+        "hiviewdfx_hilog_native",
+        "ipc_core",
+        "aafwk_standard",
+        "system_ability_fwk",
+        "samgr_proxy",
+        "appexecfwk_standard",
+        "eventhandler",
+        "napi",
+        "safwk",
+        "samgr_standard",
+        "utils_base"
+      ],
+      "third_party": [
+        "cJSON",
+        "sqlite",
+        "mbedtls"
+      ]
+    },
+    "build": {
+      "sub_component": [
+        "//base/security/dlp_permission_service:dlp_permission_build_module"
+      ],
+      "inner_kits": [
+        {
+          "name": "//base/security/dlp_permission_service/interfaces/inner_api/dlp_permission:libdlp_permission_sdk",
+          "header": {
+            "header_files": [
+              "dlp_permission_kit.h"
+            ],
+            "header_base": "//base/security/dlp_permission_service/interfaces/inner_api/dlp_permission/include"
+          }
+        }
+      ],
+      "test": [
+        "//base/security/dlp_permission_service:dlp_permission_build_module_test",
+        "//base/security/dlp_permission_service/test/fuzztest/dlp_permission:fuzztest"
+      ]
+    }
+  }
+}

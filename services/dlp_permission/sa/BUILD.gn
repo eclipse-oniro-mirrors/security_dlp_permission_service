@@ -1,0 +1,133 @@
+# Copyright (c) 2022 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//base/security/dlp_permission_service/dlp_permission_service.gni")
+import("//build/ohos.gni")
+
+DLP_ROOT_DIR = "//base/security/dlp_permission_service"
+
+ohos_prebuilt_etc("dlp_permission_service.rc") {
+  source = "dlp_permission_service.cfg"
+  relative_install_dir = "init"
+  subsystem_name = "security"
+  part_name = "dlp_permission_service"
+}
+
+ohos_static_library("dlp_hex_string_static") {
+  subsystem_name = "security"
+  part_name = "dlp_permission_service"
+
+  include_dirs = [
+    "//base/security/dlp_permission_service/interfaces/inner_api/dlp_permission/include",
+    "//base/security/dlp_permission_service/common",
+    "$DLP_ROOT_DIR/frameworks/common/include",
+  ]
+
+  sources = [ "//base/security/dlp_permission_service/common/hex_string.cpp" ]
+
+  cflags_cc = [ "-DHILOG_ENABLE" ]
+
+  deps = [ "//utils/native/base:utils" ]
+
+  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+}
+
+ohos_static_library("dlp_permission_serializer_static") {
+  subsystem_name = "security"
+  part_name = "dlp_permission_service"
+
+  include_dirs = [
+    "//third_party/json/include",
+    "sa_common",
+    "credential",
+    "//base/security/dlp_permission_service/interfaces/inner_api/dlp_permission/include",
+    "//base/security/dlp_permission_service/common",
+    "$DLP_ROOT_DIR/frameworks/common/include",
+    "$DLP_ROOT_DIR/frameworks/dlp_permission/include",
+  ]
+
+  sources = [ "sa_common/dlp_permission_serializer.cpp" ]
+
+  cflags_cc = [ "-DHILOG_ENABLE" ]
+
+  deps = [
+    ":dlp_hex_string_static",
+    "//utils/native/base:utils",
+  ]
+
+  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+}
+
+ohos_static_library("dlp_credential_service_static") {
+  subsystem_name = "security"
+  part_name = "dlp_permission_service"
+
+  include_dirs = [
+    "sa_common",
+    "credential",
+    "//base/security/dlp_permission_service/interfaces/inner_api/dlp_permission/include",
+    "$DLP_ROOT_DIR/frameworks/common/include",
+  ]
+
+  sources = [ "credential/dlp_credential_service.c" ]
+
+  cflags = [ "-DHILOG_ENABLE" ]
+
+  deps = [ "//utils/native/base:utils" ]
+
+  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+}
+
+ohos_shared_library("dlp_permission_service") {
+  subsystem_name = "security"
+  part_name = "dlp_permission_service"
+
+  include_dirs = [
+    "sa_main",
+    "sa_common",
+    "credential",
+    "//third_party/json/include",
+    "//utils/system/safwk/native/include",
+    "$DLP_ROOT_DIR/frameworks/common/include",
+    "$DLP_ROOT_DIR/frameworks/dlp_permission/include",
+    "$DLP_ROOT_DIR/interfaces/inner_api/dlp_permission/include",
+    "//base/security/dlp_permission_service/common",
+  ]
+
+  sources = [
+    "$DLP_ROOT_DIR/frameworks/dlp_permission/src/auth_user_info_parcel.cpp",
+    "$DLP_ROOT_DIR/frameworks/dlp_permission/src/dlp_policy_parcel.cpp",
+    "//base/security/dlp_permission_service/common/dlp_policy_helper.cpp",
+    "credential/dlp_credential.cpp",
+    "sa_main/dlp_permission_async_proxy.cpp",
+    "sa_main/dlp_permission_service.cpp",
+    "sa_main/dlp_permission_stub.cpp",
+  ]
+
+  cflags_cc = [ "-DHILOG_ENABLE" ]
+
+  deps = [
+    ":dlp_credential_service_static",
+    ":dlp_hex_string_static",
+    ":dlp_permission_serializer_static",
+    ":dlp_permission_service.rc",
+    "//utils/native/base:utils",
+  ]
+
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+    "safwk:system_ability_fwk",
+    "samgr_standard:samgr_proxy",
+  ]
+}

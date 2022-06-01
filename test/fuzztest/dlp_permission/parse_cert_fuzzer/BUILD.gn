@@ -1,0 +1,52 @@
+# Copyright (c) 2022 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//build/config/features.gni")
+import("//build/test.gni")
+
+module_output_path = "dlp_permission/dlp_permission"
+
+ohos_fuzztest("ParseCertFuzzTest") {
+  module_out_path = module_output_path
+  fuzz_config_file = "//base/security/dlp_permission_service/test/fuzztest/dlp_permission/parse_cert_fuzzer"
+
+  include_dirs = [
+    "//third_party/json/include",
+    "//utils/native/base/include",
+    "//base/security/dlp_permission_service/common",
+    "//base/security/dlp_permission_service/frameworks/common/include",
+    "//base/security/dlp_permission_service/services/dlp_permission/sa/sa_common",
+    "//base/security/dlp_permission_service/interfaces/inner_api/dlp_permission/include",
+    "//base/security/dlp_permission_service/services/dlp_permission/sa/credential/",
+  ]
+  cflags = [
+    "-g",
+    "-O0",
+    "-Wno-unused-variable",
+    "-fno-omit-frame-pointer",
+  ]
+
+  cflags_cc = [ "-DHILOG_ENABLE" ]
+  sources = [
+    "//base/security/dlp_permission_service/common/hex_string.cpp",
+    "//base/security/dlp_permission_service/services/dlp_permission/sa/sa_common/dlp_permission_serializer.cpp",
+    "parse_cert_fuzzer.cpp",
+  ]
+
+  deps = [
+    "//base/security/dlp_permission_service/interfaces/inner_api/dlp_permission:libdlp_permission_sdk",
+    "//utils/native/base:utils",
+  ]
+
+  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+}

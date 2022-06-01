@@ -1,0 +1,17 @@
+{
+  "subsystem": "security",
+  "parts": {
+    "dlp_permission_service": {
+      "variants": [
+        "phone",
+        "wearable"
+      ],
+      "module_list": [
+        "//base/security/dlp_permission_service:dlp_permission_build_module"
+      ],
+      "test_list": [
+        "//base/security/dlp_permission_service:dlp_permission_build_module_test"
+      ]
+    }
+  }
+}
