@@ -17,9 +17,15 @@ import("//build/ohos.gni")
 group("dlp_permission_build_module") {
   if (is_standard_system) {
     deps = [
+      "//base/security/dlp_permission_service/interfaces/inner_api/dlp_fuse:libdlp_fuse",
       "//base/security/dlp_permission_service/interfaces/inner_api/dlp_permission:libdlp_permission_sdk",
       "//base/security/dlp_permission_service/services/dlp_permission/sa:dlp_permission_service",
       "//base/security/dlp_permission_service/services/dlp_permission/sa/sa_profile:dlp_permission_sa_profile_standard",
+    ]
+  }
+  if (support_jsapi) {
+    deps += [
+      "//base/security/dlp_permission_service/interfaces/kits:napi_packages",
     ]
   }
 }
@@ -28,6 +34,9 @@ group("dlp_permission_build_module_test") {
   testonly = true
   deps = []
   if (is_standard_system) {
-    deps += [ "//base/security/dlp_permission_service/interfaces/inner_api/dlp_permission/test:unittest" ]
+    deps += [
+      "//base/security/dlp_permission_service/interfaces/inner_api/dlp_fuse/test:unittest",
+      "//base/security/dlp_permission_service/interfaces/inner_api/dlp_permission/test:unittest",
+    ]
   }
 }

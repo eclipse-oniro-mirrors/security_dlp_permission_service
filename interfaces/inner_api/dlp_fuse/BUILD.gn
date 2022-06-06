@@ -1,0 +1,49 @@
+# Copyright (c) 2022 Huawei Device Co., Ltd.
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import("//base/security/dlp_permission_service/dlp_permission_service.gni")
+import("//build/ohos.gni")
+
+DLP_ROOT_DIR = "//base/security/dlp_permission_service"
+
+config("dlp_fuse_config") {
+  visibility = [ ":*" ]
+  include_dirs = [ "include" ]
+}
+
+ohos_shared_library("libdlp_fuse") {
+  subsystem_name = "security"
+  part_name = "dlp_permission_service"
+
+  output_name = "libdlp_fuse"
+
+  configs = [ "//third_party/libfuse:libfuse_config" ]
+
+  include_dirs = [
+    "//utils/native/base/include",
+    "$DLP_ROOT_DIR/frameworks/common/include",
+    "include",
+    "src",
+  ]
+
+  sources = [ "src/fuse_daemon.cpp" ]
+
+  deps = [
+    "//third_party/libfuse:libfuse",
+    "//utils/native/base:utils",
+  ]
+
+  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+
+  cflags_cc = [ "-DHILOG_ENABLE" ]
+}
