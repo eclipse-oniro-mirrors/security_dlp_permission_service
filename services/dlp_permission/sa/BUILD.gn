@@ -49,7 +49,7 @@ ohos_static_library("dlp_permission_serializer_static") {
   include_dirs = [
     "//third_party/json/include",
     "sa_common",
-    "credential",
+    "credential_test",
     "//base/security/dlp_permission_service/interfaces/inner_api/dlp_permission/include",
     "//base/security/dlp_permission_service/common",
     "$DLP_ROOT_DIR/frameworks/common/include",
@@ -74,12 +74,12 @@ ohos_static_library("dlp_credential_service_static") {
 
   include_dirs = [
     "sa_common",
-    "credential",
+    "credential_test",
     "//base/security/dlp_permission_service/interfaces/inner_api/dlp_permission/include",
     "$DLP_ROOT_DIR/frameworks/common/include",
   ]
 
-  sources = [ "credential/dlp_credential_service.c" ]
+  sources = [ "credential_test/dlp_credential_service.c" ]
 
   cflags = [ "-DHILOG_ENABLE" ]
 
@@ -95,7 +95,7 @@ ohos_shared_library("dlp_permission_service") {
   include_dirs = [
     "sa_main",
     "sa_common",
-    "credential",
+    "credential_test",
     "//third_party/json/include",
     "//utils/system/safwk/native/include",
     "$DLP_ROOT_DIR/frameworks/common/include",
@@ -108,7 +108,7 @@ ohos_shared_library("dlp_permission_service") {
     "$DLP_ROOT_DIR/frameworks/dlp_permission/src/auth_user_info_parcel.cpp",
     "$DLP_ROOT_DIR/frameworks/dlp_permission/src/dlp_policy_parcel.cpp",
     "//base/security/dlp_permission_service/common/dlp_policy_helper.cpp",
-    "credential/dlp_credential.cpp",
+    "sa_main/dlp_credential_adapt.cpp",
     "sa_main/dlp_permission_async_proxy.cpp",
     "sa_main/dlp_permission_service.cpp",
     "sa_main/dlp_permission_stub.cpp",

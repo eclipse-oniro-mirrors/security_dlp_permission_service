@@ -25,10 +25,7 @@
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
-#define MAX_KEY_BYTES 32
-#define MAX_IV_BYTES 32
-
-enum AuthPermType {
+enum AuthPermType : uint32_t {
     READ_ONLY = 1,
     FULL_CONTROL = 2,
     PERM_MAX,

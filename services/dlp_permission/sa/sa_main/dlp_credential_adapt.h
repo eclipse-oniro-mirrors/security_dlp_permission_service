@@ -25,6 +25,8 @@ namespace Security {
 namespace DlpPermission {
 class DlpCredential {
 public:
+    DlpCredential();
+    ~DlpCredential(){};
     static DlpCredential& GetInstance();
     int32_t GenerateDlpCertificate(
         const std::string& policy, AccountType accountType, sptr<IDlpPermissionCallback>& callback);

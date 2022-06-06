@@ -26,13 +26,13 @@ static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_
 bool DlpPolicyParcel::Marshalling(Parcel& out) const
 {
     const std::vector<AuthUserInfo>& userList = this->policyParams_.authUsers;
-    int32_t listSize = (int32_t)userList.size();
-    if (!(out.WriteInt32(listSize))) {
-        DLP_LOG_ERROR(LABEL, "WriteInt32 fail");
+    uint32_t listSize = userList.size();
+    if (!(out.WriteUint32(listSize))) {
+        DLP_LOG_ERROR(LABEL, "WriteUint32 fail");
         return false;
     }
 
-    for (int i = 0; i < listSize; i++) {
+    for (uint32_t i = 0; i < listSize; i++) {
         sptr<AuthUserInfoParcel> authUserInfoParcel = new (std::nothrow) AuthUserInfoParcel();
         if (authUserInfoParcel == nullptr) {
             DLP_LOG_ERROR(LABEL, "New memory fail");
@@ -68,10 +68,14 @@ bool DlpPolicyParcel::Marshalling(Parcel& out) const
     return true;
 }
 
-static bool ReadDlpBuff(uint8_t** buff, uint32_t& len, Parcel& in)
+static bool ReadAesParam(uint8_t** buff, uint32_t& len, Parcel& in)
 {
     if (!in.ReadUint32(len)) {
         DLP_LOG_ERROR(LABEL, "ReadUint32 fail");
+        return false;
+    }
+    if (!CheckAesParamLen(len)) {
+        DLP_LOG_ERROR(LABEL, "Aes param invalid");
         return false;
     }
     const uint8_t* data = in.ReadUnpadBuffer(len);
@@ -86,8 +90,36 @@ static bool ReadDlpBuff(uint8_t** buff, uint32_t& len, Parcel& in)
     }
     if (memcpy_s(*buff, len, data, len) != EOK) {
         DLP_LOG_ERROR(LABEL, "Memcpy_s fail");
-        delete[] * buff;
+        delete[] *buff;
         *buff = nullptr;
+        return false;
+    }
+    return true;
+}
+
+static bool ReadParcel(Parcel& in, DlpPolicyParcel* policyParcel)
+{
+    uint32_t listSize;
+    if (!in.ReadUint32(listSize)) {
+        DLP_LOG_ERROR(LABEL, "ReadUint32 fail");
+        return false;
+    }
+    for (uint32_t i = 0; i < listSize; i++) {
+        sptr<AuthUserInfoParcel> authUserInfoParcel = in.ReadParcelable<AuthUserInfoParcel>();
+        if (authUserInfoParcel == nullptr) {
+            DLP_LOG_ERROR(LABEL, "AuthUserInfoParcel is null");
+            return false;
+        }
+        policyParcel->policyParams_.authUsers.emplace_back(authUserInfoParcel->authUserInfo_);
+    }
+    if (!(in.ReadString(policyParcel->policyParams_.ownerAccount))) {
+        DLP_LOG_ERROR(LABEL, "ReadString fail");
+        return false;
+    }
+    if (!(ReadAesParam(&policyParcel->policyParams_.aeskey, policyParcel->policyParams_.aeskeyLen, in))) {
+        return false;
+    }
+    if (!(ReadAesParam(&policyParcel->policyParams_.iv, policyParcel->policyParams_.ivLen, in))) {
         return false;
     }
     return true;
@@ -101,39 +133,10 @@ DlpPolicyParcel* DlpPolicyParcel::Unmarshalling(Parcel& in)
         return nullptr;
     }
 
-    int listSize;
-    if (!in.ReadInt32(listSize)) {
-        DLP_LOG_ERROR(LABEL, "ReadInt32 fail");
-        delete policyParcel;
-        policyParcel = nullptr;
-        return nullptr;
-    }
-    for (int i = 0; i < listSize; i++) {
-        sptr<AuthUserInfoParcel> authUserInfoParcel = in.ReadParcelable<AuthUserInfoParcel>();
-        if (authUserInfoParcel == nullptr) {
-            DLP_LOG_ERROR(LABEL, "AuthUserInfoParcel is null");
-            delete policyParcel;
-            policyParcel = nullptr;
-            return nullptr;
-        }
-        policyParcel->policyParams_.authUsers.emplace_back(authUserInfoParcel->authUserInfo_);
-    }
-    if (!(in.ReadString(policyParcel->policyParams_.ownerAccount))) {
-        DLP_LOG_ERROR(LABEL, "ReadString fail");
-        delete policyParcel;
-        policyParcel = nullptr;
-        return nullptr;
-    }
-    if (!(ReadDlpBuff(&policyParcel->policyParams_.aeskey, policyParcel->policyParams_.aeskeyLen, in))) {
-        delete policyParcel;
-        policyParcel = nullptr;
-        return nullptr;
-    }
-    if (!(ReadDlpBuff(&policyParcel->policyParams_.iv, policyParcel->policyParams_.ivLen, in))) {
+    if (!ReadParcel(in, policyParcel)) {
         policyParcel->FreeMem();
         delete policyParcel;
         policyParcel = nullptr;
-        return nullptr;
     }
     return policyParcel;
 }

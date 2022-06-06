@@ -24,11 +24,11 @@ namespace Security {
 namespace DlpPermission {
 class GenerateDlpCertificateCallback {
 public:
-    virtual void onGenerateDlpCertificate(const int32_t result, const std::vector<uint8_t>& cert) = 0;
+    virtual void onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert) = 0;
 };
 class ParseDlpCertificateCallback {
 public:
-    virtual void onParseDlpCertificate(const PermissionPolicy& result) = 0;
+    virtual void onParseDlpCertificate(int32_t result, const PermissionPolicy& policy) = 0;
 };
 }  // namespace DlpPermission
 }  // namespace Security

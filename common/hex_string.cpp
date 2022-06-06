@@ -21,14 +21,9 @@
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
-namespace {
-constexpr int NUMBER_9_IN_DECIMAL = 9;
-constexpr int DEC = 10;
-constexpr int OUT_OF_HEX = 16;
-}  // namespace
 static char HexToChar(uint8_t hex)
 {
-    return (hex > NUMBER_9_IN_DECIMAL) ? (hex + 0x37) : (hex + 0x30); /* Convert to the corresponding character */
+    return (hex > 9) ? (hex + 0x37) : (hex + 0x30);  // numbers greater than 9 are represented by letters in hex.
 }
 
 int32_t ByteToHexString(const uint8_t* byte, uint32_t byteLen, char* hexStr, uint32_t hexLen)
@@ -42,8 +37,8 @@ int32_t ByteToHexString(const uint8_t* byte, uint32_t byteLen, char* hexStr, uin
     }
 
     for (uint32_t i = 0; i < byteLen; i++) {
-        hexStr[i * BYTE_TO_HEX_OPER_LENGTH] = HexToChar((byte[i] & 0xF0) >> 4); /* 4: shift right for filling */
-        hexStr[i * BYTE_TO_HEX_OPER_LENGTH + 1] = HexToChar(byte[i] & 0x0F);    /* get low four bits */
+        hexStr[i * BYTE_TO_HEX_OPER_LENGTH] = HexToChar((byte[i] & 0xF0) >> 4);  // 4: shift right for filling
+        hexStr[i * BYTE_TO_HEX_OPER_LENGTH + 1] = HexToChar(byte[i] & 0x0F);     // get low four bits
     }
     hexStr[byteLen * BYTE_TO_HEX_OPER_LENGTH] = '\0';
 
@@ -53,13 +48,13 @@ int32_t ByteToHexString(const uint8_t* byte, uint32_t byteLen, char* hexStr, uin
 static uint8_t CharToHex(char c)
 {
     if ((c >= 'A') && (c <= 'F')) {
-        return (c - 'A' + DEC);
+        return (c - 'A' + 10);  // hex trans to dec with base 10
     } else if ((c >= 'a') && (c <= 'f')) {
-        return (c - 'a' + DEC);
+        return (c - 'a' + 10);  // hex trans to dec with base 10
     } else if ((c >= '0') && (c <= '9')) {
         return (c - '0');
     } else {
-        return OUT_OF_HEX;
+        return 16;  // max hex must < 16
     }
 }
 
@@ -77,11 +72,11 @@ int32_t HexStringToByte(const char* hexStr, uint8_t* byte, uint32_t byteLen)
     for (uint32_t i = 0; i < realHexLen / BYTE_TO_HEX_OPER_LENGTH; i++) {
         uint8_t high = CharToHex(hexStr[i * BYTE_TO_HEX_OPER_LENGTH]);
         uint8_t low = CharToHex(hexStr[i * BYTE_TO_HEX_OPER_LENGTH + 1]);
-        if (high == OUT_OF_HEX || low == OUT_OF_HEX) {
+        if (high == 16 || low == 16) {  // max hex must < 16
             return DLP_VALUE_INVALID;
         }
-        byte[i] = high << 4; /* 4: Set the high nibble */
-        byte[i] |= low;      /* Set the low nibble */
+        byte[i] = high << 4;  // 4: Set the high nibble
+        byte[i] |= low;       // Set the low nibble
     }
     return DLP_OK;
 }

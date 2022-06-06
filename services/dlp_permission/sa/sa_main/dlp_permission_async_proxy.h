@@ -32,8 +32,8 @@ public:
     {}
     ~DlpPermissionAsyncProxy() override = default;
 
-    void onGenerateDlpCertificate(const int32_t result, const std::vector<uint8_t>& cert) override;
-    void onParseDlpCertificate(const PermissionPolicy& result) override;
+    void onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert) override;
+    void onParseDlpCertificate(int32_t result, const PermissionPolicy& policy) override;
 
 private:
     static inline BrokerDelegator<DlpPermissionAsyncProxy> delegator_;

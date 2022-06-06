@@ -28,7 +28,7 @@ using namespace OHOS::Security::DlpPermission;
 namespace OHOS {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionFuzzer"};
 
-void TestParseDlpCertificateCallback::onParseDlpCertificate(const PermissionPolicy& result)
+void TestParseDlpCertificateCallback::onParseDlpCertificate(int32_t result, const PermissionPolicy& policy)
 {
     DLP_LOG_INFO(LABEL, "Callback");
 }
@@ -46,14 +46,15 @@ static void FuzzTest(uint8_t* buff, size_t size)
 {
     uint64_t curTime =
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    srand(time(nullptr));
+    auto seed = std::time(nullptr);
+    std::srand(seed);
     PermissionPolicy encPolicy;
     encPolicy.ownerAccount = Uint8ArrayToString(buff, size);
     encPolicy.aeskey = buff;
     encPolicy.aeskeyLen = size;
     encPolicy.iv = buff;
     encPolicy.ivLen = size;
-    int userNum = 0 + rand() % (size + 1);
+    int userNum = rand() % (size + 1);
     for (int user = 0; user < userNum; ++user) {
         AuthUserInfo perminfo;
         perminfo.authAccount = Uint8ArrayToString(buff, size);

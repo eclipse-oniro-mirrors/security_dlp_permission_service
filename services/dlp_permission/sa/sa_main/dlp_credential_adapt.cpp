@@ -13,13 +13,16 @@
  * limitations under the License.
  */
 
-#include "dlp_credential.h"
+#include "dlp_credential_adapt.h"
+#include <thread>
+#include <unistd.h>
 #include <unordered_map>
 #include "dlp_credential_service.h"
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
 #include "dlp_permission_serializer.h"
 #include "dlp_policy_helper.h"
+#include "ipc_skeleton.h"
 #include "securec.h"
 
 namespace OHOS {
@@ -27,29 +30,32 @@ namespace Security {
 namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpCredential"};
+constexpr static int UID_TRANSFORM_DIVISOR = 200000;
+static const int32_t PAUSE_INTERVAL = 5;
 static const size_t MAX_REQUEST_NUM = 100;
-static size_t g_requestIdle = MAX_REQUEST_NUM;
+static size_t g_newTaskNum = 0;
 static std::unordered_map<uint64_t, sptr<IDlpPermissionCallback>> g_requestMap;
 std::mutex g_lockRequest;
 }  // namespace
 
 static sptr<IDlpPermissionCallback> GetCallbackFromRequestMap(uint64_t requestId)
 {
+    DLP_LOG_INFO(LABEL, "Get callback, requestId: %{public}llu", static_cast<unsigned long long>(requestId));
     sptr<IDlpPermissionCallback> callback = nullptr;
     std::lock_guard<std::mutex> lock(g_lockRequest);
     auto iter = g_requestMap.find(requestId);
     if (iter != g_requestMap.end()) {
         callback = iter->second;
         g_requestMap.erase(requestId);
-        g_requestIdle++;
         return callback;
     }
+    DLP_LOG_ERROR(LABEL, "Callback not found");
     return nullptr;
 }
 
 static int32_t InsertCallbackToRequestMap(uint64_t requestId, sptr<IDlpPermissionCallback>& callback)
 {
-    std::lock_guard<std::mutex> lock(g_lockRequest);
+    DLP_LOG_DEBUG(LABEL, "insert request, requestId: %{public}llu", static_cast<unsigned long long>(requestId));
     if (g_requestMap.count(requestId)) {
         DLP_LOG_ERROR(LABEL, "Duplicate task, requestId: %{public}llu", static_cast<unsigned long long>(requestId));
         return DLP_TASK_DUPLICATE;
@@ -60,20 +66,12 @@ static int32_t InsertCallbackToRequestMap(uint64_t requestId, sptr<IDlpPermissio
 
 static int32_t QueryRequestIdle()
 {
-    std::lock_guard<std::mutex> lock(g_lockRequest);
-    DLP_LOG_INFO(LABEL, "Idle: %{public}zu, map: %{public}zu", g_requestIdle, g_requestMap.size());
-    if (g_requestIdle == 0) {
+    DLP_LOG_DEBUG(LABEL, "Total tasks: %{public}zu", g_requestMap.size());
+    if (g_requestMap.size() > MAX_REQUEST_NUM) {
         DLP_LOG_ERROR(LABEL, "Task busy");
         return DLP_PERMISSION_BUSY;
     }
-    g_requestIdle--;
     return DLP_OK;
-}
-
-static void IncreaseRequestIdle()
-{
-    std::lock_guard<std::mutex> lock(g_lockRequest);
-    g_requestIdle++;
 }
 
 static void DlpPackPolicyCallback(uint64_t requestId, int errorCode, DLP_EncPolicyData* outParams)
@@ -84,14 +82,10 @@ static void DlpPackPolicyCallback(uint64_t requestId, int errorCode, DLP_EncPoli
         DLP_LOG_ERROR(LABEL, "Params is null");
         return;
     }
-    if (errorCode) {
-        return;
-    }
 
     if (callback != nullptr) {
         std::vector<uint8_t> cert(outParams->data, outParams->data + outParams->dataLen);
-        int32_t result = 0;
-        callback->onGenerateDlpCertificate(result, cert);
+        callback->onGenerateDlpCertificate(errorCode, cert);
     }
 }
 
@@ -130,7 +124,7 @@ static void DlpRestorePolicyCallback(uint64_t requestId, int errorCode, DLP_Rest
         if (res != DLP_OK) {
             return;
         }
-        callback->onParseDlpCertificate(policyInfo);
+        callback->onParseDlpCertificate(errorCode, policyInfo);
         FreePermissionPolicyMem(policyInfo);
     }
 }
@@ -153,6 +147,47 @@ static void FreeDlpPackPolicyParams(DLP_PackPolicyParams& packPolicy)
     }
 }
 
+static void GetRequestIdle(size_t& curTasks, size_t& newTasks)
+{
+    std::lock_guard<std::mutex> lock(g_lockRequest);
+    newTasks = g_newTaskNum;
+    curTasks = g_requestMap.size();
+}
+
+static void Listenner()
+{
+    bool exitFlag = false;
+    while (1) {
+        sleep(PAUSE_INTERVAL);
+        size_t curTaskNum, newTaskNum;
+        GetRequestIdle(curTaskNum, newTaskNum);
+        DLP_LOG_INFO(LABEL, "Left tasks: %{public}zu, new tasks: %{public}zu", curTaskNum, newTaskNum);
+        if (curTaskNum == 0 && newTaskNum == 0) {
+            if (exitFlag) {
+                DLP_LOG_INFO(LABEL, "No task, process exit");
+                exit(0);
+            }
+            DLP_LOG_INFO(LABEL, "No task, process will exit");
+            exitFlag = true;
+        } else {
+            std::lock_guard<std::mutex> lock(g_lockRequest);
+            g_newTaskNum = 0;
+            exitFlag = false;
+        }
+    }
+}
+
+DlpCredential::DlpCredential()
+{
+    std::thread initThread(Listenner);
+    initThread.detach();
+}
+
+static int GetOsAccountIdFromUid(int uid)
+{
+    return uid / UID_TRANSFORM_DIVISOR;
+}
+
 int32_t DlpCredential::GenerateDlpCertificate(
     const std::string& policy, AccountType accountType, sptr<IDlpPermissionCallback>& callback)
 {
@@ -165,26 +200,30 @@ int32_t DlpCredential::GenerateDlpCertificate(
         .accountType = accountType,
     };
 
-    int32_t status = QueryRequestIdle();
-    if (status != DLP_OK) {
-        FreeDlpPackPolicyParams(packPolicy);
-        return status;
-    }
-
-    uint64_t requestId;
-    int res = DLP_PackPolicy(1, &packPolicy, DlpPackPolicyCallback, &requestId);
-    if (res == 0) {
-        DLP_LOG_INFO(
-            LABEL, "Start request success, requestId: %{public}llu", static_cast<unsigned long long>(requestId));
-        res = InsertCallbackToRequestMap(requestId, callback);
-        if (res != DLP_OK) {
-            IncreaseRequestIdle();
+    int res = 0;
+    {
+        std::lock_guard<std::mutex> lock(g_lockRequest);
+        g_newTaskNum++;
+        int32_t status = QueryRequestIdle();
+        if (status != DLP_OK) {
             FreeDlpPackPolicyParams(packPolicy);
-            return res;
+            return status;
         }
-    } else {
-        DLP_LOG_ERROR(LABEL, "Start request fail, error: %{public}d", res);
-        IncreaseRequestIdle();
+
+        uint64_t requestId;
+        res = DLP_PackPolicy(
+            GetOsAccountIdFromUid(IPCSkeleton::GetCallingUid()), &packPolicy, DlpPackPolicyCallback, &requestId);
+        if (res == 0) {
+            DLP_LOG_INFO(
+                LABEL, "Start request success, requestId: %{public}llu", static_cast<unsigned long long>(requestId));
+            res = InsertCallbackToRequestMap(requestId, callback);
+            if (res != DLP_OK) {
+                FreeDlpPackPolicyParams(packPolicy);
+                return res;
+            }
+        } else {
+            DLP_LOG_ERROR(LABEL, "Start request fail, error: %{public}d", res);
+        }
     }
     FreeDlpPackPolicyParams(packPolicy);
     return res == 0 ? DLP_OK : DLP_CREDENTIAL_FAIL;
@@ -221,27 +260,30 @@ int32_t DlpCredential::ParseDlpCertificate(const std::vector<uint8_t>& cert, spt
         .data = data,
         .dataLen = cert.size(),
     };
-
-    int32_t status = QueryRequestIdle();
-    if (status != DLP_OK) {
-        FreeDLPEncPolicyData(encPolicy);
-        return status;
-    }
-
-    uint64_t requestId;
-    int res = DLP_RestorePolicy(1, &encPolicy, DlpRestorePolicyCallback, &requestId);
-    if (res == 0) {
-        DLP_LOG_INFO(
-            LABEL, "Start request success, requestId: %{public}llu", static_cast<unsigned long long>(requestId));
-        res = InsertCallbackToRequestMap(requestId, callback);
-        if (res != DLP_OK) {
-            IncreaseRequestIdle();
+    int res = 0;
+    {
+        std::lock_guard<std::mutex> lock(g_lockRequest);
+        g_newTaskNum++;
+        int32_t status = QueryRequestIdle();
+        if (status != DLP_OK) {
             FreeDLPEncPolicyData(encPolicy);
-            return res;
+            return status;
         }
-    } else {
-        DLP_LOG_ERROR(LABEL, "Start request fail, error: %{public}d", res);
-        IncreaseRequestIdle();
+
+        uint64_t requestId;
+        res = DLP_RestorePolicy(
+            GetOsAccountIdFromUid(IPCSkeleton::GetCallingUid()), &encPolicy, DlpRestorePolicyCallback, &requestId);
+        if (res == 0) {
+            DLP_LOG_INFO(
+                LABEL, "Start request success, requestId: %{public}llu", static_cast<unsigned long long>(requestId));
+            res = InsertCallbackToRequestMap(requestId, callback);
+            if (res != DLP_OK) {
+                FreeDLPEncPolicyData(encPolicy);
+                return res;
+            }
+        } else {
+            DLP_LOG_ERROR(LABEL, "Start request fail, error: %{public}d", res);
+        }
     }
     FreeDLPEncPolicyData(encPolicy);
     return res == 0 ? DLP_OK : DLP_CREDENTIAL_FAIL;

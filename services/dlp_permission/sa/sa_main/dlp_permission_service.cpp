@@ -15,7 +15,7 @@
 
 #include "dlp_permission_service.h"
 #include "dlp_credential_service.h"
-#include "dlp_credential.h"
+#include "dlp_credential_adapt.h"
 #include "dlp_permission.h"
 #include "dlp_policy_helper.h"
 #include "dlp_permission_log.h"
@@ -25,7 +25,7 @@ namespace OHOS {
 namespace Security {
 namespace DlpPermission {
 namespace {
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionService"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionService"};
 }
 REGISTER_SYSTEM_ABILITY_BY_ID(DlpPermissionService, SA_ID_DLP_PERMISSION_SERVICE, true);
 
@@ -66,12 +66,12 @@ int32_t DlpPermissionService::GenerateDlpCertificate(
     const sptr<DlpPolicyParcel>& policyParcel, AccountType accountType, sptr<IDlpPermissionCallback>& callback)
 {
     DLP_LOG_DEBUG(LABEL, "Called");
-    if (!CheckPermissionPolicy(policyParcel->policyParams_) || !CheckAccountType(accountType)) {
+    if (callback == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Callback is null");
         return DLP_VALUE_INVALID;
     }
 
-    if (callback == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Callback is null");
+    if (!CheckAccountType(accountType) || !CheckPermissionPolicy(policyParcel->policyParams_)) {
         return DLP_VALUE_INVALID;
     }
 

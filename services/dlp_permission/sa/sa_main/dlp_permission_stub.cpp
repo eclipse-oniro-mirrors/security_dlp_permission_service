@@ -40,7 +40,7 @@ int32_t DlpPermissionStub::OnRemoteRequest(
             return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
         }
     }
-    return NO_ERROR;
+    return DLP_OK;
 }
 
 int32_t DlpPermissionStub::GenerateDlpCertificateInner(MessageParcel& data, MessageParcel& reply)

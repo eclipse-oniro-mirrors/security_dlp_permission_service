@@ -20,7 +20,7 @@
 #define RESERVED_LEN 64
 
 typedef enum {
-    CLOUND_ACCOUNT = 1,   // 云账号
+    CLOUD_ACCOUNT = 1,    // 云账号
     DOMAIN_ACCOUNT,       // 域账号
     APPLICATION_ACCOUNT,  // 应用账号
 } AccountType;

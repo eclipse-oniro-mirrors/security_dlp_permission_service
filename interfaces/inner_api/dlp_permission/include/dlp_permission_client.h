@@ -53,6 +53,7 @@ private:
     void SetRemoteObject(const sptr<IRemoteObject>& remoteObject);
 
     DISALLOW_COPY_AND_MOVE(DlpPermissionClient);
+    std::mutex remoteMutex_;
     std::mutex proxyMutex_;
     std::mutex cvLock_;
     bool readyFlag_ = false;

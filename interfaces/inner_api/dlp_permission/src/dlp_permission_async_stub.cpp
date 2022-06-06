@@ -73,15 +73,11 @@ int32_t DlpPermissionAsyncStub::onGenerateDlpCertificateStub(MessageParcel& data
     }
 
     this->onGenerateDlpCertificate(result, cert);
-    if (!reply.WriteInt32(0)) {
-        DLP_LOG_ERROR(LABEL, "Write int32 fail");
-        return DLP_OPERATE_PARCEL_FAIL;
-    }
 
     return DLP_OK;
 }
 
-void DlpPermissionAsyncStub::onGenerateDlpCertificate(const int32_t result, const std::vector<uint8_t>& cert)
+void DlpPermissionAsyncStub::onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert)
 {
     DLP_LOG_DEBUG(LABEL, "Called");
 
@@ -97,23 +93,25 @@ int32_t DlpPermissionAsyncStub::onParseDlpCertificateStub(MessageParcel& data, M
 {
     DLP_LOG_DEBUG(LABEL, "Called");
 
+    int32_t result;
+    if (!data.ReadInt32(result)) {
+        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        return DLP_OPERATE_PARCEL_FAIL;
+    }
+
     sptr<DlpPolicyParcel> policyParcel = data.ReadParcelable<DlpPolicyParcel>();
     if (policyParcel == nullptr) {
         DLP_LOG_ERROR(LABEL, "Read parcel fail");
         return DLP_OPERATE_PARCEL_FAIL;
     }
 
-    this->onParseDlpCertificate(policyParcel->policyParams_);
+    this->onParseDlpCertificate(result, policyParcel->policyParams_);
     FreePermissionPolicyMem(policyParcel->policyParams_);
-    if (!reply.WriteInt32(0)) {
-        DLP_LOG_ERROR(LABEL, "Write int32 fail");
-        return DLP_OPERATE_PARCEL_FAIL;
-    }
 
     return DLP_OK;
 }
 
-void DlpPermissionAsyncStub::onParseDlpCertificate(const PermissionPolicy& result)
+void DlpPermissionAsyncStub::onParseDlpCertificate(int32_t result, const PermissionPolicy& policy)
 {
     DLP_LOG_DEBUG(LABEL, "Called");
 
@@ -122,7 +120,7 @@ void DlpPermissionAsyncStub::onParseDlpCertificate(const PermissionPolicy& resul
         return;
     }
 
-    parseDlpCertificateCallback_->onParseDlpCertificate(result);
+    parseDlpCertificateCallback_->onParseDlpCertificate(result, policy);
 }
 }  // namespace DlpPermission
 }  // namespace Security

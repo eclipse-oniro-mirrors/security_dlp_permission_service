@@ -88,26 +88,18 @@ static int32_t ReadUint8ArrayFromJson(const nlohmann::json& permJson, uint8_t** 
     return DLP_OK;
 }
 
-int32_t DlpPermissionSerializer::SerializeAuthUserInfo(const AuthUserInfo& userInfo, nlohmann::json& userInfoJson)
+nlohmann::json DlpPermissionSerializer::SerializeAuthUserInfo(const AuthUserInfo& userInfo)
 {
-    userInfoJson = nlohmann::json {
+    nlohmann::json userInfoJson = {
         {AUTH_ACCOUNT, userInfo.authAccount},
         {AUTH_PERM, userInfo.authPerm},
         {PERM_EXPIRY_TIME, userInfo.permExpiryTime},
     };
-    if (userInfoJson.is_discarded() || (!userInfoJson.is_object())) {
-        DLP_LOG_ERROR(LABEL, "UserInfoJson is discarded");
-        return DLP_OPERATE_JSON_FAIL;
-    }
-    return DLP_OK;
+    return userInfoJson;
 }
 
 int32_t DlpPermissionSerializer::DeserializeAuthUserInfo(const nlohmann::json& userInfoJson, AuthUserInfo& userInfo)
 {
-    if (userInfoJson.is_discarded() || (!userInfoJson.is_object())) {
-        DLP_LOG_ERROR(LABEL, "UserInfoJson is discarded");
-        return DLP_OPERATE_JSON_FAIL;
-    }
     if (userInfoJson.find(AUTH_ACCOUNT) != userInfoJson.end() && userInfoJson.at(AUTH_ACCOUNT).is_string()) {
         userInfoJson.at(AUTH_ACCOUNT).get_to(userInfo.authAccount);
     }
@@ -120,23 +112,13 @@ int32_t DlpPermissionSerializer::DeserializeAuthUserInfo(const nlohmann::json& u
     return DLP_OK;
 }
 
-int32_t DlpPermissionSerializer::SerializeAuthUserList(
-    const std::vector<AuthUserInfo>& authUsers, nlohmann::json& authUsersJson)
+nlohmann::json DlpPermissionSerializer::SerializeAuthUserList(const std::vector<AuthUserInfo>& authUsers)
 {
+    nlohmann::json authUsersJson;
     for (auto info : authUsers) {
-        nlohmann::json jsonObj;
-        int32_t res = SerializeAuthUserInfo(info, jsonObj);
-        if (res != DLP_OK) {
-            authUsersJson.clear();
-            return res;
-        }
-        authUsersJson.emplace_back(jsonObj);
+        authUsersJson.emplace_back(SerializeAuthUserInfo(info));
     }
-    if (authUsersJson.is_discarded()) {
-        DLP_LOG_ERROR(LABEL, "AuthUsersJson is discarded");
-        return DLP_OPERATE_JSON_FAIL;
-    }
-    return DLP_OK;
+    return authUsersJson;
 }
 
 int32_t DlpPermissionSerializer::DeserializeAuthUserList(
@@ -157,11 +139,7 @@ int32_t DlpPermissionSerializer::DeserializeAuthUserList(
 
 int32_t DlpPermissionSerializer::SerializeDlpPermission(const PermissionPolicy& policy, nlohmann::json& permInfoJson)
 {
-    nlohmann::json authUsersJson;
-    int32_t res = SerializeAuthUserList(policy.authUsers, authUsersJson);
-    if (res != DLP_OK) {
-        return res;
-    }
+    nlohmann::json authUsersJson = SerializeAuthUserList(policy.authUsers);
 
     uint32_t keyHexLen = policy.aeskeyLen * BYTE_TO_HEX_OPER_LENGTH + 1;
     char* keyHex = new (std::nothrow) char[keyHexLen];
@@ -169,7 +147,7 @@ int32_t DlpPermissionSerializer::SerializeDlpPermission(const PermissionPolicy& 
         DLP_LOG_ERROR(LABEL, "New memory fail");
         return DLP_OPERATE_MEMORY_FAIL;
     }
-    res = ByteToHexString(policy.aeskey, policy.aeskeyLen, keyHex, keyHexLen);
+    int32_t res = ByteToHexString(policy.aeskey, policy.aeskeyLen, keyHex, keyHexLen);
     if (res != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Byte to hexstring fail");
         FreeCharBuffer(keyHex, keyHexLen);
@@ -190,19 +168,17 @@ int32_t DlpPermissionSerializer::SerializeDlpPermission(const PermissionPolicy& 
         return res;
     }
 
-    permInfoJson[AESKEY_LEN] = policy.aeskeyLen;
-    permInfoJson[AESKEY] = keyHex;
-    permInfoJson[IV_LEN] = policy.ivLen;
-    permInfoJson[IV] = ivHex;
-    permInfoJson[OWNER_ACCOUNT] = policy.ownerAccount;
-    permInfoJson[AUTH_USER_LIST] = authUsersJson;
+    permInfoJson = {
+        {AESKEY_LEN, policy.aeskeyLen},
+        {AESKEY, keyHex},
+        {IV_LEN, policy.ivLen},
+        {IV, ivHex},
+        {OWNER_ACCOUNT, policy.ownerAccount},
+        {AUTH_USER_LIST, authUsersJson},
+    };
     DLP_LOG_INFO(LABEL, "Serialize successfully!");
     FreeCharBuffer(keyHex, keyHexLen);
     FreeCharBuffer(ivHex, ivHexLen);
-    if (permInfoJson.is_discarded() || (!permInfoJson.is_object())) {
-        DLP_LOG_ERROR(LABEL, "PermInfoJson is discarded");
-        return DLP_OPERATE_JSON_FAIL;
-    }
     return DLP_OK;
 }
 

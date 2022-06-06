@@ -25,7 +25,7 @@ public:
     TestGenerateDlpCertificateCallback() = default;
     virtual ~TestGenerateDlpCertificateCallback() = default;
 
-    void onGenerateDlpCertificate(const int32_t result, const std::vector<uint8_t>& cert) override;
+    void onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert) override;
 };
 }  // namespace OHOS
 

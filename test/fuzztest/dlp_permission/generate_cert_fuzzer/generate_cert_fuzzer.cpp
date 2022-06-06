@@ -26,8 +26,7 @@ using namespace OHOS::Security::DlpPermission;
 namespace OHOS {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionFuzzer"};
 
-void TestGenerateDlpCertificateCallback::onGenerateDlpCertificate(
-    const int32_t result, const std::vector<uint8_t>& cert)
+void TestGenerateDlpCertificateCallback::onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert)
 {
     DLP_LOG_INFO(LABEL, "Callback");
 }
@@ -43,16 +42,17 @@ static std::string Uint8ArrayToString(const uint8_t* buff, size_t size)
 
 static void FuzzTest(uint8_t* buff, size_t size)
 {
+    auto seed = std::time(nullptr);
+    std::srand(seed);
     uint64_t curTime =
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    srand(time(nullptr));
     PermissionPolicy encPolicy;
     encPolicy.ownerAccount = Uint8ArrayToString(buff, size);
     encPolicy.aeskey = buff;
     encPolicy.aeskeyLen = size;
     encPolicy.iv = buff;
     encPolicy.ivLen = size;
-    int userNum = 0 + rand() % (size + 1);
+    int userNum = rand() % (size + 1);
     for (int user = 0; user < userNum; ++user) {
         AuthUserInfo perminfo;
         perminfo.authAccount = Uint8ArrayToString(buff, size);

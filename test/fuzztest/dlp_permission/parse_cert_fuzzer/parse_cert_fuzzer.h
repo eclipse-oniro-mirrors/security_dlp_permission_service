@@ -25,7 +25,7 @@ public:
     TestParseDlpCertificateCallback() = default;
     virtual ~TestParseDlpCertificateCallback() = default;
 
-    void onParseDlpCertificate(const OHOS::Security::DlpPermission::PermissionPolicy& result) override;
+    void onParseDlpCertificate(int32_t result, const OHOS::Security::DlpPermission::PermissionPolicy& policy) override;
 };
 }  // namespace OHOS
 

@@ -23,7 +23,7 @@ namespace Security {
 namespace DlpPermission {
 bool CheckPermissionPolicy(const PermissionPolicy& policy);
 bool CheckAccountType(AccountType accountType);
-
+bool CheckAesParamLen(uint32_t len);
 void FreeCharBuffer(char* buff, uint32_t buffLen);
 void FreeUint8Buffer(uint8_t* buff, uint32_t buffLen);
 void FreePermissionPolicyMem(PermissionPolicy& policy);

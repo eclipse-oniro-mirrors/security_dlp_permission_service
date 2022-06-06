@@ -60,11 +60,10 @@ int32_t DlpPermissionProxy::GenerateDlpCertificate(
     }
     int32_t requestResult = remote->SendRequest(
         static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GENERATE_DLP_CERTIFICATE), data, reply, option);
-    if (requestResult != NO_ERROR) {
+    if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
-        return DLP_REQUEST_FAIL;
     }
-    return DLP_OK;
+    return requestResult;
 }
 
 int32_t DlpPermissionProxy::ParseDlpCertificate(
@@ -90,11 +89,10 @@ int32_t DlpPermissionProxy::ParseDlpCertificate(
     }
     int32_t requestResult = remote->SendRequest(
         static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::PARSE_DLP_CERTIFICATE), data, reply, option);
-    if (requestResult != NO_ERROR) {
+    if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
-        return DLP_REQUEST_FAIL;
     }
-    return DLP_OK;
+    return requestResult;
 }
 }  // namespace DlpPermission
 }  // namespace Security

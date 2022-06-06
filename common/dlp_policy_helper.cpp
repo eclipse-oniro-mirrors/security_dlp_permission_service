@@ -15,6 +15,7 @@
 
 #include "dlp_policy_helper.h"
 #include <chrono>
+#include <set>
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
 #include "securec.h"
@@ -26,26 +27,59 @@ namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPolicyCheck"};
 const uint32_t MAX_ACCOUNT_SIZE = 1024;
 const uint32_t MAX_ACCOUNT_NUM = 100;
+const std::set<uint32_t> VALID_AESPARAM_LEN = {16, 24, 32};
 }  // namespace
 
-static bool CheckAuthUserInfo(const AuthUserInfo& info)
+bool CheckAesParamLen(uint32_t len)
 {
-    if (info.authAccount.size() > MAX_ACCOUNT_SIZE) {
-        DLP_LOG_ERROR(LABEL, "Account size is invalid");
+    return VALID_AESPARAM_LEN.count(len);
+}
+
+static bool CheckAesParam(const uint8_t* buff, uint32_t len)
+{
+    if (buff == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Param is null");
         return false;
     }
+    if (!CheckAesParamLen(len)) {
+        DLP_LOG_ERROR(LABEL, "Len is invalid, %{public}d", len);
+        return false;
+    }
+    return true;
+}
 
-    if (info.authPerm <= 0 || info.authPerm >= PERM_MAX) {
+static bool CheckAccount(const std::string& ownerAccount)
+{
+    if (ownerAccount.empty() || ownerAccount.size() > MAX_ACCOUNT_SIZE) {
+        DLP_LOG_ERROR(LABEL, "Account is invalid");
+        return false;
+    }
+    return true;
+}
+
+static bool CheckPerm(uint32_t perm)
+{
+    if (perm <= 0 || perm >= PERM_MAX) {
         DLP_LOG_ERROR(LABEL, "Perm is invalid");
         return false;
     }
+    return true;
+}
+
+static bool CheckTime(uint64_t time)
+{
     uint64_t curTime =
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    if (info.permExpiryTime < curTime) {
+    if (time < curTime) {
         DLP_LOG_ERROR(LABEL, "Perm expiry time is invalid");
         return false;
-    };
+    }
     return true;
+}
+
+static bool CheckAuthUserInfo(const AuthUserInfo& info)
+{
+    return (CheckAccount(info.authAccount) && CheckPerm(info.authPerm) && CheckTime(info.permExpiryTime));
 }
 
 static bool CheckAuthUserInfoList(const std::vector<AuthUserInfo>& authUsers)
@@ -62,53 +96,15 @@ static bool CheckAuthUserInfoList(const std::vector<AuthUserInfo>& authUsers)
     return false;
 }
 
-static bool CheckAeskey(const uint8_t* aeskey, uint32_t aeskeyLen)
-{
-    if (aeskey == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Aeskey is null");
-        return false;
-    }
-    if (aeskeyLen <= 0 || aeskeyLen > MAX_KEY_BYTES) {
-        DLP_LOG_ERROR(LABEL, "Aeskey len is invalid, %{public}d", aeskeyLen);
-        return false;
-    }
-    return true;
-}
-
-static bool CheckIv(const uint8_t* iv, uint32_t ivLen)
-{
-    if (iv == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Iv is invalid");
-        return false;
-    }
-    if (ivLen <= 0 || ivLen > MAX_IV_BYTES) {
-        DLP_LOG_ERROR(LABEL, "Iv len is invalid, %{public}d", ivLen);
-        return false;
-    }
-    return true;
-}
-
-static bool CheckOwnerAccount(const std::string& ownerAccount)
-{
-    if (ownerAccount.empty() || ownerAccount.size() > MAX_ACCOUNT_SIZE) {
-        DLP_LOG_ERROR(LABEL, "Owner account is invalid");
-        return false;
-    }
-    return true;
-}
-
 bool CheckPermissionPolicy(const PermissionPolicy& policy)
 {
-    if (!CheckAeskey(policy.aeskey, policy.aeskeyLen) || !CheckIv(policy.iv, policy.ivLen) ||
-        !CheckOwnerAccount(policy.ownerAccount) || !CheckAuthUserInfoList(policy.authUsers)) {
-        return false;
-    }
-    return true;
+    return (CheckAccount(policy.ownerAccount) && CheckAesParam(policy.aeskey, policy.aeskeyLen) &&
+            CheckAesParam(policy.iv, policy.ivLen) && CheckAuthUserInfoList(policy.authUsers));
 }
 
 bool CheckAccountType(AccountType accountType)
 {
-    if (accountType > APPLICATION_ACCOUNT || accountType < CLOUND_ACCOUNT) {
+    if (accountType > APPLICATION_ACCOUNT || accountType < CLOUD_ACCOUNT) {
         DLP_LOG_ERROR(LABEL, "AccountType is invalid");
         return false;
     }

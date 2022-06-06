@@ -26,7 +26,7 @@ static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {
     LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionAsyncProxy"};
 }
 
-void DlpPermissionAsyncProxy::onGenerateDlpCertificate(const int32_t result, const std::vector<uint8_t>& cert)
+void DlpPermissionAsyncProxy::onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert)
 {
     MessageParcel data;
     if (!data.WriteInterfaceToken(DlpPermissionAsyncProxy::GetDescriptor())) {
@@ -51,20 +51,13 @@ void DlpPermissionAsyncProxy::onGenerateDlpCertificate(const int32_t result, con
     }
     int32_t requestResult = remote->SendRequest(
         static_cast<uint32_t>(IDlpPermissionCallback::InterfaceCode::ON_GENERATE_DLP_CERTIFICATE), data, reply, option);
-    if (requestResult != NO_ERROR) {
+    if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "SendRequest fail, result: %{public}d", requestResult);
         return;
     }
-
-    int32_t res;
-    if (!reply.ReadInt32(res)) {
-        DLP_LOG_ERROR(LABEL, "Read int32 fail");
-        return;
-    }
-    DLP_LOG_DEBUG(LABEL, "Res = %{public}d", res);
 }
 
-void DlpPermissionAsyncProxy::onParseDlpCertificate(const PermissionPolicy& result)
+void DlpPermissionAsyncProxy::onParseDlpCertificate(int32_t result, const PermissionPolicy& policy)
 {
     MessageParcel data;
     if (!data.WriteInterfaceToken(DlpPermissionAsyncProxy::GetDescriptor())) {
@@ -72,8 +65,13 @@ void DlpPermissionAsyncProxy::onParseDlpCertificate(const PermissionPolicy& resu
         return;
     }
 
+    if (!data.WriteInt32(result)) {
+        DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        return;
+    }
+
     DlpPolicyParcel policyParcel;
-    policyParcel.policyParams_ = result;
+    policyParcel.policyParams_ = policy;
 
     if (!data.WriteParcelable(&policyParcel)) {
         DLP_LOG_ERROR(LABEL, "Write parcel fail");
@@ -89,17 +87,10 @@ void DlpPermissionAsyncProxy::onParseDlpCertificate(const PermissionPolicy& resu
     }
     int32_t requestResult = remote->SendRequest(
         static_cast<uint32_t>(IDlpPermissionCallback::InterfaceCode::ON_PARSE_DLP_CERTIFICATE), data, reply, option);
-    if (requestResult != NO_ERROR) {
+    if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "SendRequest fail, result: %{public}d", requestResult);
         return;
     }
-
-    int32_t res;
-    if (!reply.ReadInt32(res)) {
-        DLP_LOG_ERROR(LABEL, "Read int32 fail");
-        return;
-    }
-    DLP_LOG_DEBUG(LABEL, "Res = %{public}d", res);
 }
 }  // namespace DlpPermission
 }  // namespace Security

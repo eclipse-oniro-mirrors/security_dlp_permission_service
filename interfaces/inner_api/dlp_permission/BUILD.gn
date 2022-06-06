@@ -36,7 +36,7 @@ ohos_shared_library("libdlp_permission_sdk") {
     "$DLP_ROOT_DIR/frameworks/common/include",
     "$DLP_ROOT_DIR/frameworks/dlp_permission/include",
     "$DLP_ROOT_DIR/interfaces/inner_api/dlp_permission/include",
-    "$DLP_ROOT_DIR/services/dlp_permission/sa/credential",
+    "$DLP_ROOT_DIR/services/dlp_permission/sa/credential_test",
     "//base/security/dlp_permission_service/common",
   ]
 

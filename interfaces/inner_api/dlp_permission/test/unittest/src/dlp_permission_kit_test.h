@@ -27,7 +27,7 @@ public:
     TestGenerateDlpCertificateCallback() = default;
     virtual ~TestGenerateDlpCertificateCallback() = default;
 
-    void onGenerateDlpCertificate(const int32_t result, const std::vector<uint8_t>& cert) override;
+    void onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert) override;
 };
 
 class TestParseDlpCertificateCallback : public ParseDlpCertificateCallback {
@@ -35,7 +35,7 @@ public:
     TestParseDlpCertificateCallback() = default;
     virtual ~TestParseDlpCertificateCallback() = default;
 
-    void onParseDlpCertificate(const PermissionPolicy& result) override;
+    void onParseDlpCertificate(int32_t result, const PermissionPolicy& policy) override;
 };
 
 class DlpPermissionKitTest : public testing::Test {
