@@ -29,9 +29,6 @@ using namespace OHOS::Security::DlpPermission;
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionKitTest"};
 
-const uint32_t THREADS_NUM = 100;
-const uint32_t WAIT_END_TIME = 1;
-
 const uint32_t ACCOUNT_LENGTH = 20;
 const uint32_t AESKEY_LEN = 32;
 const uint32_t IV_LEN = 32;
@@ -58,6 +55,7 @@ const uint32_t INVALID_ACCOUNT_TYPE_LOWER = 0;
 void TestGenerateDlpCertificateCallback::onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert)
 {
     DLP_LOG_INFO(LABEL, "Callback");
+    (void)result;
     std::shared_ptr<TestParseDlpCertificateCallback> callback = std::make_shared<TestParseDlpCertificateCallback>();
     DlpPermissionKit::ParseDlpCertificate(cert, callback);
 }
@@ -65,6 +63,8 @@ void TestGenerateDlpCertificateCallback::onGenerateDlpCertificate(int32_t result
 void TestParseDlpCertificateCallback::onParseDlpCertificate(int32_t result, const PermissionPolicy& policy)
 {
     DLP_LOG_INFO(LABEL, "Callback");
+    (void)result;
+    (void)policy;
 }
 
 void DlpPermissionKitTest::SetUpTestCase()
@@ -229,15 +229,17 @@ HWTEST_F(DlpPermissionKitTest, GenerateDlpCertificate001, TestSize.Level1)
  */
 HWTEST_F(DlpPermissionKitTest, GenerateDlpCertificate002, TestSize.Level1)
 {
+    uint32_t threadsNum = 100;
     std::vector<std::thread> threads;
-    for (size_t i = 0; i < THREADS_NUM; ++i) {
+    for (uint32_t i = 0; i < threadsNum; ++i) {
         threads.emplace_back(std::thread(FuzzTest));
     }
 
     for (auto& thread : threads) {
         thread.join();
     }
-    sleep(WAIT_END_TIME);
+    uint32_t waitEndTime = 1;
+    sleep(waitEndTime);
 }
 
 /**
