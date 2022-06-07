@@ -22,40 +22,13 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/**
- * 发送端打包策略的回调
- */
 typedef void (*DLP_PackPolicyCallback)(uint64_t requestId, int errorCode, DLP_EncPolicyData* outParams);
-/**
- * 接收端解析策略的回调
- */
 typedef void (*DLP_RestorePolicyCallback)(uint64_t requestId, int errorCode, DLP_RestorePolicyData* outParams);
 
-/**
- * 发送端请求打包策略
- *
- * @param [in]userId 本地用户id
- * @param [in]params 请求打包凭据的参数，详见DLP_PackParams结构体定义
- * @param [in]callback 发送端打包策略的回调，打包策略的结果由此回调返回给调用方
- * @param [out]requestId 调用标识，由DLP凭据管理生成唯一的标识，返回给调用方
- * @return
- */
 int DLP_PackPolicy(
-    uint32_t userId, const DLP_PackPolicyParams* params, DLP_PackPolicyCallback callback, uint64_t* requestId);
-
-/**
- * 接收端请求解析策略
- *
- * @param [in]userId 本地用户id
- * @param [in]params 请求解析策略的参数，详见DLP_OutputPackParams结构体定义
- * @param [in]callback 接收端解析策略的回调，解析策略的结果由此回调返回给调用方
- * @param [out]requestId 调用标识，由DLP凭据管理生成唯一的标识，返回给调用方
- * @return
- */
+    uint32_t userId, const DLP_PackPolicyParams* packParams, DLP_PackPolicyCallback callback, uint64_t* requestId);
 int DLP_RestorePolicy(
-    uint32_t userId, const DLP_EncPolicyData* params, DLP_RestorePolicyCallback callback, uint64_t* requestId);
-
+    uint32_t userId, const DLP_EncPolicyData* encData, DLP_RestorePolicyCallback callback, uint64_t* requestId);
 #ifdef __cplusplus
 }
 #endif

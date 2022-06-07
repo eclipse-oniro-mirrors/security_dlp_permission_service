@@ -20,28 +20,28 @@
 #define RESERVED_LEN 64
 
 typedef enum {
-    CLOUD_ACCOUNT = 1,    // 云账号
-    DOMAIN_ACCOUNT,       // 域账号
-    APPLICATION_ACCOUNT,  // 应用账号
+    CLOUD_ACCOUNT = 1,
+    DOMAIN_ACCOUNT,
+    APPLICATION_ACCOUNT,
 } AccountType;
 
 typedef struct {
-    char* featureName;  // 首调者身份（包名或进程名），暂时为预留字段
-    uint8_t* data;      // 待加密policy
+    char* featureName;
+    uint8_t* data;
     uint32_t dataLen;
-    AccountType accountType;  // 发送端 & 接收端账号类型
+    AccountType accountType;
     uint8_t reserved[RESERVED_LEN];
 } DLP_PackPolicyParams;
 
 typedef struct {
-    char* featureName;  // 首调者身份（包名或进程名），暂时为预留字段
-    uint8_t* data;      // policy密文
+    char* featureName;
+    uint8_t* data;
     uint32_t dataLen;
     uint8_t reserved[RESERVED_LEN];
 } DLP_EncPolicyData;
 
 typedef struct {
-    uint8_t* data;  // policy明文
+    uint8_t* data;
     uint32_t dataLen;
     uint8_t reserved[RESERVED_LEN];
 } DLP_RestorePolicyData;

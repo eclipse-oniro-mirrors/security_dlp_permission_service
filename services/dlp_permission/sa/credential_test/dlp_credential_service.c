@@ -153,15 +153,6 @@ err:
     return NULL;
 }
 
-/**
- * 发送端请求打包策略
- *
- * @param [in]userId 本地用户id
- * @param [in]packParams 请求打包凭据的参数，详见DLP_PackParams结构体定义
- * @param [in]callback 发送端打包策略的回调，打包策略的结果由此回调返回给调用方
- * @param [out]requestId 调用标识，由DLP凭据管理生成唯一的标识，返回给调用方
- * @return
- */
 int DLP_PackPolicy(
     uint32_t userId, const DLP_PackPolicyParams* packParams, DLP_PackPolicyCallback callback, uint64_t* requestId)
 {
@@ -234,15 +225,6 @@ err:
     return NULL;
 }
 
-/**
- * 接收端请求解析策略
- *
- * @param [in]userId 本地用户id
- * @param [in]encData 请求解析策略的参数，详见DLP_OutputPackParams结构体定义
- * @param [in]callback 接收端解析策略的回调，解析策略的结果由此回调返回给调用方
- * @param [out]requestId 调用标识，由DLP凭据管理生成唯一的标识，返回给调用方
- * @return
- */
 int DLP_RestorePolicy(
     uint32_t userId, const DLP_EncPolicyData* encData, DLP_RestorePolicyCallback callback, uint64_t* requestId)
 {
