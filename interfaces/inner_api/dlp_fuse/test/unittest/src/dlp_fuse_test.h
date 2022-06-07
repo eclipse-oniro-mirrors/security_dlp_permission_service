@@ -31,7 +31,7 @@ public:
 
     void TearDown();
 
-    void PrepareDlpFuseFsMount();
+    void PrepareDlpFuseFsMount() const;
 };
 } // namespace DlpPermission
 } // namespace Security

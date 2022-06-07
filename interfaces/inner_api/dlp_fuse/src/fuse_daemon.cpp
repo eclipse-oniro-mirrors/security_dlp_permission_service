@@ -147,19 +147,27 @@ static void FuseDaemonOpen(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info
     UpdateCurrTimeStat(&dlp->fileStat.st_atim);
 }
 
-static void FuseDaemonRead(fuse_req_t req, fuse_ino_t ino, size_t size, off_t offset, struct fuse_file_info *fi)
+static struct DlpFuseFileNode *GetValidFileNode(fuse_req_t req, fuse_ino_t ino, const struct fuse_file_info *fi)
 {
-    DLP_LOG_INFO(LABEL, "ino %{public}lu size %{public}zu off %{public}ld", ino, size, offset);
     if (ino == ROOT_INODE) {
         fuse_reply_err(req, ENOENT);
-        return;
+        return nullptr;
     }
-
     struct DlpFuseFileNode *dlp = GetFileNode(ino);
     if (dlp == nullptr || dlp->dlpFileFd <= 0 ||
         fi == nullptr || fi->fh <= 0) {
         DLP_LOG_ERROR(LABEL, "dlp file params error");
         fuse_reply_err(req, EBADF);
+        return nullptr;
+    }
+    return dlp;
+}
+
+static void FuseDaemonRead(fuse_req_t req, fuse_ino_t ino, size_t size, off_t offset, struct fuse_file_info *fi)
+{
+    DLP_LOG_INFO(LABEL, "ino %{public}lu size %{public}zu off %{public}ld", ino, size, offset);
+    struct DlpFuseFileNode *dlp = GetValidFileNode(req, ino, fi);
+    if (dlp == nullptr) {
         return;
     }
 
@@ -197,19 +205,10 @@ static void FuseDaemonWrite(fuse_req_t req, fuse_ino_t ino, const char *buf,
     size_t size, off_t off, struct fuse_file_info *fi)
 {
     DLP_LOG_INFO(LABEL, "ino %{public}lu size %{public}zu off %{public}ld", ino, size, off);
-    if (ino == ROOT_INODE) {
-        DLP_LOG_ERROR(LABEL, "fd is root inode, can not write");
-        fuse_reply_err(req, ENOENT);
+    struct DlpFuseFileNode *dlp = GetValidFileNode(req, ino, fi);
+    if (dlp == nullptr) {
         return;
     }
-    struct DlpFuseFileNode *dlp = GetFileNode(ino);
-    if (dlp == nullptr || dlp->dlpFileFd <= 0 ||
-        fi == nullptr || fi->fh <= 0) {
-        DLP_LOG_ERROR(LABEL, "dlp file params error");
-        fuse_reply_err(req, EBADF);
-        return;
-    }
-
     if (dlp->isReadOnly) {
         DLP_LOG_ERROR(LABEL, "file is read only");
         fuse_reply_err(req, EPERM);

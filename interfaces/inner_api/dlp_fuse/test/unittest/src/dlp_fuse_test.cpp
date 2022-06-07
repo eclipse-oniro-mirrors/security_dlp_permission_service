@@ -56,7 +56,7 @@ static const std::string TEST_LINK_FILE_PATH = MOUNT_POINT_DIR + "/" + TEST_LINK
 
 static int g_mountFd = -1;
 
-void DlpFuseTest::PrepareDlpFuseFsMount()
+void DlpFuseTest::PrepareDlpFuseFsMount() const
 {
     struct stat fstat;
     if (stat(MOUNT_POINT_DIR.c_str(), &fstat) != 0) {
