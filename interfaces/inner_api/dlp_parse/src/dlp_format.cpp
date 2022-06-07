@@ -37,7 +37,13 @@ static void dumpptr(uint8_t *ptr, uint32_t len)
 }
 
 #define DLP_BUFF_LEN (4096)
-#define VALID_KEY_SIZE (32)
+
+enum VALID_KEY_SIZE {
+    DLP_KEY_LEN_128  = 16,
+    DLP_KEY_LEN_192  = 24,
+    DLP_KEY_LEN_256  = 32,
+};
+
 #define VALID_IV_SIZE (16)
 #define DLP_FILE_MAGIC (0x87f4922)
 #define DLP_MAX_CERT_SIZE (1024 * 1024)
@@ -84,23 +90,35 @@ DlpFile::~DlpFile()
         cert_.certBuff = nullptr;
     }
 }
-// 生存明文证书
 
-// 文件系统读写接口
-
-int32_t DlpFile::SetCipher(const struct DlpBlob &key, const struct DlpUsageSpec &spec)
+static int32_t ValidateCipher(const struct DlpBlob &key, const struct DlpUsageSpec &spec)
 {
     if (key.data == nullptr) {
-        return DLP_ERROR_INVALID_ARGUMENT;
+        return -1;
     }
 
     if (spec.mode != DLP_MODE_CTR || spec.padding != DLP_PADDING_NONE || spec.algParam == nullptr) {
-        return DLP_ERROR_INVALID_ARGUMENT;
+        return -1;
     }
 
     struct DlpBlob *iv = &(spec.algParam->iv);
 
-    if (key.size != 32 || iv->size != 16) {
+    if (iv->size != VALID_IV_SIZE) {
+        return DLP_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (key.size != DLP_KEY_LEN_128 && key.size != DLP_KEY_LEN_192 && key.size != DLP_KEY_LEN_256) {
+        return DLP_ERROR_INVALID_ARGUMENT;
+    }
+
+    return DLP_SUCCESS;
+}
+
+int32_t DlpFile::SetCipher(const struct DlpBlob &key, const struct DlpUsageSpec &spec)
+{
+    struct DlpBlob *iv = &(spec.algParam->iv);
+
+    if (ValidateCipher(key, spec)) {
         return DLP_ERROR_INVALID_ARGUMENT;
     }
 
@@ -235,7 +253,11 @@ int32_t DlpFile::FileParse(const std::string &inputFileUri)
 int32_t DlpFile::FileParse(int32_t fd, uint32_t &offset)
 {
     struct DlpHeader *tmp = new (nothrow) struct DlpHeader[1];
-    (void)read(fd, (void *)tmp, sizeof(struct DlpHeader));
+    int32_t ret = read(fd, (void *)tmp, sizeof(struct DlpHeader));
+    if (ret < 0) {
+        return DLP_ERROR_INVALID_ARGUMENT;
+    }
+
     if (ValidateDlpHeader(*tmp) != 0) {
         return DLP_ERROR_NOT_DLP_FILE;
     }

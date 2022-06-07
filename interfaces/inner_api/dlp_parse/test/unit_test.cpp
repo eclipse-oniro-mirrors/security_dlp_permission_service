@@ -17,8 +17,9 @@
 #include "dlp_crypt.h"
 #include "dlp_format.h"
 #include "dlp_fuse.h"
-#include <stdio.h>
-#include <string.h>
+#include "dlp_utils.h"
+#include <cstdio>
+#include <cstring>
 #include <iostream>
 #include <fstream>
 #include <thread>
@@ -36,26 +37,13 @@ uint8_t g_key[32] = { 0xdc, 0x7c, 0x8d, 0xe, 0xeb, 0x41, 0x4b, 0xb0, 0x8e, 0x24,
     0x2, 0x69, 0x65, 0x49, 0xaf, 0x3c, 0xa7, 0x8f, 0x38, 0x3d, 0xe3, 0xf1, 0x23, 0xb6, 0x22, 0xfb };
 uint8_t g_iv[16] = { 0x90, 0xd5, 0xe2, 0x45, 0xaa, 0xeb, 0xa0, 0x9, 0x61, 0x45, 0xd1, 0x48, 0x4a, 0xaf, 0xc9, 0xf9 };
 
-void DlpUnitTest::SetUpTestCase()
-{
-    // make test case clean
-    cout << "SetUpTestCase" << endl;
-}
+void DlpUnitTest::SetUpTestCase() {}
 
-void DlpUnitTest::TearDownTestCase()
-{
-    cout << "TearDownTestCase" << endl;
-}
+void DlpUnitTest::TearDownTestCase() {}
 
-void DlpUnitTest::SetUp()
-{
-    cout << "SetUp" << endl;
-}
+void DlpUnitTest::SetUp() {}
 
-void DlpUnitTest::TearDown()
-{
-    cout << "TearDown" << endl;
-}
+void DlpUnitTest::TearDown() {}
 
 void DlpUnitTest::CreateDataFile() const
 {
@@ -64,8 +52,7 @@ void DlpUnitTest::CreateDataFile() const
 
 static void dumpptr(uint8_t *ptr, uint32_t len)
 {
-    uint8_t *abc = nullptr;
-    abc = (uint8_t *)ptr;
+    uint8_t *abc = ptr;
     for (uint32_t i = 0; i < len; i++) {
         printf("%x ", *abc);
         abc++;
@@ -82,7 +69,6 @@ static void dumpptr(uint8_t *ptr, uint32_t len)
  */
 HWTEST_F(DlpUnitTest, Dlp001, TestSize.Level1)
 {
-    cout << "my test!!!!!!!!!!!!" << endl;
     struct DlpBlob key = { 32, nullptr };
     key.data = g_key;
     int32_t ret;
@@ -94,7 +80,7 @@ HWTEST_F(DlpUnitTest, Dlp001, TestSize.Level1)
         .padding = DLP_PADDING_NONE,
         .algParam = &tagIv
     };
-    // data == null, .size == 0;
+
     uint8_t input[16] = "aaaaaaaaaaaaaaa";
     uint8_t enc[16] = {0};
     uint8_t dec[16] = {0};
@@ -125,7 +111,6 @@ HWTEST_F(DlpUnitTest, Dlp001, TestSize.Level1)
     ASSERT_EQ(0, ret);
 }
 
-
 /**
  * @tc.name: Dlp002
  * @tc.desc: Dlp encrypt && decrypt test for split interface
@@ -145,7 +130,7 @@ HWTEST_F(DlpUnitTest, Dlp002, TestSize.Level1)
         .padding = DLP_PADDING_NONE,
         .algParam = &tagIv
     };
-    // data == null, .size == 0;
+
     uint8_t input[16] = "aaaaaaaaaaaaaaa";
     uint8_t enc[16] = {0};
     uint8_t dec[16] = {0};
@@ -174,10 +159,6 @@ HWTEST_F(DlpUnitTest, Dlp002, TestSize.Level1)
 
     cout << "input hexdump:";
     dumpptr(input, 16);
-    cout << "enc hexdump:";
-    dumpptr(enc, 16);
-    cout << "output hexdump:";
-    dumpptr(dec, 16);
     ret = DlpOpensslAesEncryptInit(&ctx, &key, &usage);
     mIn.size = 1;
     mEnc.size = 1;
@@ -190,12 +171,8 @@ HWTEST_F(DlpUnitTest, Dlp002, TestSize.Level1)
     ret = DlpOpensslAesEncryptFinal(&ctx, &mNull, &mEnc);
     DlpOpensslAesHalFreeCtx(&ctx);
 
-    cout << "input hexdump:";
-    dumpptr(input, 16);
     cout << "enc hexdump:";
     dumpptr(enc, 16);
-    cout << "output hexdump:";
-    dumpptr(dec, 16);
     ret = DlpOpensslAesDecryptInit(&ctx, &key, &usage);
     i = 0;
     mEnc.data = enc;
@@ -209,26 +186,20 @@ HWTEST_F(DlpUnitTest, Dlp002, TestSize.Level1)
     }
     ret = DlpOpensslAesDecryptFinal(&ctx, &mNull, &mDec);
     DlpOpensslAesHalFreeCtx(&ctx);
-
-    cout << "input hexdump:";
-    dumpptr(input, 16);
-    cout << "enc hexdump:";
-    dumpptr(enc, 16);
     cout << "output hexdump:";
     dumpptr(dec, 16);
     ret = strcmp((char *)input, (char *)dec);
-    // ASSERT_EQ(0, ret);
+    ASSERT_EQ(0, ret);
 }
 
 /**
  * @tc.name: Dlp003
- * @tc.desc: Dlp encrypt && decrypt test for split interface
+ * @tc.desc: HASH test
  * @tc.type: FUNC
  * @tc.require:AR000GJSDQ
  */
 HWTEST_F(DlpUnitTest, Dlp003, TestSize.Level1)
 {
-    // data == null, .size == 0;
     uint8_t input[16] = "aaaaaaaaaaaaaaa";
     uint8_t out[64] = {0};
     struct DlpBlob mIn = {
@@ -244,17 +215,14 @@ HWTEST_F(DlpUnitTest, Dlp003, TestSize.Level1)
     int ret;
 
     ret = DlpOpensslHash(DLP_DIGEST_SHA256, &mIn, &mOut);
-    cout << "mIn.size = " << mIn.size << " mOut.size = " << mOut.size << endl;
     cout << "sha256:";
     dumpptr(out, 16);
     ASSERT_EQ(0, ret);
     ret = DlpOpensslHash(DLP_DIGEST_SHA384, &mIn, &mOut);
-    cout << "mIn.size = " << mIn.size << " mOut.size = " << mOut.size << endl;
     cout << "sha384:";
     dumpptr(out, 16);
     ASSERT_EQ(0, ret);
     ret = DlpOpensslHash(DLP_DIGEST_SHA512, &mIn, &mOut);
-    cout << "mIn.size = " << mIn.size << " mOut.size = " << mOut.size << endl;
     cout << "sha512:";
     dumpptr(out, 16);
     ASSERT_EQ(0, ret);
@@ -262,13 +230,12 @@ HWTEST_F(DlpUnitTest, Dlp003, TestSize.Level1)
 
 /**
  * @tc.name: Dlp004
- * @tc.desc: Dlp encrypt && decrypt test for split interface
+ * @tc.desc: split hash test
  * @tc.type: FUNC
  * @tc.require:AR000GJSDQ
  */
 HWTEST_F(DlpUnitTest, Dlp004, TestSize.Level1)
 {
-    // data == null, .size == 0;
     uint8_t input[16] = "aaaaaaaaaaaaaaa";
     uint8_t out[64] = {0};
     struct DlpBlob mIn = {
@@ -310,34 +277,35 @@ HWTEST_F(DlpUnitTest, Dlp004, TestSize.Level1)
 
 /**
  * @tc.name: Dlp005
- * @tc.desc: Dlp encrypt && decrypt test for split interface
+ * @tc.desc: random generate test
  * @tc.type: FUNC
  * @tc.require:AR000GJSDQ
  */
 HWTEST_F(DlpUnitTest, Dlp005, TestSize.Level1)
 {
     int ret = 0;
-    uint8_t out[32] = {0};
     struct DlpBlob mIn = {
         .data = nullptr,
         .size = 32
     };
-    mIn.data = out;
 
     ret = DlpOpensslGenerateRandomKey(16, &mIn);
     ASSERT_EQ(-2, ret);
     ret = DlpOpensslGenerateRandomKey(DLP_AES_KEY_SIZE_256, &mIn);
     ASSERT_EQ(0, ret);
     cout << "random key:";
-    dumpptr(out, 16);
+    dumpptr(mIn.data, 16);
+    free(mIn.data);
     ret = DlpOpensslGenerateRandomKey(DLP_AES_KEY_SIZE_192, &mIn);
     ASSERT_EQ(0, ret);
     cout << "random key:";
-    dumpptr(out, 16);
+    dumpptr(mIn.data, 16);
+    free(mIn.data);
     ret = DlpOpensslGenerateRandomKey(DLP_AES_KEY_SIZE_128, &mIn);
     ASSERT_EQ(0, ret);
     cout << "random key:";
-    dumpptr(out, 16);
+    dumpptr(mIn.data, 16);
+    free(mIn.data);
 }
 
 /**
@@ -351,9 +319,6 @@ HWTEST_F(DlpUnitTest, Dlp006, TestSize.Level1)
     struct DlpBlob key = { 32, nullptr };
     key.data = g_key;
 
-    cout << "key:" << endl;
-    dumpptr(key.data, 32);
-
     DlpFile a = DlpFile();
     struct DlpCipherParam tagIv = { .iv = {.size = 16, .data = nullptr}};
     tagIv.iv.data = g_iv;
@@ -362,9 +327,6 @@ HWTEST_F(DlpUnitTest, Dlp006, TestSize.Level1)
         .padding = DLP_PADDING_NONE,
         .algParam = &tagIv
     };
-
-    cout << "iv:" << endl;
-    dumpptr(tagIv.iv.data, 16);
 
     a.SetCipher(key, usage);
     struct DlpBlob cert;
@@ -381,17 +343,21 @@ HWTEST_F(DlpUnitTest, Dlp006, TestSize.Level1)
     file1.close();
     string out("/data/enc.txt");
     string dec("/data/dec.txt");
+    int32_t ret;
 
-    a.Operation(in, out, 1);
-    a.Operation(out, dec, 2);
-    // remove(in.c_str());
-    // remove(out.c_str());
-    // remove(dec.c_str());
+    ret = a.Operation(in, out, 1);
+    ASSERT_EQ(0, ret);
+    ret = a.Operation(out, dec, 2);
+    ASSERT_EQ(0, ret);
+
+    remove(in.c_str());
+    remove(out.c_str());
+    remove(dec.c_str());
 }
 
 /**
- * @tc.name: Dlp006
- * @tc.desc: Dlp encrypted file generate and resume.
+ * @tc.name: Dlp007
+ * @tc.desc: Dlp encrypted file read write test with invalid fd.
  * @tc.type: FUNC
  * @tc.require:AR000GJSDQ
  */
@@ -404,18 +370,176 @@ HWTEST_F(DlpUnitTest, Dlp007, TestSize.Level1)
     iv.data = g_iv;
 
     int fd = open("/data/enc.txt", O_RDWR);
-    printf("fd %d, errno %d\n", fd, errno);
     int ret = 0;
 
     ret = DlpFileAdd(fd, &key, &iv);
+    ASSERT_EQ(DLP_ERROR_CRYPT_FILE_PARSE_FAIL, ret);
+
     char buf[32] = {0};
     ret = DlpFileRead(fd, 0, (void *)buf, 16);
+
+    ASSERT_EQ(DLP_ERROR_INVALID_FD, ret);
     printf("1reading buff %s\n", buf);
 
     ret = DlpFileWrite(fd, 0, (void *)"ooooooooooo", sizeof("ooooooooooo"));
+    ASSERT_EQ(DLP_ERROR_INVALID_FD, ret);
 
     ret = DlpFileRead(fd, 0, (void *)buf, 16);
+    ASSERT_EQ(DLP_ERROR_INVALID_FD, ret);
     printf("2reading buff %s\n", buf);
     ret = DlpFileDel(fd);
+    ASSERT_EQ(0, ret);
+
     close(fd);
+}
+
+/**
+ * @tc.name: Dlp008
+ * @tc.desc: Dlp encrypted file read write test with valid fd.
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpUnitTest, Dlp008, TestSize.Level1)
+{
+    struct DlpBlob key = { 32, nullptr };
+    key.data = g_key;
+
+    DlpFile a = DlpFile();
+    struct DlpCipherParam tagIv = { .iv = {.size = 16, .data = nullptr}};
+    tagIv.iv.data = g_iv;
+    struct DlpUsageSpec usage = {
+        .mode = DLP_MODE_CTR,
+        .padding = DLP_PADDING_NONE,
+        .algParam = &tagIv
+    };
+
+    a.SetCipher(key, usage);
+    struct DlpBlob cert;
+    cert.data = new (nothrow)uint8_t[10];
+    (void)memset(cert.data, 'a', 10);
+    cert.size = 10;
+    a.SetEncryptCert(cert);
+    delete[] cert.data;
+
+    string ins("abcdefhg");
+    string in("/data/input.txt");
+    fstream file1(in, ios::out | ios::binary);
+    file1 << ins;
+    file1.close();
+    string out("/data/enc.txt");
+    int32_t ret;
+    ret = a.Operation(in, out, 1);
+    ASSERT_EQ(0, ret);
+
+    struct DlpBlob iv = { 16, nullptr };
+
+    key.data = g_key;
+    iv.data = g_iv;
+
+    int fd = open("/data/enc.txt", O_RDWR);
+    printf("fd %d, errno %d\n", fd, errno);
+
+    ret = DlpFileAdd(fd, &key, &iv);
+    ASSERT_EQ(0, ret);
+
+    char buf[32] = {0};
+    ret = DlpFileRead(fd, 0, (void *)buf, 16);
+
+    ASSERT_EQ(0, ret);
+    printf("1reading buff %s\n", buf);
+
+    ret = DlpFileWrite(fd, 0, (void *)"ooooooooooo", sizeof("ooooooooooo"));
+    ASSERT_EQ(0, ret);
+
+    ret = DlpFileRead(fd, 0, (void *)buf, 16);
+    ASSERT_EQ(0, ret);
+    printf("2reading buff %s\n", buf);
+    ret = DlpFileDel(fd);
+    ASSERT_EQ(0, ret);
+
+    close(fd);
+
+    remove(in.c_str());
+    remove(out.c_str());
+}
+
+/**
+ * @tc.name: Dlp001
+ * @tc.desc: Dlp encrypt && decrypt test.
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+#define ENC_BUF_LEN (10*1024*1024)
+HWTEST_F(DlpUnitTest, Dlp009, TestSize.Level1)
+{
+    struct DlpBlob key = { 32, nullptr };
+    key.data = g_key;
+    int32_t ret;
+
+    struct DlpCipherParam tagIv = { .iv = { .data = nullptr, .size = 16}};
+    tagIv.iv.data = g_iv;
+    struct DlpUsageSpec usage = {
+        .mode = DLP_MODE_CTR,
+        .padding = DLP_PADDING_NONE,
+        .algParam = &tagIv
+    };
+
+    uint8_t *input = (uint8_t *)malloc(ENC_BUF_LEN);
+    uint8_t *enc = (uint8_t *)malloc(ENC_BUF_LEN);
+    uint8_t *dec = (uint8_t *)malloc(ENC_BUF_LEN);
+
+    memset(input, 'a', 10*1024*1024);
+
+    struct DlpBlob mIn = {
+        .data = nullptr,
+        .size = ENC_BUF_LEN
+    };
+    mIn.data = input;
+    struct DlpBlob mEnc = {
+        .data = nullptr,
+        .size = ENC_BUF_LEN
+    };
+    mEnc.data = enc;
+    struct DlpBlob mDec = {
+        .data = nullptr,
+        .size = ENC_BUF_LEN
+    };
+    mDec.data = dec;
+
+    const static long USEC_PER_SEC = 1000000L;
+    struct timeval start, end, diff;
+    gettimeofday(&start, nullptr);
+
+    ret = DlpOpensslAesEncrypt(&key, &usage, &mIn, &mEnc);
+    gettimeofday(&end, nullptr);
+    timersub(&end, &start, &diff);
+    int runtime_us = diff.tv_sec * USEC_PER_SEC + diff.tv_usec;
+    std::cout << "10M date encrypt time use: " << runtime_us << "(us) " << std::endl;
+
+    gettimeofday(&start, nullptr);
+    ret = DlpOpensslAesDecrypt(&key, &usage, &mEnc, &mDec);
+    gettimeofday(&end, nullptr);
+    timersub(&end, &start, &diff);
+    runtime_us = diff.tv_sec * USEC_PER_SEC + diff.tv_usec;
+    std::cout << "10M date decrypt time use: " << runtime_us << "(us) " << std::endl;
+    ASSERT_EQ(0, ret);
+    free(input);
+    free(enc);
+    free(dec);
+}
+
+/**
+ * @tc.name: Dlp0010
+ * @tc.desc: Dlp encrypt && decrypt test with invalid args.
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpUnitTest, Dlp0010, TestSize.Level1)
+{
+    int32_t ret;
+
+    ret = DlpOpensslAesEncrypt(nullptr, nullptr, nullptr, nullptr);
+    ASSERT_EQ(DLP_ERROR_INVALID_ARGUMENT, ret);
+    ret = DlpOpensslAesDecrypt(nullptr, nullptr, nullptr, nullptr);
+    ASSERT_EQ(DLP_ERROR_INVALID_ARGUMENT, ret);
 }

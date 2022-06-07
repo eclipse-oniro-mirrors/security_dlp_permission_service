@@ -21,8 +21,8 @@
 #include <vector>
 #include <string>
 #include <unordered_map>
-#include <stdio.h>
-#include <errno.h>
+#include <cstdio>
+#include <cerrno>
 #include <securec.h>
 #include <unistd.h>
 #include <new>
@@ -204,7 +204,7 @@ int32_t DlpFileDel(int32_t fd)
 {
     OHOS::Utils::UniqueWriteGuard<OHOS::Utils::RWLock> mapGuard(g_DlpMapLock);
     auto iter = g_DlpFdMap.find(fd);
-    if (iter != g_DlpFdMap.end()) {
+    if (iter == g_DlpFdMap.end()) {
         return DLP_SUCCESS;
     } else {
         // clear cipher

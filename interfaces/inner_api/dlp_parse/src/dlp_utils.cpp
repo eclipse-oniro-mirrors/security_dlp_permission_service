@@ -16,8 +16,8 @@
 
 #include "dlp_utils.h"
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <securec.h>
 
 #include "hilog/log.h"
@@ -27,8 +27,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-static const unsigned int LOG_DOMAIN = 0xD002F01;
-static const char *LOG_TAG = "DLP";
+#define LOG_DOMAIN  (0xD002F01)
+#define LOG_TAG     "DLP"
 
 void *DlpMalloc(size_t size)
 {

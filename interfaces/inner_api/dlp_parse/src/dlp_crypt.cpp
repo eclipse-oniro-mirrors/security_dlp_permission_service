@@ -17,8 +17,8 @@
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <cstdio>
+#include <cstdlib>
 #include <securec.h>
 #include "dlp_utils.h"
 
@@ -281,9 +281,9 @@ static int32_t OpensslAesCipherCryptInit(const struct DlpBlob *key, const struct
 
     outCtx->mode = usageSpec->mode;
     outCtx->padding = usageSpec->padding;
-    outCtx->append = (void *)ctx;
+    outCtx->append = static_cast<void *>(ctx);
 
-    *cryptoCtx = (void *)outCtx;
+    *cryptoCtx = static_cast<void *>(outCtx);
 
     return DLP_SUCCESS;
 }
@@ -818,14 +818,14 @@ int32_t DlpOpensslHashInit(void **cryptoCtx, uint32_t alg)
         return DLP_ERROR_NULL_POINTER;
     }
 
-    // EVP_MD_CTX_set_flags(tmpctx, EVP_MD_CTX_FLAG_ONESHOT);
+    EVP_MD_CTX_set_flags(tmpctx, EVP_MD_CTX_FLAG_ONESHOT);
     int32_t ret = EVP_DigestInit_ex(tmpctx, opensslAlg, nullptr);
     if (ret != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
         EVP_MD_CTX_free(tmpctx);
         return DLP_ERROR_CRYPTO_ENGINE_ERROR;
     }
-    *cryptoCtx = (void *)tmpctx;
+    *cryptoCtx = static_cast<void *>(tmpctx);
     return DLP_SUCCESS;
 }
 
