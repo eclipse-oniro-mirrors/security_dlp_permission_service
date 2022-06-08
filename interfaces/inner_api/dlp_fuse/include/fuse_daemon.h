@@ -33,6 +33,8 @@ static const int MAX_FILE_NAME_LEN = 256;
 static const int ROOT_INODE_ACCESS = 0711;
 static const int DEFAULT_INODE_ACCESS = 0640;
 static const int FUSE_MAX_BUF_SIZE = 1024 * 1024 * 10; // 10M
+static const unsigned int MAX_INT_NUMBER = 0x7fffffff;
+static const unsigned int MAX_KEY_LEN = 0x10000; // 64K
 
 enum CryptAlgo {
     AES_CTR = 1,

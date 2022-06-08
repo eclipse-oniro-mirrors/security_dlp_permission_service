@@ -80,7 +80,7 @@ static void FuseDaemonLookup(fuse_req_t req, fuse_ino_t parent, const char *name
         DLP_LOG_ERROR(LABEL, "name %{public}s can not found", name);
         fuse_reply_err(req, ENOENT);
     } else {
-        DLP_LOG_INFO(LABEL, "name %{public}s has found, node->inode %{public}lu", name, node->inode);
+        DLP_LOG_INFO(LABEL, "name %{public}s has found", name);
         node->refcount++;
         fep.ino = node->inode;
         fep.attr = node->fileStat;
@@ -122,7 +122,6 @@ static void FuseDaemonGetattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_i
     }
 
     UpdateDlpFileSize(dlp);
-    DLP_LOG_INFO(LABEL, "name %{public}s size %{public}ld", dlp->dlpLinkName.c_str(), dlp->fileStat.st_size);
     fuse_reply_attr(req, &dlp->fileStat, DEFAULT_ATTR_TIMEOUT);
 }
 
@@ -137,13 +136,13 @@ static void FuseDaemonOpen(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info
     }
 
     struct DlpFuseFileNode *dlp = GetFileNode(ino);
-    if (dlp == nullptr || dlp->dlpFileFd < 0) {
+    if (dlp == nullptr || dlp->dlpFileFd <= 0) {
         DLP_LOG_ERROR(LABEL, "open wrong ino file");
         fuse_reply_err(req, ENOENT);
-    } else {
-        fi->fh = dlp->dlpFileFd;
-        fuse_reply_open(req, fi);
+        return;
     }
+    fi->fh = (uint64_t)dlp->dlpFileFd;
+    fuse_reply_open(req, fi);
     UpdateCurrTimeStat(&dlp->fileStat.st_atim);
 }
 
@@ -155,7 +154,7 @@ static struct DlpFuseFileNode *GetValidFileNode(fuse_req_t req, fuse_ino_t ino, 
     }
     struct DlpFuseFileNode *dlp = GetFileNode(ino);
     if (dlp == nullptr || dlp->dlpFileFd <= 0 ||
-        fi == nullptr || fi->fh <= 0) {
+        fi == nullptr || fi->fh == 0 || fi->fh >= MAX_INT_NUMBER) {
         DLP_LOG_ERROR(LABEL, "dlp file params error");
         fuse_reply_err(req, EBADF);
         return nullptr;
@@ -165,13 +164,13 @@ static struct DlpFuseFileNode *GetValidFileNode(fuse_req_t req, fuse_ino_t ino, 
 
 static void FuseDaemonRead(fuse_req_t req, fuse_ino_t ino, size_t size, off_t offset, struct fuse_file_info *fi)
 {
-    DLP_LOG_INFO(LABEL, "ino %{public}lu size %{public}zu off %{public}ld", ino, size, offset);
+    DLP_LOG_INFO(LABEL, "read size %{public}zu", size);
     struct DlpFuseFileNode *dlp = GetValidFileNode(req, ino, fi);
     if (dlp == nullptr) {
         return;
     }
 
-    int fd = fi->fh;
+    int fd = (int)fi->fh;
     lseek(fd, offset, SEEK_SET);
     if (size > FUSE_MAX_BUF_SIZE) {
         DLP_LOG_ERROR(LABEL, "read buf too large");
@@ -190,7 +189,7 @@ static void FuseDaemonRead(fuse_req_t req, fuse_ino_t ino, size_t size, off_t of
     int readLen = read(fd, buf, size);
     if (readLen < 0) {
         DLP_LOG_ERROR(LABEL, "readLen < 0, errno %{public}d", errno);
-        fuse_reply_err(req, EINVAL);
+        fuse_reply_err(req, EIO);
         free(buf);
         return;
     }
@@ -204,7 +203,7 @@ static void FuseDaemonRead(fuse_req_t req, fuse_ino_t ino, size_t size, off_t of
 static void FuseDaemonWrite(fuse_req_t req, fuse_ino_t ino, const char *buf,
     size_t size, off_t off, struct fuse_file_info *fi)
 {
-    DLP_LOG_INFO(LABEL, "ino %{public}lu size %{public}zu off %{public}ld", ino, size, off);
+    DLP_LOG_INFO(LABEL, "write size %{public}zu", size);
     struct DlpFuseFileNode *dlp = GetValidFileNode(req, ino, fi);
     if (dlp == nullptr) {
         return;
@@ -215,17 +214,17 @@ static void FuseDaemonWrite(fuse_req_t req, fuse_ino_t ino, const char *buf,
         return;
     }
 
-    int fd = fi->fh;
+    int fd = (int)fi->fh;
     lseek(fd, off, SEEK_SET);
-    size_t writeLen = write(fd, buf, size);
+    int writeLen = write(fd, buf, size);
     if (writeLen < 0) {
         DLP_LOG_ERROR(LABEL, "write len < 0, errno %{public}d", errno);
         fuse_reply_err(req, EIO);
         return;
     }
-    DLP_LOG_INFO(LABEL, "write len %{public}zu", writeLen);
+    DLP_LOG_INFO(LABEL, "write len %{public}d", writeLen);
 
-    fuse_reply_write(req, writeLen);
+    fuse_reply_write(req, (size_t)writeLen);
     UpdateCurrTimeStat(&dlp->fileStat.st_mtim);
     fsync(fd);
 }
@@ -244,6 +243,9 @@ static void FuseDaemonForgot(fuse_req_t req, fuse_ino_t ino, uint64_t nlookup)
     }
     dlp->refcount -= nlookup;
     if (dlp->refcount <= 0) {
+        if (dlp->key != nullptr) {
+            free(dlp->key);
+        }
         free(dlp);
     }
 }
@@ -305,12 +307,14 @@ int FuseDaemon::FillDlpFileNode(struct DlpFuseFileNode *node, struct DlpFusePara
     node->cryptAlgo = params->cryptAlgo;
 
     node->key = (unsigned char *)malloc(params->keyLen);
-    if (node->key == NULL) {
+    if (node->key == nullptr) {
         DLP_LOG_ERROR(LABEL, "malloc key is error");
         return -1;
     }
-    int ret = memcpy_s(node->key, sizeof(node->key), params->key, sizeof(params->key));
+    int ret = memcpy_s(node->key, params->keyLen, params->key, params->keyLen);
     if (ret) {
+        free(node->key);
+        node->key = nullptr;
         DLP_LOG_ERROR(LABEL, "memcpy key is error");
         return -1;
     }
@@ -333,7 +337,7 @@ bool FuseDaemon::IsParamValid(struct DlpFuseParam *params)
 {
     return (params != nullptr && params->dlpFileFd >= 0
         && params->key != nullptr && params->keyLen != 0
-        && params->cryptAlgo == AES_CTR);
+        && params->keyLen < MAX_KEY_LEN && params->cryptAlgo == AES_CTR);
 }
 
 int FuseDaemon::AddDlpLinkRelation(struct DlpFuseParam *params)
@@ -363,6 +367,7 @@ int FuseDaemon::AddDlpLinkRelation(struct DlpFuseParam *params)
     (void)memset_s(node, sizeof(struct DlpFuseFileNode), 0, sizeof(struct DlpFuseFileNode));
 
     if (FillDlpFileNode(node, params)) {
+        free(node);
         DLP_LOG_ERROR(LABEL, "fill dlp file node failed!");
         return -1;
     }
