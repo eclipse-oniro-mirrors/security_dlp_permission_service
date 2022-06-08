@@ -162,9 +162,11 @@ static int32_t OpensslAesCipherInit(const struct DlpBlob *key, const struct DlpU
     }
 
     if (isEncrypt) {
-        ret = EVP_EncryptInit_ex(*ctx, nullptr, nullptr, key->data, (cipherParam == nullptr) ? nullptr : cipherParam->iv.data);
+        ret = EVP_EncryptInit_ex(*ctx, nullptr, nullptr, key->data, (cipherParam == nullptr) ?
+            nullptr : cipherParam->iv.data);
     } else {
-        ret = EVP_DecryptInit_ex(*ctx, nullptr, nullptr, key->data, (cipherParam == nullptr) ? nullptr : cipherParam->iv.data);
+        ret = EVP_DecryptInit_ex(*ctx, nullptr, nullptr, key->data, (cipherParam == nullptr) ?
+            nullptr : cipherParam->iv.data);
     }
     if (ret != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
@@ -214,9 +216,11 @@ static int32_t OpensslAesCipherCryptInitParams(const struct DlpBlob *key, EVP_CI
 {
     int32_t ret;
     if (isEncrypt) {
-        ret = EVP_EncryptInit_ex(ctx, nullptr, nullptr, key->data, (cipherParam == nullptr) ? nullptr : cipherParam->iv.data);
+        ret = EVP_EncryptInit_ex(ctx, nullptr, nullptr, key->data, (cipherParam == nullptr) ?
+            nullptr : cipherParam->iv.data);
     } else {
-        ret = EVP_DecryptInit_ex(ctx, nullptr, nullptr, key->data, (cipherParam == nullptr) ? nullptr : cipherParam->iv.data);
+        ret = EVP_DecryptInit_ex(ctx, nullptr, nullptr, key->data, (cipherParam == nullptr) ?
+            nullptr : cipherParam->iv.data);
     }
     if (ret != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
@@ -288,7 +292,8 @@ static int32_t OpensslAesCipherCryptInit(const struct DlpBlob *key, const struct
     return DLP_SUCCESS;
 }
 
-static int32_t OpensslAesCipherEncryptUpdate(void *cryptoCtx, const struct DlpBlob *message, struct DlpBlob *cipherText)
+static int32_t OpensslAesCipherEncryptUpdate(void *cryptoCtx, const struct DlpBlob *message,
+    struct DlpBlob *cipherText)
 {
     struct DlpOpensslAesCtx *aesCtx = (struct DlpOpensslAesCtx *)cryptoCtx;
     EVP_CIPHER_CTX *ctx = (EVP_CIPHER_CTX *)aesCtx->append;

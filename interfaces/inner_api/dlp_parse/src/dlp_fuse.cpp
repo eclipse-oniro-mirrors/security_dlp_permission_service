@@ -41,24 +41,40 @@ struct DlpFuseInfo {
 std::unordered_map<int32_t, struct DlpFuseInfo *> g_DlpFdMap;
 OHOS::Utils::RWLock g_DlpMapLock;
 
+static uint32_t GetFdConfig(int32_t fd, struct DlpBlob **key, struct DlpUsageSpec &usageSpec,
+    struct DlpCipherParam &tagIv, uint32_t &dlpOffset)
+{
+    struct DlpBlob *iv;
+    auto iter = g_DlpFdMap.find(fd);
+    if (iter != g_DlpFdMap.end()) {
+        *key = &(iter->second->key);
+        iv = &(iter->second->iv);
+        dlpOffset = iter->second->txtOffset;
+        tagIv.iv.size = iv->size;
+        tagIv.iv.data = iv->data;
+        usageSpec.mode = DLP_MODE_CTR;
+        usageSpec.padding = DLP_PADDING_NONE;
+        usageSpec.algParam = &tagIv;
+        return DLP_SUCCESS;
+    } else {
+        return DLP_ERROR_INVALID_FD;
+    }
+}
+
 int32_t DlpFileRead(int32_t fd, uint32_t offset, void *buf, uint32_t size)
 {
     struct DlpBlob *key;
-    struct DlpBlob *iv;
+    struct DlpUsageSpec usageSpec;
+    struct DlpCipherParam tagIv;
     uint32_t dlpOffset;
     int32_t ret;
 
-    if (buf == nullptr) {
-        return DLP_ERROR_NULL_POINTER;
+    if (buf == nullptr || size == 0) {
+        return DLP_ERROR_INVALID_ARGUMENT;
     }
 
     OHOS::Utils::UniqueReadGuard<OHOS::Utils::RWLock> mapGuard(g_DlpMapLock);
-    auto iter = g_DlpFdMap.find(fd);
-    if (iter != g_DlpFdMap.end()) {
-        key = &(iter->second->key);
-        iv = &(iter->second->iv);
-        dlpOffset = iter->second->txtOffset;
-    } else {
+    if (GetFdConfig(fd, &key, usageSpec, tagIv, dlpOffset) != DLP_SUCCESS) {
         return DLP_ERROR_INVALID_FD;
     }
 
@@ -74,22 +90,14 @@ int32_t DlpFileRead(int32_t fd, uint32_t offset, void *buf, uint32_t size)
 
     ret = read(fd, (void *)encBuff, size);
     if (ret < 0) {
+        delete[] encBuff;
         return DLP_ERROR_READ_FAIL;
     }
 
-    struct DlpCipherParam tagIv;
-    tagIv.iv.data = iv->data;
-    tagIv.iv.size = iv->size;
-    struct DlpUsageSpec usageSpec = {
-        .mode = DLP_MODE_CTR,
-        .padding = DLP_PADDING_NONE,
-        .algParam = &tagIv,
-    };
-    struct DlpBlob message1 = { .size = size };
-    struct DlpBlob message2 = { .size = size };
-    message1.data = encBuff;
-    message2.data = static_cast<uint8_t *>(buf);
+    struct DlpBlob message1 = { .size = size, .data = encBuff };
+    struct DlpBlob message2 = { .size = size, .data = static_cast<uint8_t *>(buf) };
     ret = DlpOpensslAesDecrypt(key, &usageSpec, &message1, &message2);
+    delete[] encBuff;
     if (ret != 0) {
         return DLP_ERROR_CRYPT_FAIL;
     }
@@ -100,21 +108,17 @@ int32_t DlpFileRead(int32_t fd, uint32_t offset, void *buf, uint32_t size)
 int32_t DlpFileWrite(int32_t fd, uint32_t offset, void *buf, uint32_t size)
 {
     struct DlpBlob *key;
-    struct DlpBlob *iv;
+    struct DlpUsageSpec usageSpec;
+    struct DlpCipherParam tagIv;
     uint32_t dlpOffset;
     int32_t ret;
 
-    if (buf == nullptr) {
-        return DLP_ERROR_NULL_POINTER;
+    if (buf == nullptr || size == 0) {
+        return DLP_ERROR_INVALID_ARGUMENT;
     }
 
     OHOS::Utils::UniqueReadGuard<OHOS::Utils::RWLock> mapGuard(g_DlpMapLock);
-    auto iter = g_DlpFdMap.find(fd);
-    if (iter != g_DlpFdMap.end()) {
-        key = &(iter->second->key);
-        iv = &(iter->second->iv);
-        dlpOffset = iter->second->txtOffset;
-    } else {
+    if (GetFdConfig(fd, &key, usageSpec, tagIv, dlpOffset) != DLP_SUCCESS) {
         return DLP_ERROR_INVALID_FD;
     }
 
@@ -123,35 +127,67 @@ int32_t DlpFileWrite(int32_t fd, uint32_t offset, void *buf, uint32_t size)
         return DLP_ERROR_LSEEK_FAIL;
     }
 
-    uint8_t *encBuff = new (std::nothrow) uint8_t[size];
-    if (encBuff == nullptr) {
+    uint8_t *writeBuff = new (std::nothrow) uint8_t[size];
+    if (writeBuff == nullptr) {
         return DLP_ERROR_MALLOC_FAIL;
     }
 
-    struct DlpCipherParam tagIv;
-    tagIv.iv.data = iv->data;
-    tagIv.iv.size = iv->size;
-    struct DlpUsageSpec usageSpec = {
-        .mode = DLP_MODE_CTR,
-        .padding = DLP_PADDING_NONE,
-        .algParam = &tagIv,
-    };
-    struct DlpBlob message1 = { .size = size };
-    struct DlpBlob message2 = { .size = size };
-    message1.data = static_cast<uint8_t *>(buf);
-    message2.data = encBuff;
+    struct DlpBlob message1 = { .size = size, .data = static_cast<uint8_t *>(buf) };
+    struct DlpBlob message2 = { .size = size, .data = writeBuff };
+
     ret = DlpOpensslAesEncrypt(key, &usageSpec, &message1, &message2);
     if (ret != 0) {
+        delete[] writeBuff;
         return DLP_ERROR_CRYPT_FAIL;
     }
 
-    ret = write(fd, (void *)encBuff, size);
+    ret = write(fd, (void *)writeBuff, size);
+    delete[] writeBuff;
     if (ret < 0) {
         return DLP_ERROR_WRITE_FAIL;
     }
     return DLP_SUCCESS;
 }
 
+static struct DlpFuseInfo *PrepareFuseInfo(struct DlpBlob *key, struct DlpBlob *iv, uint32_t offset)
+{
+    struct DlpFuseInfo *buf = new (std::nothrow) struct DlpFuseInfo;
+    if (buf == nullptr) {
+        return nullptr;
+    }
+    buf->txtOffset = offset;
+
+    buf->key.data = new (std::nothrow) uint8_t[key->size];
+    if (buf->key.data == nullptr) {
+        delete buf;
+        return nullptr;
+    }
+
+    buf->key.size = key->size;
+    if (memcpy_s(buf->key.data, buf->key.size, key->data, key->size) != 0) {
+        delete[] buf->key.data;
+        delete buf;
+        return nullptr;
+    }
+
+    buf->iv.data = new (std::nothrow) uint8_t[iv->size];
+    if (buf->iv.data == nullptr) {
+        delete[] buf->key.data;
+        delete buf;
+        return nullptr;
+    }
+
+    buf->iv.size = iv->size;
+    if (memcpy_s(buf->iv.data, buf->iv.size, iv->data, iv->size) != 0) {
+        delete[] buf->iv.data;
+        delete[] buf->key.data;
+        delete buf;
+        return nullptr;
+    }
+    return buf;
+}
+
+// use DlpUsageSpec param later
 int32_t DlpFileAdd(int32_t fd, struct DlpBlob *key, struct DlpBlob *iv)
 {
     static DLP::DlpFile var;
@@ -162,37 +198,21 @@ int32_t DlpFileAdd(int32_t fd, struct DlpBlob *key, struct DlpBlob *iv)
         return DLP_ERROR_CRYPT_FILE_PARSE_FAIL;
     }
 
-    struct DlpFuseInfo *buf = new (std::nothrow) struct DlpFuseInfo;
+    struct DlpFuseInfo *buf = PrepareFuseInfo(key, iv, offset);
     if (buf == nullptr) {
         return DLP_ERROR_MALLOC_FAIL;
     }
-
-    buf->txtOffset = offset;
-
-    buf->key.data = new (std::nothrow) uint8_t[key->size];
-    if (buf->key.data == nullptr) {
-        delete buf;
-        return DLP_ERROR_MALLOC_FAIL;
-    }
-    (void)memcpy_s(buf->key.data, key->size, key->data, key->size);
-    buf->key.size = key->size;
-
-    buf->iv.data = new (std::nothrow) uint8_t[iv->size];
-    if (buf->iv.data == nullptr) {
-        delete[] buf->key.data;
-        delete buf;
-        return DLP_ERROR_MALLOC_FAIL;
-    }
-    (void)memcpy_s(buf->iv.data, iv->size, iv->data, iv->size);
-    buf->iv.size = iv->size;
 
     {
         OHOS::Utils::UniqueWriteGuard<OHOS::Utils::RWLock> mapGuard(g_DlpMapLock);
         auto iter = g_DlpFdMap.find(fd);
         if (iter != g_DlpFdMap.end()) {
+            (void)memset_s(buf->key.data, buf->key.size, 0, buf->key.size);
+            (void)memset_s(buf->iv.data, buf->iv.size, 0, buf->iv.size);
             delete[] buf->key.data;
             delete[] buf->iv.data;
             delete buf;
+            return DLP_ERROR_FD_EXIST;
         } else {
             g_DlpFdMap[fd] = buf;
         }

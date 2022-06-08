@@ -25,17 +25,6 @@
 
 namespace DLP {
 using namespace std;
-static void dumpptr(uint8_t *ptr, uint32_t len)
-{
-    uint8_t *abc = nullptr;
-    abc = (uint8_t *)ptr;
-    for (uint32_t i = 0; i < len; i++) {
-        printf("%x ", *abc);
-        abc++;
-    }
-    printf("\n");
-}
-
 #define DLP_BUFF_LEN (4096)
 
 enum VALID_KEY_SIZE {
@@ -94,11 +83,11 @@ DlpFile::~DlpFile()
 static int32_t ValidateCipher(const struct DlpBlob &key, const struct DlpUsageSpec &spec)
 {
     if (key.data == nullptr) {
-        return -1;
+        return DLP_ERROR_INVALID_ARGUMENT;
     }
 
     if (spec.mode != DLP_MODE_CTR || spec.padding != DLP_PADDING_NONE || spec.algParam == nullptr) {
-        return -1;
+        return DLP_ERROR_INVALID_ARGUMENT;
     }
 
     struct DlpBlob *iv = &(spec.algParam->iv);
@@ -127,7 +116,11 @@ int32_t DlpFile::SetCipher(const struct DlpBlob &key, const struct DlpUsageSpec 
         return DLP_ERROR_MALLOC_FAIL;
     }
 
-    (void)memcpy_s(cipher_.tagIv.iv.data, iv->size, iv->data, iv->size);
+    if (memcpy_s(cipher_.tagIv.iv.data, iv->size, iv->data, iv->size) != 0) {
+        delete[] cipher_.tagIv.iv.data;
+        cipher_.tagIv.iv.data = nullptr;
+        return DLP_ERROR_MEMCPY_FAIL;
+    }
     cipher_.tagIv.iv.size = iv->size;
 
     cipher_.encKey.data = new (std::nothrow) uint8_t[key.size];
@@ -138,7 +131,14 @@ int32_t DlpFile::SetCipher(const struct DlpBlob &key, const struct DlpUsageSpec 
         return DLP_ERROR_MALLOC_FAIL;
     }
 
-    (void)memcpy_s(cipher_.encKey.data, key.size, key.data, key.size);
+    if (memcpy_s(cipher_.encKey.data, key.size, key.data, key.size) != 0) {
+        (void)memset_s(cipher_.tagIv.iv.data, iv->size, 0, iv->size);
+        delete[] cipher_.tagIv.iv.data;
+        cipher_.tagIv.iv.data = nullptr;
+        delete[] cipher_.encKey.data;
+        cipher_.encKey.data = nullptr;
+        return DLP_ERROR_MEMCPY_FAIL;
+    }
     cipher_.encKey.size = key.size;
 
     cipher_.usageSpec.mode = spec.mode;
@@ -163,7 +163,9 @@ int32_t DlpFile::SetEncryptCert(const struct DlpBlob &data)
         return DLP_ERROR_MALLOC_FAIL;
     }
 
-    (void)memcpy_s(cert_.certBuff, data.size, data.data, data.size);
+    if (memcpy_s(cert_.certBuff, data.size, data.data, data.size) != 0) {
+        return DLP_ERROR_MEMCPY_FAIL;
+    }
 
     head_.certOffset = sizeof(struct DlpHeader);
     head_.certSize = data.size;
@@ -187,38 +189,24 @@ static int32_t ValidateDlpHeader(struct DlpHeader &head)
 int32_t DlpFile::FileParse(const std::string &inputFileUri, struct DlpHeader &head, struct DlpEncryptCert &cert)
 {
     ifstream in(inputFileUri, ios::in | ios::binary);
-
     if (!in.is_open()) {
         return DLP_ERROR_FILE_FAIL;
     }
 
-    in.read((char *)&head_, sizeof(struct DlpHeader));
-    if (ValidateDlpHeader(head_) != 0) {
-        (void)memset_s(&head_, sizeof(struct DlpHeader), 0, sizeof(struct DlpHeader));
+    in.read((char *)&head, sizeof(struct DlpHeader));
+    if (ValidateDlpHeader(head) != 0) {
         in.close();
         return DLP_ERROR_NOT_DLP_FILE;
     }
 
-    (void)memcpy_s(&head, sizeof(struct DlpHeader), &head_, sizeof(struct DlpHeader));
     // parse cert
-    uint8_t *buf = new (nothrow)uint8_t[head_.certSize];
+    uint8_t *buf = new (nothrow)uint8_t[head.certSize];
     if (buf == nullptr) {
         in.close();
-        (void)memset_s(&head_, sizeof(struct DlpHeader), 0, sizeof(struct DlpHeader));
         return DLP_ERROR_MALLOC_FAIL;
     }
-    in.read((char *)buf, head_.certSize);
-    cert_.certBuff = buf;
-
-    uint8_t *outBuf = new (nothrow)uint8_t[head_.certSize];
-    if (outBuf == nullptr) {
-        in.close();
-        (void)memset_s(&head_, sizeof(struct DlpHeader), 0, sizeof(struct DlpHeader));
-        return DLP_ERROR_MALLOC_FAIL;
-    }
-    (void)memcpy_s(outBuf, head_.certSize, buf, head_.certSize);
-    cert.certBuff = outBuf;
-    head.certSize = head_.certSize;
+    in.read((char *)buf, head.certSize);
+    cert.certBuff = buf;
     in.close();
     return DLP_SUCCESS;
 }
@@ -267,56 +255,66 @@ int32_t DlpFile::FileParse(int32_t fd, uint32_t &offset)
     return 0;
 }
 
+static int32_t PrepareBuff(struct DlpBlob &message1, struct DlpBlob &message2)
+{
+    message1.size = DLP_BUFF_LEN;
+    message1.data = new (nothrow)uint8_t[DLP_BUFF_LEN];
+    if (message1.data == nullptr) {
+        return DLP_ERROR_MALLOC_FAIL;
+    }
+
+    message2.size = DLP_BUFF_LEN;
+    message2.data = new (nothrow)uint8_t[DLP_BUFF_LEN];
+    if (message2.data == nullptr) {
+        delete[] message1.data;
+        return DLP_ERROR_MALLOC_FAIL;
+    }
+
+    (void)memset_s(message1.data, DLP_BUFF_LEN, 0, DLP_BUFF_LEN);
+    (void)memset_s(message2.data, DLP_BUFF_LEN, 0, DLP_BUFF_LEN);
+    return DLP_SUCCESS;
+}
+
+static inline void ClearLocal(struct DlpBlob &message1, struct DlpBlob &message2, ifstream &in, ofstream &out)
+{
+    delete[] message1.data;
+    delete[] message2.data;
+    out.close();
+    in.close();
+}
+
 int32_t DlpFile::GenFile(const std::string &inputFileUri, const std::string &outputFileUri)
 {
     ifstream in(inputFileUri, ios::in | ios::binary);
     if (!in.is_open()) {
-        DLP_LOG_E("open file %s fail!", inputFileUri.c_str());
         return DLP_ERROR_FILE_FAIL;
     }
 
     ofstream out(outputFileUri, ios::ate | ios::out | ios::binary);
     if (!out.is_open()) {
-        DLP_LOG_E("open file %s fail!", outputFileUri.c_str());
         in.close();
         return DLP_ERROR_FILE_FAIL;
     }
 
     in.seekg(0, ios::end);
-    uint32_t file_len = in.tellg();
+    int32_t file_len = in.tellg();
     in.seekg(0, ios::beg);
 
     head_.txtSize = file_len;
     out.write((char *)&head_, sizeof(struct DlpHeader));
     out.write((char *)cert_.certBuff, head_.certSize);
 
-    struct DlpBlob message1 = {
-        .size = DLP_BUFF_LEN
-    };
-    struct DlpBlob message2 = {
-        .size = DLP_BUFF_LEN
-    };
-    message1.data = new (nothrow)uint8_t[DLP_BUFF_LEN];
-    if (message1.data == nullptr) {
+    struct DlpBlob message1, message2;
+    if (PrepareBuff(message1, message2) != DLP_SUCCESS) {
         in.close();
         out.close();
         return DLP_ERROR_MALLOC_FAIL;
     }
-    message2.data = new (nothrow)uint8_t[DLP_BUFF_LEN];
-    if (message2.data == nullptr) {
-        in.close();
-        out.close();
-        delete message1.data;
-        return DLP_ERROR_MALLOC_FAIL;
-    }
 
-    (void)memset_s(message1.data, DLP_BUFF_LEN, 0, DLP_BUFF_LEN);
-    (void)memset_s(message2.data, DLP_BUFF_LEN, 0, DLP_BUFF_LEN);
-
-    uint32_t offset = 0;
-    uint32_t ret = 0;
+    int32_t offset = 0;
+    int32_t ret = 0;
     while (offset < file_len) {
-        uint32_t read_len = ((file_len - offset) < DLP_BUFF_LEN) ? (file_len - offset) : DLP_BUFF_LEN;
+        int32_t read_len = ((file_len - offset) < DLP_BUFF_LEN) ? (file_len - offset) : DLP_BUFF_LEN;
         in.read((char *)message1.data, read_len);
 
         offset = in.tellg();
@@ -327,14 +325,10 @@ int32_t DlpFile::GenFile(const std::string &inputFileUri, const std::string &out
             break;
         }
 
-        dumpptr(message2.data, read_len);
         out.write((char *)message2.data, read_len);
     }
-    delete[] message1.data;
-    delete[] message2.data;
 
-    out.close();
-    in.close();
+    ClearLocal(message1, message2, in, out);
 
     if (ret != 0) {
         DLP_LOG_E("crypt operation fail, remove file");
@@ -349,50 +343,31 @@ int32_t DlpFile::RemoveDlpPermission(const std::string &inputFileUri, const std:
 {
     ifstream in(inputFileUri, ios::in | ios::binary);
     if (!in.is_open()) {
-        DLP_LOG_E("open file %s fail!", inputFileUri.c_str());
         return DLP_ERROR_FILE_FAIL;
     }
 
     ofstream out(outputFileUri, ios::ate | ios::out | ios::binary);
     if (!out.is_open()) {
-        DLP_LOG_E("open file %s fail!", outputFileUri.c_str());
         in.close();
         return DLP_ERROR_FILE_FAIL;
     }
 
     in.seekg(0, ios::end);
-    uint32_t file_len = in.tellg();
+    int32_t file_len = in.tellg();
     in.seekg(0, ios::beg);
 
-    struct DlpBlob message1 = {
-        .size = DLP_BUFF_LEN
-    };
-    struct DlpBlob message2 = {
-        .size = DLP_BUFF_LEN
-    };
-    message1.data = new (nothrow)uint8_t[DLP_BUFF_LEN];
-    if (message1.data == nullptr) {
+    struct DlpBlob message1, message2;
+    if (PrepareBuff(message1, message2) != DLP_SUCCESS) {
         in.close();
         out.close();
         return DLP_ERROR_MALLOC_FAIL;
     }
-    message2.data = new (nothrow)uint8_t[DLP_BUFF_LEN];
-    if (message2.data == nullptr) {
-        in.close();
-        out.close();
-        delete[] message1.data;
-        return DLP_ERROR_MALLOC_FAIL;
-    }
-
-    (void)memset_s(message1.data, DLP_BUFF_LEN, 0, DLP_BUFF_LEN);
-    (void)memset_s(message2.data, DLP_BUFF_LEN, 0, DLP_BUFF_LEN);
-
+ 
+    int32_t ret = 0;
     in.seekg(head_.txtOffset, ios::beg);
-
-    uint32_t offset = in.tellg();
-    uint32_t ret = 0;
+    int32_t offset = in.tellg();
     while (offset < file_len) {
-        uint32_t read_len = ((file_len - offset) < DLP_BUFF_LEN) ? (file_len - offset) : DLP_BUFF_LEN;
+        int32_t read_len = ((file_len - offset) < DLP_BUFF_LEN) ? (file_len - offset) : DLP_BUFF_LEN;
         in.read((char *)message1.data, read_len);
         offset = in.tellg();
         message1.size = read_len;
@@ -401,15 +376,10 @@ int32_t DlpFile::RemoveDlpPermission(const std::string &inputFileUri, const std:
         if (ret != 0) {
             break;
         }
-        dumpptr(message2.data, read_len);
         out.write((char *)message2.data, read_len);
     }
 
-    delete[] message1.data;
-    delete[] message2.data;
-
-    out.close();
-    in.close();
+    ClearLocal(message1, message2, in, out);
 
     if (ret != 0) {
         DLP_LOG_E("crypt operation fail, remove file");

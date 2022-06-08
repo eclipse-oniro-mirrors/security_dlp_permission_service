@@ -350,6 +350,13 @@ HWTEST_F(DlpUnitTest, Dlp006, TestSize.Level1)
     ret = a.Operation(out, dec, 2);
     ASSERT_EQ(0, ret);
 
+    cout << "dump /data/input.txt" << endl;
+    system("xxd /data/input.txt");
+    cout << "dump /data/enc.txt" << endl;
+    system("xxd /data/enc.txt");
+    cout << "dump /data/dec.txt" << endl;
+    system("xxd /data/dec.txt");
+
     remove(in.c_str());
     remove(out.c_str());
     remove(dec.c_str());
