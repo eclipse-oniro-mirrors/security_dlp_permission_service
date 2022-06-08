@@ -13,8 +13,10 @@
  * limitations under the License.
  */
 
-#include "generate_cert_fuzzer.h"
+#include "parsecert_fuzzer.h"
 #include "dlp_permission_log.h"
+#include "dlp_permission.h"
+#include "dlp_permission_serializer.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -26,7 +28,7 @@ using namespace OHOS::Security::DlpPermission;
 namespace OHOS {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionFuzzer"};
 
-void TestGenerateDlpCertificateCallback::onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert)
+void TestParseDlpCertificateCallback::onParseDlpCertificate(int32_t result, const PermissionPolicy& policy)
 {
     DLP_LOG_INFO(LABEL, "Callback");
 }
@@ -42,10 +44,10 @@ static std::string Uint8ArrayToString(const uint8_t* buff, size_t size)
 
 static void FuzzTest(uint8_t* buff, size_t size)
 {
-    auto seed = std::time(nullptr);
-    std::srand(seed);
     uint64_t curTime =
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    auto seed = std::time(nullptr);
+    std::srand(seed);
     PermissionPolicy encPolicy;
     encPolicy.ownerAccount = Uint8ArrayToString(buff, size);
     encPolicy.aeskey = buff;
@@ -60,12 +62,19 @@ static void FuzzTest(uint8_t* buff, size_t size)
         perminfo.permExpiryTime = curTime + rand() % 200;  // time range 0 to 200
         encPolicy.authUsers.emplace_back(perminfo);
     }
-    std::shared_ptr<TestGenerateDlpCertificateCallback> callback =
-        std::make_shared<TestGenerateDlpCertificateCallback>();
-    DlpPermissionKit::GenerateDlpCertificate(encPolicy, DOMAIN_ACCOUNT, callback);
+    nlohmann::json jsonObj;
+    int32_t res = DlpPermissionSerializer::GetInstance().SerializeDlpPermission(encPolicy, jsonObj);
+    if (res != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Serialize fail");
+        return;
+    }
+    std::string str = jsonObj.dump();
+    std::vector<uint8_t> cert(str.begin(), str.end());
+    std::shared_ptr<TestParseDlpCertificateCallback> callback = std::make_shared<TestParseDlpCertificateCallback>();
+    DlpPermissionKit::ParseDlpCertificate(cert, callback);
 }
 
-bool GenerateCertFuzzTest(const uint8_t* data, size_t size)
+bool ParseCertFuzzTest(const uint8_t* data, size_t size)
 {
     uint8_t* buff = nullptr;
     if (size > 0 && data != nullptr) {
@@ -96,6 +105,6 @@ bool GenerateCertFuzzTest(const uint8_t* data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
     /* Run your code on data */
-    OHOS::GenerateCertFuzzTest(data, size);
+    OHOS::ParseCertFuzzTest(data, size);
     return 0;
 }

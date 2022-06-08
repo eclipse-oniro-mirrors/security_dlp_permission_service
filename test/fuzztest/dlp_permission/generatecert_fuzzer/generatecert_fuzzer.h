@@ -13,20 +13,20 @@
  * limitations under the License.
  */
 
-#ifndef TEST_FUZZTEST_PARSE_CERT_FUZZER_H
-#define TEST_FUZZTEST_PARSE_CERT_FUZZER_H
+#ifndef TEST_FUZZTEST_GENERATE_CERT_FUZZER_H
+#define TEST_FUZZTEST_GENERATE_CERT_FUZZER_H
 
-#define FUZZ_PROJECT_NAME "parse_cert_fuzzer"
+#define FUZZ_PROJECT_NAME "generatecert_fuzzer"
 
 #include "dlp_permission_kit.h"
 namespace OHOS {
-class TestParseDlpCertificateCallback : public OHOS::Security::DlpPermission::ParseDlpCertificateCallback {
+class TestGenerateDlpCertificateCallback : public OHOS::Security::DlpPermission::GenerateDlpCertificateCallback {
 public:
-    TestParseDlpCertificateCallback() = default;
-    virtual ~TestParseDlpCertificateCallback() = default;
+    TestGenerateDlpCertificateCallback() = default;
+    virtual ~TestGenerateDlpCertificateCallback() = default;
 
-    void onParseDlpCertificate(int32_t result, const OHOS::Security::DlpPermission::PermissionPolicy& policy) override;
+    void onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert) override;
 };
 }  // namespace OHOS
 
-#endif  // TEST_FUZZTEST_PARSE_CERT_FUZZER_H
+#endif  // TEST_FUZZTEST_GENERATE_CERT_FUZZER_H

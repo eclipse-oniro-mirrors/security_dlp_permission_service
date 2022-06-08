@@ -16,7 +16,7 @@ group("fuzztest") {
   deps = []
 
   deps += [
-    "generate_cert_fuzzer:GenerateCertFuzzTest",
-    "parse_cert_fuzzer:ParseCertFuzzTest",
+    "generatecert_fuzzer:GenerateCertFuzzTest",
+    "parsecert_fuzzer:ParseCertFuzzTest",
   ]
 }

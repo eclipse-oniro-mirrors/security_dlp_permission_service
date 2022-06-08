@@ -111,7 +111,7 @@ static void DlpRestorePolicyCallback(uint64_t requestId, int errorCode, DLP_Rest
         }
         policyStr[outParams->dataLen] = '\0';
 
-        auto jsonObj = nlohmann::json::parse(policyStr, nullptr, false);
+        auto jsonObj = nlohmann::json::parse(policyStr, policyStr + outParams->dataLen + 1, nullptr, false);
         if (jsonObj.is_discarded() || (!jsonObj.is_object())) {
             DLP_LOG_ERROR(LABEL, "JsonObj is discarded");
             delete[] policyStr;
