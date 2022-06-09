@@ -68,8 +68,8 @@ static bool CheckPerm(uint32_t perm)
 
 static bool CheckTime(uint64_t time)
 {
-    uint64_t curTime =
-        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    uint64_t curTime = static_cast<uint64_t>(
+        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     if (time < curTime) {
         DLP_LOG_ERROR(LABEL, "Perm expiry time is invalid");
         return false;

@@ -120,8 +120,8 @@ static std::string GenerateRandStr(uint32_t len)
 static void GeneratePolicy(PermissionPolicy& encPolicy, uint32_t ownerAccountLen, uint32_t aeskeyLen, uint32_t ivLen,
     uint32_t userNum, uint32_t authAccountLen, uint32_t authPerm, int64_t deltaTime)
 {
-    uint64_t curTime =
-        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    uint64_t curTime = static_cast<uint64_t>(
+        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     auto seed = std::time(nullptr);
     std::srand(seed);
     encPolicy.ownerAccount = GenerateRandStr(ownerAccountLen);
@@ -139,8 +139,8 @@ static void GeneratePolicy(PermissionPolicy& encPolicy, uint32_t ownerAccountLen
 
 static void FuzzTest()
 {
-    uint64_t curTime =
-        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    uint64_t curTime = static_cast<uint64_t>(
+        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     auto seed = std::time(nullptr);
     std::srand(seed);
     PermissionPolicy encPolicy;

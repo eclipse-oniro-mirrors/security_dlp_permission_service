@@ -44,8 +44,8 @@ static std::string Uint8ArrayToString(const uint8_t* buff, size_t size)
 
 static void FuzzTest(uint8_t* buff, size_t size)
 {
-    uint64_t curTime =
-        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    uint64_t curTime = static_cast<uint64_t>(
+        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     auto seed = std::time(nullptr);
     std::srand(seed);
     PermissionPolicy encPolicy;

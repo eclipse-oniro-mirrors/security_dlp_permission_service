@@ -44,8 +44,8 @@ static void FuzzTest(uint8_t* buff, size_t size)
 {
     auto seed = std::time(nullptr);
     std::srand(seed);
-    uint64_t curTime =
-        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    uint64_t curTime = static_cast<uint64_t>(
+        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     PermissionPolicy encPolicy;
     encPolicy.ownerAccount = Uint8ArrayToString(buff, size);
     encPolicy.aeskey = buff;
