@@ -17,13 +17,15 @@
 #include "dlp_utils.h"
 #include <iostream>
 #include <fstream>
-#include <vector>
-#include <string>
-#include <securec.h>
-#include <unistd.h>
 #include <new>
+#include <securec.h>
+#include <string>
+#include <vector>
+#include <unistd.h>
 
-namespace DLP {
+namespace OHOS {
+namespace Security {
+namespace DlpFormat {
 using namespace std;
 #define DLP_BUFF_LEN (4096)
 
@@ -283,16 +285,27 @@ static inline void ClearLocal(struct DlpBlob &message1, struct DlpBlob &message2
     in.close();
 }
 
-int32_t DlpFile::GenFile(const std::string &inputFileUri, const std::string &outputFileUri)
+static int32_t OpenFile(const std::string &inputFileUri, const std::string &outputFileUri, ifstream &in, ofstream &out)
 {
-    ifstream in(inputFileUri, ios::in | ios::binary);
+    in.open(inputFileUri, ios::in | ios::binary);
     if (!in.is_open()) {
         return DLP_ERROR_FILE_FAIL;
     }
 
-    ofstream out(outputFileUri, ios::ate | ios::out | ios::binary);
+    out.open(outputFileUri, ios::ate | ios::out | ios::binary);
     if (!out.is_open()) {
         in.close();
+        return DLP_ERROR_FILE_FAIL;
+    }
+
+    return DLP_SUCCESS;
+}
+
+int32_t DlpFile::GenFile(const std::string &inputFileUri, const std::string &outputFileUri)
+{
+    ifstream in;
+    ofstream out;
+    if (OpenFile(inputFileUri, outputFileUri, in, out) != DLP_SUCCESS) {
         return DLP_ERROR_FILE_FAIL;
     }
 
@@ -304,8 +317,8 @@ int32_t DlpFile::GenFile(const std::string &inputFileUri, const std::string &out
     out.write((char *)&head_, sizeof(struct DlpHeader));
     out.write((char *)cert_.certBuff, head_.certSize);
 
-    struct DlpBlob message1, message2;
-    if (PrepareBuff(message1, message2) != DLP_SUCCESS) {
+    struct DlpBlob message, cipherText;
+    if (PrepareBuff(message, cipherText) != DLP_SUCCESS) {
         in.close();
         out.close();
         return DLP_ERROR_MALLOC_FAIL;
@@ -315,20 +328,20 @@ int32_t DlpFile::GenFile(const std::string &inputFileUri, const std::string &out
     int32_t ret = 0;
     while (offset < file_len) {
         int32_t read_len = ((file_len - offset) < DLP_BUFF_LEN) ? (file_len - offset) : DLP_BUFF_LEN;
-        in.read((char *)message1.data, read_len);
+        in.read((char *)message.data, read_len);
 
         offset = in.tellg();
-        message1.size = read_len;
-        message2.size = read_len;
-        ret = DlpOpensslAesEncrypt(&cipher_.encKey, &cipher_.usageSpec, &message1, &message2);
+        message.size = read_len;
+        cipherText.size = read_len;
+        ret = DlpOpensslAesEncrypt(&cipher_.encKey, &cipher_.usageSpec, &message, &cipherText);
         if (ret != 0) {
             break;
         }
 
-        out.write((char *)message2.data, read_len);
+        out.write((char *)cipherText.data, read_len);
     }
 
-    ClearLocal(message1, message2, in, out);
+    ClearLocal(message, cipherText, in, out);
 
     if (ret != 0) {
         DLP_LOG_E("crypt operation fail, remove file");
@@ -341,14 +354,9 @@ int32_t DlpFile::GenFile(const std::string &inputFileUri, const std::string &out
 
 int32_t DlpFile::RemoveDlpPermission(const std::string &inputFileUri, const std::string &outputFileUri)
 {
-    ifstream in(inputFileUri, ios::in | ios::binary);
-    if (!in.is_open()) {
-        return DLP_ERROR_FILE_FAIL;
-    }
-
-    ofstream out(outputFileUri, ios::ate | ios::out | ios::binary);
-    if (!out.is_open()) {
-        in.close();
+    ifstream in;
+    ofstream out;
+    if (OpenFile(inputFileUri, outputFileUri, in, out) != DLP_SUCCESS) {
         return DLP_ERROR_FILE_FAIL;
     }
 
@@ -356,8 +364,8 @@ int32_t DlpFile::RemoveDlpPermission(const std::string &inputFileUri, const std:
     int32_t file_len = in.tellg();
     in.seekg(0, ios::beg);
 
-    struct DlpBlob message1, message2;
-    if (PrepareBuff(message1, message2) != DLP_SUCCESS) {
+    struct DlpBlob message, plainText;
+    if (PrepareBuff(message, plainText) != DLP_SUCCESS) {
         in.close();
         out.close();
         return DLP_ERROR_MALLOC_FAIL;
@@ -368,18 +376,18 @@ int32_t DlpFile::RemoveDlpPermission(const std::string &inputFileUri, const std:
     int32_t offset = in.tellg();
     while (offset < file_len) {
         int32_t read_len = ((file_len - offset) < DLP_BUFF_LEN) ? (file_len - offset) : DLP_BUFF_LEN;
-        in.read((char *)message1.data, read_len);
+        in.read((char *)message.data, read_len);
         offset = in.tellg();
-        message1.size = read_len;
-        message2.size = read_len;
-        ret = DlpOpensslAesDecrypt(&cipher_.encKey, &cipher_.usageSpec, &message1, &message2);
+        message.size = read_len;
+        plainText.size = read_len;
+        ret = DlpOpensslAesDecrypt(&cipher_.encKey, &cipher_.usageSpec, &message, &plainText);
         if (ret != 0) {
             break;
         }
-        out.write((char *)message2.data, read_len);
+        out.write((char *)plainText.data, read_len);
     }
 
-    ClearLocal(message1, message2, in, out);
+    ClearLocal(message, plainText, in, out);
 
     if (ret != 0) {
         DLP_LOG_E("crypt operation fail, remove file");
@@ -407,6 +415,7 @@ int32_t DlpFile::Operation(const std::string &inputFileUri, const std::string &o
     }
     return DLP_SUCCESS;
 }
-}
+}  // namespace DlpFormat
+}  // namespace Security
+}  // namespace OHOS
 
-// end name space DLP;

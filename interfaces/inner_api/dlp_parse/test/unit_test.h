@@ -33,7 +33,7 @@ public:
 
     void CreateDataFile() const;
 };
-} // namespace Dlp
+} // namespace DlpUnitTest
 } // namespace Security
 } // namespace OHOS
 #endif // DLP_FILE_PARSE_UNIT_TEST_H

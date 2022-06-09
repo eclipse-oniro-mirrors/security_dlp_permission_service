@@ -16,16 +16,16 @@
 #include "dlp_fuse.h"
 #include "dlp_utils.h"
 #include "dlp_format.h"
+#include <cerrno>
+#include <cstdio>
 #include <iostream>
 #include <fstream>
-#include <vector>
-#include <string>
-#include <unordered_map>
-#include <cstdio>
-#include <cerrno>
-#include <securec.h>
-#include <unistd.h>
 #include <new>
+#include <securec.h>
+#include <string>
+#include <vector>
+#include <unistd.h>
+#include <unordered_map>
 
 #ifdef __cplusplus
 extern "C" {
@@ -107,22 +107,21 @@ int32_t DlpFileRead(int32_t fd, uint32_t offset, void *buf, uint32_t size)
 
 int32_t DlpFileWrite(int32_t fd, uint32_t offset, void *buf, uint32_t size)
 {
+    if (buf == nullptr || size == 0) {
+        return DLP_ERROR_INVALID_ARGUMENT;
+    }
+
     struct DlpBlob *key;
     struct DlpUsageSpec usageSpec;
     struct DlpCipherParam tagIv;
     uint32_t dlpOffset;
-    int32_t ret;
-
-    if (buf == nullptr || size == 0) {
-        return DLP_ERROR_INVALID_ARGUMENT;
-    }
 
     OHOS::Utils::UniqueReadGuard<OHOS::Utils::RWLock> mapGuard(g_DlpMapLock);
     if (GetFdConfig(fd, &key, usageSpec, tagIv, dlpOffset) != DLP_SUCCESS) {
         return DLP_ERROR_INVALID_FD;
     }
 
-    ret = lseek(fd, dlpOffset + offset, SEEK_SET);
+    int32_t ret = lseek(fd, dlpOffset + offset, SEEK_SET);
     if (ret < 0) {
         return DLP_ERROR_LSEEK_FAIL;
     }
@@ -190,7 +189,7 @@ static struct DlpFuseInfo *PrepareFuseInfo(struct DlpBlob *key, struct DlpBlob *
 // use DlpUsageSpec param later
 int32_t DlpFileAdd(int32_t fd, struct DlpBlob *key, struct DlpBlob *iv)
 {
-    static DLP::DlpFile var;
+    static OHOS::Security::DlpFormat::DlpFile var;
     int32_t ret = 0;
     uint32_t offset = 0;
     ret = var.FileParse(fd, offset);

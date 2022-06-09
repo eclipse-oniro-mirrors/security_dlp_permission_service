@@ -20,17 +20,16 @@
 #include "dlp_utils.h"
 #include <cstdio>
 #include <cstring>
+#include <fcntl.h>
 #include <iostream>
 #include <fstream>
 #include <thread>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-
 
 using namespace testing::ext;
 using namespace OHOS::Security::DlpUnitTest;
-using namespace DLP;
+using namespace OHOS::Security::DlpFormat;
 using namespace std;
 
 uint8_t g_key[32] = { 0xdc, 0x7c, 0x8d, 0xe, 0xeb, 0x41, 0x4b, 0xb0, 0x8e, 0x24, 0x8, 0x32, 0xc7, 0x88, 0x96, 0xb6,
@@ -327,15 +326,12 @@ HWTEST_F(DlpUnitTest, Dlp006, TestSize.Level1)
         .padding = DLP_PADDING_NONE,
         .algParam = &tagIv
     };
-
     a.SetCipher(key, usage);
     struct DlpBlob cert;
-    cert.data = new (nothrow)uint8_t[10];
-    (void)memset(cert.data, 'a', 10);
+    uint8_t tmp[11] = "aaaaaaaaaa";
+    cert.data = tmp;
     cert.size = 10;
     a.SetEncryptCert(cert);
-    delete[] cert.data;
-
     string ins("abcdefhg");
     string in("/data/input.txt");
     fstream file1(in, ios::out | ios::binary);
@@ -344,7 +340,6 @@ HWTEST_F(DlpUnitTest, Dlp006, TestSize.Level1)
     string out("/data/enc.txt");
     string dec("/data/dec.txt");
     int32_t ret;
-
     ret = a.Operation(in, out, 1);
     ASSERT_EQ(0, ret);
     ret = a.Operation(out, dec, 2);
@@ -422,11 +417,10 @@ HWTEST_F(DlpUnitTest, Dlp008, TestSize.Level1)
 
     a.SetCipher(key, usage);
     struct DlpBlob cert;
-    cert.data = new (nothrow)uint8_t[10];
-    (void)memset(cert.data, 'a', 10);
+    uint8_t tmp[11] = "aaaaaaaaaa";
+    cert.data = tmp;
     cert.size = 10;
     a.SetEncryptCert(cert);
-    delete[] cert.data;
 
     string ins("abcdefhg");
     string in("/data/input.txt");
@@ -476,7 +470,7 @@ HWTEST_F(DlpUnitTest, Dlp008, TestSize.Level1)
  * @tc.type: FUNC
  * @tc.require:AR000GJSDQ
  */
-#define ENC_BUF_LEN (10*1024*1024)
+#define ENC_BUF_LEN (10 * 1024 * 1024)
 HWTEST_F(DlpUnitTest, Dlp009, TestSize.Level1)
 {
     struct DlpBlob key = { 32, nullptr };
@@ -494,8 +488,6 @@ HWTEST_F(DlpUnitTest, Dlp009, TestSize.Level1)
     uint8_t *input = (uint8_t *)malloc(ENC_BUF_LEN);
     uint8_t *enc = (uint8_t *)malloc(ENC_BUF_LEN);
     uint8_t *dec = (uint8_t *)malloc(ENC_BUF_LEN);
-
-    memset(input, 'a', 10*1024*1024);
 
     struct DlpBlob mIn = {
         .data = nullptr,
@@ -520,15 +512,15 @@ HWTEST_F(DlpUnitTest, Dlp009, TestSize.Level1)
     ret = DlpOpensslAesEncrypt(&key, &usage, &mIn, &mEnc);
     gettimeofday(&end, nullptr);
     timersub(&end, &start, &diff);
-    int runtime_us = diff.tv_sec * USEC_PER_SEC + diff.tv_usec;
-    std::cout << "10M date encrypt time use: " << runtime_us << "(us) " << std::endl;
+    int runtimeUs = diff.tv_sec * USEC_PER_SEC + diff.tv_usec;
+    std::cout << "10M date encrypt time use: " << runtimeUs << "(us) " << std::endl;
 
     gettimeofday(&start, nullptr);
     ret = DlpOpensslAesDecrypt(&key, &usage, &mEnc, &mDec);
     gettimeofday(&end, nullptr);
     timersub(&end, &start, &diff);
-    runtime_us = diff.tv_sec * USEC_PER_SEC + diff.tv_usec;
-    std::cout << "10M date decrypt time use: " << runtime_us << "(us) " << std::endl;
+    runtimeUs = diff.tv_sec * USEC_PER_SEC + diff.tv_usec;
+    std::cout << "10M date decrypt time use: " << runtimeUs << "(us) " << std::endl;
     ASSERT_EQ(0, ret);
     free(input);
     free(enc);

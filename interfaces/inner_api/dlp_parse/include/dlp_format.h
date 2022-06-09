@@ -17,14 +17,16 @@
 #define DLP_FILE_FORMAT_H
 
 #include <stdint.h>
+#include "dlp_crypt.h"
 #include "nocopyable.h"
 #include "rwlock.h"
-#include "dlp_crypt.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-namespace DLP {
+namespace OHOS {
+namespace Security {
+namespace DlpFormat {
 enum DlpOperation {
     DLP_ENCRYPTION = 1,
     DLP_DECRYPTION = 2,
@@ -67,8 +69,9 @@ private:
     struct DlpEncryptCert cert_;
     struct DlpCipher cipher_;
 };
-}
-
+}  // namespace DlpFormat
+}  // namespace Security
+}  // namespace OHOS
 #ifdef __cplusplus
 }
 #endif

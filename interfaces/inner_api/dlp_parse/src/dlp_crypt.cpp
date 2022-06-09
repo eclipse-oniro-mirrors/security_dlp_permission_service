@@ -14,13 +14,13 @@
  */
 
 #include "dlp_crypt.h"
+#include "dlp_utils.h"
+#include <cstdio>
+#include <cstdlib>
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
-#include <cstdio>
-#include <cstdlib>
 #include <securec.h>
-#include "dlp_utils.h"
 
 #ifdef __cplusplus
 extern "C" {
