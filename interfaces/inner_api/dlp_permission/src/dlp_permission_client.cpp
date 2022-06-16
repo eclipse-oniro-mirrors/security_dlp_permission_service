@@ -94,6 +94,22 @@ int32_t DlpPermissionClient::ParseDlpCertificate(
     return proxy->ParseDlpCertificate(cert, asyncStub);
 }
 
+int32_t DlpPermissionClient::InstallDlpSandbox(
+    const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    if (bundleName.empty() || permType >= PERM_MAX || permType < READ_ONLY) {
+        return DLP_VALUE_INVALID;
+    }
+    auto proxy = GetProxy();
+    if (proxy == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Proxy is null");
+        return DLP_VALUE_INVALID;
+    }
+
+    return proxy->InstallDlpSandbox(bundleName, permType, userId, appIndex);
+}
+
 void DlpPermissionClient::LoadDlpPermission()
 {
     {

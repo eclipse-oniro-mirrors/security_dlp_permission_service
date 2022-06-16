@@ -47,6 +47,13 @@ int32_t DlpPermissionKit::ParseDlpCertificate(
     }
     return DlpPermissionClient::GetInstance().ParseDlpCertificate(cert, callback);
 }
+
+int32_t DlpPermissionKit::InstallDlpSandbox(
+    const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    return DlpPermissionClient::GetInstance().InstallDlpSandbox(bundleName, permType, userId, appIndex);
+}
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS

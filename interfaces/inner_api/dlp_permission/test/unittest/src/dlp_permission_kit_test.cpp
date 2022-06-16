@@ -50,6 +50,9 @@ const uint32_t INVALID_AUTH_PERM_LOWER = 0;
 const int64_t INVALID_DELTA_EXPIRY_TIME = -100;
 const uint32_t INVALID_ACCOUNT_TYPE_UPPER = 4;
 const uint32_t INVALID_ACCOUNT_TYPE_LOWER = 0;
+
+constexpr char BUNDLE_NAME[] = "com.example.Browser";
+const int32_t DEFAULT_USERID = 100;
 }  // namespace
 
 void TestGenerateDlpCertificateCallback::onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert)
@@ -255,4 +258,21 @@ HWTEST_F(DlpPermissionKitTest, ParseDlpCertificate001, TestSize.Level1)
     ASSERT_EQ(DLP_VALUE_INVALID, DlpPermissionKit::ParseDlpCertificate(cert, callback));
     cert = {1, 2, 3};
     ASSERT_EQ(DLP_VALUE_INVALID, DlpPermissionKit::ParseDlpCertificate(cert, nullptr));
+}
+
+/**
+ * @tc.name: InstallDlpSandbox001
+ * @tc.desc: InstallDlpSandbox test.
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIG0
+ */
+HWTEST_F(DlpPermissionKitTest, InstallDlpSandbox001, TestSize.Level1)
+{
+    std::vector<uint8_t> cert;
+    int32_t appIndex = 0;
+    AuthPermType permType = READ_ONLY;
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::InstallDlpSandbox(BUNDLE_NAME, permType, DEFAULT_USERID, appIndex));
+    ASSERT_TRUE(appIndex != 0);
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::InstallDlpSandbox(BUNDLE_NAME, permType, DEFAULT_USERID, appIndex));
+    ASSERT_TRUE(appIndex != 0);
 }

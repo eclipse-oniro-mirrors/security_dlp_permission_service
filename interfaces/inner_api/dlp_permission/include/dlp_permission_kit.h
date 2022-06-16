@@ -31,6 +31,8 @@ public:
         std::shared_ptr<GenerateDlpCertificateCallback> callback);
     static int32_t ParseDlpCertificate(
         const std::vector<uint8_t>& cert, std::shared_ptr<ParseDlpCertificateCallback> callback);
+    static int32_t InstallDlpSandbox(
+        const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex);
 };
 }  // namespace DlpPermission
 }  // namespace Security

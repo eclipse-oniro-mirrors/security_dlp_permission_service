@@ -30,7 +30,7 @@ void DlpPermissionAsyncProxy::onGenerateDlpCertificate(int32_t result, const std
 {
     MessageParcel data;
     if (!data.WriteInterfaceToken(DlpPermissionAsyncProxy::GetDescriptor())) {
-        DLP_LOG_ERROR(LABEL, "Write descriptor failed");
+        DLP_LOG_ERROR(LABEL, "Write descriptor fail");
         return;
     }
     if (!data.WriteInt32(result)) {
@@ -46,7 +46,7 @@ void DlpPermissionAsyncProxy::onGenerateDlpCertificate(int32_t result, const std
     MessageOption option(MessageOption::TF_SYNC);
     sptr<IRemoteObject> remote = Remote();
     if (remote == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Remote service null.");
+        DLP_LOG_ERROR(LABEL, "Remote service is null.");
         return;
     }
     int32_t requestResult = remote->SendRequest(
@@ -61,7 +61,7 @@ void DlpPermissionAsyncProxy::onParseDlpCertificate(int32_t result, const Permis
 {
     MessageParcel data;
     if (!data.WriteInterfaceToken(DlpPermissionAsyncProxy::GetDescriptor())) {
-        DLP_LOG_ERROR(LABEL, "Write descriptor failed");
+        DLP_LOG_ERROR(LABEL, "Write descriptor fail");
         return;
     }
 
@@ -82,7 +82,7 @@ void DlpPermissionAsyncProxy::onParseDlpCertificate(int32_t result, const Permis
     MessageOption option(MessageOption::TF_SYNC);
     sptr<IRemoteObject> remote = Remote();
     if (remote == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Remote service null.");
+        DLP_LOG_ERROR(LABEL, "Remote service is null.");
         return;
     }
     int32_t requestResult = remote->SendRequest(

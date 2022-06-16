@@ -62,8 +62,14 @@ int32_t DlpPermissionProxy::GenerateDlpCertificate(
         static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GENERATE_DLP_CERTIFICATE), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
+        return DLP_OPERATE_PARCEL_FAIL;
     }
-    return requestResult;
+    int32_t res;
+    if (!reply.ReadInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        return DLP_OPERATE_PARCEL_FAIL;
+    }
+    return res;
 }
 
 int32_t DlpPermissionProxy::ParseDlpCertificate(
@@ -91,8 +97,59 @@ int32_t DlpPermissionProxy::ParseDlpCertificate(
         static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::PARSE_DLP_CERTIFICATE), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
+        return DLP_OPERATE_PARCEL_FAIL;
     }
-    return requestResult;
+    int32_t res;
+    if (!reply.ReadInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        return DLP_OPERATE_PARCEL_FAIL;
+    }
+    return res;
+}
+
+int32_t DlpPermissionProxy::InstallDlpSandbox(
+    const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex)
+{
+    MessageParcel data;
+    if (!data.WriteString(bundleName)) {
+        DLP_LOG_ERROR(LABEL, "Write string fail");
+        return DLP_OPERATE_PARCEL_FAIL;
+    }
+
+    if (!data.WriteUint32(permType)) {
+        DLP_LOG_ERROR(LABEL, "Write uint32 fail");
+        return DLP_OPERATE_PARCEL_FAIL;
+    }
+
+    if (!data.WriteInt32(userId)) {
+        DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        return DLP_OPERATE_PARCEL_FAIL;
+    }
+
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
+    sptr<IRemoteObject> remote = Remote();
+    if (remote == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Remote service is null");
+        return DLP_VALUE_INVALID;
+    }
+    int32_t requestResult = remote->SendRequest(
+        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::PARSE_DLP_CERTIFICATE), data, reply, option);
+    if (requestResult != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
+        return DLP_OPERATE_PARCEL_FAIL;
+    }
+    int32_t res;
+    if (!reply.ReadInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        return DLP_OPERATE_PARCEL_FAIL;
+    }
+
+    if (!reply.ReadInt32(appIndex)) {
+        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        return DLP_OPERATE_PARCEL_FAIL;
+    }
+    return res;
 }
 }  // namespace DlpPermission
 }  // namespace Security

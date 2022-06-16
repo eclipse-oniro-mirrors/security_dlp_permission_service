@@ -30,14 +30,18 @@ class IDlpPermissionService : public IRemoteBroker {
 public:
     DECLARE_INTERFACE_DESCRIPTOR(u"ohos.security.IDlpPermissionService");
 
-    virtual int GenerateDlpCertificate(
+    virtual int32_t GenerateDlpCertificate(
         const sptr<DlpPolicyParcel>& policyParcel, AccountType accountType, sptr<IDlpPermissionCallback>& callback) = 0;
 
-    virtual int ParseDlpCertificate(const std::vector<uint8_t>& cert, sptr<IDlpPermissionCallback>& callback) = 0;
+    virtual int32_t ParseDlpCertificate(const std::vector<uint8_t>& cert, sptr<IDlpPermissionCallback>& callback) = 0;
+
+    virtual int32_t InstallDlpSandbox(
+        const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex) = 0;
 
     enum class InterfaceCode {
         GENERATE_DLP_CERTIFICATE = 0xff01,
         PARSE_DLP_CERTIFICATE = 0xff02,
+        INSTALL_DLP_SANDBOX = 0xff03,
     };
 };
 }  // namespace DlpPermission

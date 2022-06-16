@@ -14,6 +14,7 @@
  */
 
 #include "dlp_permission_service.h"
+#include "bundle_mgr_client.h"
 #include "dlp_credential_service.h"
 #include "dlp_credential_adapt.h"
 #include "dlp_permission.h"
@@ -99,6 +100,19 @@ int32_t DlpPermissionService::ParseDlpCertificate(
     DlpCredential::GetInstance().ParseDlpCertificate(cert, callback);
 
     return DLP_OK;
+}
+
+int32_t DlpPermissionService::InstallDlpSandbox(
+    const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    if (bundleName.empty() || permType >= PERM_MAX || permType < READ_ONLY) {
+        DLP_LOG_ERROR(LABEL, "param is invalid");
+        return DLP_VALUE_INVALID;
+    }
+
+    AppExecFwk::BundleMgrClient bundleMgrClient;
+    return bundleMgrClient.InstallSandboxApp(bundleName, permType, userId, appIndex);
 }
 }  // namespace DlpPermission
 }  // namespace Security

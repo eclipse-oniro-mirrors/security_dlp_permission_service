@@ -34,6 +34,7 @@ public:
 private:
     int32_t GenerateDlpCertificateInner(MessageParcel& data, MessageParcel& reply);
     int32_t ParseDlpCertificateInner(MessageParcel& data, MessageParcel& reply);
+    int32_t InstallDlpSandboxInner(MessageParcel& data, MessageParcel& reply);
 
     using RequestFuncType = int32_t (DlpPermissionStub::*)(MessageParcel& data, MessageParcel& reply);
     std::map<uint32_t, RequestFuncType> requestFuncMap_;

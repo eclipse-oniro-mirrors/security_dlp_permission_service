@@ -40,6 +40,8 @@ public:
     int32_t GenerateDlpCertificate(const sptr<DlpPolicyParcel>& policyParcel, AccountType accountType,
         sptr<IDlpPermissionCallback>& callback) override;
     int32_t ParseDlpCertificate(const std::vector<uint8_t>& cert, sptr<IDlpPermissionCallback>& callback) override;
+    int32_t InstallDlpSandbox(
+        const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex) override;
 
 private:
     bool Initialize() const;
