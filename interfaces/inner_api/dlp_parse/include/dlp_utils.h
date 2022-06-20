@@ -69,6 +69,9 @@ enum DlpErrorCode {
     DLP_ERROR_INVALID_MODE = -16,
     DLP_ERROR_FD_EXIST = -17,
     DLP_ERROR_MEMCPY_FAIL = -18,
+    DLP_ERROR_INVALID_HEAD = -19,
+    DLP_ERROR_INVALID_CERT = -20,
+    DLP_ERROR_INVALID_CIPHER = -21,
 };
 
 #ifdef __cplusplus

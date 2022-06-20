@@ -32,14 +32,15 @@ extern "C" {
 #endif
 
 using namespace std;
+using namespace  OHOS::Security::DlpFormat;
 struct DlpFuseInfo {
     uint32_t txtOffset;
     struct DlpBlob key;
     struct DlpBlob iv;
 };
 
-std::unordered_map<int32_t, struct DlpFuseInfo *> g_DlpFdMap;
-OHOS::Utils::RWLock g_DlpMapLock;
+static std::unordered_map<int32_t, struct DlpFuseInfo *> g_DlpFdMap;
+static OHOS::Utils::RWLock g_DlpMapLock;
 
 static uint32_t GetFdConfig(int32_t fd, struct DlpBlob **key, struct DlpUsageSpec &usageSpec,
     struct DlpCipherParam &tagIv, uint32_t &dlpOffset)
@@ -53,7 +54,6 @@ static uint32_t GetFdConfig(int32_t fd, struct DlpBlob **key, struct DlpUsageSpe
         tagIv.iv.size = iv->size;
         tagIv.iv.data = iv->data;
         usageSpec.mode = DLP_MODE_CTR;
-        usageSpec.padding = DLP_PADDING_NONE;
         usageSpec.algParam = &tagIv;
         return DLP_SUCCESS;
     } else {
@@ -69,7 +69,7 @@ int32_t DlpFileRead(int32_t fd, uint32_t offset, void *buf, uint32_t size)
     uint32_t dlpOffset;
     int32_t ret;
 
-    if (buf == nullptr || size == 0) {
+    if (buf == nullptr || size == 0 || size > DLP_FUSE_MAX_BUFFLEN) {
         return DLP_ERROR_INVALID_ARGUMENT;
     }
 
@@ -107,7 +107,7 @@ int32_t DlpFileRead(int32_t fd, uint32_t offset, void *buf, uint32_t size)
 
 int32_t DlpFileWrite(int32_t fd, uint32_t offset, void *buf, uint32_t size)
 {
-    if (buf == nullptr || size == 0) {
+    if (buf == nullptr || size == 0 || size > DLP_FUSE_MAX_BUFFLEN) {
         return DLP_ERROR_INVALID_ARGUMENT;
     }
 
@@ -186,16 +186,44 @@ static struct DlpFuseInfo *PrepareFuseInfo(struct DlpBlob *key, struct DlpBlob *
     return buf;
 }
 
+static int32_t ValidateCipher(const struct DlpBlob *key, const struct DlpBlob *iv)
+{
+    if (key == nullptr || iv == nullptr) {
+        return DLP_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (key->data == nullptr || iv->data == nullptr) {
+        return DLP_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (iv->size != VALID_IV_SIZE) {
+        return DLP_ERROR_INVALID_ARGUMENT;
+    }
+
+    if (key->size != DLP_KEY_LEN_128 && key->size != DLP_KEY_LEN_192 && key->size != DLP_KEY_LEN_256) {
+        return DLP_ERROR_INVALID_ARGUMENT;
+    }
+
+    return DLP_SUCCESS;
+}
+
 // use DlpUsageSpec param later
 int32_t DlpFileAdd(int32_t fd, struct DlpBlob *key, struct DlpBlob *iv)
 {
+    if (ValidateCipher(key, iv) != DLP_SUCCESS) {
+        return DLP_ERROR_INVALID_ARGUMENT;
+    }
+
     static OHOS::Security::DlpFormat::DlpFile var;
     int32_t ret = 0;
     uint32_t offset = 0;
-    ret = var.FileParse(fd, offset);
+
+    ret = var.FileParse(fd);
     if (ret != 0) {
         return DLP_ERROR_CRYPT_FILE_PARSE_FAIL;
     }
+
+    offset = var.GetTxtOffset();
 
     struct DlpFuseInfo *buf = PrepareFuseInfo(key, iv, offset);
     if (buf == nullptr) {
@@ -232,8 +260,8 @@ int32_t DlpFileDel(int32_t fd)
 
         (void)memset_s(iter->second->iv.data, iter->second->iv.size, 0, iter->second->iv.size);
         delete[] iter->second->iv.data;
-        g_DlpFdMap.erase(iter);
         delete iter->second;
+        g_DlpFdMap.erase(iter);
         return DLP_SUCCESS;
     }
 }

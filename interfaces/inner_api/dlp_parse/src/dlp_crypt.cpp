@@ -63,15 +63,11 @@ static int32_t AesGenKeyCheckParam(const uint32_t keySize)
 
 int32_t DlpOpensslGenerateRandomKey(const uint32_t keySize, struct DlpBlob *key)
 {
-    if (AesGenKeyCheckParam(keySize) != DLP_SUCCESS) {
+    if (AesGenKeyCheckParam(keySize) != DLP_SUCCESS || key == nullptr) {
         DLP_LOG_E("aes generate key invalid params!");
         return DLP_ERROR_INVALID_ARGUMENT;
     }
     uint32_t keySizeByte = keySize / BIT_NUM_OF_UINT8;
-    if (key->size < keySizeByte) {
-        DLP_LOG_E("buff too short!");
-        return DLP_ERROR_INVALID_ARGUMENT;
-    }
     int32_t ret = DLP_FAILURE;
 
     uint8_t *tmpKey = (uint8_t *)DlpMalloc(keySizeByte);
@@ -174,11 +170,7 @@ static int32_t OpensslAesCipherInit(const struct DlpBlob *key, const struct DlpU
         return DLP_ERROR_CRYPTO_ENGINE_ERROR;
     }
 
-    if (usageSpec->padding == DLP_PADDING_PKCS7) {
-        ret = EVP_CIPHER_CTX_set_padding(*ctx, OPENSSL_CTX_PADDING_ENABLE);
-    } else if (usageSpec->padding == DLP_PADDING_NONE) {
-        ret = EVP_CIPHER_CTX_set_padding(*ctx, OPENSSL_CTX_PADDING_NONE);
-    }
+    ret = EVP_CIPHER_CTX_set_padding(*ctx, OPENSSL_CTX_PADDING_ENABLE);
     if (ret != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
         EVP_CIPHER_CTX_free(*ctx);
@@ -226,14 +218,7 @@ static int32_t OpensslAesCipherCryptInitParams(const struct DlpBlob *key, EVP_CI
         DlpLogOpensslError();
         return DLP_ERROR_CRYPTO_ENGINE_ERROR;
     }
-
-    if (usageSpec->padding == DLP_PADDING_PKCS7) {
-        // set chipher padding enable
-        ret = EVP_CIPHER_CTX_set_padding(ctx, OPENSSL_CTX_PADDING_ENABLE);
-    } else if (usageSpec->padding == DLP_PADDING_NONE) {
-        // set chipher padding none
-        ret = EVP_CIPHER_CTX_set_padding(ctx, OPENSSL_CTX_PADDING_NONE);
-    }
+    ret = EVP_CIPHER_CTX_set_padding(ctx, OPENSSL_CTX_PADDING_ENABLE);
     if (ret != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
         return DLP_ERROR_CRYPTO_ENGINE_ERROR;
@@ -284,7 +269,6 @@ static int32_t OpensslAesCipherCryptInit(const struct DlpBlob *key, const struct
     }
 
     outCtx->mode = usageSpec->mode;
-    outCtx->padding = usageSpec->padding;
     outCtx->append = static_cast<void *>(ctx);
 
     *cryptoCtx = static_cast<void *>(outCtx);
@@ -736,9 +720,7 @@ static int32_t CheckDigestAlg(uint32_t alg)
 {
     switch (alg) {
         case DLP_DIGEST_SHA256:
-            break;
         case DLP_DIGEST_SHA384:
-            break;
         case DLP_DIGEST_SHA512:
             break;
         default:
@@ -763,6 +745,17 @@ const EVP_MD *GetOpensslAlg(uint32_t alg)
     }
 }
 
+static uint32_t GetHashLen(uint32_t alg)
+{
+    if (alg == DLP_DIGEST_SHA256) {
+        return SHA256_LEN;
+    } else if (alg == DLP_DIGEST_SHA384) {
+        return SHA384_LEN;
+    } else {
+        return SHA512_LEN;
+    }
+}
+
 static int32_t HashCheckParam(uint32_t alg, const struct DlpBlob *msg, struct DlpBlob *hash)
 {
     if (CheckDigestAlg(alg) != DLP_SUCCESS) {
@@ -772,6 +765,12 @@ static int32_t HashCheckParam(uint32_t alg, const struct DlpBlob *msg, struct Dl
 
     if (DlpOpensslCheckBlob(hash) != DLP_SUCCESS) {
         DLP_LOG_E("Invalid param hash!");
+        return DLP_ERROR_INVALID_ARGUMENT;
+    }
+
+    uint32_t hashLen = GetHashLen(alg);
+    if (hash->size < hashLen) {
+        DLP_LOG_E("hash buff too short!");
         return DLP_ERROR_INVALID_ARGUMENT;
     }
 

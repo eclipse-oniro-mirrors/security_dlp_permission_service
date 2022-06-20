@@ -71,7 +71,6 @@ struct DlpCipherParam {
 
 struct DlpUsageSpec {
     uint32_t mode;
-    uint32_t padding;
     struct DlpCipherParam *algParam;
 };
 

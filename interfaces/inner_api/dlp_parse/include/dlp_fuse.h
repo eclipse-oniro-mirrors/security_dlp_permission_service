@@ -22,6 +22,7 @@
 extern "C" {
 #endif
 
+#define DLP_FUSE_MAX_BUFFLEN (50 * 1024 * 1024)
 int32_t DlpFileRead(int32_t fd, uint32_t offset, void *buf, uint32_t size);
 int32_t DlpFileWrite(int32_t fd, uint32_t offset, void *buf, uint32_t size);
 int32_t DlpLseek(int32_t fd, uint32_t offset, int32_t whence);

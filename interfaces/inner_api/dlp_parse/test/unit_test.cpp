@@ -76,7 +76,6 @@ HWTEST_F(DlpUnitTest, Dlp001, TestSize.Level1)
     tagIv.iv.data = g_iv;
     struct DlpUsageSpec usage = {
         .mode = DLP_MODE_CTR,
-        .padding = DLP_PADDING_NONE,
         .algParam = &tagIv
     };
 
@@ -126,7 +125,6 @@ HWTEST_F(DlpUnitTest, Dlp002, TestSize.Level1)
     tagIv.iv.data = g_iv;
     struct DlpUsageSpec usage = {
         .mode = DLP_MODE_CTR,
-        .padding = DLP_PADDING_NONE,
         .algParam = &tagIv
     };
 
@@ -217,10 +215,12 @@ HWTEST_F(DlpUnitTest, Dlp003, TestSize.Level1)
     cout << "sha256:";
     dumpptr(out, 16);
     ASSERT_EQ(0, ret);
+    mOut.size = 64;
     ret = DlpOpensslHash(DLP_DIGEST_SHA384, &mIn, &mOut);
     cout << "sha384:";
     dumpptr(out, 16);
     ASSERT_EQ(0, ret);
+    mOut.size = 64;
     ret = DlpOpensslHash(DLP_DIGEST_SHA512, &mIn, &mOut);
     cout << "sha512:";
     dumpptr(out, 16);
@@ -323,7 +323,6 @@ HWTEST_F(DlpUnitTest, Dlp006, TestSize.Level1)
     tagIv.iv.data = g_iv;
     struct DlpUsageSpec usage = {
         .mode = DLP_MODE_CTR,
-        .padding = DLP_PADDING_NONE,
         .algParam = &tagIv
     };
     a.SetCipher(key, usage);
@@ -340,9 +339,9 @@ HWTEST_F(DlpUnitTest, Dlp006, TestSize.Level1)
     string out("/data/enc.txt");
     string dec("/data/dec.txt");
     int32_t ret;
-    ret = a.Operation(in, out, 1);
+    ret = a.Operation(in, out, DLP_ENCRYPTION);
     ASSERT_EQ(0, ret);
-    ret = a.Operation(out, dec, 2);
+    ret = a.Operation(out, dec, DLP_DECRYPTION);
     ASSERT_EQ(0, ret);
 
     cout << "dump /data/input.txt" << endl;
@@ -411,7 +410,6 @@ HWTEST_F(DlpUnitTest, Dlp008, TestSize.Level1)
     tagIv.iv.data = g_iv;
     struct DlpUsageSpec usage = {
         .mode = DLP_MODE_CTR,
-        .padding = DLP_PADDING_NONE,
         .algParam = &tagIv
     };
 
@@ -429,7 +427,7 @@ HWTEST_F(DlpUnitTest, Dlp008, TestSize.Level1)
     file1.close();
     string out("/data/enc.txt");
     int32_t ret;
-    ret = a.Operation(in, out, 1);
+    ret = a.Operation(in, out, DLP_ENCRYPTION);
     ASSERT_EQ(0, ret);
 
     struct DlpBlob iv = { 16, nullptr };
@@ -481,7 +479,6 @@ HWTEST_F(DlpUnitTest, Dlp009, TestSize.Level1)
     tagIv.iv.data = g_iv;
     struct DlpUsageSpec usage = {
         .mode = DLP_MODE_CTR,
-        .padding = DLP_PADDING_NONE,
         .algParam = &tagIv
     };
 
