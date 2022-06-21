@@ -68,7 +68,7 @@ public:
     int32_t FileParse(const std::string &inputFileUri);
     int32_t FileParse(int32_t fd);
     int32_t FileParse(const std::string &inputFileUri, struct DlpHeader &head, struct DlpEncryptCert &cert);
-    int32_t GetTxtOffset();
+    uint32_t GetTxtOffset();
     int32_t Operation(const std::string &inputFileUri, const std::string &outputFileUri, uint32_t op_flag);
 
 private:

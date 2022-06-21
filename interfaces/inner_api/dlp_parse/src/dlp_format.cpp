@@ -233,11 +233,12 @@ int32_t DlpFile::FileParse(int32_t fd)
         return DLP_ERROR_MALLOC_FAIL;
     }
     read(fd, (void *)buf, head_.certSize);
+    cert_.certBuff = buf;
 
     return DLP_SUCCESS;
 }
 
-int32_t DlpFile::GetTxtOffset()
+uint32_t DlpFile::GetTxtOffset()
 {
     return head_.txtOffset;
 }
