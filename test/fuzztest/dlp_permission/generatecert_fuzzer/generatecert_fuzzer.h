@@ -19,14 +19,6 @@
 #define FUZZ_PROJECT_NAME "generatecert_fuzzer"
 
 #include "dlp_permission_kit.h"
-namespace OHOS {
-class TestGenerateDlpCertificateCallback : public OHOS::Security::DlpPermission::GenerateDlpCertificateCallback {
-public:
-    TestGenerateDlpCertificateCallback() = default;
-    virtual ~TestGenerateDlpCertificateCallback() = default;
-
-    void onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert) override;
-};
-}  // namespace OHOS
+namespace OHOS {}  // namespace OHOS
 
 #endif  // TEST_FUZZTEST_GENERATE_CERT_FUZZER_H

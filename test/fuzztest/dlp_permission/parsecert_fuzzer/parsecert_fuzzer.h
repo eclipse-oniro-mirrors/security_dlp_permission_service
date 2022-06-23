@@ -19,14 +19,6 @@
 #define FUZZ_PROJECT_NAME "parsecert_fuzzer"
 
 #include "dlp_permission_kit.h"
-namespace OHOS {
-class TestParseDlpCertificateCallback : public OHOS::Security::DlpPermission::ParseDlpCertificateCallback {
-public:
-    TestParseDlpCertificateCallback() = default;
-    virtual ~TestParseDlpCertificateCallback() = default;
-
-    void onParseDlpCertificate(int32_t result, const OHOS::Security::DlpPermission::PermissionPolicy& policy) override;
-};
-}  // namespace OHOS
+namespace OHOS {}  // namespace OHOS
 
 #endif  // TEST_FUZZTEST_PARSE_CERT_FUZZER_H

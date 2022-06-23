@@ -14,11 +14,10 @@
  */
 
 #include "dlp_permission_client.h"
-#include "dlp_policy_helper.h"
+#include "dlp_policy.h"
 #include "dlp_permission_async_stub.h"
 #include "dlp_permission_load_callback.h"
 #include "dlp_permission_log.h"
-#include "dlp_permission_policy_def.h"
 #include "dlp_permission_proxy.h"
 #include "iservice_registry.h"
 #include <unistd.h>
@@ -44,32 +43,32 @@ DlpPermissionClient::~DlpPermissionClient()
 {}
 
 int32_t DlpPermissionClient::GenerateDlpCertificate(
-    const PermissionPolicy& policy, AccountType accountType, std::shared_ptr<GenerateDlpCertificateCallback> callback)
+    const PermissionPolicy& policy, std::shared_ptr<GenerateDlpCertificateCallback> callback)
 {
     DLP_LOG_DEBUG(LABEL, "Called");
-    if (!CheckPermissionPolicy(policy) || !CheckAccountType(accountType) || callback == nullptr) {
-        return DLP_VALUE_INVALID;
+    if (!policy.IsValid() || callback == nullptr) {
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
     auto proxy = GetProxy();
     if (proxy == nullptr) {
         DLP_LOG_ERROR(LABEL, "Proxy is null");
-        return DLP_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
     sptr<DlpPolicyParcel> policyParcel = new (std::nothrow) DlpPolicyParcel();
     if (policyParcel == nullptr) {
         DLP_LOG_ERROR(LABEL, "New memory fail");
-        return DLP_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
-    policyParcel->policyParams_ = policy;
+    policyParcel->policyParams_.CopyPermissionPolicy(policy);
 
     sptr<IDlpPermissionCallback> asyncStub = new (std::nothrow) DlpPermissionAsyncStub(callback);
     if (asyncStub == nullptr) {
         DLP_LOG_ERROR(LABEL, "New memory fail");
-        return DLP_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
-    return proxy->GenerateDlpCertificate(policyParcel, accountType, asyncStub);
+    return proxy->GenerateDlpCertificate(policyParcel, asyncStub);
 }
 
 int32_t DlpPermissionClient::ParseDlpCertificate(
@@ -77,18 +76,18 @@ int32_t DlpPermissionClient::ParseDlpCertificate(
 {
     DLP_LOG_DEBUG(LABEL, "Called");
     if (callback == nullptr || cert.size() == 0) {
-        return DLP_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
     auto proxy = GetProxy();
     if (proxy == nullptr) {
         DLP_LOG_ERROR(LABEL, "Proxy is null");
-        return DLP_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
     sptr<IDlpPermissionCallback> asyncStub = new (std::nothrow) DlpPermissionAsyncStub(callback);
     if (asyncStub == nullptr) {
         DLP_LOG_ERROR(LABEL, "New memory fail");
-        return DLP_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
     return proxy->ParseDlpCertificate(cert, asyncStub);
@@ -99,12 +98,12 @@ int32_t DlpPermissionClient::InstallDlpSandbox(
 {
     DLP_LOG_DEBUG(LABEL, "Called");
     if (bundleName.empty() || permType >= PERM_MAX || permType < READ_ONLY) {
-        return DLP_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
     auto proxy = GetProxy();
     if (proxy == nullptr) {
         DLP_LOG_ERROR(LABEL, "Proxy is null");
-        return DLP_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
     return proxy->InstallDlpSandbox(bundleName, permType, userId, appIndex);
@@ -133,7 +132,7 @@ void DlpPermissionClient::LoadDlpPermission()
         DLP_LOG_ERROR(LABEL, "LoadSystemAbility %{public}d failed", SA_ID_DLP_PERMISSION_SERVICE);
         return;
     }
-    DLP_LOG_ERROR(LABEL, "LoadSystemAbility!");
+    DLP_LOG_INFO(LABEL, "LoadSystemAbility!");
 }
 
 void DlpPermissionClient::FinishStartSASuccess(const sptr<IRemoteObject>& remoteObject)

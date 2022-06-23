@@ -37,13 +37,12 @@ ohos_shared_library("libdlp_permission_sdk") {
     "$DLP_ROOT_DIR/frameworks/dlp_permission/include",
     "$DLP_ROOT_DIR/interfaces/inner_api/dlp_permission/include",
     "$DLP_ROOT_DIR/services/dlp_permission/sa/credential_test",
-    "//base/security/dlp_permission_service/common",
   ]
 
   sources = [
+    "$DLP_ROOT_DIR/frameworks/common/src/dlp_policy.cpp",
     "$DLP_ROOT_DIR/frameworks/dlp_permission/src/auth_user_info_parcel.cpp",
     "$DLP_ROOT_DIR/frameworks/dlp_permission/src/dlp_policy_parcel.cpp",
-    "//base/security/dlp_permission_service/common/dlp_policy_helper.cpp",
     "src/dlp_permission_async_stub.cpp",
     "src/dlp_permission_client.cpp",
     "src/dlp_permission_death_recipient.cpp",

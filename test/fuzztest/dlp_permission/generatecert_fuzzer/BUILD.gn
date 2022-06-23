@@ -23,6 +23,7 @@ ohos_fuzztest("GenerateCertFuzzTest") {
   include_dirs = [
     "//utils/native/base/include",
     "//base/security/dlp_permission_service/frameworks/common/include",
+    "//base/security/dlp_permission_service/common",
     "//base/security/dlp_permission_service/interfaces/inner_api/dlp_permission/include",
     "//base/security/dlp_permission_service/services/dlp_permission/sa/credential_test/",
   ]

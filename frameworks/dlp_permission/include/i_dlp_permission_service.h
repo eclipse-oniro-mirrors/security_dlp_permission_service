@@ -31,7 +31,7 @@ public:
     DECLARE_INTERFACE_DESCRIPTOR(u"ohos.security.IDlpPermissionService");
 
     virtual int32_t GenerateDlpCertificate(
-        const sptr<DlpPolicyParcel>& policyParcel, AccountType accountType, sptr<IDlpPermissionCallback>& callback) = 0;
+        const sptr<DlpPolicyParcel>& policyParcel, sptr<IDlpPermissionCallback>& callback) = 0;
 
     virtual int32_t ParseDlpCertificate(const std::vector<uint8_t>& cert, sptr<IDlpPermissionCallback>& callback) = 0;
 

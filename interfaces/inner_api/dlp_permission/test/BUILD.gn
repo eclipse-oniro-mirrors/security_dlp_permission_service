@@ -27,22 +27,21 @@ ohos_unittest("libdlp_permission_sdk_test") {
     "//third_party/googletest/include",
     "$DLP_ROOT_DIR/frameworks/common/include",
     "$DLP_ROOT_DIR/frameworks/dlp_permission/include",
-    "//base/security/dlp_permission_service/services/dlp_permission/sa/sa_common",
-    "//base/security/dlp_permission_service/common",
+    "$DLP_ROOT_DIR/services/dlp_permission/sa/sa_common",
     "$DLP_ROOT_DIR/interfaces/inner_api/dlp_permission/include",
     "$DLP_ROOT_DIR/services/dlp_permission/sa/credential_test",
   ]
 
   sources = [
-    "//base/security/dlp_permission_service/common/hex_string.cpp",
-    "//base/security/dlp_permission_service/services/dlp_permission/sa/sa_common/dlp_permission_serializer.cpp",
+    "$DLP_ROOT_DIR/frameworks/common/src/hex_string.cpp",
+    "$DLP_ROOT_DIR/services/dlp_permission/sa/sa_common/dlp_permission_serializer.cpp",
     "unittest/src/dlp_permission_kit_test.cpp",
   ]
 
   cflags_cc = [ "-DHILOG_ENABLE" ]
 
   deps = [
-    "//base/security/dlp_permission_service/interfaces/inner_api/dlp_permission:libdlp_permission_sdk",
+    "$DLP_ROOT_DIR/interfaces/inner_api/dlp_permission:libdlp_permission_sdk",
     "//utils/native/base:utils",
   ]
 

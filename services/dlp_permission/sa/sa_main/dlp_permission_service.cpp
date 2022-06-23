@@ -18,7 +18,7 @@
 #include "dlp_credential_service.h"
 #include "dlp_credential_adapt.h"
 #include "dlp_permission.h"
-#include "dlp_policy_helper.h"
+#include "dlp_policy.h"
 #include "dlp_permission_log.h"
 #include "dlp_permission_serializer.h"
 
@@ -64,16 +64,16 @@ void DlpPermissionService::OnStop()
 }
 
 int32_t DlpPermissionService::GenerateDlpCertificate(
-    const sptr<DlpPolicyParcel>& policyParcel, AccountType accountType, sptr<IDlpPermissionCallback>& callback)
+    const sptr<DlpPolicyParcel>& policyParcel, sptr<IDlpPermissionCallback>& callback)
 {
     DLP_LOG_DEBUG(LABEL, "Called");
     if (callback == nullptr) {
         DLP_LOG_ERROR(LABEL, "Callback is null");
-        return DLP_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
-    if (!CheckAccountType(accountType) || !CheckPermissionPolicy(policyParcel->policyParams_)) {
-        return DLP_VALUE_INVALID;
+    if (!policyParcel->policyParams_.IsValid()) {
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
     nlohmann::json jsonObj;
@@ -82,7 +82,8 @@ int32_t DlpPermissionService::GenerateDlpCertificate(
         return res;
     }
 
-    DlpCredential::GetInstance().GenerateDlpCertificate(jsonObj.dump(), accountType, callback);
+    DlpCredential::GetInstance().GenerateDlpCertificate(
+        jsonObj.dump(), policyParcel->policyParams_.ownerAccountType_, callback);
 
     return DLP_OK;
 }
@@ -94,7 +95,7 @@ int32_t DlpPermissionService::ParseDlpCertificate(
 
     if (callback == nullptr) {
         DLP_LOG_ERROR(LABEL, "Callback is null");
-        return DLP_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
     DlpCredential::GetInstance().ParseDlpCertificate(cert, callback);
@@ -108,7 +109,7 @@ int32_t DlpPermissionService::InstallDlpSandbox(
     DLP_LOG_DEBUG(LABEL, "Called");
     if (bundleName.empty() || permType >= PERM_MAX || permType < READ_ONLY) {
         DLP_LOG_ERROR(LABEL, "param is invalid");
-        return DLP_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
     AppExecFwk::BundleMgrClient bundleMgrClient;

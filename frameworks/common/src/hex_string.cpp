@@ -29,11 +29,11 @@ static char HexToChar(uint8_t hex)
 int32_t ByteToHexString(const uint8_t* byte, uint32_t byteLen, char* hexStr, uint32_t hexLen)
 {
     if (byte == nullptr || hexStr == nullptr) {
-        return DLP_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
     /* The terminator('\0') needs 1 bit */
     if (hexLen < byteLen * BYTE_TO_HEX_OPER_LENGTH + 1) {
-        return DLP_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
     for (uint32_t i = 0; i < byteLen; i++) {
@@ -61,19 +61,19 @@ static uint8_t CharToHex(char c)
 int32_t HexStringToByte(const char* hexStr, uint8_t* byte, uint32_t byteLen)
 {
     if (byte == nullptr || hexStr == nullptr) {
-        return DLP_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
     uint32_t realHexLen = strlen(hexStr);
     /* even number or not */
     if (realHexLen % BYTE_TO_HEX_OPER_LENGTH != 0 || byteLen < realHexLen / BYTE_TO_HEX_OPER_LENGTH) {
-        return DLP_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
     for (uint32_t i = 0; i < realHexLen / BYTE_TO_HEX_OPER_LENGTH; i++) {
         uint8_t high = CharToHex(hexStr[i * BYTE_TO_HEX_OPER_LENGTH]);
         uint8_t low = CharToHex(hexStr[i * BYTE_TO_HEX_OPER_LENGTH + 1]);
         if (high == 16 || low == 16) {  // max hex must < 16
-            return DLP_VALUE_INVALID;
+            return DLP_SERVICE_ERROR_VALUE_INVALID;
         }
         byte[i] = high << 4;  // 4: Set the high nibble
         byte[i] |= low;       // Set the low nibble

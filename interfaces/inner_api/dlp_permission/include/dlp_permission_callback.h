@@ -17,17 +17,21 @@
 #define DLP_PERMISSION_CALLBACK_H
 
 #include <vector>
-#include "dlp_permission_policy_def.h"
+#include "dlp_policy.h"
 
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
 class GenerateDlpCertificateCallback {
 public:
+    GenerateDlpCertificateCallback(){};
+    virtual ~GenerateDlpCertificateCallback(){};
     virtual void onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert) = 0;
 };
 class ParseDlpCertificateCallback {
 public:
+    ParseDlpCertificateCallback(){};
+    virtual ~ParseDlpCertificateCallback(){};
     virtual void onParseDlpCertificate(int32_t result, const PermissionPolicy& policy) = 0;
 };
 }  // namespace DlpPermission

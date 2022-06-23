@@ -16,7 +16,6 @@
 #include "dlp_credential_service.h"
 #include <pthread.h>
 #include <unistd.h>
-#include "dlp_credential_service_defines.h"
 #include "dlp_permission_log.h"
 #include "securec.h"
 

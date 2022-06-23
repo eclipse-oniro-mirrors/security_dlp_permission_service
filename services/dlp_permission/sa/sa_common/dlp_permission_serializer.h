@@ -18,7 +18,7 @@
 
 #include <string>
 #include <vector>
-#include "dlp_permission_policy_def.h"
+#include "dlp_policy.h"
 #include "nlohmann/json.hpp"
 
 namespace OHOS {
@@ -38,7 +38,7 @@ public:
         const std::vector<nlohmann::json>& authUsersJson, std::vector<AuthUserInfo>& userList);
 
     int32_t SerializeDlpPermission(const PermissionPolicy& policy, nlohmann::json& permInfoJson);
-    int32_t DeserializeDlpPermission(const nlohmann::json& permJson, PermissionPolicy& info);
+    int32_t DeserializeDlpPermission(const nlohmann::json& permJson, PermissionPolicy& policy);
 
 private:
 };

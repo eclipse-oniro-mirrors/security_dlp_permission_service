@@ -26,15 +26,19 @@ static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_
 bool AuthUserInfoParcel::Marshalling(Parcel& out) const
 {
     if (!(out.WriteString(this->authUserInfo_.authAccount))) {
-        DLP_LOG_ERROR(LABEL, "WriteString fail");
+        DLP_LOG_ERROR(LABEL, "Write string fail");
         return false;
     }
     if (!(out.WriteUint8(this->authUserInfo_.authPerm))) {
-        DLP_LOG_ERROR(LABEL, "WriteUint8 fail");
+        DLP_LOG_ERROR(LABEL, "Write uint8 fail");
         return false;
     }
     if (!(out.WriteUint64(this->authUserInfo_.permExpiryTime))) {
-        DLP_LOG_ERROR(LABEL, "WriteUint64 fail");
+        DLP_LOG_ERROR(LABEL, "Write uint64 fail");
+        return false;
+    }
+    if (!(out.WriteUint8(this->authUserInfo_.authAccountType))) {
+        DLP_LOG_ERROR(LABEL, "Write uint8 fail");
         return false;
     }
     return true;
@@ -49,25 +53,33 @@ AuthUserInfoParcel* AuthUserInfoParcel::Unmarshalling(Parcel& in)
     }
 
     if (!(in.ReadString(authUserInfoParcel->authUserInfo_.authAccount))) {
-        DLP_LOG_ERROR(LABEL, "ReadString fail");
+        DLP_LOG_ERROR(LABEL, "Read string fail");
         delete authUserInfoParcel;
         authUserInfoParcel = nullptr;
         return nullptr;
     }
     uint8_t res;
     if (!(in.ReadUint8(res))) {
-        DLP_LOG_ERROR(LABEL, "ReadUint8 fail");
+        DLP_LOG_ERROR(LABEL, "Read uint8 fail");
         delete authUserInfoParcel;
         authUserInfoParcel = nullptr;
         return nullptr;
     }
     authUserInfoParcel->authUserInfo_.authPerm = AuthPermType(res);
     if (!(in.ReadUint64(authUserInfoParcel->authUserInfo_.permExpiryTime))) {
-        DLP_LOG_ERROR(LABEL, "ReadUint64 fail");
+        DLP_LOG_ERROR(LABEL, "Read uint64 fail");
         delete authUserInfoParcel;
         authUserInfoParcel = nullptr;
         return nullptr;
     }
+
+    if (!(in.ReadUint8(res))) {
+        DLP_LOG_ERROR(LABEL, "Read uint8 fail");
+        delete authUserInfoParcel;
+        authUserInfoParcel = nullptr;
+        return nullptr;
+    }
+    authUserInfoParcel->authUserInfo_.authAccountType = AccountType(res);
 
     return authUserInfoParcel;
 }

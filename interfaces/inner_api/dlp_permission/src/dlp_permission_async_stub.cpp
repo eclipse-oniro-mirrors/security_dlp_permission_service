@@ -16,7 +16,7 @@
 #include "dlp_permission_async_stub.h"
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
-#include "dlp_policy_helper.h"
+#include "dlp_policy.h"
 #include "dlp_policy_parcel.h"
 
 namespace OHOS {
@@ -43,7 +43,7 @@ int32_t DlpPermissionAsyncStub::OnRemoteRequest(
     std::u16string remoteDescripter = data.ReadInterfaceToken();
     if (descripter != remoteDescripter) {
         DLP_LOG_ERROR(LABEL, "OnRemoteRequest failed, descriptor is not matched");
-        return DLP_REQUEST_FAIL;
+        return DLP_SERVICE_ERROR_IPC_REQUEST_FAIL;
     }
 
     switch (code) {
@@ -65,11 +65,11 @@ int32_t DlpPermissionAsyncStub::onGenerateDlpCertificateStub(MessageParcel& data
 
     if (!data.ReadInt32(result)) {
         DLP_LOG_ERROR(LABEL, "Read int32 fail");
-        return DLP_OPERATE_PARCEL_FAIL;
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     if (!data.ReadUInt8Vector(&cert)) {
         DLP_LOG_ERROR(LABEL, "Read int8 vector fail");
-        return DLP_OPERATE_PARCEL_FAIL;
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
     this->onGenerateDlpCertificate(result, cert);
@@ -96,17 +96,16 @@ int32_t DlpPermissionAsyncStub::onParseDlpCertificateStub(MessageParcel& data, M
     int32_t result;
     if (!data.ReadInt32(result)) {
         DLP_LOG_ERROR(LABEL, "Read int32 fail");
-        return DLP_OPERATE_PARCEL_FAIL;
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
     sptr<DlpPolicyParcel> policyParcel = data.ReadParcelable<DlpPolicyParcel>();
     if (policyParcel == nullptr) {
         DLP_LOG_ERROR(LABEL, "Read parcel fail");
-        return DLP_OPERATE_PARCEL_FAIL;
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
     this->onParseDlpCertificate(result, policyParcel->policyParams_);
-    FreePermissionPolicyMem(policyParcel->policyParams_);
 
     return DLP_OK;
 }

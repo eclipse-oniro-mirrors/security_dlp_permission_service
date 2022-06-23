@@ -22,22 +22,6 @@
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
-class TestGenerateDlpCertificateCallback : public GenerateDlpCertificateCallback {
-public:
-    TestGenerateDlpCertificateCallback() = default;
-    virtual ~TestGenerateDlpCertificateCallback() = default;
-
-    void onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert) override;
-};
-
-class TestParseDlpCertificateCallback : public ParseDlpCertificateCallback {
-public:
-    TestParseDlpCertificateCallback() = default;
-    virtual ~TestParseDlpCertificateCallback() = default;
-
-    void onParseDlpCertificate(int32_t result, const PermissionPolicy& policy) override;
-};
-
 class DlpPermissionKitTest : public testing::Test {
 public:
     static void SetUpTestCase();

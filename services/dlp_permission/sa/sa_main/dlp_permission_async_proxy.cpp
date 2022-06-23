@@ -71,7 +71,7 @@ void DlpPermissionAsyncProxy::onParseDlpCertificate(int32_t result, const Permis
     }
 
     DlpPolicyParcel policyParcel;
-    policyParcel.policyParams_ = policy;
+    policyParcel.policyParams_.CopyPermissionPolicy(policy);
 
     if (!data.WriteParcelable(&policyParcel)) {
         DLP_LOG_ERROR(LABEL, "Write parcel fail");

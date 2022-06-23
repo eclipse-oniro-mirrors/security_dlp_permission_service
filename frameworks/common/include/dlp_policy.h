@@ -13,13 +13,11 @@
  * limitations under the License.
  */
 
-#ifndef DLP_PERMISSION_POLICY_DEF_H
-#define DLP_PERMISSION_POLICY_DEF_H
+#ifndef FRAMEWORKS_COMMON_INCLUDE_DLP_POLICY__H
+#define FRAMEWORKS_COMMON_INCLUDE_DLP_POLICY__H
 
 #include <string>
 #include <vector>
-#include <cstdint>
-#include <time.h>
 #include "dlp_credential_service_defines.h"
 
 namespace OHOS {
@@ -35,17 +33,47 @@ typedef struct AuthUserInfo {
     std::string authAccount;
     AuthPermType authPerm;
     uint64_t permExpiryTime;
+    AccountType authAccountType;
 } AuthUserInfo;
 
-typedef struct PermissionPolicy {
+struct DlpProperty {
     std::string ownerAccount;
     std::vector<AuthUserInfo> authUsers;
-    uint8_t* aeskey;
-    uint32_t aeskeyLen;
-    uint8_t* iv;
-    uint32_t ivLen;
-} PermissionPolicy;
+    std::string contractAccount;
+    AccountType ownerAccountType;
+};
+
+class PermissionPolicy final {
+public:
+    PermissionPolicy();
+    PermissionPolicy(const DlpProperty& property);
+    ~PermissionPolicy();
+    void CopyPermissionPolicy(const PermissionPolicy& srcPolicy);
+    void FreePermissionPolicyMem();
+
+    bool IsValid() const;
+    void SetAeskey(const uint8_t* key, uint32_t keyLen);
+    uint8_t* GetAeskey() const;
+    uint32_t GetAeskeyLen() const;
+    void SetIv(const uint8_t* iv, uint32_t ivLen);
+    uint8_t* GetIv() const;
+    uint32_t GetIvLen() const;
+
+    std::string ownerAccount_;
+    AccountType ownerAccountType_;
+    std::vector<AuthUserInfo> authUsers_;
+
+private:
+    uint8_t* aeskey_;
+    uint32_t aeskeyLen_;
+    uint8_t* iv_;
+    uint32_t ivLen_;
+};
+
+void FreeCharBuffer(char* buff, uint32_t buffLen);
+bool CheckAccountType(AccountType accountType);
+bool CheckAesParamLen(uint32_t len);
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS
-#endif  // DLP_PERMISSION_POLICY_DEF_H
+#endif  // FRAMEWORKS_COMMON_INCLUDE_DLP_POLICY__H

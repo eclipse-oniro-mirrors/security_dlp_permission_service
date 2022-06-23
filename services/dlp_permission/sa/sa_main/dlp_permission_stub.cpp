@@ -48,35 +48,25 @@ int32_t DlpPermissionStub::GenerateDlpCertificateInner(MessageParcel& data, Mess
     sptr<DlpPolicyParcel> policyParcel = data.ReadParcelable<DlpPolicyParcel>();
     if (policyParcel == nullptr) {
         DLP_LOG_ERROR(LABEL, "Read parcel fail");
-        return DLP_OPERATE_PARCEL_FAIL;
-    }
-
-    int8_t accountType;
-    if (!data.ReadInt8(accountType)) {
-        DLP_LOG_ERROR(LABEL, "Read int8 fail");
-        policyParcel->FreeMem();
-        return DLP_OPERATE_PARCEL_FAIL;
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
     sptr<IRemoteObject> obj = data.ReadRemoteObject();
     if (obj == nullptr) {
         DLP_LOG_ERROR(LABEL, "Read object fail");
-        policyParcel->FreeMem();
-        return DLP_OPERATE_PARCEL_FAIL;
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
     sptr<IDlpPermissionCallback> callback = iface_cast<IDlpPermissionCallback>(obj);
     if (callback == nullptr) {
         DLP_LOG_ERROR(LABEL, "Callback is null");
-        policyParcel->FreeMem();
-        return DLP_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
-    int32_t res = this->GenerateDlpCertificate(policyParcel, AccountType(accountType), callback);
-    policyParcel->FreeMem();
+    int32_t res = this->GenerateDlpCertificate(policyParcel, callback);
     if (!reply.WriteInt32(res)) {
         DLP_LOG_ERROR(LABEL, "Write int32 fail");
-        return DLP_OPERATE_PARCEL_FAIL;
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     return DLP_OK;
 }
@@ -86,24 +76,24 @@ int32_t DlpPermissionStub::ParseDlpCertificateInner(MessageParcel& data, Message
     std::vector<uint8_t> cert;
     if (!data.ReadUInt8Vector(&cert)) {
         DLP_LOG_ERROR(LABEL, "Read uint8 vector fail");
-        return DLP_OPERATE_PARCEL_FAIL;
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
     sptr<IRemoteObject> obj = data.ReadRemoteObject();
     if (obj == nullptr) {
         DLP_LOG_ERROR(LABEL, "Read object fail");
-        return DLP_OPERATE_PARCEL_FAIL;
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     sptr<IDlpPermissionCallback> callback = iface_cast<IDlpPermissionCallback>(obj);
     if (callback == nullptr) {
         DLP_LOG_ERROR(LABEL, "Callback is null");
-        return DLP_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
     int32_t res = this->ParseDlpCertificate(cert, callback);
     if (!reply.WriteInt32(res)) {
         DLP_LOG_ERROR(LABEL, "Write int32 fail");
-        return DLP_OPERATE_PARCEL_FAIL;
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     return DLP_OK;
 }
@@ -113,31 +103,31 @@ int32_t DlpPermissionStub::InstallDlpSandboxInner(MessageParcel& data, MessagePa
     std::string bundleName;
     if (!data.ReadString(bundleName)) {
         DLP_LOG_ERROR(LABEL, "Read string fail");
-        return DLP_OPERATE_PARCEL_FAIL;
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
     uint32_t type;
     if (!data.ReadUint32(type)) {
         DLP_LOG_ERROR(LABEL, "Read uint32 fail");
-        return DLP_OPERATE_PARCEL_FAIL;
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     AuthPermType permType = static_cast<AuthPermType>(type);
 
     int32_t userId;
     if (!data.ReadInt32(userId)) {
         DLP_LOG_ERROR(LABEL, "Read int32 fail");
-        return DLP_OPERATE_PARCEL_FAIL;
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
     int32_t appIndex;
     int32_t res = this->InstallDlpSandbox(bundleName, permType, userId, appIndex);
     if (!reply.WriteInt32(res)) {
         DLP_LOG_ERROR(LABEL, "Write int32 fail");
-        return DLP_OPERATE_PARCEL_FAIL;
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     if (!reply.WriteInt32(appIndex)) {
         DLP_LOG_ERROR(LABEL, "Write int32 fail");
-        return DLP_OPERATE_PARCEL_FAIL;
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     return DLP_OK;
 }
@@ -148,7 +138,7 @@ DlpPermissionStub::DlpPermissionStub()
         &DlpPermissionStub::GenerateDlpCertificateInner;
     requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::PARSE_DLP_CERTIFICATE)] =
         &DlpPermissionStub::ParseDlpCertificateInner;
-    requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::PARSE_DLP_CERTIFICATE)] =
+    requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::INSTALL_DLP_SANDBOX)] =
         &DlpPermissionStub::InstallDlpSandboxInner;
 }
 

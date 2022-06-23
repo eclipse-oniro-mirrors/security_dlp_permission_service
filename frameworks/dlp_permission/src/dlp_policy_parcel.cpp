@@ -15,7 +15,7 @@
 
 #include "dlp_policy_parcel.h"
 #include "dlp_permission_log.h"
-#include "dlp_policy_helper.h"
+#include "dlp_policy.h"
 #include "securec.h"
 namespace OHOS {
 namespace Security {
@@ -25,10 +25,10 @@ static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_
 }
 bool DlpPolicyParcel::Marshalling(Parcel& out) const
 {
-    const std::vector<AuthUserInfo>& userList = this->policyParams_.authUsers;
+    const std::vector<AuthUserInfo>& userList = this->policyParams_.authUsers_;
     uint32_t listSize = userList.size();
     if (!(out.WriteUint32(listSize))) {
-        DLP_LOG_ERROR(LABEL, "WriteUint32 fail");
+        DLP_LOG_ERROR(LABEL, "Write uint32 fail");
         return false;
     }
 
@@ -40,60 +40,64 @@ bool DlpPolicyParcel::Marshalling(Parcel& out) const
         }
         authUserInfoParcel->authUserInfo_ = userList[i];
         if (!(out.WriteParcelable(authUserInfoParcel))) {
-            DLP_LOG_ERROR(LABEL, "WriteParcelable fail");
+            DLP_LOG_ERROR(LABEL, "Write parcel fail");
             return false;
         }
     }
-    if (!(out.WriteString(this->policyParams_.ownerAccount))) {
-        DLP_LOG_ERROR(LABEL, "WriteString fail");
-        return false;
+    if (!(out.WriteString(this->policyParams_.ownerAccount_))) {
+        DLP_LOG_ERROR(LABEL, "Write string fail");
     }
-    if (!(out.WriteUint32(this->policyParams_.aeskeyLen))) {
-        DLP_LOG_ERROR(LABEL, "WriteUint32 fail");
-        return false;
+    if (!(out.WriteUint8(this->policyParams_.ownerAccountType_))) {
+        DLP_LOG_ERROR(LABEL, "Write uint8 fail");
     }
-    if (!(out.WriteBuffer(this->policyParams_.aeskey, this->policyParams_.aeskeyLen))) {
-        DLP_LOG_ERROR(LABEL, "WriteBuffer fail");
-        return false;
+    if (!(out.WriteUint32(this->policyParams_.GetAeskeyLen()))) {
+        DLP_LOG_ERROR(LABEL, "Write uint32 fail");
     }
-    if (!(out.WriteUint32(this->policyParams_.ivLen))) {
-        DLP_LOG_ERROR(LABEL, "WriteUint32 fail");
-        return false;
+    if (!(out.WriteBuffer(this->policyParams_.GetAeskey(), this->policyParams_.GetAeskeyLen()))) {
+        DLP_LOG_ERROR(LABEL, "Write buffer fail");
     }
-    if (!(out.WriteBuffer(this->policyParams_.iv, this->policyParams_.ivLen))) {
-        DLP_LOG_ERROR(LABEL, "WriteBuffer fail");
-        return false;
+    if (!(out.WriteUint32(this->policyParams_.GetIvLen()))) {
+        DLP_LOG_ERROR(LABEL, "Write uint32 fail");
+    }
+    if (!(out.WriteBuffer(this->policyParams_.GetIv(), this->policyParams_.GetIvLen()))) {
+        DLP_LOG_ERROR(LABEL, "Write buffer fail");
     }
 
     return true;
 }
 
-static bool ReadAesParam(uint8_t** buff, uint32_t& len, Parcel& in)
+static bool ReadAesParam(PermissionPolicy& policy, Parcel& in)
 {
+    uint32_t len;
     if (!in.ReadUint32(len)) {
-        DLP_LOG_ERROR(LABEL, "ReadUint32 fail");
+        DLP_LOG_ERROR(LABEL, "Read uint32 fail");
         return false;
     }
     if (!CheckAesParamLen(len)) {
-        DLP_LOG_ERROR(LABEL, "Aes param invalid");
+        DLP_LOG_ERROR(LABEL, "key param invalid");
         return false;
     }
-    const uint8_t* data = in.ReadUnpadBuffer(len);
-    if (data == nullptr) {
-        DLP_LOG_ERROR(LABEL, "ReadUnpadBuffer fail");
+    const uint8_t* key = in.ReadUnpadBuffer(len);
+    if (key == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Read buffer fail");
         return false;
     }
-    *buff = new (std::nothrow) uint8_t[len];
-    if (*buff == nullptr) {
-        DLP_LOG_ERROR(LABEL, "New memory fail");
+    policy.SetAeskey(key, len);
+
+    if (!in.ReadUint32(len)) {
+        DLP_LOG_ERROR(LABEL, "Read uint32 fail");
         return false;
     }
-    if (memcpy_s(*buff, len, data, len) != EOK) {
-        DLP_LOG_ERROR(LABEL, "Memcpy_s fail");
-        delete[] *buff;
-        *buff = nullptr;
+    if (!CheckAesParamLen(len)) {
+        DLP_LOG_ERROR(LABEL, "iv param invalid");
         return false;
     }
+    const uint8_t* iv = in.ReadUnpadBuffer(len);
+    if (iv == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Read buffer fail");
+        return false;
+    }
+    policy.SetIv(iv, len);
     return true;
 }
 
@@ -101,27 +105,28 @@ static bool ReadParcel(Parcel& in, DlpPolicyParcel* policyParcel)
 {
     uint32_t listSize;
     if (!in.ReadUint32(listSize)) {
-        DLP_LOG_ERROR(LABEL, "ReadUint32 fail");
+        DLP_LOG_ERROR(LABEL, "Read uint32 fail");
         return false;
     }
     for (uint32_t i = 0; i < listSize; i++) {
         sptr<AuthUserInfoParcel> authUserInfoParcel = in.ReadParcelable<AuthUserInfoParcel>();
         if (authUserInfoParcel == nullptr) {
-            DLP_LOG_ERROR(LABEL, "AuthUserInfoParcel is null");
+            DLP_LOG_ERROR(LABEL, "Read parcel fail");
             return false;
         }
-        policyParcel->policyParams_.authUsers.emplace_back(authUserInfoParcel->authUserInfo_);
+        policyParcel->policyParams_.authUsers_.emplace_back(authUserInfoParcel->authUserInfo_);
     }
-    if (!(in.ReadString(policyParcel->policyParams_.ownerAccount))) {
-        DLP_LOG_ERROR(LABEL, "ReadString fail");
+    if (!(in.ReadString(policyParcel->policyParams_.ownerAccount_))) {
+        DLP_LOG_ERROR(LABEL, "Read string fail");
         return false;
     }
-    if (!(ReadAesParam(&policyParcel->policyParams_.aeskey, policyParcel->policyParams_.aeskeyLen, in))) {
+    uint8_t res = 0;
+    if (!(in.ReadUint8(res))) {
+        DLP_LOG_ERROR(LABEL, "Read uint8 fail");
         return false;
     }
-    if (!(ReadAesParam(&policyParcel->policyParams_.iv, policyParcel->policyParams_.ivLen, in))) {
-        return false;
-    }
+    policyParcel->policyParams_.ownerAccountType_ = AccountType(res);
+    ReadAesParam(policyParcel->policyParams_, in);
     return true;
 }
 
@@ -134,16 +139,10 @@ DlpPolicyParcel* DlpPolicyParcel::Unmarshalling(Parcel& in)
     }
 
     if (!ReadParcel(in, policyParcel)) {
-        policyParcel->FreeMem();
         delete policyParcel;
         policyParcel = nullptr;
     }
     return policyParcel;
-}
-
-void DlpPolicyParcel::FreeMem()
-{
-    FreePermissionPolicyMem(policyParams_);
 }
 }  // namespace DlpPermission
 }  // namespace Security

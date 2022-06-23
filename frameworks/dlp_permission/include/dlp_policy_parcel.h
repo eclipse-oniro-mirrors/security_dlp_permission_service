@@ -17,7 +17,7 @@
 #define DLP_POLICY_PARCEL_H
 
 #include "auth_user_info_parcel.h"
-#include "dlp_permission_policy_def.h"
+#include "dlp_policy.h"
 #include "parcel.h"
 
 namespace OHOS {
@@ -31,8 +31,6 @@ struct DlpPolicyParcel final : public Parcelable {
     bool Marshalling(Parcel& out) const override;
 
     static DlpPolicyParcel* Unmarshalling(Parcel& in);
-
-    void FreeMem();
 
     PermissionPolicy policyParams_;
 };

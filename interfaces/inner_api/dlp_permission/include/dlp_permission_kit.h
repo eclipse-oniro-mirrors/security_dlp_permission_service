@@ -18,19 +18,41 @@
 
 #include <string>
 #include <vector>
-#include "dlp_permission_policy_def.h"
+#include "dlp_policy.h"
 #include "dlp_permission_callback.h"
 #include "parcel.h"
 
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
+class ClientGenerateDlpCertificateCallback : public GenerateDlpCertificateCallback {
+public:
+    ClientGenerateDlpCertificateCallback() = default;
+    virtual ~ClientGenerateDlpCertificateCallback() = default;
+
+    void onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert) override;
+
+    int32_t result_;
+    std::vector<uint8_t> cert_;
+    bool isCallBack_ = false;
+};
+
+class ClientParseDlpCertificateCallback : public ParseDlpCertificateCallback {
+public:
+    ClientParseDlpCertificateCallback(){};
+    virtual ~ClientParseDlpCertificateCallback(){};
+
+    void onParseDlpCertificate(int32_t result, const PermissionPolicy& policy) override;
+
+    int32_t result_;
+    PermissionPolicy policy_;
+    bool isCallBack_ = false;
+};
+
 class DlpPermissionKit {
 public:
-    static int32_t GenerateDlpCertificate(const PermissionPolicy& policy, AccountType accountType,
-        std::shared_ptr<GenerateDlpCertificateCallback> callback);
-    static int32_t ParseDlpCertificate(
-        const std::vector<uint8_t>& cert, std::shared_ptr<ParseDlpCertificateCallback> callback);
+    static int32_t GenerateDlpCertificate(const PermissionPolicy& policy, std::vector<uint8_t>& cert);
+    static int32_t ParseDlpCertificate(const std::vector<uint8_t>& cert, PermissionPolicy& policy);
     static int32_t InstallDlpSandbox(
         const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex);
 };

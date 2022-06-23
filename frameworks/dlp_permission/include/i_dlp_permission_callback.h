@@ -17,7 +17,7 @@
 #define I_DLP_PERMISSION_CALLBACK_H
 
 #include <vector>
-#include "dlp_permission_policy_def.h"
+#include "dlp_policy.h"
 #include "iremote_broker.h"
 #include "iremote_object.h"
 

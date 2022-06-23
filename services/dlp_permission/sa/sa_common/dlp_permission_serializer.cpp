@@ -16,7 +16,7 @@
 #include "dlp_permission_serializer.h"
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
-#include "dlp_policy_helper.h"
+#include "dlp_policy.h"
 #include "hex_string.h"
 #include "securec.h"
 
@@ -25,9 +25,11 @@ namespace Security {
 namespace DlpPermission {
 namespace {
 const std::string OWNER_ACCOUNT = "ownerAccount";
+const std::string OWNER_ACCOUNT_TYPE = "ownerAccountType";
 const std::string AUTH_ACCOUNT = "authAccount";
 const std::string AUTH_PERM = "authPerm";
 const std::string PERM_EXPIRY_TIME = "permExpiryTime";
+const std::string AUTH_ACCOUNT_TYPE = "authAccountType";
 const std::string AUTH_USER_LIST = "authUsers";
 const std::string AESKEY = "aeskey";
 const std::string AESKEY_LEN = "aeskeyLen";
@@ -55,7 +57,7 @@ static int32_t ReadUint8ArrayFromJson(const nlohmann::json& permJson, uint8_t** 
         char* value = (char*)strdup((permJson.at(keyName).get<std::string>()).c_str());
         if (value == nullptr) {
             DLP_LOG_ERROR(LABEL, "New memory fail");
-            return DLP_OPERATE_MEMORY_FAIL;
+            return DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL;
         }
         uint32_t length = strlen(value) / BYTE_TO_HEX_OPER_LENGTH;
         if (length != buffLen) {
@@ -63,7 +65,7 @@ static int32_t ReadUint8ArrayFromJson(const nlohmann::json& permJson, uint8_t** 
             memset_s(value, strlen(value), 0, strlen(value));
             free(value);
             value = nullptr;
-            return DLP_OPERATE_JSON_FAIL;
+            return DLP_SERVICE_ERROR_JSON_OPERATE_FAIL;
         }
         *buff = new (std::nothrow) uint8_t[length];
         if (*buff == nullptr) {
@@ -71,7 +73,7 @@ static int32_t ReadUint8ArrayFromJson(const nlohmann::json& permJson, uint8_t** 
             memset_s(value, strlen(value), 0, strlen(value));
             free(value);
             value = nullptr;
-            return DLP_OPERATE_MEMORY_FAIL;
+            return DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL;
         }
         int32_t res = HexStringToByte(value, *buff, length);
         if (res != DLP_OK) {
@@ -94,6 +96,7 @@ nlohmann::json DlpPermissionSerializer::SerializeAuthUserInfo(const AuthUserInfo
         {AUTH_ACCOUNT, userInfo.authAccount},
         {AUTH_PERM, userInfo.authPerm},
         {PERM_EXPIRY_TIME, userInfo.permExpiryTime},
+        {AUTH_ACCOUNT_TYPE, userInfo.authAccountType},
     };
     return userInfoJson;
 }
@@ -109,6 +112,9 @@ int32_t DlpPermissionSerializer::DeserializeAuthUserInfo(const nlohmann::json& u
     if (userInfoJson.find(PERM_EXPIRY_TIME) != userInfoJson.end() && userInfoJson.at(PERM_EXPIRY_TIME).is_number()) {
         userInfoJson.at(PERM_EXPIRY_TIME).get_to(userInfo.permExpiryTime);
     }
+    if (userInfoJson.find(AUTH_ACCOUNT_TYPE) != userInfoJson.end() && userInfoJson.at(AUTH_ACCOUNT_TYPE).is_number()) {
+        userInfoJson.at(AUTH_ACCOUNT_TYPE).get_to(userInfo.authAccountType);
+    }
     return DLP_OK;
 }
 
@@ -122,15 +128,15 @@ nlohmann::json DlpPermissionSerializer::SerializeAuthUserList(const std::vector<
 }
 
 int32_t DlpPermissionSerializer::DeserializeAuthUserList(
-    const std::vector<nlohmann::json>& authUsersJson, std::vector<AuthUserInfo>& authUsers)
+    const std::vector<nlohmann::json>& authUsersJson, std::vector<AuthUserInfo>& userList)
 {
     for (auto iter : authUsersJson) {
         AuthUserInfo info;
         int32_t res = DeserializeAuthUserInfo(iter, info);
         if (res == DLP_OK) {
-            authUsers.emplace_back(info);
+            userList.emplace_back(info);
         } else {
-            authUsers.clear();
+            userList.clear();
             return res;
         }
     }
@@ -139,28 +145,28 @@ int32_t DlpPermissionSerializer::DeserializeAuthUserList(
 
 int32_t DlpPermissionSerializer::SerializeDlpPermission(const PermissionPolicy& policy, nlohmann::json& permInfoJson)
 {
-    nlohmann::json authUsersJson = SerializeAuthUserList(policy.authUsers);
+    nlohmann::json authUsersJson = SerializeAuthUserList(policy.authUsers_);
 
-    uint32_t keyHexLen = policy.aeskeyLen * BYTE_TO_HEX_OPER_LENGTH + 1;
+    uint32_t keyHexLen = policy.GetAeskeyLen() * BYTE_TO_HEX_OPER_LENGTH + 1;
     char* keyHex = new (std::nothrow) char[keyHexLen];
     if (keyHex == nullptr) {
         DLP_LOG_ERROR(LABEL, "New memory fail");
-        return DLP_OPERATE_MEMORY_FAIL;
+        return DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL;
     }
-    int32_t res = ByteToHexString(policy.aeskey, policy.aeskeyLen, keyHex, keyHexLen);
+    int32_t res = ByteToHexString(policy.GetAeskey(), policy.GetAeskeyLen(), keyHex, keyHexLen);
     if (res != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Byte to hexstring fail");
         FreeCharBuffer(keyHex, keyHexLen);
         return res;
     }
 
-    uint32_t ivHexLen = policy.ivLen * BYTE_TO_HEX_OPER_LENGTH + 1;
+    uint32_t ivHexLen = policy.GetIvLen() * BYTE_TO_HEX_OPER_LENGTH + 1;
     char* ivHex = new (std::nothrow) char[ivHexLen];
     if (ivHex == nullptr) {
         DLP_LOG_ERROR(LABEL, "New memory fail");
-        return DLP_OPERATE_MEMORY_FAIL;
+        return DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL;
     }
-    res = ByteToHexString(policy.iv, policy.ivLen, ivHex, ivHexLen);
+    res = ByteToHexString(policy.GetIv(), policy.GetIvLen(), ivHex, ivHexLen);
     if (res != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Byte to hexstring fail");
         FreeCharBuffer(keyHex, keyHexLen);
@@ -169,11 +175,12 @@ int32_t DlpPermissionSerializer::SerializeDlpPermission(const PermissionPolicy& 
     }
 
     permInfoJson = {
-        {AESKEY_LEN, policy.aeskeyLen},
+        {AESKEY_LEN, policy.GetAeskeyLen()},
         {AESKEY, keyHex},
-        {IV_LEN, policy.ivLen},
+        {IV_LEN, policy.GetIvLen()},
         {IV, ivHex},
-        {OWNER_ACCOUNT, policy.ownerAccount},
+        {OWNER_ACCOUNT, policy.ownerAccount_},
+        {OWNER_ACCOUNT_TYPE, policy.ownerAccountType_},
         {AUTH_USER_LIST, authUsersJson},
     };
     DLP_LOG_INFO(LABEL, "Serialize successfully!");
@@ -182,7 +189,7 @@ int32_t DlpPermissionSerializer::SerializeDlpPermission(const PermissionPolicy& 
     return DLP_OK;
 }
 
-int32_t DlpPermissionSerializer::DeserializeDlpPermission(const nlohmann::json& permJson, PermissionPolicy& info)
+int32_t DlpPermissionSerializer::DeserializeDlpPermission(const nlohmann::json& permJson, PermissionPolicy& policy)
 {
     DLP_LOG_DEBUG(LABEL, "Called");
     if (permJson.find(AUTH_USER_LIST) != permJson.end() && permJson.at(AUTH_USER_LIST).is_array()) {
@@ -190,27 +197,41 @@ int32_t DlpPermissionSerializer::DeserializeDlpPermission(const nlohmann::json& 
         std::vector<AuthUserInfo> userList;
         int32_t res = DeserializeAuthUserList(jsonList, userList);
         if (res == DLP_OK) {
-            info.authUsers = userList;
+            policy.authUsers_ = userList;
         } else {
             return res;
         }
     }
 
     if (permJson.find(OWNER_ACCOUNT) != permJson.end() && permJson.at(OWNER_ACCOUNT).is_string()) {
-        permJson.at(OWNER_ACCOUNT).get_to(info.ownerAccount);
+        permJson.at(OWNER_ACCOUNT).get_to(policy.ownerAccount_);
     }
 
-    int32_t res = ReadUint8ArrayFromJson(permJson, &info.aeskey, info.aeskeyLen, AESKEY, AESKEY_LEN);
+    if (permJson.find(OWNER_ACCOUNT_TYPE) != permJson.end() && permJson.at(OWNER_ACCOUNT_TYPE).is_number()) {
+        permJson.at(OWNER_ACCOUNT_TYPE).get_to(policy.ownerAccountType_);
+    }
+    uint8_t* key = nullptr;
+    uint32_t keyLen = 0;
+    int32_t res = ReadUint8ArrayFromJson(permJson, &key, keyLen, AESKEY, AESKEY_LEN);
     if (res != DLP_OK) {
-        FreePermissionPolicyMem(info);
         return res;
     }
-    res = ReadUint8ArrayFromJson(permJson, &info.iv, info.ivLen, IV, IV_LEN);
+    policy.SetAeskey(key, keyLen);
+    if (key != nullptr) {
+        delete[] key;
+        key = nullptr;
+    }
+    uint8_t* iv = nullptr;
+    uint32_t ivLen = 0;
+    res = ReadUint8ArrayFromJson(permJson, &iv, ivLen, IV, IV_LEN);
     if (res != DLP_OK) {
-        FreePermissionPolicyMem(info);
         return res;
     }
-
+    policy.SetIv(iv, ivLen);
+    if (iv != nullptr) {
+        delete[] iv;
+        iv = nullptr;
+    }
     DLP_LOG_INFO(LABEL, "Deserialize successfully!");
     return DLP_OK;
 }
