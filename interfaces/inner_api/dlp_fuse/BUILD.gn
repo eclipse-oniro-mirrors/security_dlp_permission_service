@@ -32,13 +32,21 @@ ohos_shared_library("libdlp_fuse") {
   include_dirs = [
     "//utils/native/base/include",
     "$DLP_ROOT_DIR/frameworks/common/include",
+    "$DLP_ROOT_DIR/interfaces/inner_api/dlp_parse/include",
+    "$DLP_ROOT_DIR/interfaces/inner_api/dlp_permission/include/",
+    "$DLP_ROOT_DIR/services/dlp_permission/sa/credential_test/",
     "include",
     "src",
   ]
 
-  sources = [ "src/fuse_daemon.cpp" ]
+  sources = [
+    "src/dlp_link_file.cpp",
+    "src/dlp_link_manager.cpp",
+    "src/fuse_daemon.cpp",
+  ]
 
   deps = [
+    "$DLP_ROOT_DIR/interfaces/inner_api/dlp_parse:libdlpparse",
     "//third_party/libfuse:libfuse",
     "//utils/native/base:utils",
   ]

@@ -60,9 +60,7 @@
           "name": "//base/security/dlp_permission_service/interfaces/inner_api/dlp_parse:libdlpparse",
           "header": {
             "header_files": [
-              "dlp_format.h",
-              "dlp_crypt.h",
-              "dlp_fuse.h"
+              "dlp_crypt.h"
             ],
             "header_base": "//base/security/dlp_permission_service/interfaces/inner_api/dlp_parse/include"
           }
@@ -72,7 +70,8 @@
       "test": [
         "//base/security/dlp_permission_service:dlp_permission_build_module_test",
         "//base/security/dlp_permission_service/test/fuzztest/dlp_permission:fuzztest",
-        "//base/security/dlp_permission_service/interfaces/inner_api/dlp_parse/test:dlp_unittest"
+        "//base/security/dlp_permission_service/interfaces/inner_api/dlp_parse/test:dlp_unittest",
+        "//base/security/dlp_permission_service/interfaces/inner_api/dlp_fuse/test:dlp_fuse_test"
       ]
     }
   }

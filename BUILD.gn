@@ -36,6 +36,7 @@ group("dlp_permission_build_module_test") {
   if (is_standard_system) {
     deps += [
       "//base/security/dlp_permission_service/interfaces/inner_api/dlp_fuse/test:unittest",
+      "//base/security/dlp_permission_service/interfaces/inner_api/dlp_parse/test:unittest",
       "//base/security/dlp_permission_service/interfaces/inner_api/dlp_permission/test:unittest",
     ]
   }

@@ -14,87 +14,85 @@
  */
 
 #include "dlp_crypt.h"
-#include "dlp_utils.h"
 #include <cstdio>
 #include <cstdlib>
 #include <openssl/err.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <securec.h>
+#include "dlp_permission.h"
+#include "dlp_permission_log.h"
+using namespace OHOS::Security::DlpPermission;
+
+static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpParse"};
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-inline int32_t DlpOpensslCheckBlob(const struct DlpBlob *blob)
+inline int32_t DlpOpensslCheckBlob(const struct DlpBlob* blob)
 {
     if ((blob == nullptr) || (blob->data == nullptr)) {
-        return DLP_ERROR_INVALID_ARGUMENT;
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
-    return DLP_SUCCESS;
+    return DLP_OK;
 }
 
-inline int32_t DlpOpensslCheckBlobZero(const struct DlpBlob *blob)
+inline int32_t DlpOpensslCheckBlobZero(const struct DlpBlob* blob)
 {
     if (blob == nullptr) {
-        return DLP_ERROR_INVALID_ARGUMENT;
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
     if (blob->data == nullptr && blob->size == 0) {
-        return DLP_SUCCESS;
+        return DLP_OK;
     }
 
     if (blob->data == nullptr) {
-        return DLP_ERROR_INVALID_ARGUMENT;
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    return DLP_SUCCESS;
+    return DLP_OK;
 }
-
 
 static int32_t AesGenKeyCheckParam(const uint32_t keySize)
 {
     if ((keySize != DLP_AES_KEY_SIZE_128) && (keySize != DLP_AES_KEY_SIZE_192) && (keySize != DLP_AES_KEY_SIZE_256)) {
-        DLP_LOG_E("Invalid aes key len %x!", keySize);
-        return DLP_ERROR_INVALID_ARGUMENT;
+        DLP_LOG_ERROR(LABEL, "Invalid aes key len %x!", keySize);
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
-    return DLP_SUCCESS;
+    return DLP_OK;
 }
 
-int32_t DlpOpensslGenerateRandomKey(const uint32_t keySize, struct DlpBlob *key)
+int32_t DlpOpensslGenerateRandomKey(const uint32_t keySize, struct DlpBlob* key)
 {
-    if (AesGenKeyCheckParam(keySize) != DLP_SUCCESS || key == nullptr) {
-        DLP_LOG_E("aes generate key invalid params!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+    if (AesGenKeyCheckParam(keySize) != DLP_OK || key == nullptr) {
+        DLP_LOG_ERROR(LABEL, "aes generate key invalid params!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
     uint32_t keySizeByte = keySize / BIT_NUM_OF_UINT8;
-    int32_t ret = DLP_FAILURE;
 
-    uint8_t *tmpKey = (uint8_t *)DlpMalloc(keySizeByte);
+    uint8_t* tmpKey = (uint8_t*)malloc(keySizeByte);
+
     if (tmpKey == nullptr) {
-        DLP_LOG_E("malloc buffer failed");
-        return DLP_ERROR_MALLOC_FAIL;
+        DLP_LOG_ERROR(LABEL, "malloc buffer failed");
+        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
-    do {
-        if (RAND_bytes(tmpKey, keySizeByte) <= 0) {
-            DLP_LOG_E("generate key is failed:0x%x", ret);
-            break;
-        }
-
+    int res = RAND_bytes(tmpKey, keySizeByte);
+    if (res <= 0) {
+        DLP_LOG_ERROR(LABEL, "generate key is failed, errorCode: %{public}d", res);
+        (void)memset_s(tmpKey, keySizeByte, 0, keySizeByte);
+        free(tmpKey);
+        return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
+    } else {
         key->data = tmpKey;
         key->size = keySizeByte;
-        ret = DLP_SUCCESS;
-    } while (0);
-
-    if (ret != DLP_SUCCESS) {
-        (void)memset_s(tmpKey, keySizeByte, 0, keySizeByte);
-        DlpFree(tmpKey);
     }
-    return ret;
+    return DLP_OK;
 }
 
-static const EVP_CIPHER *GetCtrCipherType(uint32_t keySize)
+static const EVP_CIPHER* GetCtrCipherType(uint32_t keySize)
 {
     switch (keySize) {
         case DLP_KEY_BYTES(DLP_AES_KEY_SIZE_128):
@@ -108,7 +106,7 @@ static const EVP_CIPHER *GetCtrCipherType(uint32_t keySize)
     }
 }
 
-static const EVP_CIPHER *GetCipherType(uint32_t keySize, uint32_t mode)
+static const EVP_CIPHER* GetCipherType(uint32_t keySize, uint32_t mode)
 {
     if (mode == DLP_MODE_CTR) {
         return GetCtrCipherType(keySize);
@@ -125,25 +123,25 @@ inline void DlpLogOpensslError(void)
     errCode = ERR_get_error();
     ERR_error_string_n(errCode, szErr, DLP_OPENSSL_ERROR_LEN);
 
-    DLP_LOG_E("Openssl engine fail, error code = %lu, error string = %s", errCode, szErr);
+    DLP_LOG_ERROR(LABEL, "Openssl engine fail, error code = %lu, error string = %s", errCode, szErr);
 }
 
-static int32_t OpensslAesCipherInit(const struct DlpBlob *key, const struct DlpUsageSpec *usageSpec, bool isEncrypt,
-    EVP_CIPHER_CTX **ctx)
+static int32_t OpensslAesCipherInit(
+    const struct DlpBlob* key, const struct DlpUsageSpec* usageSpec, bool isEncrypt, EVP_CIPHER_CTX** ctx)
 {
     int32_t ret;
-    struct DlpCipherParam *cipherParam = usageSpec->algParam;
+    struct DlpCipherParam* cipherParam = usageSpec->algParam;
 
     *ctx = EVP_CIPHER_CTX_new();
     if (*ctx == nullptr) {
         DlpLogOpensslError();
-        return DLP_ERROR_CRYPTO_ENGINE_ERROR;
+        return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
 
-    const EVP_CIPHER *cipher = GetCipherType(key->size, usageSpec->mode);
+    const EVP_CIPHER* cipher = GetCipherType(key->size, usageSpec->mode);
     if (cipher == nullptr) {
         EVP_CIPHER_CTX_free(*ctx);
-        return DLP_ERROR_INVALID_ARGUMENT;
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
     if (isEncrypt) {
@@ -154,94 +152,94 @@ static int32_t OpensslAesCipherInit(const struct DlpBlob *key, const struct DlpU
     if (ret != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
         EVP_CIPHER_CTX_free(*ctx);
-        return DLP_ERROR_CRYPTO_ENGINE_ERROR;
+        return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
 
     if (isEncrypt) {
-        ret = EVP_EncryptInit_ex(*ctx, nullptr, nullptr, key->data, (cipherParam == nullptr) ?
-            nullptr : cipherParam->iv.data);
+        ret = EVP_EncryptInit_ex(
+            *ctx, nullptr, nullptr, key->data, (cipherParam == nullptr) ? nullptr : cipherParam->iv.data);
     } else {
-        ret = EVP_DecryptInit_ex(*ctx, nullptr, nullptr, key->data, (cipherParam == nullptr) ?
-            nullptr : cipherParam->iv.data);
+        ret = EVP_DecryptInit_ex(
+            *ctx, nullptr, nullptr, key->data, (cipherParam == nullptr) ? nullptr : cipherParam->iv.data);
     }
     if (ret != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
         EVP_CIPHER_CTX_free(*ctx);
-        return DLP_ERROR_CRYPTO_ENGINE_ERROR;
+        return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
 
     ret = EVP_CIPHER_CTX_set_padding(*ctx, OPENSSL_CTX_PADDING_ENABLE);
     if (ret != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
         EVP_CIPHER_CTX_free(*ctx);
-        return DLP_ERROR_CRYPTO_ENGINE_ERROR;
+        return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
 
-    return DLP_SUCCESS;
+    return DLP_OK;
 }
 
-static int32_t OpensslAesCipherEncryptFinal(EVP_CIPHER_CTX *ctx, const struct DlpBlob *message,
-    struct DlpBlob *cipherText)
+static int32_t OpensslAesCipherEncryptFinal(
+    EVP_CIPHER_CTX* ctx, const struct DlpBlob* message, struct DlpBlob* cipherText)
 {
     int32_t outLen = 0;
 
     if (EVP_EncryptUpdate(ctx, cipherText->data, &outLen, message->data, message->size) != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
         EVP_CIPHER_CTX_free(ctx);
-        return DLP_ERROR_CRYPTO_ENGINE_ERROR;
+        return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
     cipherText->size = (uint32_t)outLen;
 
     if (EVP_EncryptFinal_ex(ctx, cipherText->data + outLen, &outLen) != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
         EVP_CIPHER_CTX_free(ctx);
-        return DLP_ERROR_CRYPTO_ENGINE_ERROR;
+        return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
     cipherText->size += (uint32_t)outLen;
 
     EVP_CIPHER_CTX_free(ctx);
-    return DLP_SUCCESS;
+    return DLP_OK;
 }
 
-static int32_t OpensslAesCipherCryptInitParams(const struct DlpBlob *key, EVP_CIPHER_CTX *ctx,
-    struct DlpCipherParam *cipherParam, bool isEncrypt)
+static int32_t OpensslAesCipherCryptInitParams(const struct DlpBlob* key, EVP_CIPHER_CTX* ctx,
+    struct DlpCipherParam* cipherParam, bool isEncrypt, const struct DlpUsageSpec* usageSpec)
 {
     int32_t ret;
     if (isEncrypt) {
-        ret = EVP_EncryptInit_ex(ctx, nullptr, nullptr, key->data, (cipherParam == nullptr) ?
-            nullptr : cipherParam->iv.data);
+        ret = EVP_EncryptInit_ex(
+            ctx, nullptr, nullptr, key->data, (cipherParam == nullptr) ? nullptr : cipherParam->iv.data);
     } else {
-        ret = EVP_DecryptInit_ex(ctx, nullptr, nullptr, key->data, (cipherParam == nullptr) ?
-            nullptr : cipherParam->iv.data);
+        ret = EVP_DecryptInit_ex(
+            ctx, nullptr, nullptr, key->data, (cipherParam == nullptr) ? nullptr : cipherParam->iv.data);
     }
     if (ret != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
-        return DLP_ERROR_CRYPTO_ENGINE_ERROR;
+        return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
     ret = EVP_CIPHER_CTX_set_padding(ctx, OPENSSL_CTX_PADDING_ENABLE);
     if (ret != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
-        return DLP_ERROR_CRYPTO_ENGINE_ERROR;
+        return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
-    return DLP_SUCCESS;
+    return DLP_OK;
 }
 
-static int32_t OpensslAesCipherCryptInit(const struct DlpBlob *key, const struct DlpUsageSpec *usageSpec,
-    bool isEncrypt, void **cryptoCtx)
+static int32_t OpensslAesCipherCryptInit(
+    const struct DlpBlob* key, const struct DlpUsageSpec* usageSpec, bool isEncrypt, void** cryptoCtx)
 {
     int32_t ret;
-    struct DlpCipherParam *cipherParam = (struct DlpCipherParam *)usageSpec->algParam;
+    struct DlpCipherParam* cipherParam = (struct DlpCipherParam*)usageSpec->algParam;
 
-    EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
+    EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
     if (ctx == nullptr) {
         DlpLogOpensslError();
-        return DLP_ERROR_CRYPTO_ENGINE_ERROR;
+        return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
 
-    const EVP_CIPHER *cipher = GetCipherType(key->size, usageSpec->mode);
+    const EVP_CIPHER* cipher = GetCipherType(key->size, usageSpec->mode);
     if (cipher == nullptr) {
         EVP_CIPHER_CTX_free(ctx);
-        return DLP_ERROR_INVALID_ARGUMENT;
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
     if (isEncrypt) {
@@ -252,69 +250,68 @@ static int32_t OpensslAesCipherCryptInit(const struct DlpBlob *key, const struct
     if (ret != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
         EVP_CIPHER_CTX_free(ctx);
-        return DLP_ERROR_CRYPTO_ENGINE_ERROR;
+        return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
 
-    ret = OpensslAesCipherCryptInitParams(key, ctx, cipherParam, isEncrypt);
-    if (ret != DLP_SUCCESS) {
+    ret = OpensslAesCipherCryptInitParams(key, ctx, cipherParam, isEncrypt, usageSpec);
+    if (ret != DLP_OK) {
         EVP_CIPHER_CTX_free(ctx);
-        DLP_LOG_E("OpensslAesCipherCryptInitParams fail, ret = %d", ret);
+        DLP_LOG_ERROR(LABEL, "OpensslAesCipherCryptInitParams fail, ret = %d", ret);
         return ret;
     }
 
-    struct DlpOpensslAesCtx *outCtx = (struct DlpOpensslAesCtx *)DlpMalloc(sizeof(DlpOpensslAesCtx));
+    struct DlpOpensslAesCtx* outCtx = (struct DlpOpensslAesCtx*)malloc(sizeof(DlpOpensslAesCtx));
     if (outCtx == nullptr) {
         EVP_CIPHER_CTX_free(ctx);
-        return DLP_ERROR_MALLOC_FAIL;
+        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
     outCtx->mode = usageSpec->mode;
-    outCtx->append = static_cast<void *>(ctx);
+    outCtx->append = static_cast<void*>(ctx);
 
-    *cryptoCtx = static_cast<void *>(outCtx);
+    *cryptoCtx = static_cast<void*>(outCtx);
 
-    return DLP_SUCCESS;
+    return DLP_OK;
 }
 
-static int32_t OpensslAesCipherEncryptUpdate(void *cryptoCtx, const struct DlpBlob *message,
-    struct DlpBlob *cipherText)
+static int32_t OpensslAesCipherEncryptUpdate(void* cryptoCtx, const struct DlpBlob* message, struct DlpBlob* cipherText)
 {
-    struct DlpOpensslAesCtx *aesCtx = (struct DlpOpensslAesCtx *)cryptoCtx;
-    EVP_CIPHER_CTX *ctx = (EVP_CIPHER_CTX *)aesCtx->append;
+    struct DlpOpensslAesCtx* aesCtx = (struct DlpOpensslAesCtx*)cryptoCtx;
+    EVP_CIPHER_CTX* ctx = (EVP_CIPHER_CTX*)aesCtx->append;
 
     if (ctx == nullptr) {
-        return DLP_ERROR_NULL_POINTER;
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
     int32_t outLen = 0;
     if (EVP_EncryptUpdate(ctx, cipherText->data, &outLen, message->data, message->size) != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
-        return DLP_ERROR_CRYPTO_ENGINE_ERROR;
+        return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
     cipherText->size = (uint32_t)outLen;
 
-    return DLP_SUCCESS;
+    return DLP_OK;
 }
 
-static int32_t OpensslAesCipherEncryptFinalThree(void **cryptoCtx, const struct DlpBlob *message,
-    struct DlpBlob *cipherText)
+static int32_t OpensslAesCipherEncryptFinalThree(
+    void** cryptoCtx, const struct DlpBlob* message, struct DlpBlob* cipherText)
 {
-    struct DlpOpensslAesCtx *aesCtx = (struct DlpOpensslAesCtx *)*cryptoCtx;
-    EVP_CIPHER_CTX *ctx = (EVP_CIPHER_CTX *)aesCtx->append;
+    struct DlpOpensslAesCtx* aesCtx = (struct DlpOpensslAesCtx*)*cryptoCtx;
+    EVP_CIPHER_CTX* ctx = (EVP_CIPHER_CTX*)aesCtx->append;
 
     if (ctx == nullptr) {
         DLP_FREE_PTR(*cryptoCtx);
-        return DLP_ERROR_NULL_POINTER;
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    int32_t ret = DLP_SUCCESS;
+    int32_t ret = DLP_OK;
     do {
         int32_t outLen = 0;
         if (message->size != 0) {
             if (EVP_EncryptUpdate(ctx, cipherText->data, &outLen, message->data, message->size) !=
                 DLP_OPENSSL_SUCCESS) {
                 DlpLogOpensslError();
-                ret = DLP_ERROR_CRYPTO_ENGINE_ERROR;
+                ret = DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
                 break;
             }
             cipherText->size = (uint32_t)outLen;
@@ -322,7 +319,7 @@ static int32_t OpensslAesCipherEncryptFinalThree(void **cryptoCtx, const struct 
 
         if (EVP_EncryptFinal_ex(ctx, (cipherText->data + outLen), &outLen) != DLP_OPENSSL_SUCCESS) {
             DlpLogOpensslError();
-            ret = DLP_ERROR_CRYPTO_ENGINE_ERROR;
+            ret = DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
             break;
         }
         cipherText->size += (uint32_t)outLen;
@@ -335,42 +332,42 @@ static int32_t OpensslAesCipherEncryptFinalThree(void **cryptoCtx, const struct 
     return ret;
 }
 
-static int32_t OpensslAesCipherDecryptUpdate(void *cryptoCtx, const struct DlpBlob *message, struct DlpBlob *plainText)
+static int32_t OpensslAesCipherDecryptUpdate(void* cryptoCtx, const struct DlpBlob* message, struct DlpBlob* plainText)
 {
-    struct DlpOpensslAesCtx *aesCtx = (struct DlpOpensslAesCtx *)cryptoCtx;
-    EVP_CIPHER_CTX *ctx = (EVP_CIPHER_CTX *)aesCtx->append;
+    struct DlpOpensslAesCtx* aesCtx = (struct DlpOpensslAesCtx*)cryptoCtx;
+    EVP_CIPHER_CTX* ctx = (EVP_CIPHER_CTX*)aesCtx->append;
 
     if (ctx == nullptr) {
-        return DLP_ERROR_NULL_POINTER;
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
     int32_t outLen = 0;
     if (EVP_DecryptUpdate(ctx, plainText->data, &outLen, message->data, message->size) != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
-        return DLP_ERROR_CRYPTO_ENGINE_ERROR;
+        return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
     plainText->size = (uint32_t)outLen;
 
-    return DLP_SUCCESS;
+    return DLP_OK;
 }
 
-static int32_t OpensslAesCipherDecryptFinalThree(void **cryptoCtx, const struct DlpBlob *message,
-    struct DlpBlob *plainText)
+static int32_t OpensslAesCipherDecryptFinalThree(
+    void** cryptoCtx, const struct DlpBlob* message, struct DlpBlob* plainText)
 {
-    struct DlpOpensslAesCtx *aesCtx = (struct DlpOpensslAesCtx *)*cryptoCtx;
-    EVP_CIPHER_CTX *ctx = (EVP_CIPHER_CTX *)aesCtx->append;
+    struct DlpOpensslAesCtx* aesCtx = (struct DlpOpensslAesCtx*)*cryptoCtx;
+    EVP_CIPHER_CTX* ctx = (EVP_CIPHER_CTX*)aesCtx->append;
     if (ctx == nullptr) {
         DLP_FREE_PTR(*cryptoCtx);
-        return DLP_ERROR_NULL_POINTER;
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    int32_t ret = DLP_SUCCESS;
+    int32_t ret = DLP_OK;
     do {
         int32_t outLen = 0;
         if (message->size != 0) {
             if (EVP_DecryptUpdate(ctx, plainText->data, &outLen, message->data, message->size) != DLP_OPENSSL_SUCCESS) {
                 DlpLogOpensslError();
-                ret = DLP_ERROR_CRYPTO_ENGINE_ERROR;
+                ret = DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
                 break;
             }
             plainText->size = (uint32_t)outLen;
@@ -378,7 +375,7 @@ static int32_t OpensslAesCipherDecryptFinalThree(void **cryptoCtx, const struct 
 
         if (EVP_DecryptFinal_ex(ctx, plainText->data + outLen, &outLen) != DLP_OPENSSL_SUCCESS) {
             DlpLogOpensslError();
-            ret = DLP_ERROR_CRYPTO_ENGINE_ERROR;
+            ret = DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
             break;
         }
         plainText->size += (uint32_t)outLen;
@@ -390,326 +387,326 @@ static int32_t OpensslAesCipherDecryptFinalThree(void **cryptoCtx, const struct 
     return ret;
 }
 
-static int32_t OpensslAesCipherDecryptFinal(EVP_CIPHER_CTX *ctx, const struct DlpBlob *message,
-    struct DlpBlob *plainText)
+static int32_t OpensslAesCipherDecryptFinal(
+    EVP_CIPHER_CTX* ctx, const struct DlpBlob* message, struct DlpBlob* plainText)
 {
     int32_t outLen = 0;
 
     if (EVP_DecryptUpdate(ctx, plainText->data, &outLen, message->data, message->size) != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
         EVP_CIPHER_CTX_free(ctx);
-        return DLP_ERROR_CRYPTO_ENGINE_ERROR;
+        return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
     plainText->size = (uint32_t)outLen;
 
     if (EVP_DecryptFinal_ex(ctx, plainText->data + outLen, &outLen) != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
         EVP_CIPHER_CTX_free(ctx);
-        return DLP_ERROR_CRYPTO_ENGINE_ERROR;
+        return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
     plainText->size += (uint32_t)outLen;
 
     EVP_CIPHER_CTX_free(ctx);
-    return DLP_SUCCESS;
+    return DLP_OK;
 }
 
-int32_t DlpOpensslAesEncryptInit(void **cryptoCtx, const struct DlpBlob *key, const struct DlpUsageSpec *usageSpec)
+int32_t DlpOpensslAesEncryptInit(void** cryptoCtx, const struct DlpBlob* key, const struct DlpUsageSpec* usageSpec)
 {
     if (cryptoCtx == nullptr) {
-        DLP_LOG_E("Invalid param cryptoCtx!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+        DLP_LOG_ERROR(LABEL, "Invalid param cryptoCtx!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    if (DlpOpensslCheckBlob(key) != DLP_SUCCESS || usageSpec == nullptr) {
-        DLP_LOG_E("Invalid param!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+    if (DlpOpensslCheckBlob(key) != DLP_OK || usageSpec == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Invalid param!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
     int32_t ret;
     switch (usageSpec->mode) {
         case DLP_MODE_CTR:
             ret = OpensslAesCipherCryptInit(key, usageSpec, true, cryptoCtx);
-            if (ret != DLP_SUCCESS) {
-                DLP_LOG_E("OpensslAesCipherCryptInit fail, ret = %d", ret);
+            if (ret != DLP_OK) {
+                DLP_LOG_ERROR(LABEL, "OpensslAesCipherCryptInit fail, ret = %d", ret);
                 return ret;
             }
             break;
 
         default:
-            DLP_LOG_E("Unsupport aes mode! mode = 0x%x", usageSpec->mode);
-            return DLP_ERROR_NOT_SUPPORTED;
+            DLP_LOG_ERROR(LABEL, "Unsupport aes mode! mode = 0x%x", usageSpec->mode);
+            return DLP_PARSE_ERROR_OPERATION_UNSUPPORTED;
     }
 
-    return DLP_SUCCESS;
+    return DLP_OK;
 }
 
-int32_t DlpOpensslAesEncryptUpdate(void *cryptoCtx, const struct DlpBlob *message, struct DlpBlob *cipherText)
+int32_t DlpOpensslAesEncryptUpdate(void* cryptoCtx, const struct DlpBlob* message, struct DlpBlob* cipherText)
 {
     if (cryptoCtx == nullptr) {
-        DLP_LOG_E("Invalid param cryptoCtx!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+        DLP_LOG_ERROR(LABEL, "Invalid param cryptoCtx!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    if (DlpOpensslCheckBlob(message) != DLP_SUCCESS || DlpOpensslCheckBlob(cipherText) != DLP_SUCCESS) {
-        DLP_LOG_E("Invalid param!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+    if (DlpOpensslCheckBlob(message) != DLP_OK || DlpOpensslCheckBlob(cipherText) != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Invalid param!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    struct DlpOpensslAesCtx *contex = (struct DlpOpensslAesCtx *)cryptoCtx;
+    struct DlpOpensslAesCtx* contex = (struct DlpOpensslAesCtx*)cryptoCtx;
     uint32_t mode = contex->mode;
 
     int32_t ret;
     switch (mode) {
         case DLP_MODE_CTR:
             ret = OpensslAesCipherEncryptUpdate(cryptoCtx, message, cipherText);
-            if (ret != DLP_SUCCESS) {
-                DLP_LOG_E("OpensslAesCipherEncryptUpdate fail, ret = %d", ret);
+            if (ret != DLP_OK) {
+                DLP_LOG_ERROR(LABEL, "OpensslAesCipherEncryptUpdate fail, ret = %d", ret);
                 return ret;
             }
             break;
         default:
-            DLP_LOG_E("Unsupport aes mode! mode = 0x%x", mode);
-            return DLP_ERROR_NOT_SUPPORTED;
+            DLP_LOG_ERROR(LABEL, "Unsupport aes mode! mode = 0x%x", mode);
+            return DLP_PARSE_ERROR_OPERATION_UNSUPPORTED;
     }
 
-    return DLP_SUCCESS;
+    return DLP_OK;
 }
 
-int32_t DlpOpensslAesEncryptFinal(void **cryptoCtx, const struct DlpBlob *message, struct DlpBlob *cipherText)
+int32_t DlpOpensslAesEncryptFinal(void** cryptoCtx, const struct DlpBlob* message, struct DlpBlob* cipherText)
 {
     if (cryptoCtx == nullptr || *cryptoCtx == nullptr) {
-        DLP_LOG_E("Invalid param cryptoCtx!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+        DLP_LOG_ERROR(LABEL, "Invalid param cryptoCtx!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    if (DlpOpensslCheckBlobZero(message) != DLP_SUCCESS || DlpOpensslCheckBlob(cipherText) != DLP_SUCCESS) {
-        DLP_LOG_E("Invalid param!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+    if (DlpOpensslCheckBlobZero(message) != DLP_OK || DlpOpensslCheckBlob(cipherText) != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Invalid param!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    struct DlpOpensslAesCtx *contex = (struct DlpOpensslAesCtx *)*cryptoCtx;
+    struct DlpOpensslAesCtx* contex = (struct DlpOpensslAesCtx*)*cryptoCtx;
     uint32_t mode = contex->mode;
 
     int32_t ret;
     switch (mode) {
         case DLP_MODE_CTR:
             ret = OpensslAesCipherEncryptFinalThree(cryptoCtx, message, cipherText);
-            if (ret != DLP_SUCCESS) {
-                DLP_LOG_E("OpensslAesCipherEncryptFinalThree fail, ret = %d", ret);
+            if (ret != DLP_OK) {
+                DLP_LOG_ERROR(LABEL, "OpensslAesCipherEncryptFinalThree fail, ret = %d", ret);
                 return ret;
             }
             break;
         default:
-            DLP_LOG_E("Unsupport aes mode! mode = 0x%x", mode);
-            return DLP_ERROR_NOT_SUPPORTED;
+            DLP_LOG_ERROR(LABEL, "Unsupport aes mode! mode = 0x%x", mode);
+            return DLP_PARSE_ERROR_OPERATION_UNSUPPORTED;
     }
 
-    return DLP_SUCCESS;
+    return DLP_OK;
 }
 
-int32_t DlpOpensslAesDecryptInit(void **cryptoCtx, const struct DlpBlob *key, const struct DlpUsageSpec *usageSpec)
+int32_t DlpOpensslAesDecryptInit(void** cryptoCtx, const struct DlpBlob* key, const struct DlpUsageSpec* usageSpec)
 {
     if (cryptoCtx == nullptr) {
-        DLP_LOG_E("Invalid param cryptoCtx!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+        DLP_LOG_ERROR(LABEL, "Invalid param cryptoCtx!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    if (DlpOpensslCheckBlob(key) != DLP_SUCCESS || usageSpec == nullptr) {
-        DLP_LOG_E("Invalid param!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+    if (DlpOpensslCheckBlob(key) != DLP_OK || usageSpec == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Invalid param!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
     int32_t ret;
     switch (usageSpec->mode) {
         case DLP_MODE_CTR:
             ret = OpensslAesCipherCryptInit(key, usageSpec, false, cryptoCtx);
-            if (ret != DLP_SUCCESS) {
-                DLP_LOG_E("OpensslAesCipherCryptInit fail, ret = %d", ret);
+            if (ret != DLP_OK) {
+                DLP_LOG_ERROR(LABEL, "OpensslAesCipherCryptInit fail, ret = %d", ret);
                 return ret;
             }
             break;
         default:
-            DLP_LOG_E("Unsupport aes mode! mode = 0x%x", usageSpec->mode);
-            return DLP_ERROR_NOT_SUPPORTED;
+            DLP_LOG_ERROR(LABEL, "Unsupport aes mode! mode = 0x%x", usageSpec->mode);
+            return DLP_PARSE_ERROR_OPERATION_UNSUPPORTED;
     }
 
     return ret;
 }
 
-int32_t DlpOpensslAesDecryptUpdate(void *cryptoCtx, const struct DlpBlob *message, struct DlpBlob *plainText)
+int32_t DlpOpensslAesDecryptUpdate(void* cryptoCtx, const struct DlpBlob* message, struct DlpBlob* plainText)
 {
     if (cryptoCtx == nullptr) {
-        DLP_LOG_E("Invalid param cryptoCtx!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+        DLP_LOG_ERROR(LABEL, "Invalid param cryptoCtx!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
-    if (DlpOpensslCheckBlob(message) != DLP_SUCCESS || DlpOpensslCheckBlob(plainText) != DLP_SUCCESS) {
-        DLP_LOG_E("Invalid param!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+    if (DlpOpensslCheckBlob(message) != DLP_OK || DlpOpensslCheckBlob(plainText) != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Invalid param!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    struct DlpOpensslAesCtx *contex = (struct DlpOpensslAesCtx *)cryptoCtx;
+    struct DlpOpensslAesCtx* contex = (struct DlpOpensslAesCtx*)cryptoCtx;
     uint32_t mode = contex->mode;
 
     int32_t ret;
     switch (mode) {
         case DLP_MODE_CTR:
             ret = OpensslAesCipherDecryptUpdate(cryptoCtx, message, plainText);
-            if (ret != DLP_SUCCESS) {
-                DLP_LOG_E("OpensslAesCipherDecryptUpdate fail, ret = %d", ret);
+            if (ret != DLP_OK) {
+                DLP_LOG_ERROR(LABEL, "OpensslAesCipherDecryptUpdate fail, ret = %d", ret);
                 return ret;
             }
             break;
         default:
-            DLP_LOG_E("Unsupport aes mode! mode = 0x%x", mode);
-            return DLP_ERROR_NOT_SUPPORTED;
+            DLP_LOG_ERROR(LABEL, "Unsupport aes mode! mode = 0x%x", mode);
+            return DLP_PARSE_ERROR_OPERATION_UNSUPPORTED;
     }
 
     return ret;
 }
 
-int32_t DlpOpensslAesDecryptFinal(void **cryptoCtx, const struct DlpBlob *message, struct DlpBlob *cipherText)
+int32_t DlpOpensslAesDecryptFinal(void** cryptoCtx, const struct DlpBlob* message, struct DlpBlob* cipherText)
 {
     if (cryptoCtx == nullptr || *cryptoCtx == nullptr) {
-        DLP_LOG_E("Invalid param cryptoCtx!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+        DLP_LOG_ERROR(LABEL, "Invalid param cryptoCtx!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
-    if (DlpOpensslCheckBlobZero(message) != DLP_SUCCESS || DlpOpensslCheckBlob(cipherText) != DLP_SUCCESS) {
-        DLP_LOG_E("Invalid param!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+    if (DlpOpensslCheckBlobZero(message) != DLP_OK || DlpOpensslCheckBlob(cipherText) != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Invalid param!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    struct DlpOpensslAesCtx *contex = (struct DlpOpensslAesCtx *)*cryptoCtx;
+    struct DlpOpensslAesCtx* contex = (struct DlpOpensslAesCtx*)*cryptoCtx;
     uint32_t mode = contex->mode;
 
     int32_t ret;
     switch (mode) {
         case DLP_MODE_CTR:
             ret = OpensslAesCipherDecryptFinalThree(cryptoCtx, message, cipherText);
-            if (ret != DLP_SUCCESS) {
-                DLP_LOG_E("OpensslAesCipherDecryptFinalThree fail, ret = %d", ret);
+            if (ret != DLP_OK) {
+                DLP_LOG_ERROR(LABEL, "OpensslAesCipherDecryptFinalThree fail, ret = %d", ret);
                 return ret;
             }
             break;
         default:
-            DLP_LOG_E("Unsupport aes mode! mode = 0x%x", mode);
-            return DLP_ERROR_NOT_SUPPORTED;
+            DLP_LOG_ERROR(LABEL, "Unsupport aes mode! mode = 0x%x", mode);
+            return DLP_PARSE_ERROR_OPERATION_UNSUPPORTED;
     }
 
-    return DLP_SUCCESS;
+    return DLP_OK;
 }
 
-void DlpOpensslAesHalFreeCtx(void **cryptoCtx)
+void DlpOpensslAesHalFreeCtx(void** cryptoCtx)
 {
     if (cryptoCtx == nullptr || *cryptoCtx == nullptr) {
-        DLP_LOG_E("Openssl aes free ctx is null");
+        DLP_LOG_ERROR(LABEL, "Openssl aes free ctx is null");
         return;
     }
 
-    struct DlpOpensslAesCtx *opensslAesCtx = (struct DlpOpensslAesCtx *)*cryptoCtx;
+    struct DlpOpensslAesCtx* opensslAesCtx = (struct DlpOpensslAesCtx*)*cryptoCtx;
     switch (opensslAesCtx->mode) {
         case DLP_MODE_CTR:
-            if ((EVP_CIPHER_CTX *)opensslAesCtx->append != nullptr) {
-                EVP_CIPHER_CTX_free((EVP_CIPHER_CTX *)opensslAesCtx->append);
+            if ((EVP_CIPHER_CTX*)opensslAesCtx->append != nullptr) {
+                EVP_CIPHER_CTX_free((EVP_CIPHER_CTX*)opensslAesCtx->append);
                 opensslAesCtx->append = nullptr;
             }
             break;
 
         default:
-            DLP_LOG_E("Unsupport aes mode! mode = 0x%x", opensslAesCtx->mode);
+            DLP_LOG_ERROR(LABEL, "Unsupport aes mode! mode = 0x%x", opensslAesCtx->mode);
             break;
     }
 
     DLP_FREE_PTR(*cryptoCtx);
 }
 
-static int32_t AesParamCheck(const struct DlpBlob *key, const struct DlpUsageSpec *usageSpec,
-    const struct DlpBlob *message, struct DlpBlob *cipherText)
+static int32_t AesParamCheck(const struct DlpBlob* key, const struct DlpUsageSpec* usageSpec,
+    const struct DlpBlob* message, struct DlpBlob* cipherText)
 {
-    if (DlpOpensslCheckBlob(key) != DLP_SUCCESS) {
-        DLP_LOG_E("Invalid param key!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+    if (DlpOpensslCheckBlob(key) != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Invalid param key!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    if (DlpOpensslCheckBlob(message) != DLP_SUCCESS) {
-        DLP_LOG_E("Invalid param message!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+    if (DlpOpensslCheckBlob(message) != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Invalid param message!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    if (DlpOpensslCheckBlob(cipherText) != DLP_SUCCESS) {
-        DLP_LOG_E("Invalid param cipherText!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+    if (DlpOpensslCheckBlob(cipherText) != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Invalid param cipherText!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
     if (usageSpec == nullptr) {
-        DLP_LOG_E("Invalid param usageSpec!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+        DLP_LOG_ERROR(LABEL, "Invalid param usageSpec!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    return DLP_SUCCESS;
+    return DLP_OK;
 }
 
-int32_t DlpOpensslAesEncrypt(const struct DlpBlob *key, const struct DlpUsageSpec *usageSpec,
-    const struct DlpBlob *message, struct DlpBlob *cipherText)
+int32_t DlpOpensslAesEncrypt(const struct DlpBlob* key, const struct DlpUsageSpec* usageSpec,
+    const struct DlpBlob* message, struct DlpBlob* cipherText)
 {
-    if (AesParamCheck(key, usageSpec, message, cipherText) != DLP_SUCCESS) {
-        return DLP_ERROR_INVALID_ARGUMENT;
+    if (AesParamCheck(key, usageSpec, message, cipherText) != DLP_OK) {
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    EVP_CIPHER_CTX *ctx = nullptr;
+    EVP_CIPHER_CTX* ctx = nullptr;
     struct DlpBlob tmpCipherText = *cipherText;
 
     int32_t ret;
     switch (usageSpec->mode) {
         case DLP_MODE_CTR:
             ret = OpensslAesCipherInit(key, usageSpec, true, &ctx);
-            if (ret != DLP_SUCCESS) {
-                DLP_LOG_E("OpensslAesCipherInit fail, ret = %d", ret);
+            if (ret != DLP_OK) {
+                DLP_LOG_ERROR(LABEL, "OpensslAesCipherInit fail, ret = %d", ret);
                 return ret;
             }
 
             ret = OpensslAesCipherEncryptFinal(ctx, message, &tmpCipherText);
-            if (ret != DLP_SUCCESS) {
-                DLP_LOG_E("OpensslAesCipherEncryptFinal fail, ret = %d", ret);
+            if (ret != DLP_OK) {
+                DLP_LOG_ERROR(LABEL, "OpensslAesCipherEncryptFinal fail, ret = %d", ret);
                 return ret;
             }
             break;
 
         default:
-            DLP_LOG_E("Unsupport aes mode! mode = 0x%x", usageSpec->mode);
-            return DLP_ERROR_NOT_SUPPORTED;
+            DLP_LOG_ERROR(LABEL, "Unsupport aes mode! mode = 0x%x", usageSpec->mode);
+            return DLP_PARSE_ERROR_OPERATION_UNSUPPORTED;
     }
 
     cipherText->size = tmpCipherText.size;
-    return DLP_SUCCESS;
+    return DLP_OK;
 }
 
-int32_t DlpOpensslAesDecrypt(const struct DlpBlob *key, const struct DlpUsageSpec *usageSpec,
-    const struct DlpBlob *message, struct DlpBlob *plainText)
+int32_t DlpOpensslAesDecrypt(const struct DlpBlob* key, const struct DlpUsageSpec* usageSpec,
+    const struct DlpBlob* message, struct DlpBlob* plainText)
 {
-    if (AesParamCheck(key, usageSpec, message, plainText) != DLP_SUCCESS) {
-        return DLP_ERROR_INVALID_ARGUMENT;
+    if (AesParamCheck(key, usageSpec, message, plainText) != DLP_OK) {
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
-    EVP_CIPHER_CTX *ctx = nullptr;
+    EVP_CIPHER_CTX* ctx = nullptr;
     struct DlpBlob tmpPlainText = *plainText;
 
     int32_t ret;
     switch (usageSpec->mode) {
         case DLP_MODE_CTR:
             ret = OpensslAesCipherInit(key, usageSpec, false, &ctx);
-            if (ret != DLP_SUCCESS) {
-                DLP_LOG_E("OpensslAesCipherInit fail, ret = %d", ret);
+            if (ret != DLP_OK) {
+                DLP_LOG_ERROR(LABEL, "OpensslAesCipherInit fail, ret = %d", ret);
                 return ret;
             }
 
             ret = OpensslAesCipherDecryptFinal(ctx, message, &tmpPlainText);
-            if (ret != DLP_SUCCESS) {
-                DLP_LOG_E("OpensslAesCipherDecryptFinal fail, ret = %d", ret);
+            if (ret != DLP_OK) {
+                DLP_LOG_ERROR(LABEL, "OpensslAesCipherDecryptFinal fail, ret = %d", ret);
                 return ret;
             }
             break;
         default:
-            DLP_LOG_E("Unsupport aes mode! mode = 0x%x", usageSpec->mode);
-            return DLP_ERROR_NOT_SUPPORTED;
+            DLP_LOG_ERROR(LABEL, "Unsupport aes mode! mode = 0x%x", usageSpec->mode);
+            return DLP_PARSE_ERROR_OPERATION_UNSUPPORTED;
     }
 
     plainText->size = tmpPlainText.size;
@@ -724,14 +721,14 @@ static int32_t CheckDigestAlg(uint32_t alg)
         case DLP_DIGEST_SHA512:
             break;
         default:
-            DLP_LOG_E("Unsupport HASH Type!");
-            return DLP_ERROR_INVALID_DIGEST;
+            DLP_LOG_ERROR(LABEL, "Unsupport HASH Type!");
+            return DLP_PARSE_ERROR_DIGEST_INVALID;
     }
 
-    return DLP_SUCCESS;
+    return DLP_OK;
 }
 
-const EVP_MD *GetOpensslAlg(uint32_t alg)
+const EVP_MD* GetOpensslAlg(uint32_t alg)
 {
     switch (alg) {
         case DLP_DIGEST_SHA256:
@@ -756,70 +753,70 @@ static uint32_t GetHashLen(uint32_t alg)
     }
 }
 
-static int32_t HashCheckParam(uint32_t alg, const struct DlpBlob *msg, struct DlpBlob *hash)
+static int32_t HashCheckParam(uint32_t alg, const struct DlpBlob* msg, struct DlpBlob* hash)
 {
-    if (CheckDigestAlg(alg) != DLP_SUCCESS) {
-        DLP_LOG_E("Unsupport HASH Type!");
-        return DLP_ERROR_INVALID_DIGEST;
+    if (CheckDigestAlg(alg) != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Unsupport HASH Type!");
+        return DLP_PARSE_ERROR_DIGEST_INVALID;
     }
 
-    if (DlpOpensslCheckBlob(hash) != DLP_SUCCESS) {
-        DLP_LOG_E("Invalid param hash!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+    if (DlpOpensslCheckBlob(hash) != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Invalid param hash!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
     uint32_t hashLen = GetHashLen(alg);
     if (hash->size < hashLen) {
-        DLP_LOG_E("hash buff too short!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+        DLP_LOG_ERROR(LABEL, "hash buff too short!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    if (DlpOpensslCheckBlob(msg) != DLP_SUCCESS) {
-        DLP_LOG_E("Invalid param msg!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+    if (DlpOpensslCheckBlob(msg) != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Invalid param msg!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    return DLP_SUCCESS;
+    return DLP_OK;
 }
 
-int32_t DlpOpensslHash(uint32_t alg, const struct DlpBlob *msg, struct DlpBlob *hash)
+int32_t DlpOpensslHash(uint32_t alg, const struct DlpBlob* msg, struct DlpBlob* hash)
 {
     int32_t ret = HashCheckParam(alg, msg, hash);
-    if (ret != DLP_SUCCESS) {
-        DLP_LOG_E("Invalid Params!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+    if (ret != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Invalid Params!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    const EVP_MD *opensslAlg = GetOpensslAlg(alg);
+    const EVP_MD* opensslAlg = GetOpensslAlg(alg);
     if (opensslAlg == nullptr) {
-        DLP_LOG_E("get openssl algorithm fail");
-        return DLP_ERROR_CRYPTO_ENGINE_ERROR;
+        DLP_LOG_ERROR(LABEL, "get openssl algorithm fail");
+        return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
 
     ret = EVP_Digest(msg->data, msg->size, hash->data, &hash->size, opensslAlg, nullptr);
     if (ret != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
-        return DLP_ERROR_CRYPTO_ENGINE_ERROR;
+        return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
-    return DLP_SUCCESS;
+    return DLP_OK;
 }
 
-int32_t DlpOpensslHashInit(void **cryptoCtx, uint32_t alg)
+int32_t DlpOpensslHashInit(void** cryptoCtx, uint32_t alg)
 {
-    if (cryptoCtx == nullptr || CheckDigestAlg(alg) != DLP_SUCCESS) {
-        DLP_LOG_E("invalid param!");
-        return DLP_ERROR_INVALID_DIGEST;
+    if (cryptoCtx == nullptr || CheckDigestAlg(alg) != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "invalid param!");
+        return DLP_PARSE_ERROR_DIGEST_INVALID;
     }
 
-    const EVP_MD *opensslAlg = GetOpensslAlg(alg);
+    const EVP_MD* opensslAlg = GetOpensslAlg(alg);
     if (opensslAlg == nullptr) {
-        DLP_LOG_E("get openssl algorithm fail");
-        return DLP_ERROR_CRYPTO_ENGINE_ERROR;
+        DLP_LOG_ERROR(LABEL, "get openssl algorithm fail");
+        return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
 
-    EVP_MD_CTX *tmpctx = EVP_MD_CTX_new();
+    EVP_MD_CTX* tmpctx = EVP_MD_CTX_new();
     if (tmpctx == nullptr) {
-        return DLP_ERROR_NULL_POINTER;
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
     EVP_MD_CTX_set_flags(tmpctx, EVP_MD_CTX_FLAG_ONESHOT);
@@ -827,81 +824,81 @@ int32_t DlpOpensslHashInit(void **cryptoCtx, uint32_t alg)
     if (ret != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
         EVP_MD_CTX_free(tmpctx);
-        return DLP_ERROR_CRYPTO_ENGINE_ERROR;
+        return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
-    *cryptoCtx = static_cast<void *>(tmpctx);
-    return DLP_SUCCESS;
+    *cryptoCtx = static_cast<void*>(tmpctx);
+    return DLP_OK;
 }
 
-int32_t DlpOpensslHashUpdate(void *cryptoCtx, const struct DlpBlob *msg)
+int32_t DlpOpensslHashUpdate(void* cryptoCtx, const struct DlpBlob* msg)
 {
     if (cryptoCtx == nullptr) {
-        DLP_LOG_E("Invalid param cryptoCtx!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+        DLP_LOG_ERROR(LABEL, "Invalid param cryptoCtx!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    if (DlpOpensslCheckBlob(msg) != DLP_SUCCESS) {
-        DLP_LOG_E("Invalid param msg!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+    if (DlpOpensslCheckBlob(msg) != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Invalid param msg!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    int32_t ret = EVP_DigestUpdate((EVP_MD_CTX *)cryptoCtx, (void *)msg->data, msg->size);
+    int32_t ret = EVP_DigestUpdate((EVP_MD_CTX*)cryptoCtx, (void*)msg->data, msg->size);
     if (ret != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
-        return DLP_ERROR_CRYPTO_ENGINE_ERROR;
+        return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
-    return DLP_SUCCESS;
+    return DLP_OK;
 }
 
-int32_t DlpOpensslHashFinal(void **cryptoCtx, const struct DlpBlob *msg, struct DlpBlob *hash)
+int32_t DlpOpensslHashFinal(void** cryptoCtx, const struct DlpBlob* msg, struct DlpBlob* hash)
 {
     if (cryptoCtx == nullptr || *cryptoCtx == nullptr) {
-        DLP_LOG_E("Invalid param cryptoCtx!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+        DLP_LOG_ERROR(LABEL, "Invalid param cryptoCtx!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    if (DlpOpensslCheckBlobZero(msg) != DLP_SUCCESS) {
-        DLP_LOG_E("Invalid param msg!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+    if (DlpOpensslCheckBlobZero(msg) != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Invalid param msg!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
-    if (DlpOpensslCheckBlob(hash) != DLP_SUCCESS) {
-        DLP_LOG_E("Invalid param hash!");
-        return DLP_ERROR_INVALID_ARGUMENT;
+    if (DlpOpensslCheckBlob(hash) != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Invalid param hash!");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
     int32_t ret;
     if (msg->size != 0) {
-        ret = EVP_DigestUpdate((EVP_MD_CTX *)*cryptoCtx, msg->data, msg->size);
+        ret = EVP_DigestUpdate((EVP_MD_CTX*)*cryptoCtx, msg->data, msg->size);
         if (ret != DLP_OPENSSL_SUCCESS) {
             DlpLogOpensslError();
-            EVP_MD_CTX_free((EVP_MD_CTX *)*cryptoCtx);
+            EVP_MD_CTX_free((EVP_MD_CTX*)*cryptoCtx);
             *cryptoCtx = nullptr;
-            return DLP_ERROR_CRYPTO_ENGINE_ERROR;
+            return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
         }
     }
 
-    ret = EVP_DigestFinal_ex((EVP_MD_CTX *)*cryptoCtx, hash->data, &hash->size);
+    ret = EVP_DigestFinal_ex((EVP_MD_CTX*)*cryptoCtx, hash->data, &hash->size);
     if (ret != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
-        EVP_MD_CTX_free((EVP_MD_CTX *)*cryptoCtx);
+        EVP_MD_CTX_free((EVP_MD_CTX*)*cryptoCtx);
         *cryptoCtx = nullptr;
-        return DLP_ERROR_CRYPTO_ENGINE_ERROR;
+        return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
 
-    EVP_MD_CTX_free((EVP_MD_CTX *)*cryptoCtx);
+    EVP_MD_CTX_free((EVP_MD_CTX*)*cryptoCtx);
     *cryptoCtx = nullptr;
-    return DLP_SUCCESS;
+    return DLP_OK;
 }
 
-void DlpOpensslHashFreeCtx(void **cryptoCtx)
+void DlpOpensslHashFreeCtx(void** cryptoCtx)
 {
     if (cryptoCtx == nullptr || *cryptoCtx == nullptr) {
-        DLP_LOG_E("Openssl Hash freeCtx param error");
+        DLP_LOG_ERROR(LABEL, "Openssl Hash freeCtx param error");
         return;
     }
 
     if (*cryptoCtx != nullptr) {
-        EVP_MD_CTX_free((EVP_MD_CTX *)*cryptoCtx);
+        EVP_MD_CTX_free((EVP_MD_CTX*)*cryptoCtx);
         *cryptoCtx = nullptr;
     }
 }

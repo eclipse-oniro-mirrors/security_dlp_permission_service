@@ -27,6 +27,9 @@ ohos_unittest("dlp_fuse_test") {
     "//utils/native/base/include",
     "//third_party/googletest/include",
     "$DLP_ROOT_DIR/interfaces/inner_api/dlp_fuse/include",
+    "$DLP_ROOT_DIR/interfaces/inner_api/dlp_parse/include",
+    "$DLP_ROOT_DIR/interfaces/inner_api/dlp_permission/include/",
+    "$DLP_ROOT_DIR/services/dlp_permission/sa/credential_test/",
     "$DLP_ROOT_DIR/frameworks/common/include",
   ]
 
@@ -36,6 +39,8 @@ ohos_unittest("dlp_fuse_test") {
 
   deps = [
     "$DLP_ROOT_DIR/interfaces/inner_api/dlp_fuse:libdlp_fuse",
+    "$DLP_ROOT_DIR/interfaces/inner_api/dlp_parse:libdlpparse",
+    "$DLP_ROOT_DIR/interfaces/inner_api/dlp_permission:libdlp_permission_sdk",
     "//third_party/libfuse:libfuse",
     "//utils/native/base:utils",
   ]

@@ -22,7 +22,6 @@
 extern "C" {
 #endif
 
-
 enum DlpKeyDigest {
     DLP_DIGEST_NONE = 0,
     DLP_DIGEST_SHA256 = 12,
@@ -33,7 +32,7 @@ enum DlpKeyDigest {
 struct DlpOpensslAesCtx {
     uint32_t mode;
     uint32_t padding;
-    void *append;
+    void* append;
 };
 
 enum DLP_DIGEST_LEN {
@@ -42,15 +41,15 @@ enum DLP_DIGEST_LEN {
     SHA512_LEN = 64,
 };
 
-#define OPENSSL_CTX_PADDING_NONE (0)  /* set chipher padding none */
-#define OPENSSL_CTX_PADDING_ENABLE (1)  /* set chipher padding enable */
+#define OPENSSL_CTX_PADDING_NONE (0)   /* set chipher padding none */
+#define OPENSSL_CTX_PADDING_ENABLE (1) /* set chipher padding enable */
 
 #define DLP_BITS_PER_BYTE (8)
 #define DLP_KEY_BYTES(keySize) (((keySize) + DLP_BITS_PER_BYTE - 1) / DLP_BITS_PER_BYTE)
 
 #define DLP_OPENSSL_ERROR_LEN 128
 
-#define DLP_OPENSSL_SUCCESS    1     /* openssl return 1: success */
+#define DLP_OPENSSL_SUCCESS 1 /* openssl return 1: success */
 
 #define BIT_NUM_OF_UINT8 8
 
@@ -62,7 +61,7 @@ enum DlpKeySize {
 
 struct DlpBlob {
     uint32_t size;
-    uint8_t *data;
+    uint8_t* data;
 };
 
 struct DlpCipherParam {
@@ -71,7 +70,7 @@ struct DlpCipherParam {
 
 struct DlpUsageSpec {
     uint32_t mode;
-    struct DlpCipherParam *algParam;
+    struct DlpCipherParam* algParam;
 };
 
 enum DlpCipherMode {
@@ -88,48 +87,46 @@ enum DlpKeyPadding {
 };
 
 #define SELF_FREE_PTR(PTR, FREE_FUNC) \
- { \
-     if ((PTR) != NULL) { \
-         FREE_FUNC(PTR); \
-         (PTR) = NULL; \
-     } \
- }
+    {                                 \
+        if ((PTR) != NULL) {          \
+            FREE_FUNC(PTR);           \
+            (PTR) = NULL;             \
+        }                             \
+    }
 
-#define DLP_FREE_PTR(p) SELF_FREE_PTR(p, DlpFree)
+#define DLP_FREE_PTR(p) SELF_FREE_PTR(p, free)
 
+int32_t DlpOpensslGenerateRandomKey(const uint32_t keySize, struct DlpBlob* key);
 
-int32_t DlpOpensslGenerateRandomKey(const uint32_t keySize, struct DlpBlob *key);
+int32_t DlpOpensslAesEncrypt(const struct DlpBlob* key, const struct DlpUsageSpec* usageSpec,
+    const struct DlpBlob* message, struct DlpBlob* cipherText);
 
-int32_t DlpOpensslAesEncrypt(const struct DlpBlob *key, const struct DlpUsageSpec *usageSpec,
-    const struct DlpBlob *message, struct DlpBlob *cipherText);
+int32_t DlpOpensslAesDecrypt(const struct DlpBlob* key, const struct DlpUsageSpec* usageSpec,
+    const struct DlpBlob* message, struct DlpBlob* plainText);
 
-int32_t DlpOpensslAesDecrypt(const struct DlpBlob *key, const struct DlpUsageSpec *usageSpec,
-    const struct DlpBlob *message, struct DlpBlob *plainText);
+int32_t DlpOpensslAesEncryptInit(void** cryptoCtx, const struct DlpBlob* key, const struct DlpUsageSpec* usageSpec);
 
-int32_t DlpOpensslAesEncryptInit(void **cryptoCtx, const struct DlpBlob *key, const struct DlpUsageSpec *usageSpec);
+int32_t DlpOpensslAesEncryptUpdate(void* cryptoCtx, const struct DlpBlob* message, struct DlpBlob* cipherText);
 
-int32_t DlpOpensslAesEncryptUpdate(void *cryptoCtx, const struct DlpBlob *message, struct DlpBlob *cipherText);
+int32_t DlpOpensslAesEncryptFinal(void** cryptoCtx, const struct DlpBlob* message, struct DlpBlob* cipherText);
 
-int32_t DlpOpensslAesEncryptFinal(void **cryptoCtx, const struct DlpBlob *message, struct DlpBlob *cipherText);
+int32_t DlpOpensslAesDecryptInit(void** cryptoCtx, const struct DlpBlob* key, const struct DlpUsageSpec* usageSpec);
 
-int32_t DlpOpensslAesDecryptInit(void **cryptoCtx, const struct DlpBlob *key,
-    const struct DlpUsageSpec *usageSpec);
+int32_t DlpOpensslAesDecryptUpdate(void* cryptoCtx, const struct DlpBlob* message, struct DlpBlob* plainText);
 
-int32_t DlpOpensslAesDecryptUpdate(void *cryptoCtx, const struct DlpBlob *message, struct DlpBlob *plainText);
+int32_t DlpOpensslAesDecryptFinal(void** cryptoCtx, const struct DlpBlob* message, struct DlpBlob* cipherText);
 
-int32_t DlpOpensslAesDecryptFinal(void **cryptoCtx, const struct DlpBlob *message, struct DlpBlob *cipherText);
+void DlpOpensslAesHalFreeCtx(void** cryptoCtx);
 
-void DlpOpensslAesHalFreeCtx(void **cryptoCtx);
+int32_t DlpOpensslHash(uint32_t alg, const struct DlpBlob* msg, struct DlpBlob* hash);
 
-int32_t DlpOpensslHash(uint32_t alg, const struct DlpBlob *msg, struct DlpBlob *hash);
+int32_t DlpOpensslHashInit(void** cryptoCtx, uint32_t alg);
 
-int32_t DlpOpensslHashInit(void **cryptoCtx, uint32_t alg);
+int32_t DlpOpensslHashUpdate(void* cryptoCtx, const struct DlpBlob* msg);
 
-int32_t DlpOpensslHashUpdate(void *cryptoCtx, const struct DlpBlob *msg);
+int32_t DlpOpensslHashFinal(void** cryptoCtx, const struct DlpBlob* msg, struct DlpBlob* hash);
 
-int32_t DlpOpensslHashFinal(void **cryptoCtx, const struct DlpBlob *msg, struct DlpBlob *hash);
-
-void DlpOpensslHashFreeCtx(void **cryptoCtx);
+void DlpOpensslHashFreeCtx(void** cryptoCtx);
 
 #ifdef __cplusplus
 }

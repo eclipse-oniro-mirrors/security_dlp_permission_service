@@ -18,10 +18,9 @@
 
 #include <condition_variable>
 #include <fuse_lowlevel.h>
-#include <map>
 #include <mutex>
 #include <string>
-
+#include "dlp_link_file.h"
 #include "rwlock.h"
 
 namespace OHOS {
@@ -32,33 +31,12 @@ static const int DEFAULT_ATTR_TIMEOUT = 10000;
 static const int MAX_FILE_NAME_LEN = 256;
 static const int ROOT_INODE_ACCESS = 0711;
 static const int DEFAULT_INODE_ACCESS = 0640;
-static const int FUSE_MAX_BUF_SIZE = 1024 * 1024 * 10; // 10M
+static const size_t FUSE_MAX_BUF_SIZE = 1024 * 1024 * 10;  // 10M
 static const unsigned int MAX_INT_NUMBER = 0x7fffffff;
-static const unsigned int MAX_KEY_LEN = 0x10000; // 64K
+static const unsigned int MAX_KEY_LEN = 0x10000;  // 64K
 
 enum CryptAlgo {
     AES_CTR = 1,
-};
-
-struct DlpFuseFileNode {
-    fuse_ino_t inode;
-    int dlpFileFd;
-    std::string dlpLinkName;
-    enum CryptAlgo cryptAlgo;
-    unsigned char* key;
-    size_t keyLen;
-    bool isReadOnly;
-    struct stat fileStat;
-    std::atomic<int> refcount;
-};
-
-struct DlpFuseParam {
-    int dlpFileFd;
-    std::string dlpLinkName;
-    enum CryptAlgo cryptAlgo;
-    unsigned char* key;
-    size_t keyLen;
-    bool isReadOnly;
 };
 
 enum DaemonStatus {
@@ -67,33 +45,28 @@ enum DaemonStatus {
     DAEMON_DISABLE,
 };
 
+fuse_ino_t GetFileInode(struct DlpFuseFileNode* node);
+void UpdateCurrTimeStat(struct timespec* ts);
+fuse_ino_t GetFileInode(DlpLinkFile* node);
+
 class FuseDaemon {
 public:
     static int InitFuseFs(int fuseDevFd);
-    static struct DlpFuseFileNode *GetDlpLinkRelation(const std::string &dlpLinkName);
-    static int AddDlpLinkRelation(struct DlpFuseParam *params);
-    static void DelDlpLinkRelation(const std::string &dlpLinkName);
-    static struct DlpFuseFileNode *GetRootFileNode();
-
-private:
+    static struct stat GetRootFileStat();
     static int WaitDaemonEnable(void);
     static void NotifyDaemonEnable(void);
     static void NotifyDaemonDisable(void);
-    static void FuseFsDaemonThread(int fuseFd);
-    static int FillDlpFileNode(struct DlpFuseFileNode *node, struct DlpFuseParam *params);
-    static bool IsParamValid(struct DlpFuseParam *params);
     static void InitRootFileStat(void);
-
-    static OHOS::Utils::RWLock dlpLinkLock_;
-    static std::map<std::string, struct DlpFuseFileNode*> dlpLinkMap_;
+    static void FuseFsDaemonThread(int fuseFd);
 
     static std::condition_variable daemonEnableCv_;
     static enum DaemonStatus daemonStatus_;
     static std::mutex daemonEnableMtx_;
-    static struct DlpFuseFileNode rootFuseFileNode_;
+    static struct stat rootFileStat_;
+    static bool init_;
 };
-} // namespace DlpPermission
-} // namespace Security
-} // namespace OHOS
+}  // namespace DlpPermission
+}  // namespace Security
+}  // namespace OHOS
 
 #endif

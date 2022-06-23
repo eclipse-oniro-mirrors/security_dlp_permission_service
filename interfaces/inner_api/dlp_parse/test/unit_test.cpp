@@ -14,10 +14,6 @@
  */
 
 #include "unit_test.h"
-#include "dlp_crypt.h"
-#include "dlp_format.h"
-#include "dlp_fuse.h"
-#include "dlp_utils.h"
 #include <cstdio>
 #include <cstring>
 #include <fcntl.h>
@@ -26,10 +22,12 @@
 #include <thread>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include "dlp_crypt.h"
+#include "dlp_permission.h"
 
 using namespace testing::ext;
 using namespace OHOS::Security::DlpUnitTest;
-using namespace OHOS::Security::DlpFormat;
+using namespace OHOS::Security::DlpPermission;
 using namespace std;
 
 uint8_t g_key[32] = { 0xdc, 0x7c, 0x8d, 0xe, 0xeb, 0x41, 0x4b, 0xb0, 0x8e, 0x24, 0x8, 0x32, 0xc7, 0x88, 0x96, 0xb6,
@@ -288,8 +286,6 @@ HWTEST_F(DlpUnitTest, Dlp005, TestSize.Level1)
         .size = 32
     };
 
-    ret = DlpOpensslGenerateRandomKey(16, &mIn);
-    ASSERT_EQ(-2, ret);
     ret = DlpOpensslGenerateRandomKey(DLP_AES_KEY_SIZE_256, &mIn);
     ASSERT_EQ(0, ret);
     cout << "random key:";
@@ -309,167 +305,12 @@ HWTEST_F(DlpUnitTest, Dlp005, TestSize.Level1)
 
 /**
  * @tc.name: Dlp006
- * @tc.desc: Dlp encrypted file generate and resume.
- * @tc.type: FUNC
- * @tc.require:AR000GJSDQ
- */
-HWTEST_F(DlpUnitTest, Dlp006, TestSize.Level1)
-{
-    struct DlpBlob key = { 32, nullptr };
-    key.data = g_key;
-
-    DlpFile a = DlpFile();
-    struct DlpCipherParam tagIv = { .iv = {.size = 16, .data = nullptr}};
-    tagIv.iv.data = g_iv;
-    struct DlpUsageSpec usage = {
-        .mode = DLP_MODE_CTR,
-        .algParam = &tagIv
-    };
-    a.SetCipher(key, usage);
-    struct DlpBlob cert;
-    uint8_t tmp[11] = "aaaaaaaaaa";
-    cert.data = tmp;
-    cert.size = 10;
-    a.SetEncryptCert(cert);
-    string ins("abcdefhg");
-    string in("/data/input.txt");
-    fstream file1(in, ios::out | ios::binary);
-    file1 << ins;
-    file1.close();
-    string out("/data/enc.txt");
-    string dec("/data/dec.txt");
-    int32_t ret;
-    ret = a.Operation(in, out, DLP_ENCRYPTION);
-    ASSERT_EQ(0, ret);
-    ret = a.Operation(out, dec, DLP_DECRYPTION);
-    ASSERT_EQ(0, ret);
-
-    cout << "dump /data/input.txt" << endl;
-    system("xxd /data/input.txt");
-    cout << "dump /data/enc.txt" << endl;
-    system("xxd /data/enc.txt");
-    cout << "dump /data/dec.txt" << endl;
-    system("xxd /data/dec.txt");
-
-    remove(in.c_str());
-    remove(out.c_str());
-    remove(dec.c_str());
-}
-
-/**
- * @tc.name: Dlp007
- * @tc.desc: Dlp encrypted file read write test with invalid fd.
- * @tc.type: FUNC
- * @tc.require:AR000GJSDQ
- */
-HWTEST_F(DlpUnitTest, Dlp007, TestSize.Level1)
-{
-    struct DlpBlob key = { 32, nullptr };
-    struct DlpBlob iv = { 16, nullptr };
-
-    key.data = g_key;
-    iv.data = g_iv;
-
-    int fd = open("/data/enc.txt", O_RDWR);
-    int ret = 0;
-
-    ret = DlpFileAdd(fd, &key, &iv);
-    ASSERT_EQ(DLP_ERROR_CRYPT_FILE_PARSE_FAIL, ret);
-
-    char buf[32] = {0};
-    ret = DlpFileRead(fd, 0, (void *)buf, 16);
-
-    ASSERT_EQ(DLP_ERROR_INVALID_FD, ret);
-    printf("1reading buff %s\n", buf);
-
-    ret = DlpFileWrite(fd, 0, (void *)"ooooooooooo", sizeof("ooooooooooo"));
-    ASSERT_EQ(DLP_ERROR_INVALID_FD, ret);
-
-    ret = DlpFileRead(fd, 0, (void *)buf, 16);
-    ASSERT_EQ(DLP_ERROR_INVALID_FD, ret);
-    printf("2reading buff %s\n", buf);
-    ret = DlpFileDel(fd);
-    ASSERT_EQ(0, ret);
-
-    close(fd);
-}
-
-/**
- * @tc.name: Dlp008
- * @tc.desc: Dlp encrypted file read write test with valid fd.
- * @tc.type: FUNC
- * @tc.require:AR000GJSDQ
- */
-HWTEST_F(DlpUnitTest, Dlp008, TestSize.Level1)
-{
-    struct DlpBlob key = { 32, nullptr };
-    key.data = g_key;
-
-    DlpFile a = DlpFile();
-    struct DlpCipherParam tagIv = { .iv = {.size = 16, .data = nullptr}};
-    tagIv.iv.data = g_iv;
-    struct DlpUsageSpec usage = {
-        .mode = DLP_MODE_CTR,
-        .algParam = &tagIv
-    };
-
-    a.SetCipher(key, usage);
-    struct DlpBlob cert;
-    uint8_t tmp[11] = "aaaaaaaaaa";
-    cert.data = tmp;
-    cert.size = 10;
-    a.SetEncryptCert(cert);
-
-    string ins("abcdefhg");
-    string in("/data/input.txt");
-    fstream file1(in, ios::out | ios::binary);
-    file1 << ins;
-    file1.close();
-    string out("/data/enc.txt");
-    int32_t ret;
-    ret = a.Operation(in, out, DLP_ENCRYPTION);
-    ASSERT_EQ(0, ret);
-
-    struct DlpBlob iv = { 16, nullptr };
-
-    key.data = g_key;
-    iv.data = g_iv;
-
-    int fd = open("/data/enc.txt", O_RDWR);
-    printf("fd %d, errno %d\n", fd, errno);
-
-    ret = DlpFileAdd(fd, &key, &iv);
-    ASSERT_EQ(0, ret);
-
-    char buf[32] = {0};
-    ret = DlpFileRead(fd, 0, (void *)buf, 16);
-
-    ASSERT_EQ(0, ret);
-    printf("1reading buff %s\n", buf);
-
-    ret = DlpFileWrite(fd, 0, (void *)"ooooooooooo", sizeof("ooooooooooo"));
-    ASSERT_EQ(0, ret);
-
-    ret = DlpFileRead(fd, 0, (void *)buf, 16);
-    ASSERT_EQ(0, ret);
-    printf("2reading buff %s\n", buf);
-    ret = DlpFileDel(fd);
-    ASSERT_EQ(0, ret);
-
-    close(fd);
-
-    remove(in.c_str());
-    remove(out.c_str());
-}
-
-/**
- * @tc.name: Dlp001
  * @tc.desc: Dlp encrypt && decrypt test.
  * @tc.type: FUNC
  * @tc.require:AR000GJSDQ
  */
 #define ENC_BUF_LEN (10 * 1024 * 1024)
-HWTEST_F(DlpUnitTest, Dlp009, TestSize.Level1)
+HWTEST_F(DlpUnitTest, Dlp006, TestSize.Level1)
 {
     struct DlpBlob key = { 32, nullptr };
     key.data = g_key;
@@ -525,17 +366,17 @@ HWTEST_F(DlpUnitTest, Dlp009, TestSize.Level1)
 }
 
 /**
- * @tc.name: Dlp0010
+ * @tc.name: Dlp0007
  * @tc.desc: Dlp encrypt && decrypt test with invalid args.
  * @tc.type: FUNC
  * @tc.require:AR000GJSDQ
  */
-HWTEST_F(DlpUnitTest, Dlp0010, TestSize.Level1)
+HWTEST_F(DlpUnitTest, Dlp0007, TestSize.Level1)
 {
     int32_t ret;
 
     ret = DlpOpensslAesEncrypt(nullptr, nullptr, nullptr, nullptr);
-    ASSERT_EQ(DLP_ERROR_INVALID_ARGUMENT, ret);
+    ASSERT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
     ret = DlpOpensslAesDecrypt(nullptr, nullptr, nullptr, nullptr);
-    ASSERT_EQ(DLP_ERROR_INVALID_ARGUMENT, ret);
+    ASSERT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
 }

@@ -14,33 +14,27 @@
  */
 
 #include "dlp_fuse_test.h"
-#include "dlp_permission_log.h"
-#include <thread>
-#include "fuse_daemon.h"
-#include <sys/mount.h>
-#include <cstring>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
 
+#include <cstring>
+#include <error.h>
+#include <fcntl.h>
+#include <securec.h>
+#include <sys/mount.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <error.h>
-#include <securec.h>
+#include <thread>
+#include "dlp_file.h"
+#include "dlp_file_manager.h"
+#include "dlp_link_file.h"
+#include "dlp_link_manager.h"
+#include "dlp_permission_log.h"
+#include "fuse_daemon.h"
 
 using namespace testing::ext;
 using namespace OHOS::Security::DlpPermission;
 
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpFuseTest"};
-}
-
-void DlpFuseTest::SetUpTestCase()
-{
-}
-
-void DlpFuseTest::TearDownTestCase()
-{
 }
 
 // using for clean all link file
@@ -53,10 +47,75 @@ static const int KERNEL_OPT_MAXLEN = 128;
 static const std::string TEST_DLP_FILE = "/data/fuse_test.txt";
 static const std::string TEST_LINK_FILE_NAME = "fuse_test.txt.link";
 static const std::string TEST_LINK_FILE_PATH = MOUNT_POINT_DIR + "/" + TEST_LINK_FILE_NAME;
-
 static int g_mountFd = -1;
+static const std::string DEFAULT_CURRENT_ACCOUNT = "ohosAnonymousName";
+static const int TEST_USER_COUNT = 2;
+static const int RAND_STR_SIZE = 16;
+static const int EXPIRT_TIME = 10000;
 
-void DlpFuseTest::PrepareDlpFuseFsMount() const
+void DlpFuseTest::SetUpTestCase()
+{
+}
+
+void DlpFuseTest::TearDownTestCase()
+{
+}
+
+void DlpFuseTest::SetUp()
+{
+}
+
+void DlpFuseTest::TearDown()
+{
+    DLP_LOG_INFO(LABEL, "TearDown");
+    for (int i = 0; i < LINK_FD_ARRY_SIZE; i++) {
+        if (g_linkFdArry[i] != -1) {
+            close(g_linkFdArry[i]);
+            g_linkFdArry[i] = -1;
+        }
+    }
+
+    g_mountFd = -1;
+    umount(MOUNT_POINT_DIR.c_str());
+    rmdir(MOUNT_POINT_DIR.c_str());
+    DLP_LOG_INFO(LABEL, "TearDown end");
+}
+
+static std::string GenerateRandStr(uint32_t len)
+{
+    char* str = new (std::nothrow) char[len + 1];
+    if (str == nullptr) {
+        DLP_LOG_ERROR(LABEL, "New memory fail");
+        return "";
+    }
+    for (uint32_t i = 0; i < len; i++) {
+        str[i] = 33 + rand() % (126 - 33);  // Visible Character Range 33 - 126
+    }
+    str[len] = '\0';
+    std::string res = str;
+    delete[] str;
+    return res;
+}
+
+static void GenerateRandProperty(struct DlpProperty& encProp)
+{
+    uint64_t curTime = static_cast<uint64_t>(
+        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    auto seed = std::time(nullptr);
+    std::srand(seed);
+    encProp.ownerAccount = DEFAULT_CURRENT_ACCOUNT;
+    encProp.ownerAccountType = CLOUD_ACCOUNT;
+    for (uint32_t user = 0; user < TEST_USER_COUNT; ++user) {
+        AuthUserInfo perminfo = {.authAccount = GenerateRandStr(RAND_STR_SIZE),
+            .authPerm = (AuthPermType)READ_ONLY,
+            .permExpiryTime = curTime + EXPIRT_TIME,
+            .authAccountType = (AccountType)CLOUD_ACCOUNT};
+        encProp.authUsers.emplace_back(perminfo);
+    }
+    encProp.contractAccount = GenerateRandStr(TEST_USER_COUNT);
+}
+
+void PrepareDlpFuseFsMount()
 {
     struct stat fstat;
     if (stat(MOUNT_POINT_DIR.c_str(), &fstat) != 0) {
@@ -82,6 +141,8 @@ void DlpFuseTest::PrepareDlpFuseFsMount() const
         return;
     }
 
+    dup2(g_mountFd, FUSE_DEV_FD);
+
     std::string source = FUSE_DEV;
     std::string mnt = MOUNT_POINT_DIR;
     std::string type = FUSE_TYPE;
@@ -98,25 +159,147 @@ void DlpFuseTest::PrepareDlpFuseFsMount() const
     }
 }
 
-void DlpFuseTest::SetUp()
+/**
+ * @tc.name: GenerateDlpFile001
+ * @tc.desc: test dlp file generate, owner is current
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIGC
+ */
+HWTEST_F(DlpFuseTest, GenerateDlpFile001, TestSize.Level1)
 {
-    PrepareDlpFuseFsMount();
+    DLP_LOG_INFO(LABEL, "GenerateDlpFile001");
+
+    int plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    int dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    ASSERT_GE(plainFileFd, 0);
+    ASSERT_GE(dlpFileFd, 0);
+
+    char buffer[] = "123456";
+    write(plainFileFd, buffer, sizeof(buffer));
+
+    // owner is current account
+    struct DlpProperty prop;
+    GenerateRandProperty(prop);
+
+    std::shared_ptr<DlpFile> dlpfile = DlpFileManager::GetInstance().GenerateDlpFile(plainFileFd, dlpFileFd, prop);
+    ASSERT_NE(dlpfile, nullptr);
+    int recoveryFileFd = open("/data/fuse_test.txt.recovery", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    ASSERT_GE(dlpFileFd, 0);
+
+    int result = DlpFileManager::GetInstance().RecoverDlpFile(dlpfile, recoveryFileFd);
+    ASSERT_EQ(result, 0);
+
+    lseek(recoveryFileFd, 0, SEEK_SET);
+    char buffer2[16] = {0};
+    result = read(recoveryFileFd, buffer2, 16);
+    ASSERT_GE(result, 0);
+    result = memcmp(buffer, buffer2, result);
+    ASSERT_EQ(result, 0);
+    result = DlpFileManager::GetInstance().CloseDlpFile(dlpfile);
+    ASSERT_EQ(result, 0);
 }
 
-void DlpFuseTest::TearDown()
+/**
+ * @tc.name: GenerateDlpFile002
+ * @tc.desc: test dlp fuse init，fd is right
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIGC
+ */
+HWTEST_F(DlpFuseTest, GenerateDlpFile002, TestSize.Level1)
 {
-    DLP_LOG_INFO(LABEL, "TearDown");
-    for (int i = 0; i < LINK_FD_ARRY_SIZE; i++) {
-        if (g_linkFdArry[i] != -1) {
-            close(g_linkFdArry[i]);
-            g_linkFdArry[i] = -1;
-        }
+    DLP_LOG_INFO(LABEL, "GenerateDlpFile002");
+
+    int plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    int dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    ASSERT_GE(plainFileFd, 0);
+    ASSERT_GE(dlpFileFd, 0);
+
+    char buffer[] = "123456";
+    write(plainFileFd, buffer, sizeof(buffer));
+
+    struct DlpProperty prop;
+    GenerateRandProperty(prop);
+
+    std::shared_ptr<DlpFile> dlpfile = DlpFileManager::GetInstance().GenerateDlpFile(plainFileFd, dlpFileFd, prop);
+    ASSERT_NE(dlpfile, nullptr);
+    int recoveryFileFd = open("/data/fuse_test.txt.recovery", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    ASSERT_GE(dlpFileFd, 0);
+
+    int result = DlpFileManager::GetInstance().RecoverDlpFile(dlpfile, recoveryFileFd);
+    ASSERT_EQ(result, 0);
+
+    lseek(recoveryFileFd, 0, SEEK_SET);
+    char buffer2[16] = {0};
+    result = read(recoveryFileFd, buffer2, 16);
+    ASSERT_GE(result, 0);
+    result = memcmp(buffer, buffer2, result);
+    ASSERT_EQ(result, 0);
+    result = DlpFileManager::GetInstance().CloseDlpFile(dlpfile);
+    ASSERT_EQ(result, 0);
+}
+
+/**
+ * @tc.name: OpenDlpFile001
+ * @tc.desc: test dlp fuse init，fd is right
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIGC
+ */
+HWTEST_F(DlpFuseTest, OpenDlpFile001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "OpenDlpFile001");
+
+    int plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    int dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    ASSERT_GE(plainFileFd, 0);
+    ASSERT_GE(dlpFileFd, 0);
+
+    char buffer[] = "123456";
+    write(plainFileFd, buffer, sizeof(buffer));
+
+    struct DlpProperty prop;
+    GenerateRandProperty(prop);
+
+    std::shared_ptr<DlpFile> dlpfile = DlpFileManager::GetInstance().GenerateDlpFile(plainFileFd, dlpFileFd, prop);
+    ASSERT_NE(dlpfile, nullptr);
+    int result = DlpFileManager::GetInstance().CloseDlpFile(dlpfile);
+    ASSERT_EQ(result, 0);
+
+    dlpfile = DlpFileManager::GetInstance().OpenDlpFile(dlpFileFd);
+    ASSERT_NE(dlpfile, nullptr);
+
+    int recoveryFileFd = open("/data/fuse_test.txt.recovery", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    ASSERT_GE(dlpFileFd, 0);
+
+    PermissionPolicy policy;
+    dlpfile->GetPolicy(policy);
+    ASSERT_EQ(policy.ownerAccount_, prop.ownerAccount);
+
+    std::vector<AuthUserInfo>& authUsers = policy.authUsers_;
+    ASSERT_EQ(authUsers.size(), prop.authUsers.size());
+
+    for (int i = 0; i < authUsers.size(); i++) {
+        ASSERT_EQ(authUsers[i].authAccount, prop.authUsers[i].authAccount);
+        ASSERT_EQ(authUsers[i].authPerm, prop.authUsers[i].authPerm);
+        ASSERT_EQ(authUsers[i].permExpiryTime, prop.authUsers[i].permExpiryTime);
+        ASSERT_EQ(authUsers[i].authAccountType, prop.authUsers[i].authAccountType);
     }
 
-    g_mountFd = -1;
-    umount(MOUNT_POINT_DIR.c_str());
-    rmdir(MOUNT_POINT_DIR.c_str());
-    DLP_LOG_INFO(LABEL, "TearDown end");
+    std::string contactAccount;
+    dlpfile->GetContactAccount(contactAccount);
+    ASSERT_EQ(contactAccount, prop.contractAccount);
+
+    result = DlpFileManager::GetInstance().RecoverDlpFile(dlpfile, recoveryFileFd);
+    ASSERT_EQ(result, 0);
+
+    lseek(recoveryFileFd, 0, SEEK_SET);
+
+    char buffer2[16] = {0};
+    result = read(recoveryFileFd, buffer2, 16);
+    ASSERT_GE(result, 0);
+    result = memcmp(buffer, buffer2, result);
+    ASSERT_EQ(result, 0);
+    result = DlpFileManager::GetInstance().CloseDlpFile(dlpfile);
+    ASSERT_EQ(result, 0);
 }
 
 /**
@@ -125,165 +308,31 @@ void DlpFuseTest::TearDown()
  * @tc.type: FUNC
  * @tc.require:AR000GVIGC
  */
-HWTEST_F(DlpFuseTest, InitFuseFs001, TestSize.Level1)
+HWTEST_F(DlpFuseTest, AddDlpLinkFile001, TestSize.Level1)
 {
-    DLP_LOG_INFO(LABEL, "InitFuseFs001");
-    ASSERT_GE(g_mountFd, 0);
-    int res = FuseDaemon::InitFuseFs(g_mountFd);
-    ASSERT_EQ(res, 0);
-}
+    PrepareDlpFuseFsMount();
 
-/**
- * @tc.name: InitFuseFs002
- * @tc.desc: test dlp fuse init，fd is wrong and not exist
- * @tc.type: FUNC
- * @tc.require:AR000GVIGC
- */
-HWTEST_F(DlpFuseTest, InitFuseFs002, TestSize.Level1)
-{
-    DLP_LOG_INFO(LABEL, "InitFuseFs002");
-    ASSERT_GE(g_mountFd, 0);
-    int res = FuseDaemon::InitFuseFs(0x99999);
-    ASSERT_EQ(res, -1);
-}
+    DLP_LOG_INFO(LABEL, "AddDlpLinkFile001");
+    int plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    int dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    ASSERT_GE(plainFileFd, 0);
+    ASSERT_GE(dlpFileFd, 0);
 
-/**
- * @tc.name: AddDlpLinkRelation001
- * @tc.desc: test dlp fuse deinit
- * @tc.type: FUNC
- * @tc.require:AR000GVIGC
- */
-HWTEST_F(DlpFuseTest, AddDlpLinkRelation001, TestSize.Level1)
-{
-    DLP_LOG_INFO(LABEL, "AddDlpLinkRelation001");
-    ASSERT_GE(g_mountFd, 0);
-    int res = FuseDaemon::InitFuseFs(g_mountFd);
-    ASSERT_EQ(res, 0);
+    char buffer[] = "123456";
+    write(plainFileFd, buffer, sizeof(buffer));
 
-    int dlpFd = open(TEST_DLP_FILE.c_str(), O_RDWR | O_CREAT,  0x777);
-    ASSERT_GE(dlpFd, 0);
+    struct DlpProperty prop;
+    GenerateRandProperty(prop);
 
-    unsigned char key[5] = { 0x1 };
-    struct DlpFuseParam params = {
-        .dlpFileFd = dlpFd,
-        .dlpLinkName = TEST_LINK_FILE_NAME,
-        .key = key,
-        .keyLen = 5,
-        .cryptAlgo = AES_CTR,
-        .isReadOnly = false,
-    };
+    std::shared_ptr<DlpFile> dlpfile = DlpFileManager::GetInstance().GenerateDlpFile(plainFileFd, dlpFileFd, prop);
+    ASSERT_NE(dlpfile, nullptr);
 
-    res = FuseDaemon::AddDlpLinkRelation(&params);
-    ASSERT_EQ(res, 0);
+    int result = DlpLinkManager::GetInstance().AddDlpLinkFile(dlpfile, TEST_LINK_FILE_NAME);
+    ASSERT_EQ(result, 0);
 
-    struct DlpFuseFileNode *node = FuseDaemon::GetDlpLinkRelation(TEST_LINK_FILE_NAME);
-    ASSERT_NE(node, nullptr);
-
-    FuseDaemon::DelDlpLinkRelation(params.dlpLinkName);
-
-    node = FuseDaemon::GetDlpLinkRelation(TEST_LINK_FILE_NAME);
-    ASSERT_EQ(node, nullptr);
-
-    unlink(TEST_DLP_FILE.c_str());
-}
-
-/**
- * @tc.name: AddDlpLinkRelation002
- * @tc.desc: test dlp fuse deinit, test param error
- * @tc.type: FUNC
- * @tc.require:AR000GVIGC
- */
-HWTEST_F(DlpFuseTest, AddDlpLinkRelation002, TestSize.Level1)
-{
-    DLP_LOG_INFO(LABEL, "AddDlpLinkRelation002");
-    ASSERT_GE(g_mountFd, 0);
-    int res = FuseDaemon::InitFuseFs(g_mountFd);
-    ASSERT_EQ(res, 0);
-
-    unsigned char key[5] = { 0x1 };
-    struct DlpFuseParam params = {
-        .dlpFileFd = -1,
-        .dlpLinkName = TEST_LINK_FILE_NAME,
-        .key = key,
-        .keyLen = 5,
-        .cryptAlgo = AES_CTR,
-        .isReadOnly = false,
-    };
-
-    res = FuseDaemon::AddDlpLinkRelation(&params);
-    ASSERT_NE(res, 0);
-
-    int dlpFd = open(TEST_DLP_FILE.c_str(), O_RDWR | O_CREAT,  0x777);
-    ASSERT_GE(dlpFd, 0);
-
-    struct DlpFuseParam params1 = {
-        .dlpFileFd = dlpFd,
-        .dlpLinkName = TEST_LINK_FILE_NAME,
-        .key = key,
-        .keyLen = 5,
-        .isReadOnly = false,
-    };
-
-    res = FuseDaemon::AddDlpLinkRelation(&params1);
-    ASSERT_NE(res, 0);
-
-    struct DlpFuseParam params2 = {
-        .dlpFileFd = dlpFd,
-        .dlpLinkName = TEST_LINK_FILE_NAME,
-        .key = key,
-        .keyLen = 0,
-        .cryptAlgo = AES_CTR,
-        .isReadOnly = false,
-    };
-
-    res = FuseDaemon::AddDlpLinkRelation(&params2);
-    ASSERT_NE(res, 0);
-
-    unlink(TEST_DLP_FILE.c_str());
-}
-
-/**
- * @tc.name: ReadLinkFile001
- * @tc.desc: test read link file
- * @tc.type: FUNC
- * @tc.require:AR000GVIGC
- */
-HWTEST_F(DlpFuseTest, ReadLinkFile001, TestSize.Level1)
-{
-    DLP_LOG_INFO(LABEL, "ReadLinkFile001");
-    ASSERT_GE(g_mountFd, 0);
-    int res = FuseDaemon::InitFuseFs(g_mountFd);
-    ASSERT_EQ(res, 0);
-
-    int dlpFd = open(TEST_DLP_FILE.c_str(), O_RDWR | O_CREAT,  0x777);
-    ASSERT_GE(dlpFd, 0);
-
-    // fill origin file with "test"
-    char writeBuf[64] = "test";
-    res = write(dlpFd, writeBuf, strlen(writeBuf));
-    ASSERT_GE(res, 0);
-    // lseek 0x1000
-    lseek(dlpFd, 0x100000, SEEK_SET);
-
-    // write "test" again
-    res = write(dlpFd, writeBuf, strlen(writeBuf));
-    ASSERT_GE(res, 0);
-
-    // clean
-    lseek(dlpFd, 0, SEEK_SET);
-
-    // add Dlp-Link relation
-    unsigned char key[5] = { 0x1 };
-    struct DlpFuseParam params = {
-        .dlpFileFd = dlpFd,
-        .dlpLinkName = TEST_LINK_FILE_NAME,
-        .key = key,
-        .keyLen = 5,
-        .cryptAlgo = AES_CTR,
-        .isReadOnly = false,
-    };
-    res = FuseDaemon::AddDlpLinkRelation(&params);
-    ASSERT_EQ(res, 0);
+    DlpLinkFile* link = DlpLinkManager::GetInstance().LookUpDlpLinkFile(TEST_LINK_FILE_NAME);
+    ASSERT_NE(dlpfile, nullptr);
+    link->SubAndCheckZeroRef(1);
 
     // open link file
     int linkfd = open(TEST_LINK_FILE_PATH.c_str(), O_RDWR);
@@ -292,141 +341,53 @@ HWTEST_F(DlpFuseTest, ReadLinkFile001, TestSize.Level1)
 
     // read link file
     char readBuf[64] = {0};
-    res = read(linkfd, readBuf, 64);
-    ASSERT_GE(res, 0);
-    DLP_LOG_INFO(LABEL, "readBuf ret %{public}d buf %{public}s", res, readBuf);
+    result = read(linkfd, readBuf, 64);
+    DLP_LOG_INFO(LABEL, "readBuf ret %{public}d errno %{public}d", result, errno);
+    ASSERT_GE(result, 0);
+    DLP_LOG_INFO(LABEL, "readBuf ret %{public}d buf %{public}s", result, readBuf);
 
-    ASSERT_EQ(strcmp(readBuf, "test"), 0);
+    ASSERT_EQ(strcmp(readBuf, "123456"), 0);
 
-    // lseek
-    lseek(linkfd, 0x100000, SEEK_SET);
+    result = DlpLinkManager::GetInstance().DeleteDlpLinkFile(dlpfile);
+    ASSERT_EQ(result, 0);
 
-    res = read(linkfd, readBuf, 64);
-    ASSERT_GE(res, 0);
-    ASSERT_EQ(strcmp(readBuf, "test"), 0);
-
-    close(dlpFd);
-
-    FuseDaemon::DelDlpLinkRelation(TEST_LINK_FILE_NAME);
-    unlink(TEST_DLP_FILE.c_str());
+    result = DlpFileManager::GetInstance().CloseDlpFile(dlpfile);
+    ASSERT_EQ(result, 0);
 }
 
 /**
- * @tc.name: WriteLinkFile001
- * @tc.desc: test write link file
+ * @tc.name: testIsDlpFile
+ * @tc.desc: test check dlp file
  * @tc.type: FUNC
  * @tc.require:AR000GVIGC
  */
-HWTEST_F(DlpFuseTest, WriteLinkFile001, TestSize.Level1)
+HWTEST_F(DlpFuseTest, testIsDlpFile001, TestSize.Level1)
 {
-    DLP_LOG_INFO(LABEL, "WriteLinkFile001");
-    ASSERT_GE(g_mountFd, 0);
-    int res = FuseDaemon::InitFuseFs(g_mountFd);
-    ASSERT_EQ(res, 0);
+    DLP_LOG_INFO(LABEL, "testIsDlpFile001");
 
-    int dlpFd = open(TEST_DLP_FILE.c_str(), O_RDWR | O_CREAT,  0x777);
-    ASSERT_GE(dlpFd, 0);
+    int plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    int dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    ASSERT_GE(plainFileFd, 0);
+    ASSERT_GE(dlpFileFd, 0);
 
-    // add Dlp-Link relation
-    unsigned char key[5] = { 0x1 };
-    struct DlpFuseParam params = {
-        .dlpFileFd = dlpFd,
-        .dlpLinkName = TEST_LINK_FILE_NAME,
-        .key = key,
-        .keyLen = 5,
-        .cryptAlgo = AES_CTR,
-        .isReadOnly = false,
-    };
-    res = FuseDaemon::AddDlpLinkRelation(&params);
-    ASSERT_EQ(res, 0);
+    char buffer[] = "123456";
+    write(plainFileFd, buffer, sizeof(buffer));
 
-    // open link file
-    int linkfd = open(TEST_LINK_FILE_PATH.c_str(), O_RDWR);
-    ASSERT_GE(linkfd, 0);
-    g_linkFdArry[0] = linkfd;
+    struct DlpProperty prop;
+    GenerateRandProperty(prop);
 
-    // write link file
-    char writeBuf[64] = "test";
-    res = write(linkfd, writeBuf, strlen(writeBuf));
-    ASSERT_GE(res, 0);
+    std::shared_ptr<DlpFile> dlpfile = DlpFileManager::GetInstance().GenerateDlpFile(plainFileFd, dlpFileFd, prop);
+    ASSERT_NE(dlpfile, nullptr);
+    int result = DlpFileManager::GetInstance().CloseDlpFile(dlpfile);
+    ASSERT_EQ(result, 0);
 
-    // lseek 0x1000
-    lseek(linkfd, 0x1000, SEEK_SET);
+    bool isDlpFile = DlpFileManager::GetInstance().IsDlpFile(dlpFileFd);
+    ASSERT_TRUE(isDlpFile);
 
-    // write "test" again
-    res = write(linkfd, writeBuf, strlen(writeBuf));
-    ASSERT_GE(res, 0);
+    isDlpFile = DlpFileManager::GetInstance().IsDlpFile(plainFileFd);
+    ASSERT_FALSE(isDlpFile);
 
-    // get file size
-    struct stat stat1;
-    res = fstat(linkfd, &stat1);
-    ASSERT_EQ(res, 0);
-    ASSERT_EQ(stat1.st_size, 0x1004);
-
-    // dlpFd is used for libfuse, get another fd
-    int dlpFd1 = open(TEST_DLP_FILE.c_str(), O_RDWR | O_CREAT,  0x777);
-    ASSERT_GE(dlpFd1, 0);
-
-    // open read link file
-    char readBuf[64] = {0};
-    res = read(dlpFd1, readBuf, 64);
-    ASSERT_GE(res, 0);
-
-    ASSERT_EQ(strcmp(readBuf, "test"), 0);
-
-    lseek(dlpFd1, 0x1000, SEEK_SET);
-
-    res = read(dlpFd1, readBuf, 64);
-    ASSERT_GE(res, 0);
-    ASSERT_EQ(strcmp(readBuf, "test"), 0);
-
-    close(dlpFd);
-    close(dlpFd1);
-
-    FuseDaemon::DelDlpLinkRelation(TEST_LINK_FILE_NAME);
-    unlink(TEST_DLP_FILE.c_str());
-}
-
-/**
- * @tc.name: WriteLinkFile002
- * @tc.desc: test write read-only link file
- * @tc.type: FUNC
- * @tc.require:AR000GVIGC
- */
-HWTEST_F(DlpFuseTest, WriteLinkFile002, TestSize.Level1)
-{
-    DLP_LOG_INFO(LABEL, "WriteLinkFile002");
-    ASSERT_GE(g_mountFd, 0);
-    int res = FuseDaemon::InitFuseFs(g_mountFd);
-    ASSERT_EQ(res, 0);
-
-    int dlpFd = open(TEST_DLP_FILE.c_str(), O_RDWR | O_CREAT,  0x777);
-    ASSERT_GE(dlpFd, 0);
-
-    // add Dlp-Link relation
-    unsigned char key[5] = { 0x1 };
-    struct DlpFuseParam params = {
-        .dlpFileFd = dlpFd,
-        .dlpLinkName = TEST_LINK_FILE_NAME,
-        .key = key,
-        .keyLen = 5,
-        .cryptAlgo = AES_CTR,
-        .isReadOnly = true,
-    };
-    res = FuseDaemon::AddDlpLinkRelation(&params);
-    ASSERT_EQ(res, 0);
-
-    // open link file
-    int linkfd = open(TEST_LINK_FILE_PATH.c_str(), O_RDWR);
-    ASSERT_GE(linkfd, 0);
-    g_linkFdArry[0] = linkfd;
-
-    // write link file
-    char writeBuf[64] = "test";
-    res = write(linkfd, writeBuf, strlen(writeBuf));
-    ASSERT_EQ(res, -1);
-
-    FuseDaemon::DelDlpLinkRelation(TEST_LINK_FILE_NAME);
-    unlink(TEST_DLP_FILE.c_str());
+    isDlpFile = DlpFileManager::GetInstance().IsDlpFile(100000);
+    ASSERT_FALSE(isDlpFile);
 }
 

@@ -14,33 +14,41 @@
 import("//base/security/dlp_permission_service/dlp_permission_service.gni")
 import("//build/ohos.gni")
 
-ROOT_DIR = "//base/security/dlp_permission_service/interfaces/inner_api/dlp_parse"
+ROOT_DIR =
+    "//base/security/dlp_permission_service/interfaces/inner_api/dlp_parse"
 
 ohos_shared_library("libdlpparse") {
-  sources = [ "$ROOT_DIR/src/dlp_crypt.cpp",
-              "$ROOT_DIR/src/dlp_format.cpp",
-              "$ROOT_DIR/src/dlp_utils.cpp",
-              "$ROOT_DIR/src/dlp_fuse.cpp"
+  sources = [
+    "$ROOT_DIR/src/dlp_crypt.cpp",
+    "$ROOT_DIR/src/dlp_file.cpp",
+    "$ROOT_DIR/src/dlp_file_manager.cpp",
   ]
 
   include_dirs = [
     "$ROOT_DIR/include",
-    "//third_party/openssl/include"
+    "//base/security/dlp_permission_service/common",
+    "//base/security/dlp_permission_service/frameworks/common/include",
+    "//base/security/dlp_permission_service/services/dlp_permission/sa/credential_test/",
+    "//base/security/dlp_permission_service/interfaces/inner_api/dlp_permission/include/",
+    "//base/account/os_account/interfaces/innerkits/ohosaccount/native/include",
+    "//third_party/openssl/include",
   ]
 
   deps = [
-    "//third_party/openssl:libcrypto_shared"    
+    "//base/account/os_account/frameworks/osaccount/native:os_account_innerkits",
+    "//base/security/dlp_permission_service/interfaces/inner_api/dlp_permission:libdlp_permission_sdk",
+    "//third_party/openssl:libcrypto_shared",
   ]
 
   external_deps = [
-  "hiviewdfx_hilog_native:libhilog",
-  "utils_base:utils"
+    "hiviewdfx_hilog_native:libhilog",
+    "utils_base:utils",
+    "os_account:libaccountkits",
+    "ipc:ipc_core",
   ]
-  cflags = [
-    "-D_GNU_SOURCE",
-    "-Wall",
-    "-Werror",
-  ]
+
+  cflags_cc = [ "-DHILOG_ENABLE" ]
+
   part_name = "dlp_permission_service"
   subsystem_name = "security"
 }

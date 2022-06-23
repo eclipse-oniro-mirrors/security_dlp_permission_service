@@ -1,0 +1,580 @@
+/*
+ * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+#include "dlp_file.h"
+
+#include <fcntl.h>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
+#include "dlp_permission.h"
+#include "dlp_permission_log.h"
+#include "ohos_account_kits.h"
+#include "securec.h"
+
+namespace OHOS {
+namespace Security {
+namespace DlpPermission {
+namespace {
+static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpFile"};
+} // namespace
+
+DlpFile::DlpFile(int dlpFd) : dlpFd_(dlpFd), isFuseLink(false), isReadOnly(true)
+{
+    head_.magic = DLP_FILE_MAGIC;
+    head_.version = 1;
+    head_.txtOffset = INVALID_FILE_SIZE;
+    head_.txtSize = INVALID_FILE_SIZE;
+    head_.certOffset = sizeof(struct DlpHeader);
+    head_.certSize = 0;
+    head_.contactAccountOffset = 0;
+    head_.contactAccountSize = 0;
+
+    cert_.data = nullptr;
+    cert_.size = 0;
+
+    cipher_.tagIv.iv.data = nullptr;
+    cipher_.tagIv.iv.size = 0;
+    cipher_.encKey.data = nullptr;
+    cipher_.encKey.size = 0;
+    cipher_.usageSpec = { 0 };
+}
+
+DlpFile::~DlpFile()
+{
+    // clear key
+    if (cipher_.encKey.data != nullptr) {
+        (void)memset_s(cipher_.encKey.data, cipher_.encKey.size, 0, cipher_.encKey.size);
+        delete[] cipher_.encKey.data;
+        cipher_.encKey.data = nullptr;
+    }
+
+    // clear iv
+    if (cipher_.tagIv.iv.data != nullptr) {
+        (void)memset_s(cipher_.tagIv.iv.data, cipher_.tagIv.iv.size, 0, cipher_.tagIv.iv.size);
+        delete[] cipher_.tagIv.iv.data;
+        cipher_.tagIv.iv.data = nullptr;
+    }
+
+    // clear encrypt cert
+    if (cert_.data != nullptr) {
+        (void)memset_s(cert_.data, head_.certSize, 0, head_.certSize);
+        delete[] cert_.data;
+        cert_.data = nullptr;
+    }
+}
+
+bool DlpFile::IsValidCipher(const struct DlpBlob& key, const struct DlpUsageSpec& spec)
+{
+    if (key.data == nullptr) {
+        DLP_LOG_ERROR(LABEL, "key data null");
+        return false;
+    }
+
+    if (key.size != DLP_KEY_LEN_128 && key.size != DLP_KEY_LEN_192 && key.size != DLP_KEY_LEN_256) {
+        DLP_LOG_ERROR(LABEL, "key size invalid");
+        return false;
+    }
+
+    if (spec.mode != DLP_MODE_CTR || spec.algParam == nullptr) {
+        DLP_LOG_ERROR(LABEL, "spec invalid");
+        return false;
+    }
+
+    struct DlpBlob* iv = &(spec.algParam->iv);
+    if (iv->size != IV_SIZE) {
+        DLP_LOG_ERROR(LABEL, "iv invalid");
+        return false;
+    }
+    return true;
+}
+
+int DlpFile::CopyBlobParam(const struct DlpBlob& src, struct DlpBlob& dst)
+{
+    if (src.data == nullptr || src.size == 0 || src.size > DLP_MAX_CERT_SIZE) {
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
+
+    uint8_t* blobData = new (std::nothrow)uint8_t[src.size];
+    if (blobData == nullptr) {
+        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
+    }
+
+    if (memcpy_s(blobData, src.size, src.data, src.size) != EOK) {
+        delete[] blobData;
+        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
+    }
+
+    dst.data = blobData;
+    dst.size = src.size;
+    return DLP_OK;
+}
+
+void DlpFile::CleanBlobParam(struct DlpBlob& blob)
+{
+    if (blob.data == nullptr || blob.size == 0) {
+        return;
+    }
+
+    (void)memset_s(blob.data, blob.size, 0, blob.size);
+    delete[] blob.data;
+    blob.data = nullptr;
+    blob.size = 0;
+}
+
+int DlpFile::GetLocalAccountName(std::string& account)
+{
+    std::pair<bool, AccountSA::OhosAccountInfo> accountInfo =
+        AccountSA::OhosAccountKits::GetInstance().QueryOhosAccountInfo();
+    if (accountInfo.first) {
+        account = accountInfo.second.name_;
+        return DLP_OK;
+    }
+    return DLP_PARSE_ERROR_ACCOUNT_INVALID;
+}
+
+void DlpFile::UpdateDlpFilePermission()
+{
+    std::string accountName;
+    if (GetLocalAccountName(accountName) != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "query current account failed");
+        return;
+    }
+    DLP_LOG_DEBUG(LABEL, "current account Name %{private}s", accountName.c_str());
+
+    if (accountName == policy_.ownerAccount_) {
+        DLP_LOG_DEBUG(LABEL, "current account is owner, it has full permission");
+        isReadOnly = false;
+        return;
+    }
+
+    for (int i = 0; i < (int)policy_.authUsers_.size(); i++) {
+        if (accountName == policy_.authUsers_[i].authAccount) {
+            isReadOnly = (policy_.authUsers_[i].authPerm == READ_ONLY);
+            DLP_LOG_DEBUG(LABEL, "current account match authUsers list, isReadOnly %{public}s",
+                isReadOnly ? "true" : "false");
+        }
+    }
+}
+
+int32_t DlpFile::SetCipher(const struct DlpBlob& key, const struct DlpUsageSpec& spec)
+{
+    if (!IsValidCipher(key, spec)) {
+        DLP_LOG_ERROR(LABEL, "dlp file cipher is invalid");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
+
+    // copy iv from param.
+    int res = CopyBlobParam(spec.algParam->iv, cipher_.tagIv.iv);
+    if (res != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "dlp file copy iv param failed, res %{public}d", res);
+        return res;
+    }
+
+    // copy key from param.
+    res = CopyBlobParam(key, cipher_.encKey);
+    if (res != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "dlp file copy key param failed, res %{public}d", res);
+        CleanBlobParam(cipher_.tagIv.iv);
+        return res;
+    }
+
+    cipher_.usageSpec.mode = spec.mode;
+    cipher_.usageSpec.algParam = &cipher_.tagIv;
+    return DLP_OK;
+}
+
+int32_t DlpFile::SetContactAccount(const std::string& contactAccount)
+{
+    if (contactAccount.size() == 0 || contactAccount.size() > DLP_MAX_CERT_SIZE) {
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
+    contactAccount_ = contactAccount;
+    if (head_.certSize != 0) {
+        head_.contactAccountSize = contactAccount.size();
+        head_.contactAccountOffset = head_.certOffset + head_.certSize;
+        head_.txtOffset = head_.contactAccountOffset + head_.contactAccountSize;
+    }
+    return DLP_OK;
+};
+
+int DlpFile::SetPolicy(const PermissionPolicy& policy)
+{
+    if (!policy.IsValid()) {
+        DLP_LOG_ERROR(LABEL, "invalid policy");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
+    policy_.CopyPermissionPolicy(policy);
+    UpdateDlpFilePermission();
+    return DLP_OK;
+};
+
+bool DlpFile::IsValidDlpHeader(const struct DlpHeader& head)
+{
+    if (head.magic != DLP_FILE_MAGIC || head.certSize == 0 || head.certSize > DLP_MAX_CERT_SIZE
+        || head.contactAccountSize == 0 || head.contactAccountSize > DLP_MAX_CERT_SIZE) {
+        return false;
+    }
+    return true;
+}
+
+int DlpFile::ParseDlpHeader()
+{
+    if (dlpFd_ < 0) {
+        DLP_LOG_ERROR(LABEL, "dlp file fd is invalid");
+        return DLP_PARSE_ERROR_FD_ERROR;
+    }
+
+    if (isFuseLink) {
+        DLP_LOG_ERROR(LABEL, "current dlp file is linking, do not operate it.");
+        return DLP_PARSE_ERROR_FILE_LINKING;
+    }
+
+    if (lseek(dlpFd_, 0, SEEK_SET) == (off_t)-1) {
+        DLP_LOG_ERROR(LABEL, "seek dlp file start failed, %{public}s", strerror(errno));
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+
+    if (read(dlpFd_, &head_, sizeof(struct DlpHeader)) != sizeof(struct DlpHeader)) {
+        DLP_LOG_ERROR(LABEL, "can not read dlp file head, %{public}s", strerror(errno));
+        return DLP_PARSE_ERROR_FILE_FORMAT_ERROR;
+    }
+
+    if (!IsValidDlpHeader(head_)) {
+        DLP_LOG_ERROR(LABEL, "parse dlp file header error.");
+        (void)memset_s(&head_, sizeof(struct DlpHeader), 0, sizeof(struct DlpHeader));
+        return DLP_PARSE_ERROR_FILE_NOT_DLP;
+    }
+
+    // get cert encrypt context
+    uint8_t* buf = new (std::nothrow)uint8_t[head_.certSize];
+    if (buf == nullptr) {
+        DLP_LOG_WARN(LABEL, "alloc buffer failed.");
+        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
+    }
+    if (read(dlpFd_, buf, head_.certSize) != head_.certSize) {
+        delete[] buf;
+        DLP_LOG_ERROR(LABEL, "can not read dlp file cert, %{public}s", strerror(errno));
+        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
+    }
+    cert_.data = buf;
+    cert_.size = head_.certSize;
+
+    uint8_t *tmpBuf = new (std::nothrow)uint8_t[head_.contactAccountSize];
+    if (tmpBuf == nullptr) {
+        DLP_LOG_WARN(LABEL, "alloc tmpBuf failed.");
+        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
+    }
+
+    if (read(dlpFd_, tmpBuf, head_.contactAccountSize) != head_.contactAccountSize) {
+        delete[] tmpBuf;
+        DLP_LOG_ERROR(LABEL, "can not read dlp contact account, %{public}s", strerror(errno));
+        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
+    }
+
+    contactAccount_ = std::string(tmpBuf, tmpBuf + head_.contactAccountSize);
+    delete[] tmpBuf;
+    return DLP_OK;
+}
+
+int DlpFile::GetEncryptCert(struct DlpBlob& cert)
+{
+    cert.data = cert_.data;
+    cert.size = cert_.size;
+    return DLP_OK;
+}
+
+int DlpFile::SetEncryptCert(const struct DlpBlob& cert)
+{
+    if (cert.data == nullptr || cert.size > DLP_MAX_CERT_SIZE) {
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
+
+    if (cert_.data != nullptr) {
+        delete[] cert_.data;
+        cert_.data = nullptr;
+    }
+
+    if (CopyBlobParam(cert, cert_) != DLP_OK) {
+        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
+    }
+
+    head_.certOffset = sizeof(struct DlpHeader);
+    head_.certSize = cert_.size;
+    head_.txtOffset = sizeof(struct DlpHeader) + cert_.size;
+    return DLP_OK;
+}
+
+int32_t DlpFile::PrepareBuff(struct DlpBlob& message1, struct DlpBlob& message2)
+{
+    message1.size = DLP_BUFF_LEN;
+    message1.data = new (std::nothrow) uint8_t[DLP_BUFF_LEN];
+    if (message1.data == nullptr) {
+        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
+    }
+
+    message2.size = DLP_BUFF_LEN;
+    message2.data = new (std::nothrow) uint8_t[DLP_BUFF_LEN];
+    if (message2.data == nullptr) {
+        delete[] message1.data;
+        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
+    }
+
+    (void)memset_s(message1.data, DLP_BUFF_LEN, 0, DLP_BUFF_LEN);
+    (void)memset_s(message2.data, DLP_BUFF_LEN, 0, DLP_BUFF_LEN);
+    return DLP_OK;
+}
+
+int32_t DlpFile::DoDlpContentCryptyOperation(int inFd, int outFd, uint32_t inOffset,
+    uint32_t inFileLen, bool isEncrypt)
+{
+    struct DlpBlob message, outMessage;
+    if (PrepareBuff(message, outMessage) != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "prepare buff failed");
+        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
+    }
+
+    int32_t ret = DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    while (inOffset < inFileLen) {
+        int32_t readLen = ((inFileLen - inOffset) < DLP_BUFF_LEN) ? (inFileLen - inOffset) : DLP_BUFF_LEN;
+        (void)memset_s(message.data, DLP_BUFF_LEN, 0, DLP_BUFF_LEN);
+        (void)memset_s(outMessage.data, DLP_BUFF_LEN, 0, DLP_BUFF_LEN);
+        int readRealLen = read(inFd, message.data, readLen);
+        if (readRealLen <= 0) {
+            ret = DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+            break;
+        }
+
+        inOffset += readRealLen;
+        message.size = readRealLen;
+        outMessage.size = readRealLen;
+        if (isEncrypt) {
+            ret = DlpOpensslAesEncrypt(&cipher_.encKey, &cipher_.usageSpec, &message, &outMessage);
+        } else {
+            ret = DlpOpensslAesDecrypt(&cipher_.encKey, &cipher_.usageSpec, &message, &outMessage);
+        }
+        if (ret != 0) {
+            DLP_LOG_ERROR(LABEL, "do crypt operation fail");
+            break;
+        }
+
+        int writeLen = write(outFd, outMessage.data, readRealLen);
+        if (writeLen <= 0) {
+            DLP_LOG_ERROR(LABEL, "write fd failed, %{public}s", strerror(errno));
+            ret = DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+            break;
+        }
+    }
+
+    delete[] message.data;
+    delete[] outMessage.data;
+    return ret;
+}
+
+int32_t DlpFile::GenFile(int inPlainFileFd)
+{
+    if (inPlainFileFd < 0 || dlpFd_ < 0 || !IsValidCipher(cipher_.encKey, cipher_.usageSpec)) {
+        DLP_LOG_ERROR(LABEL, "params is error");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
+
+    off_t fileLen = lseek(inPlainFileFd, 0, SEEK_END);
+    if (fileLen == (off_t)-1) {
+        DLP_LOG_ERROR(LABEL, "can not get inFd len, %{public}s", strerror(errno));
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+    head_.txtSize = (uint32_t)fileLen;
+    DLP_LOG_DEBUG(LABEL, "fileLen %{private}ld", fileLen);
+
+    // clean dlpFile
+    int result = ftruncate(dlpFd_, 0);
+    if (result == -1) {
+        DLP_LOG_ERROR(LABEL, "truncate dlp file to zero failed, %{public}s", strerror(errno));
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+
+    if (lseek(inPlainFileFd, 0, SEEK_SET) == (off_t)-1) {
+        DLP_LOG_ERROR(LABEL, "seek plain file start failed, %{public}s", strerror(errno));
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+
+    if (lseek(dlpFd_, 0, SEEK_SET) == (off_t)-1) {
+        DLP_LOG_ERROR(LABEL, "seek dlp file start failed, %{public}s", strerror(errno));
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+
+    if (write(dlpFd_, &head_, sizeof(struct DlpHeader)) != sizeof(struct DlpHeader)) {
+        DLP_LOG_ERROR(LABEL, "write dlp head failed, %{public}s", strerror(errno));
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+
+    if (write(dlpFd_, cert_.data, head_.certSize) != head_.certSize) {
+        DLP_LOG_ERROR(LABEL, "write dlp cert data failed, %{public}s", strerror(errno));
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+
+    if (write(dlpFd_, contactAccount_.c_str(), contactAccount_.size()) != (int)contactAccount_.size()) {
+        DLP_LOG_ERROR(LABEL, "write dlp contact data failed, %{public}s", strerror(errno));
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+
+    return DoDlpContentCryptyOperation(inPlainFileFd, dlpFd_, 0, fileLen, true);
+}
+
+int32_t DlpFile::RemoveDlpPermission(int outPlainFileFd)
+{
+    if (isFuseLink) {
+        DLP_LOG_ERROR(LABEL, "current dlp file is linking, do not operate it.");
+        return DLP_PARSE_ERROR_FILE_LINKING;
+    }
+
+    if (isReadOnly) {
+        DLP_LOG_ERROR(LABEL, "dlp file is read only, remove dlp permission failed.");
+        return DLP_PARSE_ERROR_FILE_PERMISSION;
+    }
+
+    if (outPlainFileFd < 0 || dlpFd_ < 0 || !IsValidCipher(cipher_.encKey, cipher_.usageSpec)) {
+        DLP_LOG_ERROR(LABEL, "params is error");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
+
+    off_t fileLen = lseek(dlpFd_, 0, SEEK_END);
+    if (fileLen == (off_t)-1) {
+        DLP_LOG_ERROR(LABEL, "can not get dlp file len, %{public}s", strerror(errno));
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+
+    // clean plainTxtFile
+    if (ftruncate(outPlainFileFd, 0) == -1) {
+        DLP_LOG_ERROR(LABEL, "truncate plain file to zero failed, %{public}s", strerror(errno));
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+
+    if (lseek(outPlainFileFd, 0, SEEK_SET) == (off_t)-1) {
+        DLP_LOG_ERROR(LABEL, "seek plain file start failed, %{public}s", strerror(errno));
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+
+    if (lseek(dlpFd_, head_.txtOffset, SEEK_SET) == (off_t)-1) {
+        DLP_LOG_ERROR(LABEL, "seek dlp file start failed, %{public}s", strerror(errno));
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+
+    return DoDlpContentCryptyOperation(dlpFd_, outPlainFileFd, head_.txtOffset, fileLen, false);
+}
+
+int32_t DlpFile::DlpFileRead(uint32_t offset, void* buf, uint32_t size)
+{
+    if (buf == nullptr || size == 0 || size > DLP_FUSE_MAX_BUFFLEN) {
+        DLP_LOG_ERROR(LABEL, "params is error");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
+
+    if (dlpFd_ < 0 || !IsValidCipher(cipher_.encKey, cipher_.usageSpec)) {
+        DLP_LOG_ERROR(LABEL, "cipher params is error");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
+
+    if (lseek(dlpFd_, head_.txtOffset + offset, SEEK_SET) == -1) {
+        DLP_LOG_ERROR(LABEL, "lseek dlp file offset %{public}d failed, %{public}s",
+            head_.txtOffset + offset, strerror(errno));
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+
+    uint8_t* encBuff = new (std::nothrow) uint8_t[size];
+    if (encBuff == nullptr) {
+        DLP_LOG_ERROR(LABEL, "new buff fail");
+        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
+    }
+
+    int readLen = read(dlpFd_, encBuff, size);
+    if (readLen <= 0) {
+        DLP_LOG_ERROR(LABEL, "read buff fail, %{public}s", strerror(errno));
+        delete[] encBuff;
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+
+    struct DlpBlob message1 = {.size = readLen, .data = encBuff};
+    struct DlpBlob message2 = {.size = readLen, .data = static_cast<uint8_t*>(buf)};
+    int ret = DlpOpensslAesDecrypt(&cipher_.encKey, &cipher_.usageSpec, &message1, &message2);
+    delete[] encBuff;
+    if (ret != 0) {
+        DLP_LOG_ERROR(LABEL, "decrypt fail");
+        return DLP_PARSE_ERROR_CRYPT_FAIL;
+    }
+
+    return message2.size;
+}
+
+int32_t DlpFile::DlpFileWrite(uint32_t offset, void* buf, uint32_t size)
+{
+    if (isReadOnly) {
+        DLP_LOG_ERROR(LABEL, "dlp file is readonly, write failed");
+        return DLP_PARSE_ERROR_FILE_PERMISSION;
+    }
+
+    if (buf == nullptr || size == 0 || size > DLP_FUSE_MAX_BUFFLEN) {
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
+
+    if (dlpFd_ < 0 || !IsValidCipher(cipher_.encKey, cipher_.usageSpec)) {
+        DLP_LOG_ERROR(LABEL, "cipher params is error");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
+
+    int32_t ret = lseek(dlpFd_, head_.txtOffset + offset, SEEK_SET);
+    if (ret < 0) {
+        DLP_LOG_ERROR(LABEL, "lseek dlp file offset %{public}d failed, %{public}s",
+            head_.txtOffset + offset, strerror(errno));
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+
+    uint8_t* writeBuff = new (std::nothrow) uint8_t[size];
+    if (writeBuff == nullptr) {
+        DLP_LOG_ERROR(LABEL, "alloc write buffer fail");
+        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
+    }
+
+    struct DlpBlob message1 = {.size = size, .data = static_cast<uint8_t*>(buf)};
+    struct DlpBlob message2 = {.size = size, .data = writeBuff};
+
+    ret = DlpOpensslAesEncrypt(&cipher_.encKey, &cipher_.usageSpec, &message1, &message2);
+    if (ret != 0) {
+        DLP_LOG_ERROR(LABEL, "encrypt fail");
+        delete[] writeBuff;
+        return DLP_PARSE_ERROR_CRYPT_FAIL;
+    }
+
+    ret = write(dlpFd_, (void*)writeBuff, size);
+    delete[] writeBuff;
+    if (ret <= 0) {
+        DLP_LOG_ERROR(LABEL, "write buff failed, %{public}s", strerror(errno));
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+    return ret;
+}
+
+uint32_t DlpFile::GetFsContextSize()
+{
+    struct stat fileStat;
+    int ret = fstat(dlpFd_, &fileStat);
+    if (ret != 0) {
+        return INVALID_FILE_SIZE;
+    }
+    return (uint32_t)fileStat.st_size;
+}
+}  // namespace DlpPermission
+}  // namespace Security
+}  // namespace OHOS
