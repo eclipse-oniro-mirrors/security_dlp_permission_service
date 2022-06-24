@@ -77,7 +77,7 @@ void DlpLinkFile::UpdateMtimeStat()
     UpdateCurrTimeStat(&fileStat_.st_mtim);
 }
 
-int DlpLinkFile::Write(uint32_t offset, void* buf, uint32_t size)
+int32_t DlpLinkFile::Write(uint32_t offset, void* buf, uint32_t size)
 {
     if (dlpFile_ != nullptr) {
         int32_t res = dlpFile_->DlpFileWrite(offset, buf, size);
@@ -92,7 +92,7 @@ int DlpLinkFile::Write(uint32_t offset, void* buf, uint32_t size)
     return DLP_LINK_FAILURE;
 }
 
-int DlpLinkFile::Read(uint32_t offset, void* buf, uint32_t size)
+int32_t DlpLinkFile::Read(uint32_t offset, void* buf, uint32_t size)
 {
     if (dlpFile_ != nullptr) {
         UpdateAtimeStat();

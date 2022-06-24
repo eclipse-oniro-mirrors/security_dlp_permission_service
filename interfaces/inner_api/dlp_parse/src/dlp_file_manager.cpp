@@ -28,7 +28,7 @@ namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpFileManager"};
 }
 
-int DlpFileManager::AddDlpFileNode(std::shared_ptr<DlpFile>& filePtr)
+int32_t DlpFileManager::AddDlpFileNode(const std::shared_ptr<DlpFile>& filePtr)
 {
     Utils::UniqueWriteGuard<Utils::RWLock> infoGuard(this->g_DlpMapLock_);
     if (g_DlpFileMap_.count(filePtr->dlpFd_) > 0) {
@@ -39,7 +39,7 @@ int DlpFileManager::AddDlpFileNode(std::shared_ptr<DlpFile>& filePtr)
     return DLP_OK;
 }
 
-int DlpFileManager::RemoveDlpFileNode(std::shared_ptr<DlpFile>& filePtr)
+int32_t DlpFileManager::RemoveDlpFileNode(const std::shared_ptr<DlpFile>& filePtr)
 {
     Utils::UniqueWriteGuard<Utils::RWLock> infoGuard(this->g_DlpMapLock_);
     if (g_DlpFileMap_.count(filePtr->dlpFd_) == 0) {
@@ -50,7 +50,7 @@ int DlpFileManager::RemoveDlpFileNode(std::shared_ptr<DlpFile>& filePtr)
     return DLP_OK;
 }
 
-std::shared_ptr<DlpFile> DlpFileManager::GetDlpFile(int dlpFd)
+std::shared_ptr<DlpFile> DlpFileManager::GetDlpFile(int32_t dlpFd)
 {
     Utils::UniqueReadGuard<Utils::RWLock> infoGuard(this->g_DlpMapLock_);
     if (g_DlpFileMap_.count(dlpFd) != 0) {
@@ -59,10 +59,10 @@ std::shared_ptr<DlpFile> DlpFileManager::GetDlpFile(int dlpFd)
     return nullptr;
 }
 
-int DlpFileManager::GenerateCertData(PermissionPolicy& policy, struct DlpBlob& certData)
+int32_t DlpFileManager::GenerateCertData(const PermissionPolicy& policy, struct DlpBlob& certData) const
 {
     std::vector<uint8_t> cert;
-    int result = DlpPermissionKit::GenerateDlpCertificate(policy, cert);
+    int32_t result = DlpPermissionKit::GenerateDlpCertificate(policy, cert);
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "generate dlp cert failed.");
         return result;
@@ -91,11 +91,11 @@ int DlpFileManager::GenerateCertData(PermissionPolicy& policy, struct DlpBlob& c
     return DLP_OK;
 }
 
-int DlpFileManager::PrepareDlpEncryptParms(
-    PermissionPolicy& policy, struct DlpBlob& key, struct DlpUsageSpec& usage, struct DlpBlob& certData)
+int32_t DlpFileManager::PrepareDlpEncryptParms(
+    PermissionPolicy& policy, struct DlpBlob& key, struct DlpUsageSpec& usage, struct DlpBlob& certData) const
 {
     DLP_LOG_INFO(LABEL, "begin generate key");
-    int res = DlpOpensslGenerateRandomKey(DLP_AES_KEY_SIZE_256, &key);
+    int32_t res = DlpOpensslGenerateRandomKey(DLP_AES_KEY_SIZE_256, &key);
     if (res != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "alloc crypt key failed.");
         return res;
@@ -139,9 +139,9 @@ int DlpFileManager::PrepareDlpEncryptParms(
     return DLP_OK;
 }
 
-int DlpFileManager::ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr)
+int32_t DlpFileManager::ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr) const
 {
-    int result = filePtr->ParseDlpHeader();
+    int32_t result = filePtr->ParseDlpHeader();
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "dlp file format error.");
         return result;
@@ -185,7 +185,8 @@ int DlpFileManager::ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr)
     return result;
 }
 
-void DlpFileManager::FreeChiperBlob(struct DlpBlob& key, struct DlpBlob& certData, struct DlpUsageSpec& usage)
+void DlpFileManager::FreeChiperBlob(struct DlpBlob& key,
+    struct DlpBlob& certData, struct DlpUsageSpec& usage) const
 {
     if (key.data != nullptr) {
         delete key.data;
@@ -206,14 +207,14 @@ void DlpFileManager::FreeChiperBlob(struct DlpBlob& key, struct DlpBlob& certDat
     }
 }
 
-int32_t DlpFileManager::SetDlpFileParams(std::shared_ptr<DlpFile>& filePtr, const DlpProperty& property)
+int32_t DlpFileManager::SetDlpFileParams(std::shared_ptr<DlpFile>& filePtr, const DlpProperty& property) const
 {
     PermissionPolicy policy(property);
     struct DlpBlob key;
     struct DlpBlob certData;
     struct DlpUsageSpec usage;
 
-    int result = PrepareDlpEncryptParms(policy, key, usage, certData);
+    int32_t result = PrepareDlpEncryptParms(policy, key, usage, certData);
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Prepare dlp encrypt params failed, error: %{public}d", result);
         return result;
@@ -247,7 +248,7 @@ int32_t DlpFileManager::SetDlpFileParams(std::shared_ptr<DlpFile>& filePtr, cons
     return result;
 }
 
-std::shared_ptr<DlpFile> DlpFileManager::GenerateDlpFile(int plainFileFd, int dlpFileFd,
+std::shared_ptr<DlpFile> DlpFileManager::GenerateDlpFile(int32_t plainFileFd, int32_t dlpFileFd,
     const DlpProperty& property)
 {
     if (plainFileFd < 0 || dlpFileFd < 0) {
@@ -286,7 +287,7 @@ std::shared_ptr<DlpFile> DlpFileManager::GenerateDlpFile(int plainFileFd, int dl
     return filePtr;
 }
 
-std::shared_ptr<DlpFile> DlpFileManager::OpenDlpFile(int dlpFileFd)
+std::shared_ptr<DlpFile> DlpFileManager::OpenDlpFile(int32_t dlpFileFd)
 {
     if (dlpFileFd < 0) {
         DLP_LOG_ERROR(LABEL, "dlpFile Fd is invalid.");
@@ -305,7 +306,7 @@ std::shared_ptr<DlpFile> DlpFileManager::OpenDlpFile(int dlpFileFd)
         return nullptr;
     }
 
-    int result = ParseDlpFileFormat(filePtr);
+    int32_t result = ParseDlpFileFormat(filePtr);
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "parse dlp file failed.");
         return nullptr;
@@ -320,7 +321,7 @@ std::shared_ptr<DlpFile> DlpFileManager::OpenDlpFile(int dlpFileFd)
     return filePtr;
 }
 
-bool DlpFileManager::IsDlpFile(int dlpFileFd)
+bool DlpFileManager::IsDlpFile(int32_t dlpFileFd)
 {
     if (dlpFileFd < 0) {
         DLP_LOG_ERROR(LABEL, "dlpFileFd is error.");
@@ -342,7 +343,7 @@ bool DlpFileManager::IsDlpFile(int dlpFileFd)
     return filePtr->ParseDlpHeader() == DLP_OK ? true : false;
 }
 
-int DlpFileManager::CloseDlpFile(std::shared_ptr<DlpFile>& dlpFile)
+int32_t DlpFileManager::CloseDlpFile(const std::shared_ptr<DlpFile>& dlpFile)
 {
     if (dlpFile == nullptr) {
         DLP_LOG_ERROR(LABEL, "dlpfile is null.");
@@ -351,7 +352,7 @@ int DlpFileManager::CloseDlpFile(std::shared_ptr<DlpFile>& dlpFile)
     return RemoveDlpFileNode(dlpFile);
 }
 
-int DlpFileManager::RecoverDlpFile(std::shared_ptr<DlpFile>& filePtr, int plainFd)
+int32_t DlpFileManager::RecoverDlpFile(std::shared_ptr<DlpFile>& filePtr, int32_t plainFd) const
 {
     if (filePtr == nullptr || plainFd < 0) {
         DLP_LOG_ERROR(LABEL, "dlpfile is null.");

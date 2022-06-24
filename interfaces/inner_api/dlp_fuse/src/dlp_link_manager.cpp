@@ -30,7 +30,7 @@ DlpLinkManager::DlpLinkManager()
     FuseDaemon::InitFuseFs(FUSE_DEV_FD);
 }
 
-int DlpLinkManager::AddDlpLinkFile(std::shared_ptr<DlpFile>& filePtr, const std::string& dlpLinkName)
+int32_t DlpLinkManager::AddDlpLinkFile(std::shared_ptr<DlpFile>& filePtr, const std::string& dlpLinkName)
 {
     if (filePtr == nullptr) {
         return DLP_LINK_FAILURE;
@@ -53,7 +53,7 @@ int DlpLinkManager::AddDlpLinkFile(std::shared_ptr<DlpFile>& filePtr, const std:
     return DLP_LINK_SUCCESS;
 }
 
-int DlpLinkManager::DeleteDlpLinkFile(std::shared_ptr<DlpFile>& filePtr)
+int32_t DlpLinkManager::DeleteDlpLinkFile(std::shared_ptr<DlpFile>& filePtr)
 {
     if (filePtr == nullptr) {
         return DLP_LINK_FAILURE;

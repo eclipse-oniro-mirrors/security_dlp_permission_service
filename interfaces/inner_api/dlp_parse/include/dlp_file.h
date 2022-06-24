@@ -60,21 +60,21 @@ enum VALID_KEY_SIZE {
 
 class DlpFile {
 public:
-    DlpFile(int dlpFd);
+    DlpFile(int32_t dlpFd);
     ~DlpFile();
 
     int32_t SetCipher(const struct DlpBlob& key, const struct DlpUsageSpec& spec);
-    int ParseDlpHeader();
-    int GetEncryptCert(struct DlpBlob& cert);
-    int SetEncryptCert(const struct DlpBlob& cert);
-    int32_t GenFile(int inPlainFileFd);
+    int32_t ParseDlpHeader();
+    int32_t GetEncryptCert(struct DlpBlob& cert) const;
+    int32_t SetEncryptCert(const struct DlpBlob& cert);
+    int32_t GenFile(int32_t inPlainFileFd);
     int32_t RemoveDlpPermission(int outPlainFileFd);
     int32_t DlpFileRead(uint32_t offset, void* buf, uint32_t size);
     int32_t DlpFileWrite(uint32_t offset, void* buf, uint32_t size);
-    uint32_t GetFsContextSize();
+    uint32_t GetFsContextSize() const;
     void UpdateDlpFilePermission();
 
-    int SetPolicy(const PermissionPolicy& policy);
+    int32_t SetPolicy(const PermissionPolicy& policy);
     void GetPolicy(PermissionPolicy& policy) const
     {
         policy.CopyPermissionPolicy(policy_);
@@ -88,30 +88,30 @@ public:
 
     void SetLinkStatus()
     {
-        isFuseLink = true;
+        isFuseLink_ = true;
     };
 
     void RemoveLinkStatus()
     {
-        isFuseLink = false;
+        isFuseLink_ = false;
     };
 
-    int dlpFd_;
+    int32_t dlpFd_;
 
 private:
-    bool IsValidDlpHeader(const struct DlpHeader& head);
+    bool IsValidDlpHeader(const struct DlpHeader& head) const;
     bool IsValidPadding(uint32_t padding);
-    bool IsValidCipher(const struct DlpBlob& key, const struct DlpUsageSpec& spec);
-    int CopyBlobParam(const struct DlpBlob& src, struct DlpBlob& dst);
-    void CleanBlobParam(struct DlpBlob& blob);
+    bool IsValidCipher(const struct DlpBlob& key, const struct DlpUsageSpec& spec) const;
+    int32_t CopyBlobParam(const struct DlpBlob& src, struct DlpBlob& dst) const;
+    void CleanBlobParam(struct DlpBlob& blob) const;
     int32_t UpdateFileCertData();
-    int32_t PrepareBuff(struct DlpBlob& message1, struct DlpBlob& message2);
-    int GetLocalAccountName(std::string& account);
-    int32_t DoDlpContentCryptyOperation(int inFd, int outFd, uint32_t inOffset,
+    int32_t PrepareBuff(struct DlpBlob& message1, struct DlpBlob& message2) const;
+    int32_t GetLocalAccountName(std::string& account) const;
+    int32_t DoDlpContentCryptyOperation(int32_t inFd, int32_t outFd, uint32_t inOffset,
         uint32_t inFileLen, bool isEncrypt);
 
-    bool isFuseLink;
-    bool isReadOnly;
+    bool isFuseLink_;
+    bool isReadOnly_;
 
     // dlp parse format
     struct DlpHeader head_;

@@ -42,8 +42,8 @@ public:
     struct stat GetLinkStat();
     void UpdateAtimeStat();
     void UpdateMtimeStat();
-    int Write(uint32_t offset, void* buf, uint32_t size);
-    int Read(uint32_t offset, void* buf, uint32_t size);
+    int32_t Write(uint32_t offset, void* buf, uint32_t size);
+    int32_t Read(uint32_t offset, void* buf, uint32_t size);
     std::shared_ptr<DlpFile> GetDlpFilePtr()
     {
         return dlpFile_;

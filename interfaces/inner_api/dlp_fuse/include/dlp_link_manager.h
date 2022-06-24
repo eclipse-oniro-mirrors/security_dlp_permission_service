@@ -31,8 +31,8 @@ public:
     static DlpLinkManager& GetInstance();
     ~DlpLinkManager() {};
 
-    int AddDlpLinkFile(std::shared_ptr<DlpFile>& filePtr, const std::string& dlpLinkName);
-    int DeleteDlpLinkFile(std::shared_ptr<DlpFile>& filePtr);
+    int32_t AddDlpLinkFile(std::shared_ptr<DlpFile>& filePtr, const std::string& dlpLinkName);
+    int32_t DeleteDlpLinkFile(std::shared_ptr<DlpFile>& filePtr);
     DlpLinkFile* LookUpDlpLinkFile(const std::string& dlpLinkName);
 
 private:

@@ -172,7 +172,7 @@ static void FuseDaemonRead(fuse_req_t req, fuse_ino_t ino, size_t size, off_t of
     }
     (void)memset_s(buf, size, 0, size);
 
-    int res = dlp->Read((uint32_t)offset, buf, (uint32_t)size);
+    int32_t res = dlp->Read((uint32_t)offset, buf, (uint32_t)size);
     if (res <= 0) {
         fuse_reply_err(req, EIO);
     } else {
@@ -191,7 +191,7 @@ static void FuseDaemonWrite(
         return;
     }
 
-    int res = dlp->Write((uint32_t)off, (void*)buf, (uint32_t)size);
+    int32_t res = dlp->Write((uint32_t)off, (void*)buf, (uint32_t)size);
     if (res <= 0) {
         fuse_reply_err(req, EIO);
     } else {

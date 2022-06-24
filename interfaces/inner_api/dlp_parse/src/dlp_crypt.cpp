@@ -202,7 +202,7 @@ static int32_t OpensslAesCipherEncryptFinal(
 }
 
 static int32_t OpensslAesCipherCryptInitParams(const struct DlpBlob* key, EVP_CIPHER_CTX* ctx,
-    struct DlpCipherParam* cipherParam, bool isEncrypt, const struct DlpUsageSpec* usageSpec)
+    const struct DlpCipherParam* cipherParam, bool isEncrypt, const struct DlpUsageSpec* usageSpec)
 {
     int32_t ret;
     if (isEncrypt) {
