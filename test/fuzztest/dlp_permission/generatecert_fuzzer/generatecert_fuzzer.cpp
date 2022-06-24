@@ -24,8 +24,6 @@
 
 using namespace OHOS::Security::DlpPermission;
 namespace OHOS {
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionFuzzer"};
-
 static std::string Uint8ArrayToString(const uint8_t* buff, size_t size)
 {
     std::string str = "";

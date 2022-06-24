@@ -16,6 +16,6 @@ import("//build/ohos.gni")
 group("napi_packages") {
   deps = []
   if (support_jsapi) {
-    #deps += [ "//base/security/dlp_permission_service/interfaces/kits/dlp_fuse:libdlpfuse_napi" ]
+    deps += [ "//base/security/dlp_permission_service/interfaces/kits/dlp_permission:libdlppermission_napi" ]
   }
 }
