@@ -33,6 +33,10 @@ enum {
     DLP_LINK_FAILURE,
 };
 
+static const uint32_t HOLE_BUFF_SIZE = 16 * 1024;
+static const uint32_t HOLE_BUFF_SMALL_SIZE = 1 * 1024;
+static const uint32_t MAX_HOLE_SIZE = 50 * 1024 * 1024; // 50M
+
 class DlpLinkFile final {
 public:
     DlpLinkFile(std::string dlpLinkName, std::shared_ptr<DlpFile> dlpFile);
@@ -50,6 +54,8 @@ public:
     };
 
 private:
+    int32_t FillHoleData(uint32_t holeStart, uint32_t holeSize);
+
     std::string dlpLinkName_;
     std::shared_ptr<DlpFile> dlpFile_;
     struct stat fileStat_;

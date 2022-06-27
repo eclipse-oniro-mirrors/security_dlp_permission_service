@@ -54,6 +54,7 @@ fuse_ino_t GetFileInode(DlpLinkFile* node)
 
 static void FuseDaemonLookup(fuse_req_t req, fuse_ino_t parent, const char* name)
 {
+    DLP_LOG_DEBUG(LABEL, "loopup file name %{public}s", name);
     if (name == nullptr) {
         DLP_LOG_ERROR(LABEL, "name is null");
         fuse_reply_err(req, ENOENT);
@@ -81,7 +82,7 @@ static void FuseDaemonLookup(fuse_req_t req, fuse_ino_t parent, const char* name
         DLP_LOG_ERROR(LABEL, "name %{public}s can not found", name);
         fuse_reply_err(req, ENOENT);
     } else {
-        DLP_LOG_INFO(LABEL, "name %{public}s has found", name);
+        DLP_LOG_DEBUG(LABEL, "name %{public}s has found", name);
         fep.ino = GetFileInode(node);
         fep.attr = node->GetLinkStat();
         fuse_reply_entry(req, &fep);
@@ -173,7 +174,7 @@ static void FuseDaemonRead(fuse_req_t req, fuse_ino_t ino, size_t size, off_t of
     (void)memset_s(buf, size, 0, size);
 
     int32_t res = dlp->Read((uint32_t)offset, buf, (uint32_t)size);
-    if (res <= 0) {
+    if (res < 0) {
         fuse_reply_err(req, EIO);
     } else {
         fuse_reply_buf(req, buf, (size_t)res);
@@ -192,7 +193,7 @@ static void FuseDaemonWrite(
     }
 
     int32_t res = dlp->Write((uint32_t)off, (void*)buf, (uint32_t)size);
-    if (res <= 0) {
+    if (res < 0) {
         fuse_reply_err(req, EIO);
     } else {
         fuse_reply_write(req, (size_t)res);

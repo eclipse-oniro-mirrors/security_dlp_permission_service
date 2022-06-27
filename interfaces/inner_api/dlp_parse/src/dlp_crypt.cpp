@@ -123,7 +123,7 @@ inline void DlpLogOpensslError(void)
     errCode = ERR_get_error();
     ERR_error_string_n(errCode, szErr, DLP_OPENSSL_ERROR_LEN);
 
-    DLP_LOG_ERROR(LABEL, "Openssl engine fail, error code = %lu, error string = %s", errCode, szErr);
+    DLP_LOG_ERROR(LABEL, "Openssl engine fail, error code = %{public}lu, error string = %{public}s", errCode, szErr);
 }
 
 static int32_t OpensslAesCipherInit(

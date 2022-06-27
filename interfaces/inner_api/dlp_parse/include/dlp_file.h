@@ -28,7 +28,9 @@ static const uint32_t DLP_BUFF_LEN = 4096;
 static const uint32_t IV_SIZE = 16;
 static const uint32_t DLP_FILE_MAGIC = 0x87f4922;
 static const uint32_t DLP_MAX_CERT_SIZE = 1024 * 1024; // 1M
-static const uint32_t DLP_FUSE_MAX_BUFFLEN = (50 * 1024 * 1024); // 50M
+static const uint32_t DLP_FUSE_MAX_BUFFLEN = (10 * 1024 * 1024); // 10M
+static const uint32_t DLP_BLOCK_SIZE = 16;
+static const uint32_t BYTE_LEN = 8;
 
 enum DlpOperation {
     DLP_ENCRYPTION = 1,
@@ -109,6 +111,11 @@ private:
     int32_t GetLocalAccountName(std::string& account) const;
     int32_t DoDlpContentCryptyOperation(int32_t inFd, int32_t outFd, uint32_t inOffset,
         uint32_t inFileLen, bool isEncrypt);
+
+    int32_t DupUsageSpec(struct DlpUsageSpec& spec);
+    int32_t DoDlpBlockCryptOperation(struct DlpBlob& message1,
+        struct DlpBlob& message2, uint32_t offset, bool isEncrypt);
+    int32_t WriteFistBlockData(uint32_t offset, void* buf, uint32_t size);
 
     bool isFuseLink_;
     bool isReadOnly_;
