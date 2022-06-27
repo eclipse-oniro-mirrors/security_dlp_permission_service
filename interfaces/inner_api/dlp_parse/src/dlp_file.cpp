@@ -442,12 +442,17 @@ int32_t DlpFile::RemoveDlpPermission(int32_t outPlainFileFd)
 
     if (isReadOnly_) {
         DLP_LOG_ERROR(LABEL, "dlp file is read only, remove dlp permission failed.");
-        return DLP_PARSE_ERROR_FILE_PERMISSION;
+        return DLP_PARSE_ERROR_FILE_READ_ONLY;
     }
 
-    if (outPlainFileFd < 0 || dlpFd_ < 0 || !IsValidCipher(cipher_.encKey, cipher_.usageSpec)) {
-        DLP_LOG_ERROR(LABEL, "params is error");
-        return DLP_PARSE_ERROR_VALUE_INVALID;
+    if (outPlainFileFd < 0 || dlpFd_ < 0) {
+        DLP_LOG_ERROR(LABEL, "fd is invalid");
+        return DLP_PARSE_ERROR_FD_ERROR;
+    }
+
+    if (!IsValidCipher(cipher_.encKey, cipher_.usageSpec)) {
+        DLP_LOG_ERROR(LABEL, "cipher params is invalid");
+        return DLP_PARSE_ERROR_CIPHER_PARAMS_INVALID;
     }
 
     off_t fileLen = lseek(dlpFd_, 0, SEEK_END);
@@ -522,7 +527,7 @@ int32_t DlpFile::DlpFileWrite(uint32_t offset, void* buf, uint32_t size)
 {
     if (isReadOnly_) {
         DLP_LOG_ERROR(LABEL, "dlp file is readonly, write failed");
-        return DLP_PARSE_ERROR_FILE_PERMISSION;
+        return DLP_PARSE_ERROR_FILE_READ_ONLY;
     }
 
     if (buf == nullptr || size == 0 || size > DLP_FUSE_MAX_BUFFLEN) {

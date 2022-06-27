@@ -30,6 +30,7 @@ ohos_shared_library("libdlppermission_napi") {
   sources = [
     "//base/security/dlp_permission_service/interfaces/kits/dlp_permission/napi/src/napi_dlp_permission.cpp",
     "//base/security/dlp_permission_service/interfaces/kits/napi_common/src/napi_common.cpp",
+    "//base/security/dlp_permission_service/interfaces/kits/napi_common/src/napi_error_msg.cpp",
   ]
 
   deps = [
@@ -40,7 +41,15 @@ ohos_shared_library("libdlppermission_napi") {
     "//utils/native/base:utils",
   ]
   cflags_cc = [ "-DHILOG_ENABLE" ]
-  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  external_deps = [
+    "ability_base:want",
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+    "samgr_standard:samgr_proxy",
+    "utils_base:utils",
+  ]
 
   relative_install_dir = "module"
   subsystem_name = "security"

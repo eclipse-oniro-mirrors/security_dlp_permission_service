@@ -33,7 +33,7 @@ int32_t DlpFileManager::AddDlpFileNode(const std::shared_ptr<DlpFile>& filePtr)
     Utils::UniqueWriteGuard<Utils::RWLock> infoGuard(this->g_DlpMapLock_);
     if (g_DlpFileMap_.count(filePtr->dlpFd_) > 0) {
         DLP_LOG_ERROR(LABEL, "fd %{public}d is exist", filePtr->dlpFd_);
-        return DLP_PARSE_ERROR_FD_ERROR;
+        return DLP_PARSE_ERROR_FILE_ALREADY_OPENED;
     }
     g_DlpFileMap_[filePtr->dlpFd_] = filePtr;
     return DLP_OK;
@@ -43,8 +43,8 @@ int32_t DlpFileManager::RemoveDlpFileNode(const std::shared_ptr<DlpFile>& filePt
 {
     Utils::UniqueWriteGuard<Utils::RWLock> infoGuard(this->g_DlpMapLock_);
     if (g_DlpFileMap_.count(filePtr->dlpFd_) == 0) {
-        DLP_LOG_ERROR(LABEL, "dlpfile fd %{public}d is not exist", filePtr->dlpFd_);
-        return DLP_PARSE_ERROR_FD_ERROR;
+        DLP_LOG_ERROR(LABEL, "fd %{public}d is not exist", filePtr->dlpFd_);
+        return DLP_PARSE_ERROR_FILE_NOT_OPENED;
     }
     g_DlpFileMap_.erase(filePtr->dlpFd_);
     return DLP_OK;
@@ -74,7 +74,7 @@ int32_t DlpFileManager::GenerateCertData(const PermissionPolicy& policy, struct 
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    uint8_t* certBuffer = new (std::nothrow)uint8_t[certSize];
+    uint8_t* certBuffer = new (std::nothrow) uint8_t[certSize];
     if (certBuffer == nullptr) {
         DLP_LOG_ERROR(LABEL, "alloc cert data failed.");
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
@@ -101,7 +101,7 @@ int32_t DlpFileManager::PrepareDlpEncryptParms(
         return res;
     }
 
-    struct DlpCipherParam* tagIv = new (std::nothrow)struct DlpCipherParam;
+    struct DlpCipherParam* tagIv = new (std::nothrow) struct DlpCipherParam;
     if (tagIv == nullptr) {
         DLP_LOG_ERROR(LABEL, "alloc cipher param failed.");
         delete key.data;
@@ -115,7 +115,7 @@ int32_t DlpFileManager::PrepareDlpEncryptParms(
         delete key.data;
         delete tagIv;
         key.data = nullptr;
-        tagIv= nullptr;
+        tagIv = nullptr;
         return res;
     }
 
@@ -185,8 +185,7 @@ int32_t DlpFileManager::ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr) co
     return result;
 }
 
-void DlpFileManager::FreeChiperBlob(struct DlpBlob& key,
-    struct DlpBlob& certData, struct DlpUsageSpec& usage) const
+void DlpFileManager::FreeChiperBlob(struct DlpBlob& key, struct DlpBlob& certData, struct DlpUsageSpec& usage) const
 {
     if (key.data != nullptr) {
         delete key.data;
@@ -248,115 +247,118 @@ int32_t DlpFileManager::SetDlpFileParams(std::shared_ptr<DlpFile>& filePtr, cons
     return result;
 }
 
-std::shared_ptr<DlpFile> DlpFileManager::GenerateDlpFile(int32_t plainFileFd, int32_t dlpFileFd,
-    const DlpProperty& property)
+int32_t DlpFileManager::GenerateDlpFile(
+    int32_t plainFileFd, int32_t dlpFileFd, const DlpProperty& property, std::shared_ptr<DlpFile>& filePtr)
 {
     if (plainFileFd < 0 || dlpFileFd < 0) {
         DLP_LOG_ERROR(LABEL, "plainFileFd or dlpFileFd is invalid.");
-        return nullptr;
+        return DLP_PARSE_ERROR_FD_ERROR;
     }
 
     if (GetDlpFile(dlpFileFd) != nullptr) {
         DLP_LOG_ERROR(LABEL, "dlpFile has generated, If you want to rebuild, close it first.");
-        return nullptr;
+        return DLP_PARSE_ERROR_FILE_ALREADY_OPENED;
     }
 
-    std::shared_ptr<DlpFile> filePtr = std::make_shared<DlpFile>(dlpFileFd);
+    filePtr = std::make_shared<DlpFile>(dlpFileFd);
     if (filePtr == nullptr) {
-        DLP_LOG_ERROR(LABEL, "alloc dlpfile failed.");
-        return nullptr;
+        DLP_LOG_ERROR(LABEL, "alloc dlp file failed.");
+        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
     int32_t result = SetDlpFileParams(filePtr, property);
     if (result != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "gen dlp file failed, error: %{public}d", result);
-        return nullptr;
+        DLP_LOG_ERROR(LABEL, "set flp file param failed, error: %{public}d", result);
+        return result;
     }
 
     result = filePtr->GenFile(plainFileFd);
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "gen dlp file failed, error: %{public}d", result);
-        return nullptr;
+        return result;
     }
 
-    result = AddDlpFileNode(filePtr);
-    if (result != DLP_OK) {
-        return nullptr;
-    }
-    DLP_LOG_INFO(LABEL, "generate dlp file ok.");
-    return filePtr;
+    return AddDlpFileNode(filePtr);
 }
 
-std::shared_ptr<DlpFile> DlpFileManager::OpenDlpFile(int32_t dlpFileFd)
+int32_t DlpFileManager::OpenDlpFile(int32_t dlpFileFd, std::shared_ptr<DlpFile>& filePtr)
 {
     if (dlpFileFd < 0) {
-        DLP_LOG_ERROR(LABEL, "dlpFile Fd is invalid.");
-        return nullptr;
+        DLP_LOG_ERROR(LABEL, "fd is invalid.");
+        return DLP_PARSE_ERROR_FD_ERROR;
     }
 
-    std::shared_ptr<DlpFile> filePtr = GetDlpFile(dlpFileFd);
+    filePtr = GetDlpFile(dlpFileFd);
     if (filePtr != nullptr) {
-        DLP_LOG_INFO(LABEL, "dlpfile has open.");
-        return filePtr;
+        DLP_LOG_INFO(LABEL, "dlp file has open.");
+        return DLP_OK;
     }
 
     filePtr = std::make_shared<DlpFile>(dlpFileFd);
     if (filePtr == nullptr) {
-        DLP_LOG_ERROR(LABEL, "alloc dlpfile failed.");
-        return nullptr;
+        DLP_LOG_ERROR(LABEL, "alloc dlp file failed.");
+        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
     int32_t result = ParseDlpFileFormat(filePtr);
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "parse dlp file failed.");
-        return nullptr;
+        return result;
     }
 
-    result = AddDlpFileNode(filePtr);
-    if (result != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "add dlp file node failed.");
-        return nullptr;
-    }
-
-    return filePtr;
+    return AddDlpFileNode(filePtr);
 }
 
-bool DlpFileManager::IsDlpFile(int32_t dlpFileFd)
+int32_t DlpFileManager::IsDlpFile(int32_t dlpFileFd, bool& isDlpFile)
 {
     if (dlpFileFd < 0) {
-        DLP_LOG_ERROR(LABEL, "dlpFileFd is error.");
-        return false;
+        DLP_LOG_ERROR(LABEL, "fd is invalid.");
+        isDlpFile = false;
+        return DLP_PARSE_ERROR_FD_ERROR;
     }
 
     std::shared_ptr<DlpFile> filePtr = GetDlpFile(dlpFileFd);
-    if (GetDlpFile(dlpFileFd) != nullptr) {
-        DLP_LOG_INFO(LABEL, "dlpfile has open.");
-        return true;
+    if (filePtr != nullptr) {
+        DLP_LOG_INFO(LABEL, "dlp file has opened.");
+        isDlpFile = true;
+        return DLP_OK;
     }
 
     filePtr = std::make_shared<DlpFile>(dlpFileFd);
     if (filePtr == nullptr) {
-        DLP_LOG_ERROR(LABEL, "alloc dlpfile failed.");
-        return false;
+        DLP_LOG_ERROR(LABEL, "alloc dlp file failed.");
+        isDlpFile = false;
+        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
-    return filePtr->ParseDlpHeader() == DLP_OK ? true : false;
+    int32_t result = filePtr->ParseDlpHeader();
+    if (result != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "parse dlp file failed, res: %{public}d", result);
+        isDlpFile = false;
+        return result;
+    }
+    isDlpFile = true;
+    return DLP_OK;
 }
 
 int32_t DlpFileManager::CloseDlpFile(const std::shared_ptr<DlpFile>& dlpFile)
 {
     if (dlpFile == nullptr) {
-        DLP_LOG_ERROR(LABEL, "dlpfile is null.");
-        return DLP_PARSE_ERROR_VALUE_INVALID;
+        DLP_LOG_ERROR(LABEL, "dlp file is null.");
+        return DLP_PARSE_ERROR_PTR_NULL;
     }
     return RemoveDlpFileNode(dlpFile);
 }
 
 int32_t DlpFileManager::RecoverDlpFile(std::shared_ptr<DlpFile>& filePtr, int32_t plainFd) const
 {
-    if (filePtr == nullptr || plainFd < 0) {
-        DLP_LOG_ERROR(LABEL, "dlpfile is null.");
-        return DLP_PARSE_ERROR_VALUE_INVALID;
+    if (filePtr == nullptr) {
+        DLP_LOG_ERROR(LABEL, "dlp file is null.");
+        return DLP_PARSE_ERROR_PTR_NULL;
+    }
+    if (plainFd < 0) {
+        DLP_LOG_ERROR(LABEL, "fd is invalid.");
+        return DLP_PARSE_ERROR_FD_ERROR;
     }
 
     return filePtr->RemoveDlpPermission(plainFd);

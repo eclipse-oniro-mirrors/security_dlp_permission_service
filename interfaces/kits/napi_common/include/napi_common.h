@@ -42,7 +42,6 @@ struct CommonAsyncContext {
     napi_deferred deferred = nullptr;  // promise handle
     napi_ref callbackRef = nullptr;    // callback handle
     napi_async_work work = nullptr;    // work handle
-    std::shared_ptr<DlpFile> dlpFileNative = nullptr;
 };
 
 struct GenerateDlpFileAsyncContext : public CommonAsyncContext {
@@ -50,6 +49,7 @@ struct GenerateDlpFileAsyncContext : public CommonAsyncContext {
     int64_t plainTxtFd;
     int64_t cipherTxtFd;
     DlpProperty property;
+    std::shared_ptr<DlpFile> dlpFileNative = nullptr;
 };
 
 struct DlpFileAsyncContext : public CommonAsyncContext {
@@ -57,21 +57,32 @@ struct DlpFileAsyncContext : public CommonAsyncContext {
     int64_t cipherTxtFd;
     DlpProperty property;
     bool isDlpFile = false;
+    std::shared_ptr<DlpFile> dlpFileNative = nullptr;
 };
 
 struct DlpLinkFileAsyncContext : public CommonAsyncContext {
     explicit DlpLinkFileAsyncContext(napi_env env) : CommonAsyncContext(env){};
     std::string linkFileName = "";
+    std::shared_ptr<DlpFile> dlpFileNative = nullptr;
 };
 
 struct RecoverDlpFileAsyncContext : public CommonAsyncContext {
     explicit RecoverDlpFileAsyncContext(napi_env env) : CommonAsyncContext(env){};
     int64_t plainFd = 0;
+    std::shared_ptr<DlpFile> dlpFileNative = nullptr;
 };
 
+struct CloseDlpFileAsyncContext : public CommonAsyncContext {
+    explicit CloseDlpFileAsyncContext(napi_env env) : CommonAsyncContext(env){};
+    std::shared_ptr<DlpFile> dlpFileNative = nullptr;
+};
+
+
+bool CheckPermission();
 napi_value CreateEnumAuthPermType(napi_env env, napi_value exports);
 napi_value CreateEnumAccountType(napi_env env, napi_value exports);
-void ProcessCallbackOrPromise(napi_env env, const CommonAsyncContext* asyncContext, napi_value err, napi_value data);
+void CreateNapiRetMsg(napi_env env, int32_t errorCode, napi_value* result);
+void ProcessCallbackOrPromise(napi_env env, const CommonAsyncContext* asyncContext, napi_value data);
 
 void GetGenerateDlpFileParams(
     const napi_env env, const napi_callback_info info, GenerateDlpFileAsyncContext& asyncContext);
@@ -81,7 +92,7 @@ void GetIsDlpFileParams(const napi_env env, const napi_callback_info info, DlpFi
 void GetDlpLinkFileParams(const napi_env env, const napi_callback_info info, DlpLinkFileAsyncContext& asyncContext);
 void GetRecoverDlpFileParams(
     const napi_env env, const napi_callback_info info, RecoverDlpFileAsyncContext& asyncContext);
-void GetCloseDlpFileParams(const napi_env env, const napi_callback_info info, CommonAsyncContext& asyncContext);
+void GetCloseDlpFileParams(const napi_env env, const napi_callback_info info, CloseDlpFileAsyncContext& asyncContext);
 
 bool GetDlpProperty(napi_env env, napi_value object, DlpProperty& property);
 void GetCallback(const napi_env env, napi_value jsObject, CommonAsyncContext& asyncContext);

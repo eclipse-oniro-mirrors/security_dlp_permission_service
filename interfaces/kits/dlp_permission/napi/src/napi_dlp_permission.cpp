@@ -49,7 +49,7 @@ static napi_value BindingJsWithNative(napi_env env, napi_value* argv)
 
 napi_value NapiDlpPermission::GenerateDlpFile(napi_env env, napi_callback_info cbInfo)
 {
-    DLP_LOG_DEBUG(LABEL, "enter");
+    DLP_LOG_DEBUG(LABEL, "called");
     auto* asyncContext = new (std::nothrow) GenerateDlpFileAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
@@ -57,7 +57,9 @@ napi_value NapiDlpPermission::GenerateDlpFile(napi_env env, napi_callback_info c
     }
     std::unique_ptr<GenerateDlpFileAsyncContext> asyncContextPtr{asyncContext};
     asyncContext->callbackRef = nullptr;
-    GetGenerateDlpFileParams(env, cbInfo, *asyncContext);
+    if (asyncContext->errCode == DLP_OK) {
+        GetGenerateDlpFileParams(env, cbInfo, *asyncContext);
+    }
 
     napi_value result = nullptr;
     if (asyncContext->callbackRef == nullptr) {
@@ -86,12 +88,8 @@ void NapiDlpPermission::GenerateDlpFileExcute(napi_env env, void* data)
         return;
     }
     if (asyncContext->errCode == DLP_OK) {
-        asyncContext->dlpFileNative = DlpFileManager::GetInstance().GenerateDlpFile(
-            asyncContext->plainTxtFd, asyncContext->cipherTxtFd, asyncContext->property);
-        if (asyncContext->dlpFileNative == nullptr) {
-            DLP_LOG_ERROR(LABEL, "native obj is null");
-            asyncContext->errCode = DLP_NAPI_ERROR_NATIVE_OBJ_NULL;
-        }
+        asyncContext->errCode = DlpFileManager::GetInstance().GenerateDlpFile(
+            asyncContext->plainTxtFd, asyncContext->cipherTxtFd, asyncContext->property, asyncContext->dlpFileNative);
     }
 }
 
@@ -115,20 +113,18 @@ void NapiDlpPermission::GenerateDlpFileComplete(napi_env env, napi_status status
         napi_value instance = BindingJsWithNative(asyncContext->env, argv);
         if (instance == nullptr) {
             DLP_LOG_ERROR(LABEL, "native instance binding fail");
-            asyncContext->errCode = DLP_NAPI_ERROR_NATIVE_DINDING_FAIL;
+            asyncContext->errCode = DLP_NAPI_ERROR_NATIVE_BINDING_FAIL;
         } else {
             resJs = instance;
         }
     }
 
-    napi_value errCodeJs = nullptr;
-    NAPI_CALL_RETURN_VOID(env, napi_create_int64(env, asyncContext->errCode, &errCodeJs));
-    ProcessCallbackOrPromise(env, asyncContext, errCodeJs, resJs);
+    ProcessCallbackOrPromise(env, asyncContext, resJs);
 }
 
 napi_value NapiDlpPermission::OpenDlpFile(napi_env env, napi_callback_info cbInfo)
 {
-    DLP_LOG_DEBUG(LABEL, "enter");
+    DLP_LOG_DEBUG(LABEL, "called");
     auto* asyncContext = new (std::nothrow) DlpFileAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
@@ -136,7 +132,9 @@ napi_value NapiDlpPermission::OpenDlpFile(napi_env env, napi_callback_info cbInf
     }
     std::unique_ptr<DlpFileAsyncContext> asyncContextPtr{asyncContext};
     asyncContext->callbackRef = nullptr;
-    GetOpenDlpFileParams(env, cbInfo, *asyncContext);
+    if (asyncContext->errCode == DLP_OK) {
+        GetOpenDlpFileParams(env, cbInfo, *asyncContext);
+    }
 
     napi_value result = nullptr;
     if (asyncContext->callbackRef == nullptr) {
@@ -165,11 +163,8 @@ void NapiDlpPermission::OpenDlpFileExcute(napi_env env, void* data)
         return;
     }
     if (asyncContext->errCode == DLP_OK) {
-        asyncContext->dlpFileNative = DlpFileManager::GetInstance().OpenDlpFile(asyncContext->cipherTxtFd);
-        if (asyncContext->dlpFileNative == nullptr) {
-            DLP_LOG_ERROR(LABEL, "native obj is null");
-            asyncContext->errCode = DLP_NAPI_ERROR_NATIVE_OBJ_NULL;
-        }
+        asyncContext->errCode =
+            DlpFileManager::GetInstance().OpenDlpFile(asyncContext->cipherTxtFd, asyncContext->dlpFileNative);
     }
 }
 
@@ -203,20 +198,18 @@ void NapiDlpPermission::OpenDlpFileComplete(napi_env env, napi_status status, vo
         napi_value instance = BindingJsWithNative(env, argv);
         if (instance == nullptr) {
             DLP_LOG_ERROR(LABEL, "native instance binding fail");
-            asyncContext->errCode = DLP_NAPI_ERROR_NATIVE_DINDING_FAIL;
+            asyncContext->errCode = DLP_NAPI_ERROR_NATIVE_BINDING_FAIL;
         } else {
             resJs = instance;
         }
     }
 
-    napi_value errCodeJs = nullptr;
-    NAPI_CALL_RETURN_VOID(env, napi_create_int64(env, asyncContext->errCode, &errCodeJs));
-    ProcessCallbackOrPromise(env, asyncContext, errCodeJs, resJs);
+    ProcessCallbackOrPromise(env, asyncContext, resJs);
 }
 
 napi_value NapiDlpPermission::IsDlpFile(napi_env env, napi_callback_info cbInfo)
 {
-    DLP_LOG_DEBUG(LABEL, "enter");
+    DLP_LOG_DEBUG(LABEL, "called");
     auto* asyncContext = new (std::nothrow) DlpFileAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
@@ -224,7 +217,9 @@ napi_value NapiDlpPermission::IsDlpFile(napi_env env, napi_callback_info cbInfo)
     }
     std::unique_ptr<DlpFileAsyncContext> asyncContextPtr{asyncContext};
     asyncContext->callbackRef = nullptr;
-    GetIsDlpFileParams(env, cbInfo, *asyncContext);
+    if (asyncContext->errCode == DLP_OK) {
+        GetIsDlpFileParams(env, cbInfo, *asyncContext);
+    }
 
     napi_value result = nullptr;
     if (asyncContext->callbackRef == nullptr) {
@@ -253,8 +248,8 @@ void NapiDlpPermission::IsDlpFileExcute(napi_env env, void* data)
         return;
     }
     if (asyncContext->errCode == DLP_OK) {
-        asyncContext->isDlpFile = DlpFileManager::GetInstance().IsDlpFile(asyncContext->cipherTxtFd);
-        DLP_LOG_INFO(LABEL, "is dlp file: %{public}d", asyncContext->isDlpFile);
+        asyncContext->errCode =
+            DlpFileManager::GetInstance().IsDlpFile(asyncContext->cipherTxtFd, asyncContext->isDlpFile);
     }
 }
 
@@ -272,14 +267,13 @@ void NapiDlpPermission::IsDlpFileComplete(napi_env env, napi_status status, void
     if (asyncContext->errCode == DLP_OK) {
         NAPI_CALL_RETURN_VOID(env, napi_get_boolean(env, asyncContext->isDlpFile, &isDlpFileJs));
     }
-    napi_value errCodeJs = nullptr;
-    NAPI_CALL_RETURN_VOID(env, napi_create_int64(env, asyncContext->errCode, &errCodeJs));
-    ProcessCallbackOrPromise(env, asyncContext, errCodeJs, isDlpFileJs);
+
+    ProcessCallbackOrPromise(env, asyncContext, isDlpFileJs);
 }
 
 napi_value NapiDlpPermission::AddDlpLinkFile(napi_env env, napi_callback_info cbInfo)
 {
-    DLP_LOG_DEBUG(LABEL, "enter");
+    DLP_LOG_DEBUG(LABEL, "called");
     auto* asyncContext = new (std::nothrow) DlpLinkFileAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
@@ -287,7 +281,9 @@ napi_value NapiDlpPermission::AddDlpLinkFile(napi_env env, napi_callback_info cb
     }
     std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
     asyncContext->callbackRef = nullptr;
-    GetDlpLinkFileParams(env, cbInfo, *asyncContext);
+    if (asyncContext->errCode == DLP_OK) {
+        GetDlpLinkFileParams(env, cbInfo, *asyncContext);
+    }
 
     napi_value result = nullptr;
     if (asyncContext->callbackRef == nullptr) {
@@ -330,16 +326,14 @@ void NapiDlpPermission::AddDlpLinkFileComplete(napi_env env, napi_status status,
         return;
     }
     std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
-    napi_value errCodeJs = nullptr;
-    NAPI_CALL_RETURN_VOID(env, napi_create_int64(env, asyncContext->errCode, &errCodeJs));
     napi_value resJs = nullptr;
     NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &resJs));
-    ProcessCallbackOrPromise(env, asyncContext, errCodeJs, resJs);
+    ProcessCallbackOrPromise(env, asyncContext, resJs);
 }
 
 napi_value NapiDlpPermission::DeleteDlpLinkFile(napi_env env, napi_callback_info cbInfo)
 {
-    DLP_LOG_DEBUG(LABEL, "enter");
+    DLP_LOG_DEBUG(LABEL, "called");
     auto* asyncContext = new (std::nothrow) DlpLinkFileAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
@@ -347,7 +341,9 @@ napi_value NapiDlpPermission::DeleteDlpLinkFile(napi_env env, napi_callback_info
     }
     std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
     asyncContext->callbackRef = nullptr;
-    GetDlpLinkFileParams(env, cbInfo, *asyncContext);
+    if (asyncContext->errCode == DLP_OK) {
+        GetDlpLinkFileParams(env, cbInfo, *asyncContext);
+    }
 
     napi_value result = nullptr;
     if (asyncContext->callbackRef == nullptr) {
@@ -389,16 +385,14 @@ void NapiDlpPermission::DeleteDlpLinkFileComplete(napi_env env, napi_status stat
         return;
     }
     std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
-    napi_value errCodeJs = nullptr;
-    NAPI_CALL_RETURN_VOID(env, napi_create_int64(env, asyncContext->errCode, &errCodeJs));
     napi_value resJs = nullptr;
     NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &resJs));
-    ProcessCallbackOrPromise(env, asyncContext, errCodeJs, resJs);
+    ProcessCallbackOrPromise(env, asyncContext, resJs);
 }
 
 napi_value NapiDlpPermission::RecoverDlpFile(napi_env env, napi_callback_info cbInfo)
 {
-    DLP_LOG_DEBUG(LABEL, "enter");
+    DLP_LOG_DEBUG(LABEL, "called");
     auto* asyncContext = new (std::nothrow) RecoverDlpFileAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
@@ -406,7 +400,9 @@ napi_value NapiDlpPermission::RecoverDlpFile(napi_env env, napi_callback_info cb
     }
     std::unique_ptr<RecoverDlpFileAsyncContext> asyncContextPtr{asyncContext};
     asyncContext->callbackRef = nullptr;
-    GetRecoverDlpFileParams(env, cbInfo, *asyncContext);
+    if (asyncContext->errCode == DLP_OK) {
+        GetRecoverDlpFileParams(env, cbInfo, *asyncContext);
+    }
 
     napi_value result = nullptr;
     if (asyncContext->callbackRef == nullptr) {
@@ -449,24 +445,24 @@ void NapiDlpPermission::RecoverDlpFileComplete(napi_env env, napi_status status,
         return;
     }
     std::unique_ptr<RecoverDlpFileAsyncContext> asyncContextPtr{asyncContext};
-    napi_value errCodeJs = nullptr;
-    NAPI_CALL_RETURN_VOID(env, napi_create_int64(env, asyncContext->errCode, &errCodeJs));
     napi_value resJs = nullptr;
     NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &resJs));
-    ProcessCallbackOrPromise(env, asyncContext, errCodeJs, resJs);
+    ProcessCallbackOrPromise(env, asyncContext, resJs);
 }
 
 napi_value NapiDlpPermission::CloseDlpFile(napi_env env, napi_callback_info cbInfo)
 {
-    DLP_LOG_DEBUG(LABEL, "enter");
-    auto* asyncContext = new (std::nothrow) CommonAsyncContext(env);
+    DLP_LOG_DEBUG(LABEL, "called");
+    auto* asyncContext = new (std::nothrow) CloseDlpFileAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
         return nullptr;
     }
-    std::unique_ptr<CommonAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<CloseDlpFileAsyncContext> asyncContextPtr{asyncContext};
     asyncContext->callbackRef = nullptr;
-    GetCloseDlpFileParams(env, cbInfo, *asyncContext);
+    if (asyncContext->errCode == DLP_OK) {
+        GetCloseDlpFileParams(env, cbInfo, *asyncContext);
+    }
 
     napi_value result = nullptr;
     if (asyncContext->callbackRef == nullptr) {
@@ -489,7 +485,7 @@ napi_value NapiDlpPermission::CloseDlpFile(napi_env env, napi_callback_info cbIn
 void NapiDlpPermission::CloseDlpFileExcute(napi_env env, void* data)
 {
     DLP_LOG_DEBUG(LABEL, "napi_create_async_work running");
-    auto asyncContext = reinterpret_cast<CommonAsyncContext*>(data);
+    auto asyncContext = reinterpret_cast<CloseDlpFileAsyncContext*>(data);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
         return;
@@ -502,17 +498,15 @@ void NapiDlpPermission::CloseDlpFileExcute(napi_env env, void* data)
 void NapiDlpPermission::CloseDlpFileComplete(napi_env env, napi_status status, void* data)
 {
     DLP_LOG_DEBUG(LABEL, "napi_create_async_work complete");
-    auto asyncContext = reinterpret_cast<CommonAsyncContext*>(data);
+    auto asyncContext = reinterpret_cast<CloseDlpFileAsyncContext*>(data);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
         return;
     }
-    std::unique_ptr<CommonAsyncContext> asyncContextPtr{asyncContext};
-    napi_value errCodeJs = nullptr;
-    NAPI_CALL_RETURN_VOID(env, napi_create_int64(env, asyncContext->errCode, &errCodeJs));
+    std::unique_ptr<CloseDlpFileAsyncContext> asyncContextPtr{asyncContext};
     napi_value resJs = nullptr;
     NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &resJs));
-    ProcessCallbackOrPromise(env, asyncContext, errCodeJs, resJs);
+    ProcessCallbackOrPromise(env, asyncContext, resJs);
 }
 
 napi_value NapiDlpPermission::DlpFile(napi_env env, napi_callback_info cbInfo)
