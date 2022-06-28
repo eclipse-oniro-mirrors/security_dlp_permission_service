@@ -138,9 +138,8 @@ static void FuseDaemonOpen(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info
     dlp->UpdateAtimeStat();
 }
 
-static DlpLinkFile* GetValidFileNode(fuse_req_t req, fuse_ino_t ino, const struct fuse_file_info* fi)
+static DlpLinkFile* GetValidFileNode(fuse_req_t req, fuse_ino_t ino)
 {
-    (void)fi;
     if (ino == ROOT_INODE) {
         fuse_reply_err(req, ENOENT);
         return nullptr;
@@ -156,12 +155,13 @@ static DlpLinkFile* GetValidFileNode(fuse_req_t req, fuse_ino_t ino, const struc
 
 static void FuseDaemonRead(fuse_req_t req, fuse_ino_t ino, size_t size, off_t offset, struct fuse_file_info* fi)
 {
+    (void)fi;
     if (size > MAX_FUSE_READ_BUFF_SIZE) {
         DLP_LOG_ERROR(LABEL, "read size %{public}zu too large", size);
         fuse_reply_err(req, EINVAL);
         return;
     }
-    DlpLinkFile* dlp = GetValidFileNode(req, ino, fi);
+    DlpLinkFile* dlp = GetValidFileNode(req, ino);
     if (dlp == nullptr) {
         return;
     }
@@ -187,7 +187,8 @@ static void FuseDaemonWrite(
     fuse_req_t req, fuse_ino_t ino, const char* buf, size_t size, off_t off, struct fuse_file_info* fi)
 {
     DLP_LOG_INFO(LABEL, "write size %{public}zu", size);
-    DlpLinkFile* dlp = GetValidFileNode(req, ino, fi);
+    (void)fi;
+    DlpLinkFile* dlp = GetValidFileNode(req, ino);
     if (dlp == nullptr) {
         return;
     }

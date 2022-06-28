@@ -35,8 +35,6 @@ using namespace OHOS::Security::DlpPermission;
 
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpFuseTest"};
-}
-
 // using for clean all link file
 static const int32_t LINK_FD_ARRY_SIZE = 4;
 static int32_t g_linkFdArry[LINK_FD_ARRY_SIZE] = {-1};
@@ -55,6 +53,7 @@ static int g_plainFileFd = -1;
 static int g_dlpFileFd = -1;
 static int g_recoveryFileFd = -1;
 static std::shared_ptr<DlpFile> g_Dlpfile = nullptr;
+}
 
 void DlpFuseTest::SetUpTestCase()
 {}
@@ -99,6 +98,7 @@ void DlpFuseTest::TearDown()
     DLP_LOG_INFO(LABEL, "TearDown end");
 }
 
+namespace {
 static std::string GenerateRandStr(uint32_t len)
 {
     char* str = new (std::nothrow) char[len + 1];
@@ -175,7 +175,7 @@ void PrepareDlpFuseFsMount()
         DLP_LOG_ERROR(LABEL, "mount failed, errno %{public}d", errno);
     }
 }
-
+}
 /**
  * @tc.name: GenerateDlpFile001
  * @tc.desc: test dlp file generate, owner is current
@@ -435,8 +435,8 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile002, TestSize.Level1)
 HWTEST_F(DlpFuseTest, AddDlpLinkFile003, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "AddDlpLinkFile003");
-    int32_t g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
-    int32_t g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, 0777);
     ASSERT_GE(g_plainFileFd, 0);
     ASSERT_GE(g_dlpFileFd, 0);
 
