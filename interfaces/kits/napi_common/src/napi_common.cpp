@@ -119,7 +119,7 @@ napi_value CreateEnumAccountType(napi_env env, napi_value exports)
 static std::string GetBundleName()
 {
     std::string bundleName = "";
-    pid_t uid = getuid();
+    uid_t uid = getuid();
     sptr<ISystemAbilityManager> systemAbilityManager =
         SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (systemAbilityManager == nullptr) {
@@ -169,8 +169,8 @@ void CreateNapiRetMsg(napi_env env, int32_t errorCode, napi_value* result)
 
 void ProcessCallbackOrPromise(napi_env env, const CommonAsyncContext* asyncContext, napi_value data)
 {
-    size_t argc = 2;
-    napi_value args[2] = {nullptr};
+    size_t argc = PARAM_SIZE_TWO;
+    napi_value args[PARAM_SIZE_TWO] = {nullptr};
     CreateNapiRetMsg(env, asyncContext->errCode, &args[PARAM0]);
     args[PARAM1] = data;
     if (asyncContext->deferred) {
@@ -194,8 +194,8 @@ void GetGenerateDlpFileParams(
     const napi_env env, const napi_callback_info info, GenerateDlpFileAsyncContext& asyncContext)
 {
     DLP_LOG_DEBUG(LABEL, "Called");
-    size_t argc = 4;
-    napi_value argv[4] = {nullptr};
+    size_t argc = PARAM_SIZE_FOUR;
+    napi_value argv[PARAM_SIZE_FOUR] = {nullptr};
     NAPI_CALL_RETURN_VOID(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
 
     if (!GetInt64Value(env, argv[PARAM0], asyncContext.plainTxtFd)) {
@@ -229,8 +229,8 @@ void GetGenerateDlpFileParams(
 void GetOpenDlpFileParams(const napi_env env, const napi_callback_info info, DlpFileAsyncContext& asyncContext)
 {
     DLP_LOG_DEBUG(LABEL, "Called");
-    size_t argc = 2;
-    napi_value argv[2] = {nullptr};
+    size_t argc = PARAM_SIZE_TWO;
+    napi_value argv[PARAM_SIZE_TWO] = {nullptr};
     NAPI_CALL_RETURN_VOID(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
 
     if (!GetInt64Value(env, argv[PARAM0], asyncContext.cipherTxtFd)) {
@@ -249,8 +249,8 @@ void GetOpenDlpFileParams(const napi_env env, const napi_callback_info info, Dlp
 void GetIsDlpFileParams(const napi_env env, const napi_callback_info info, DlpFileAsyncContext& asyncContext)
 {
     DLP_LOG_DEBUG(LABEL, "Called");
-    size_t argc = 2;
-    napi_value argv[2] = {nullptr};
+    size_t argc = PARAM_SIZE_TWO;
+    napi_value argv[PARAM_SIZE_TWO] = {nullptr};
     NAPI_CALL_RETURN_VOID(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
 
     if (!GetInt64Value(env, argv[PARAM0], asyncContext.cipherTxtFd)) {
@@ -270,8 +270,8 @@ void GetDlpLinkFileParams(const napi_env env, const napi_callback_info info, Dlp
 {
     DLP_LOG_DEBUG(LABEL, "Called");
     napi_value thisVar = nullptr;
-    size_t argc = 2;
-    napi_value argv[2] = {nullptr};
+    size_t argc = PARAM_SIZE_TWO;
+    napi_value argv[PARAM_SIZE_TWO] = {nullptr};
     NAPI_CALL_RETURN_VOID(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
     if (thisVar == nullptr) {
         DLP_LOG_ERROR(LABEL, "This var is null");
@@ -304,8 +304,8 @@ void GetRecoverDlpFileParams(
 {
     DLP_LOG_DEBUG(LABEL, "Called");
     napi_value thisVar = nullptr;
-    size_t argc = 2;
-    napi_value argv[2] = {nullptr};
+    size_t argc = PARAM_SIZE_TWO;
+    napi_value argv[PARAM_SIZE_TWO] = {nullptr};
     NAPI_CALL_RETURN_VOID(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
     if (thisVar == nullptr) {
         DLP_LOG_ERROR(LABEL, "This var is null");
@@ -337,8 +337,8 @@ void GetCloseDlpFileParams(const napi_env env, const napi_callback_info info, Cl
 {
     DLP_LOG_DEBUG(LABEL, "Called");
     napi_value thisVar = nullptr;
-    size_t argc = 1;
-    napi_value argv[1] = {nullptr};
+    size_t argc = PARAM_SIZE_ONE;
+    napi_value argv[PARAM_SIZE_ONE] = {nullptr};
     NAPI_CALL_RETURN_VOID(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr));
     if (thisVar == nullptr) {
         DLP_LOG_ERROR(LABEL, "This var is null");
@@ -357,6 +357,42 @@ void GetCloseDlpFileParams(const napi_env env, const napi_callback_info info, Cl
         }
     }
 }
+
+void GetInstallDlpSandboxParams(
+    const napi_env env, const napi_callback_info info, InstallDlpSandboxAsyncContext& asyncContext)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    size_t argc = PARAM_SIZE_FOUR;
+    napi_value argv[PARAM_SIZE_FOUR] = {nullptr};
+    NAPI_CALL_RETURN_VOID(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
+
+    if (!GetStringValue(env, argv[PARAM0], asyncContext.bundleName)) {
+        DLP_LOG_ERROR(LABEL, "js get bundle name fail");
+        asyncContext.errCode = DLP_NAPI_ERROR_PARSE_JS_PARAM;
+        return;
+    }
+    int64_t res;
+    if (!GetInt64Value(env, argv[PARAM1], res)) {
+        DLP_LOG_ERROR(LABEL, "js get perm fail");
+        asyncContext.errCode = DLP_NAPI_ERROR_PARSE_JS_PARAM;
+        return;
+    }
+    asyncContext.permType = static_cast<AuthPermType>(res);
+    if (!GetInt64Value(env, argv[PARAM2], res)) {
+        DLP_LOG_ERROR(LABEL, "js get user id fail");
+        asyncContext.errCode = DLP_NAPI_ERROR_PARSE_JS_PARAM;
+        return;
+    }
+    asyncContext.userId = static_cast<int32_t>(res);
+
+    if (argc == PARAM_SIZE_FOUR) {
+        GetCallback(env, argv[PARAM3], asyncContext);
+    }
+
+    DLP_LOG_DEBUG(LABEL, "bundleName: %{private}s, permType: %{private}d, userId: %{private}d",
+        asyncContext.bundleName.c_str(), asyncContext.permType, asyncContext.userId);
+}
+
 
 bool GetDlpProperty(napi_env env, napi_value jsObject, DlpProperty& property)
 {

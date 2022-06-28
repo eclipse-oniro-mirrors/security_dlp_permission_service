@@ -64,6 +64,10 @@ private:
     static void CloseDlpFileExcute(napi_env env, void* data);
     static void CloseDlpFileComplete(napi_env env, napi_status status, void* data);
     static napi_value CloseDlpFile(napi_env env, napi_callback_info cbInfo);
+
+    static void InstallDlpSandboxExcute(napi_env env, void* data);
+    static void InstallDlpSandboxComplete(napi_env env, napi_status status, void* data);
+    static napi_value InstallDlpSandbox(napi_env env, napi_callback_info cbInfo);
 };
 }  // namespace DlpPermission
 }  // namespace Security

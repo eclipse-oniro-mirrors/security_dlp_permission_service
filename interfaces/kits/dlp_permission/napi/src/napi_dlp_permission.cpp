@@ -32,7 +32,7 @@ namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionNapi"};
 }  // namespace
 
-static napi_value BindingJsWithNative(napi_env env, napi_value* argv)
+static napi_value BindingJsWithNative(napi_env env, napi_value* argv, size_t argc)
 {
     napi_value instance = nullptr;
     napi_value constructor = nullptr;
@@ -40,7 +40,7 @@ static napi_value BindingJsWithNative(napi_env env, napi_value* argv)
         return nullptr;
     }
     DLP_LOG_DEBUG(LABEL, "Get a reference to the global variable dlpFileRef_ complete");
-    if (napi_new_instance(env, constructor, 2, argv, &instance) != napi_ok) {  // constructor accept 2 args
+    if (napi_new_instance(env, constructor, argc, argv, &instance) != napi_ok) {
         return nullptr;
     }
     DLP_LOG_DEBUG(LABEL, "New the js instance complete");
@@ -109,8 +109,8 @@ void NapiDlpPermission::GenerateDlpFileComplete(napi_env env, napi_status status
             env, napi_create_int64(env, reinterpret_cast<int64_t>(asyncContext->dlpFileNative.get()), &nativeObjJs));
 
         napi_value dlpPropertyJs = DlpPropertyToJs(env, asyncContext->property);
-        napi_value argv[] = {nativeObjJs, dlpPropertyJs};
-        napi_value instance = BindingJsWithNative(asyncContext->env, argv);
+        napi_value argv[PARAM_SIZE_TWO] = {nativeObjJs, dlpPropertyJs};
+        napi_value instance = BindingJsWithNative(env, argv, PARAM_SIZE_TWO);
         if (instance == nullptr) {
             DLP_LOG_ERROR(LABEL, "native instance binding fail");
             asyncContext->errCode = DLP_NAPI_ERROR_NATIVE_BINDING_FAIL;
@@ -194,8 +194,8 @@ void NapiDlpPermission::OpenDlpFileComplete(napi_env env, napi_status status, vo
         };
 
         napi_value dlpPropertyJs = DlpPropertyToJs(env, property);
-        napi_value argv[] = {nativeObjJs, dlpPropertyJs};
-        napi_value instance = BindingJsWithNative(env, argv);
+        napi_value argv[PARAM_SIZE_TWO] = {nativeObjJs, dlpPropertyJs};
+        napi_value instance = BindingJsWithNative(env, argv, PARAM_SIZE_TWO);
         if (instance == nullptr) {
             DLP_LOG_ERROR(LABEL, "native instance binding fail");
             asyncContext->errCode = DLP_NAPI_ERROR_NATIVE_BINDING_FAIL;
@@ -509,6 +509,68 @@ void NapiDlpPermission::CloseDlpFileComplete(napi_env env, napi_status status, v
     ProcessCallbackOrPromise(env, asyncContext, resJs);
 }
 
+napi_value NapiDlpPermission::InstallDlpSandbox(napi_env env, napi_callback_info cbInfo)
+{
+    DLP_LOG_DEBUG(LABEL, "called");
+    auto* asyncContext = new (std::nothrow) InstallDlpSandboxAsyncContext(env);
+    if (asyncContext == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
+        return nullptr;
+    }
+    std::unique_ptr<InstallDlpSandboxAsyncContext> asyncContextPtr{asyncContext};
+    asyncContext->callbackRef = nullptr;
+    if (asyncContext->errCode == DLP_OK) {
+        GetInstallDlpSandboxParams(env, cbInfo, *asyncContext);
+    }
+
+    napi_value result = nullptr;
+    if (asyncContext->callbackRef == nullptr) {
+        DLP_LOG_DEBUG(LABEL, "Create promise");
+        NAPI_CALL(env, napi_create_promise(env, &asyncContext->deferred, &result));
+    } else {
+        DLP_LOG_DEBUG(LABEL, "Undefined the result parameter");
+        NAPI_CALL(env, napi_get_undefined(env, &result));
+    }
+
+    napi_value resource = nullptr;
+    NAPI_CALL(env, napi_create_string_utf8(env, "InstallDlpSandbox", NAPI_AUTO_LENGTH, &resource));
+    NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, InstallDlpSandboxExcute, InstallDlpSandboxComplete,
+                       (void*)asyncContext, &(asyncContext->work)));
+    NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
+    asyncContextPtr.release();
+    return result;
+}
+
+void NapiDlpPermission::InstallDlpSandboxExcute(napi_env env, void* data)
+{
+    DLP_LOG_DEBUG(LABEL, "napi_create_async_work running");
+    auto asyncContext = reinterpret_cast<InstallDlpSandboxAsyncContext*>(data);
+    if (asyncContext == nullptr) {
+        DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
+        return;
+    }
+    if (asyncContext->errCode == DLP_OK) {
+        asyncContext->errCode = DlpPermissionKit::InstallDlpSandbox(
+            asyncContext->bundleName, asyncContext->permType, asyncContext->userId, asyncContext->appIndex);
+    }
+}
+
+void NapiDlpPermission::InstallDlpSandboxComplete(napi_env env, napi_status status, void* data)
+{
+    DLP_LOG_DEBUG(LABEL, "napi_create_async_work complete");
+    auto asyncContext = reinterpret_cast<InstallDlpSandboxAsyncContext*>(data);
+    if (asyncContext == nullptr) {
+        DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
+        return;
+    }
+    std::unique_ptr<InstallDlpSandboxAsyncContext> asyncContextPtr{asyncContext};
+    napi_value appIndexJs = nullptr;
+    if (asyncContext->errCode == DLP_OK) {
+        NAPI_CALL_RETURN_VOID(env, napi_create_int64(env, asyncContext->appIndex, &appIndexJs));
+    }
+    ProcessCallbackOrPromise(env, asyncContext, appIndexJs);
+}
+
 napi_value NapiDlpPermission::DlpFile(napi_env env, napi_callback_info cbInfo)
 {
     DLP_LOG_DEBUG(LABEL, "called");
@@ -539,6 +601,7 @@ napi_value NapiDlpPermission::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("generateDlpFile", GenerateDlpFile),
         DECLARE_NAPI_FUNCTION("openDlpFile", OpenDlpFile),
         DECLARE_NAPI_FUNCTION("isDlpFile", IsDlpFile),
+        DECLARE_NAPI_FUNCTION("installDlpSandbox", InstallDlpSandbox),
     };
     NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[PARAM0]), desc));
 
