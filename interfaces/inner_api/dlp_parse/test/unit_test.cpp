@@ -23,6 +23,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "dlp_crypt.h"
+#include "dlp_file_kits.h"
 #include "dlp_permission.h"
 
 using namespace testing::ext;
@@ -379,4 +380,25 @@ HWTEST_F(DlpUnitTest, Dlp0007, TestSize.Level1)
     ASSERT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
     ret = DlpOpensslAesDecrypt(nullptr, nullptr, nullptr, nullptr);
     ASSERT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: GetSanboxFlag001
+ * @tc.desc: Get Sandbox flag
+ * @tc.type: FUNC
+ * @tc.require:AR000H7BOC
+ */
+HWTEST_F(DlpUnitTest, GetSandboxFlag001, TestSize.Level1)
+{
+    OHOS::AAFwk::Want want;
+    bool res = DlpFileKits::GetSandboxFlag(want);
+    ASSERT_FALSE(res);
+
+    want.SetParam(TAG_DLP_TEST_PARAM, 10);
+    res = DlpFileKits::GetSandboxFlag(want);
+    ASSERT_TRUE(res);
+
+    want.SetParam(TAG_DLP_TEST_PARAM, 0);
+    res = DlpFileKits::GetSandboxFlag(want);
+    ASSERT_FALSE(res);
 }

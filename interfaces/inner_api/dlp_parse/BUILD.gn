@@ -22,6 +22,7 @@ ohos_shared_library("libdlpparse") {
     "$ROOT_DIR/src/dlp_crypt.cpp",
     "$ROOT_DIR/src/dlp_file.cpp",
     "$ROOT_DIR/src/dlp_file_manager.cpp",
+    "$ROOT_DIR/src/dlp_file_kits.cpp",
   ]
 
   include_dirs = [
@@ -45,6 +46,7 @@ ohos_shared_library("libdlpparse") {
     "utils_base:utils",
     "os_account:libaccountkits",
     "ipc:ipc_core",
+    "ability_base:want"
   ]
 
   cflags_cc = [ "-DHILOG_ENABLE" ]
