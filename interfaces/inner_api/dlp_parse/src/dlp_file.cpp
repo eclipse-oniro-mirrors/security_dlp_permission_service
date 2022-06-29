@@ -34,7 +34,7 @@ static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_
 static void IncIvCounterLitteEndian(struct DlpBlob& iv, uint32_t count)
 {
     uint8_t* data = iv.data;
-    for (int i = iv.size - 1; i >= 0; i--) {
+    for (uint32_t i = iv.size - 1; i >= 0; i--) {
         count += data[i];
         data[i] = (uint8_t)count;
         count >>= BYTE_LEN;
@@ -46,9 +46,9 @@ static void IncIvCounterLitteEndian(struct DlpBlob& iv, uint32_t count)
 
 static void IncIvCounterBigEndian(struct DlpBlob& iv, uint32_t count)
 {
-    int size = iv.size;
+    uint32_t size = iv.size;
     uint8_t* data = iv.data;
-    for (int i = 0; i < size; i++) {
+    for (uint32_t i = 0; i < size; i++) {
         count += data[i];
         data[i] = (uint8_t)count;
         count >>= BYTE_LEN;
@@ -746,7 +746,7 @@ int32_t DlpFile::DlpFileWrite(uint32_t offset, void* buf, uint32_t size)
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
 
-    return ret + writenSize;
+    return ret + (int32_t)writenSize;
 }
 
 uint32_t DlpFile::GetFsContextSize() const

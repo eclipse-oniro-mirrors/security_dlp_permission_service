@@ -202,7 +202,7 @@ static int32_t OpensslAesCipherEncryptFinal(
 }
 
 static int32_t OpensslAesCipherCryptInitParams(const struct DlpBlob* key, EVP_CIPHER_CTX* ctx,
-    const struct DlpCipherParam* cipherParam, bool isEncrypt, const struct DlpUsageSpec* usageSpec)
+    const struct DlpCipherParam* cipherParam, bool isEncrypt)
 {
     int32_t ret;
     if (isEncrypt) {
@@ -253,7 +253,7 @@ static int32_t OpensslAesCipherCryptInit(
         return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
 
-    ret = OpensslAesCipherCryptInitParams(key, ctx, cipherParam, isEncrypt, usageSpec);
+    ret = OpensslAesCipherCryptInitParams(key, ctx, cipherParam, isEncrypt);
     if (ret != DLP_OK) {
         EVP_CIPHER_CTX_free(ctx);
         DLP_LOG_ERROR(LABEL, "OpensslAesCipherCryptInitParams fail, ret = %d", ret);
