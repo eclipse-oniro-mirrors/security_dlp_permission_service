@@ -405,7 +405,7 @@ bool GetDlpProperty(napi_env env, napi_value jsObject, DlpProperty& property)
         DLP_LOG_ERROR(LABEL, "js get owner account type fail");
         return false;
     }
-    property.ownerAccountType = static_cast<AccountType>(type);
+    property.ownerAccountType = static_cast<DlpAccountType>(type);
     if (!GetVectorAuthUserByKey(env, jsObject, "authUsers", property.authUsers)) {
         DLP_LOG_ERROR(LABEL, "js get auth users fail");
         return false;
@@ -629,7 +629,7 @@ bool GetVectorAuthUser(napi_env env, napi_value jsObject, std::vector<AuthUserIn
             resultVec.clear();
             return false;
         }
-        userInfo.authAccountType = static_cast<AccountType>(type);
+        userInfo.authAccountType = static_cast<DlpAccountType>(type);
         resultVec.push_back(userInfo);
     }
     return true;

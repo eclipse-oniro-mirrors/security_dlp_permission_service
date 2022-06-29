@@ -18,11 +18,17 @@
 
 #include <string>
 #include <vector>
-#include "dlp_credential_service_defines.h"
 
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
+enum DlpAccountType : uint32_t {
+    INVALID_ACCOUNT = 0,
+    CLOUD_ACCOUNT = 1,
+    DOMAIN_ACCOUNT = 2,
+    APPLICATION_ACCOUNT = 3,
+};
+
 enum AuthPermType : uint32_t {
     READ_ONLY = 1,
     FULL_CONTROL = 2,
@@ -31,16 +37,16 @@ enum AuthPermType : uint32_t {
 
 typedef struct AuthUserInfo {
     std::string authAccount;
-    AuthPermType authPerm;
-    uint64_t permExpiryTime;
-    AccountType authAccountType;
+    AuthPermType authPerm = PERM_MAX;
+    uint64_t permExpiryTime = 0;
+    DlpAccountType authAccountType = INVALID_ACCOUNT;
 } AuthUserInfo;
 
 struct DlpProperty {
     std::string ownerAccount;
     std::vector<AuthUserInfo> authUsers;
     std::string contractAccount;
-    AccountType ownerAccountType;
+    DlpAccountType ownerAccountType = INVALID_ACCOUNT;
 };
 
 class PermissionPolicy final {
@@ -60,7 +66,7 @@ public:
     uint32_t GetIvLen() const;
 
     std::string ownerAccount_;
-    AccountType ownerAccountType_;
+    DlpAccountType ownerAccountType_;
     std::vector<AuthUserInfo> authUsers_;
 
 private:
@@ -71,7 +77,7 @@ private:
 };
 
 void FreeCharBuffer(char* buff, uint32_t buffLen);
-bool CheckAccountType(AccountType accountType);
+bool CheckAccountType(DlpAccountType accountType);
 bool CheckAesParamLen(uint32_t len);
 }  // namespace DlpPermission
 }  // namespace Security

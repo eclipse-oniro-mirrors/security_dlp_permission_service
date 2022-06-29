@@ -211,7 +211,7 @@ static int GetOsAccountIdFromUid(int uid)
 }
 
 int32_t DlpCredential::GenerateDlpCertificate(
-    const std::string& policy, AccountType accountType, sptr<IDlpPermissionCallback>& callback)
+    const std::string& policy, DlpAccountType accountType, sptr<IDlpPermissionCallback>& callback)
 {
     DLP_LOG_DEBUG(LABEL, "Called");
 
@@ -219,7 +219,7 @@ int32_t DlpCredential::GenerateDlpCertificate(
         .featureName = strdup("dlp_permission_service"),
         .data = (uint8_t*)strdup(policy.c_str()),
         .dataLen = policy.size(),
-        .accountType = accountType,
+        .accountType = static_cast<AccountType>(accountType),
     };
 
     int res = 0;

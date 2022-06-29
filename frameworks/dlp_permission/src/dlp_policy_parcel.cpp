@@ -125,7 +125,7 @@ static bool ReadParcel(Parcel& in, DlpPolicyParcel* policyParcel)
         DLP_LOG_ERROR(LABEL, "Read uint8 fail");
         return false;
     }
-    policyParcel->policyParams_.ownerAccountType_ = AccountType(res);
+    policyParcel->policyParams_.ownerAccountType_ = static_cast<DlpAccountType>(res);
     ReadAesParam(policyParcel->policyParams_, in);
     return true;
 }

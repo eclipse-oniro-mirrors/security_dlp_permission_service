@@ -125,9 +125,9 @@ static void GenerateRandProperty(struct DlpProperty& encProp)
     encProp.ownerAccountType = CLOUD_ACCOUNT;
     for (uint32_t user = 0; user < TEST_USER_COUNT; ++user) {
         AuthUserInfo perminfo = {.authAccount = GenerateRandStr(RAND_STR_SIZE),
-            .authPerm = (AuthPermType)READ_ONLY,
+            .authPerm = READ_ONLY,
             .permExpiryTime = curTime + EXPIRT_TIME,
-            .authAccountType = (AccountType)CLOUD_ACCOUNT};
+            .authAccountType = CLOUD_ACCOUNT};
         encProp.authUsers.emplace_back(perminfo);
     }
     encProp.contractAccount = GenerateRandStr(TEST_USER_COUNT);

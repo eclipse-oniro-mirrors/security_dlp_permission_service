@@ -35,7 +35,6 @@ const uint32_t IV_LEN = 32;
 const uint32_t USER_NUM = 10;
 const int AUTH_PERM = 1;
 const int64_t DELTA_EXPIRY_TIME = 200;
-const uint32_t ACCOUNT_TYPE = DOMAIN_ACCOUNT;
 
 const uint32_t INVALID_ACCOUNT_LENGTH_UPPER = 2048;
 const uint32_t INVALID_ACCOUNT_LENGTH_LOWER = 0;
@@ -111,7 +110,7 @@ static void GeneratePolicy(PermissionPolicy& encPolicy, uint32_t ownerAccountLen
     auto seed = std::time(nullptr);
     std::srand(seed);
     encPolicy.ownerAccount_ = GenerateRandStr(ownerAccountLen);
-    encPolicy.ownerAccountType_ = (AccountType)ACCOUNT_TYPE;
+    encPolicy.ownerAccountType_ = DOMAIN_ACCOUNT;
     uint8_t* key = GenerateRandArray(aeskeyLen);
     encPolicy.SetAeskey(key, aeskeyLen);
     if (key != nullptr) {
@@ -126,9 +125,9 @@ static void GeneratePolicy(PermissionPolicy& encPolicy, uint32_t ownerAccountLen
     }
     for (uint32_t user = 0; user < userNum; ++user) {
         AuthUserInfo perminfo = {.authAccount = GenerateRandStr(authAccountLen),
-            .authPerm = (AuthPermType)authPerm,
+            .authPerm = static_cast<AuthPermType>(authPerm),
             .permExpiryTime = curTime + deltaTime,
-            .authAccountType = (AccountType)ACCOUNT_TYPE};
+            .authAccountType = DOMAIN_ACCOUNT};
         encPolicy.authUsers_.emplace_back(perminfo);
     }
 }
@@ -141,7 +140,7 @@ static void FuzzTest()
     std::srand(seed);
     PermissionPolicy encPolicy;
     encPolicy.ownerAccount_ = GenerateRandStr(ACCOUNT_LENGTH);
-    encPolicy.ownerAccountType_ = (AccountType)ACCOUNT_TYPE;
+    encPolicy.ownerAccountType_ = DOMAIN_ACCOUNT;
     uint8_t* key = GenerateRandArray(AESKEY_LEN);
     encPolicy.SetAeskey(key, AESKEY_LEN);
     if (key != nullptr) {
@@ -159,7 +158,7 @@ static void FuzzTest()
         AuthUserInfo perminfo = {.authAccount = GenerateRandStr(ACCOUNT_LENGTH),
             .authPerm = AuthPermType(1 + rand() % 2),        // perm type 1 to 2
             .permExpiryTime = curTime + 100 + rand() % 200,  // time range 100 to 300
-            .authAccountType = (AccountType)ACCOUNT_TYPE};
+            .authAccountType = DOMAIN_ACCOUNT};
         encPolicy.authUsers_.emplace_back(perminfo);
     }
     std::vector<uint8_t> cert;

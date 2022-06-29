@@ -112,7 +112,7 @@ void PermissionPolicy::FreePermissionPolicyMem()
     FreeUint8Buffer(&aeskey_, aeskeyLen_);
     FreeUint8Buffer(&iv_, ivLen_);
     ownerAccount_ = "";
-    ownerAccountType_ = static_cast<AccountType>(0);
+    ownerAccountType_ = INVALID_ACCOUNT;
     authUsers_.clear();
 }
 
@@ -120,7 +120,7 @@ PermissionPolicy::PermissionPolicy()
 {
     DLP_LOG_DEBUG(LABEL, "Called");
     ownerAccount_ = "";
-    ownerAccountType_ = static_cast<AccountType>(0);
+    ownerAccountType_ = INVALID_ACCOUNT;
     authUsers_ = {};
     aeskey_ = nullptr;
     aeskeyLen_ = 0;
@@ -258,11 +258,11 @@ void PermissionPolicy::CopyPermissionPolicy(const PermissionPolicy& srcPolicy)
     }
 }
 
-bool CheckAccountType(AccountType accountType)
+bool CheckAccountType(DlpAccountType accountType)
 {
     DLP_LOG_DEBUG(LABEL, "Called, %{private}d", accountType);
     if (accountType > APPLICATION_ACCOUNT || accountType < CLOUD_ACCOUNT) {
-        DLP_LOG_ERROR(LABEL, "AccountType is invalid");
+        DLP_LOG_ERROR(LABEL, "account type is invalid");
         return false;
     }
     return true;

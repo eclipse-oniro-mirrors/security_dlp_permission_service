@@ -65,7 +65,7 @@ AuthUserInfoParcel* AuthUserInfoParcel::Unmarshalling(Parcel& in)
         authUserInfoParcel = nullptr;
         return nullptr;
     }
-    authUserInfoParcel->authUserInfo_.authPerm = AuthPermType(res);
+    authUserInfoParcel->authUserInfo_.authPerm = static_cast<AuthPermType>(res);
     if (!(in.ReadUint64(authUserInfoParcel->authUserInfo_.permExpiryTime))) {
         DLP_LOG_ERROR(LABEL, "Read uint64 fail");
         delete authUserInfoParcel;
@@ -79,7 +79,7 @@ AuthUserInfoParcel* AuthUserInfoParcel::Unmarshalling(Parcel& in)
         authUserInfoParcel = nullptr;
         return nullptr;
     }
-    authUserInfoParcel->authUserInfo_.authAccountType = AccountType(res);
+    authUserInfoParcel->authUserInfo_.authAccountType = static_cast<DlpAccountType>(res);
 
     return authUserInfoParcel;
 }

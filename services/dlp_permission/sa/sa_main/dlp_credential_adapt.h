@@ -18,7 +18,7 @@
 
 #include <string>
 #include <vector>
-#include "dlp_credential_service_defines.h"
+#include "dlp_policy.h"
 #include "i_dlp_permission_callback.h"
 namespace OHOS {
 namespace Security {
@@ -29,7 +29,7 @@ public:
     ~DlpCredential(){};
     static DlpCredential& GetInstance();
     int32_t GenerateDlpCertificate(
-        const std::string& policy, AccountType accountType, sptr<IDlpPermissionCallback>& callback);
+        const std::string& policy, DlpAccountType accountType, sptr<IDlpPermissionCallback>& callback);
     int32_t ParseDlpCertificate(const std::vector<uint8_t>& cert, sptr<IDlpPermissionCallback>& callback);
 };
 }  // namespace DlpPermission

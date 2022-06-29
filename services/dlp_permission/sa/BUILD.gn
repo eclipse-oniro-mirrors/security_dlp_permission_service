@@ -14,8 +14,6 @@
 import("//base/security/dlp_permission_service/dlp_permission_service.gni")
 import("//build/ohos.gni")
 
-DLP_ROOT_DIR = "//base/security/dlp_permission_service"
-
 ohos_prebuilt_etc("dlp_permission_service.rc") {
   source = "dlp_permission_service.cfg"
   relative_install_dir = "init"
@@ -28,15 +26,13 @@ ohos_static_library("dlp_hex_string_static") {
   part_name = "dlp_permission_service"
 
   include_dirs = [
-    "$DLP_ROOT_DIR/interfaces/inner_api/dlp_permission/include",
-    "$DLP_ROOT_DIR/frameworks/common/include",
+    "${dlp_root_dir}/interfaces/inner_api/dlp_permission/include",
+    "${dlp_root_dir}/frameworks/common/include",
   ]
 
-  sources = [ "$DLP_ROOT_DIR/frameworks/common/src/hex_string.cpp" ]
+  sources = [ "${dlp_root_dir}/frameworks/common/src/hex_string.cpp" ]
 
   cflags_cc = [ "-DHILOG_ENABLE" ]
-
-  deps = [ "//utils/native/base:utils" ]
 
   external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
 }
@@ -48,23 +44,21 @@ ohos_static_library("dlp_permission_serializer_static") {
   include_dirs = [
     "//third_party/json/include",
     "sa_common",
-    "credential_test",
-    "$DLP_ROOT_DIR/interfaces/inner_api/dlp_permission/include",
-
-    "$DLP_ROOT_DIR/frameworks/common/include",
-    "$DLP_ROOT_DIR/frameworks/dlp_permission/include",
+    "${dlp_root_dir}/interfaces/inner_api/dlp_permission/include",
+    "${dlp_root_dir}/frameworks/common/include",
+    "${dlp_root_dir}/frameworks/dlp_permission/include",
   ]
 
   sources = [ "sa_common/dlp_permission_serializer.cpp" ]
 
   cflags_cc = [ "-DHILOG_ENABLE" ]
 
-  deps = [
-    ":dlp_hex_string_static",
-    "//utils/native/base:utils",
-  ]
+  deps = [ ":dlp_hex_string_static" ]
 
-  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "utils_base:utils",
+  ]
 }
 
 ohos_static_library("dlp_credential_service_static") {
@@ -74,17 +68,18 @@ ohos_static_library("dlp_credential_service_static") {
   include_dirs = [
     "sa_common",
     "credential_test",
-    "$DLP_ROOT_DIR/interfaces/inner_api/dlp_permission/include",
-    "$DLP_ROOT_DIR/frameworks/common/include",
+    "${dlp_root_dir}/interfaces/inner_api/dlp_permission/include",
+    "${dlp_root_dir}/frameworks/common/include",
   ]
 
   sources = [ "credential_test/dlp_credential_service.c" ]
 
   cflags = [ "-DHILOG_ENABLE" ]
 
-  deps = [ "//utils/native/base:utils" ]
-
-  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  external_deps = [
+    "hiviewdfx_hilog_native:libhilog",
+    "utils_base:utils",
+  ]
 }
 
 ohos_shared_library("dlp_permission_service") {
@@ -96,16 +91,15 @@ ohos_shared_library("dlp_permission_service") {
     "sa_common",
     "credential_test",
     "//third_party/json/include",
-    "//utils/system/safwk/native/include",
-    "$DLP_ROOT_DIR/frameworks/common/include",
-    "$DLP_ROOT_DIR/frameworks/dlp_permission/include",
-    "$DLP_ROOT_DIR/interfaces/inner_api/dlp_permission/include",
+    "${dlp_root_dir}/frameworks/common/include",
+    "${dlp_root_dir}/frameworks/dlp_permission/include",
+    "${dlp_root_dir}/interfaces/inner_api/dlp_permission/include",
   ]
 
   sources = [
-    "$DLP_ROOT_DIR/frameworks/common/src/dlp_policy.cpp",
-    "$DLP_ROOT_DIR/frameworks/dlp_permission/src/auth_user_info_parcel.cpp",
-    "$DLP_ROOT_DIR/frameworks/dlp_permission/src/dlp_policy_parcel.cpp",
+    "${dlp_root_dir}/frameworks/common/src/dlp_policy.cpp",
+    "${dlp_root_dir}/frameworks/dlp_permission/src/auth_user_info_parcel.cpp",
+    "${dlp_root_dir}/frameworks/dlp_permission/src/dlp_policy_parcel.cpp",
     "sa_main/dlp_credential_adapt.cpp",
     "sa_main/dlp_permission_async_proxy.cpp",
     "sa_main/dlp_permission_service.cpp",
@@ -119,7 +113,6 @@ ohos_shared_library("dlp_permission_service") {
     ":dlp_hex_string_static",
     ":dlp_permission_serializer_static",
     ":dlp_permission_service.rc",
-    "//utils/native/base:utils",
   ]
 
   external_deps = [
@@ -129,5 +122,6 @@ ohos_shared_library("dlp_permission_service") {
     "ipc:ipc_core",
     "safwk:system_ability_fwk",
     "samgr_standard:samgr_proxy",
+    "utils_base:utils",
   ]
 }
