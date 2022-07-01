@@ -20,8 +20,8 @@
 
 namespace OHOS {
 namespace Security {
-namespace DlpUnitTest {
-class DlpUnitTest : public testing::Test {
+namespace DlpParseUnitTest {
+class DlpParseUnitTest : public testing::Test {
 public:
     static void SetUpTestCase();
 
@@ -33,7 +33,7 @@ public:
 
     void CreateDataFile() const;
 };
-} // namespace DlpUnitTest
+} // namespace DlpParseUnitTest
 } // namespace Security
 } // namespace OHOS
 #endif // DLP_FILE_PARSE_UNIT_TEST_H

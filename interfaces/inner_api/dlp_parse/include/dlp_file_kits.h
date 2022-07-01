@@ -15,7 +15,7 @@
 
 #ifndef INTERFACES_INNER_API_DLP_FILE_KITS_H
 #define INTERFACES_INNER_API_DLP_FILE_KITS_H
-
+#include <cstdint>
 #include <string>
 #include "dlp_file_manager.h"
 #include "want.h"
@@ -23,16 +23,23 @@
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
-static const std::string TAG_ACTION_VIEW = "ACTION_VIEW";
-static const std::string TAG_ACTION_EDIT = "ACTION_EDIT";
+static const std::string TAG_ACTION_VIEW = "ohos.want.action.viewData";
+static const std::string TAG_ACTION_EDIT = "ohos.want.action.editData";
+
 static const std::string TAG_KEY_FD = "keyFd";
+static const std::string TAG_KEY_FD_TYPE = "type";
+static const std::string TAG_KEY_FD_VALUE = "value";
+static const std::string VALUE_KEY_FD_TYPE = "FD";
+static const int INVALID_FD = -1;
+
 static const std::string TAG_FILE_NAME = "fileName";
+static const std::string TAG_FILE_NAME_VALUE = "name";
 static const std::string DLP_FILE_SUFFIX = ".dlp";
-static const std::string TAG_DLP_TEST_PARAM = "ohos.dlp.params.fd";
+static const std::string DEFAULT_STRING = "";
 
 class DlpFileKits {
 public:
-    static bool GetSandboxFlag(const AAFwk::Want &want);
+    static bool GetSandboxFlag(AAFwk::Want &want);
 };
 }  // namespace DlpPermission
 }  // namespace Security

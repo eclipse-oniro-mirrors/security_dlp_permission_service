@@ -520,6 +520,10 @@ int32_t DlpFile::GenFile(int32_t inPlainFileFd)
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
 
+    if (fileLen == 0) {
+        DLP_LOG_INFO(LABEL, "origin file len is 0, do not need encrypt");
+        return DLP_OK;
+    }
     return DoDlpContentCryptyOperation(inPlainFileFd, dlpFd_, 0, fileLen, true);
 }
 
