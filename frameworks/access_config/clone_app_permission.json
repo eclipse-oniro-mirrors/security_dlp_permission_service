@@ -1,0 +1,24 @@
+{
+    "dlpPermissions": [
+        {
+            "name": "ohos.permission.USE_BLUETOOTH",
+            "dlpGrantRange": "none"
+        },
+        {
+            "name": "ohos.permission.INTERNET",
+            "dlpGrantRange": "none"
+        },
+        {
+            "name": "ohos.permission.DISTRIBUTED_DATASYNC",
+            "dlpGrantRange": "none"
+        },
+        {
+            "name": "ohos.permission.WRITE_MEDIA",
+            "dlpGrantRange": "full_control"
+        },
+        {
+            "name": "ohos.permission.CAPTURE_SCREEN",
+            "dlpGrantRange": "full_control"
+        }
+    ]
+}
