@@ -116,6 +116,7 @@ ohos_shared_library("dlp_permission_service") {
   ]
 
   external_deps = [
+    "ability_base:want",
     "bundle_framework:appexecfwk_base",
     "bundle_framework:appexecfwk_core",
     "hiviewdfx_hilog_native:libhilog",
