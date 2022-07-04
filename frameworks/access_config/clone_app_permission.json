@@ -19,6 +19,10 @@
         {
             "name": "ohos.permission.CAPTURE_SCREEN",
             "dlpGrantRange": "full_control"
+        },
+        {
+            "name": "ohos.permission.NFC_TAG",
+            "dlpGrantRange": "none"
         }
     ]
 }
