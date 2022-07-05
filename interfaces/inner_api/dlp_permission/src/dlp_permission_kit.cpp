@@ -118,6 +118,12 @@ int32_t DlpPermissionKit::InstallDlpSandbox(
     DLP_LOG_DEBUG(LABEL, "Called");
     return DlpPermissionClient::GetInstance().InstallDlpSandbox(bundleName, permType, userId, appIndex);
 }
+
+int32_t DlpPermissionKit::UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    return DlpPermissionClient::GetInstance().UninstallDlpSandbox(bundleName, appIndex, userId);
+}
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS

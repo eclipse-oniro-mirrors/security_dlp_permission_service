@@ -36,6 +36,11 @@ int32_t DlpPermissionProxy::GenerateDlpCertificate(
     const sptr<DlpPolicyParcel>& policyParcel, sptr<IDlpPermissionCallback>& callback)
 {
     MessageParcel data;
+    if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
+        DLP_LOG_ERROR(LABEL, "Write descriptor fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
     if (!data.WriteParcelable(policyParcel)) {
         DLP_LOG_ERROR(LABEL, "Write parcel fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
@@ -71,6 +76,11 @@ int32_t DlpPermissionProxy::ParseDlpCertificate(
     const std::vector<uint8_t>& cert, sptr<IDlpPermissionCallback>& callback)
 {
     MessageParcel data;
+    if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
+        DLP_LOG_ERROR(LABEL, "Write descriptor fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
     if (!data.WriteUInt8Vector(cert)) {
         DLP_LOG_ERROR(LABEL, "Write uint8 vector fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
@@ -106,6 +116,11 @@ int32_t DlpPermissionProxy::InstallDlpSandbox(
     const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex)
 {
     MessageParcel data;
+    if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
+        DLP_LOG_ERROR(LABEL, "Write descriptor fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
     if (!data.WriteString(bundleName)) {
         DLP_LOG_ERROR(LABEL, "Write string fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
@@ -141,6 +156,50 @@ int32_t DlpPermissionProxy::InstallDlpSandbox(
     }
 
     if (!reply.ReadInt32(appIndex)) {
+        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    return res;
+}
+
+int32_t DlpPermissionProxy::UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId)
+{
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
+        DLP_LOG_ERROR(LABEL, "Write descriptor fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    if (!data.WriteString(bundleName)) {
+        DLP_LOG_ERROR(LABEL, "Write string fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    if (!data.WriteInt32(appIndex)) {
+        DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    if (!data.WriteInt32(userId)) {
+        DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
+    sptr<IRemoteObject> remote = Remote();
+    if (remote == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Remote service is null");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    int32_t requestResult = remote->SendRequest(
+        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::UNINSTALL_DLP_SANDBOX), data, reply, option);
+    if (requestResult != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    int32_t res;
+    if (!reply.ReadInt32(res)) {
         DLP_LOG_ERROR(LABEL, "Read int32 fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }

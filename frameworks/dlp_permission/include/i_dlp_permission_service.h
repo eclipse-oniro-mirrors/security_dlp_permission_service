@@ -38,10 +38,13 @@ public:
     virtual int32_t InstallDlpSandbox(
         const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex) = 0;
 
+    virtual int32_t UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId) = 0;
+
     enum class InterfaceCode {
         GENERATE_DLP_CERTIFICATE = 0xff01,
         PARSE_DLP_CERTIFICATE = 0xff02,
         INSTALL_DLP_SANDBOX = 0xff03,
+        UNINSTALL_DLP_SANDBOX = 0xff04,
     };
 };
 }  // namespace DlpPermission

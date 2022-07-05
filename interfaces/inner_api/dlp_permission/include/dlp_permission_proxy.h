@@ -35,6 +35,7 @@ public:
     int32_t ParseDlpCertificate(const std::vector<uint8_t>& cert, sptr<IDlpPermissionCallback>& callback) override;
     int32_t InstallDlpSandbox(
         const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex) override;
+    int32_t UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId) override;
 
 private:
     static inline BrokerDelegator<DlpPermissionProxy> delegator_;

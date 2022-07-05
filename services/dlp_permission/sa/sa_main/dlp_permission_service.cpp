@@ -115,6 +115,18 @@ int32_t DlpPermissionService::InstallDlpSandbox(
     AppExecFwk::BundleMgrClient bundleMgrClient;
     return bundleMgrClient.InstallSandboxApp(bundleName, permType, userId, appIndex);
 }
+
+int32_t DlpPermissionService::UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    if (bundleName.empty() || appIndex < 0 || userId < 0) {
+        DLP_LOG_ERROR(LABEL, "param is invalid");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+
+    AppExecFwk::BundleMgrClient bundleMgrClient;
+    return bundleMgrClient.UninstallSandboxApp(bundleName, appIndex, userId);
+}
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS

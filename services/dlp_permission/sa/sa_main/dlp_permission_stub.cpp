@@ -31,6 +31,14 @@ int32_t DlpPermissionStub::OnRemoteRequest(
     uint32_t code, MessageParcel& data, MessageParcel& reply, MessageOption& option)
 {
     DLP_LOG_INFO(LABEL, "Called, code: %{public}u", code);
+
+    std::u16string descripter = DlpPermissionStub::GetDescriptor();
+    std::u16string remoteDescripter = data.ReadInterfaceToken();
+    if (descripter != remoteDescripter) {
+        DLP_LOG_ERROR(LABEL, "OnRemoteRequest failed, descriptor is not matched");
+        return DLP_SERVICE_ERROR_IPC_REQUEST_FAIL;
+    }
+
     auto itFunc = requestFuncMap_.find(code);
     if (itFunc != requestFuncMap_.end()) {
         auto requestFunc = itFunc->second;
@@ -132,6 +140,34 @@ int32_t DlpPermissionStub::InstallDlpSandboxInner(MessageParcel& data, MessagePa
     return DLP_OK;
 }
 
+int32_t DlpPermissionStub::UninstallDlpSandboxInner(MessageParcel& data, MessageParcel& reply)
+{
+    std::string bundleName;
+    if (!data.ReadString(bundleName)) {
+        DLP_LOG_ERROR(LABEL, "Read string fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    int32_t appIndex;
+    if (!data.ReadInt32(appIndex)) {
+        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    int32_t userId;
+    if (!data.ReadInt32(userId)) {
+        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    int32_t res = this->UninstallDlpSandbox(bundleName, appIndex, userId);
+    if (!reply.WriteInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    return DLP_OK;
+}
+
 DlpPermissionStub::DlpPermissionStub()
 {
     requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GENERATE_DLP_CERTIFICATE)] =
@@ -140,6 +176,8 @@ DlpPermissionStub::DlpPermissionStub()
         &DlpPermissionStub::ParseDlpCertificateInner;
     requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::INSTALL_DLP_SANDBOX)] =
         &DlpPermissionStub::InstallDlpSandboxInner;
+    requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::UNINSTALL_DLP_SANDBOX)] =
+        &DlpPermissionStub::UninstallDlpSandboxInner;
 }
 
 DlpPermissionStub::~DlpPermissionStub()

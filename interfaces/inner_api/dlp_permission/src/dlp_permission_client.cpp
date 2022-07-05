@@ -109,6 +109,21 @@ int32_t DlpPermissionClient::InstallDlpSandbox(
     return proxy->InstallDlpSandbox(bundleName, permType, userId, appIndex);
 }
 
+int32_t DlpPermissionClient::UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    if (bundleName.empty() || appIndex < 0 || userId < 0) {
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    auto proxy = GetProxy();
+    if (proxy == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Proxy is null");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+
+    return proxy->UninstallDlpSandbox(bundleName, appIndex, userId);
+}
+
 void DlpPermissionClient::LoadDlpPermission()
 {
     {

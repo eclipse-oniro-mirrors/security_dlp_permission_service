@@ -55,6 +55,7 @@ public:
     static int32_t ParseDlpCertificate(const std::vector<uint8_t>& cert, PermissionPolicy& policy);
     static int32_t InstallDlpSandbox(
         const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex);
+    static int32_t UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId);
 };
 }  // namespace DlpPermission
 }  // namespace Security
