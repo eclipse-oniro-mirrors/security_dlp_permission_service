@@ -641,10 +641,12 @@ int32_t DlpFile::DlpFileRead(uint32_t offset, void* buf, uint32_t size)
     return message2.size - prefixingSize;
 }
 
-int32_t DlpFile::WriteFistBlockData(uint32_t offset, void* buf, uint32_t size)
+int32_t DlpFile::WriteFirstBlockData(uint32_t offset, void* buf, uint32_t size)
 {
     uint32_t alignOffset = (offset / DLP_BLOCK_SIZE) * DLP_BLOCK_SIZE;
     uint32_t prefixingSize = offset % DLP_BLOCK_SIZE;
+    uint32_t requestSize = (size < (DLP_BLOCK_SIZE - prefixingSize)) ? size : (DLP_BLOCK_SIZE - prefixingSize);
+    uint32_t writtenSize = prefixingSize + requestSize;
     uint8_t enBuf[DLP_BLOCK_SIZE] = {0};
     uint8_t deBuf[DLP_BLOCK_SIZE] = {0};
 
@@ -669,13 +671,13 @@ int32_t DlpFile::WriteFistBlockData(uint32_t offset, void* buf, uint32_t size)
         }
     } while (false);
 
-    if (memcpy_s(deBuf + prefixingSize, DLP_BLOCK_SIZE, buf, DLP_BLOCK_SIZE - prefixingSize)) {
+    if (memcpy_s(deBuf + prefixingSize, DLP_BLOCK_SIZE, buf, requestSize)) {
         DLP_LOG_ERROR(LABEL, "copy write buffer first block failed, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
-    struct DlpBlob message1 = {.size = DLP_BLOCK_SIZE, .data = deBuf};
-    struct DlpBlob message2 = {.size = DLP_BLOCK_SIZE, .data = enBuf};
+    struct DlpBlob message1 = {.size = writtenSize, .data = deBuf};
+    struct DlpBlob message2 = {.size = writtenSize, .data = enBuf};
     if (DoDlpBlockCryptOperation(message1, message2, alignOffset, true) != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "enrypt first block fail");
         return DLP_PARSE_ERROR_CRYPT_FAIL;
@@ -686,11 +688,11 @@ int32_t DlpFile::WriteFistBlockData(uint32_t offset, void* buf, uint32_t size)
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
 
-    if (write(dlpFd_, enBuf, DLP_BLOCK_SIZE) != DLP_BLOCK_SIZE) {
-        DLP_LOG_ERROR(LABEL, "lseek failed, %{public}s", strerror(errno));
+    if (write(dlpFd_, enBuf, writtenSize) != writtenSize) {
+        DLP_LOG_ERROR(LABEL, "write failed, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
-    return DLP_OK;
+    return requestSize;
 }
 
 int32_t DlpFile::DlpFileWrite(uint32_t offset, void* buf, uint32_t size)
@@ -713,17 +715,16 @@ int32_t DlpFile::DlpFileWrite(uint32_t offset, void* buf, uint32_t size)
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
 
-    /* write first block data, because it may be not aligned */
-    if (WriteFistBlockData(offset, (uint8_t *)buf, size) != DLP_OK) {
+    /* write first block data, if it may be not aligned */
+    int32_t writenSize = WriteFirstBlockData(offset, (uint8_t *)buf, size);
+    if (writenSize < 0) {
         DLP_LOG_ERROR(LABEL, "encrypt prefix data failed");
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
-
-    if (size <= DLP_BLOCK_SIZE) {
-        return size;
+    if ((uint32_t)writenSize >= size) {
+        return writenSize;
     }
 
-    uint32_t writenSize = DLP_BLOCK_SIZE - (offset % DLP_BLOCK_SIZE);
     uint8_t *restBlocksPtr = (uint8_t *)buf + writenSize;
     uint32_t restBlocksSize = size - writenSize;
     uint8_t* writeBuff = new (std::nothrow) uint8_t[restBlocksSize]();

@@ -115,7 +115,7 @@ private:
     int32_t DupUsageSpec(struct DlpUsageSpec& spec);
     int32_t DoDlpBlockCryptOperation(struct DlpBlob& message1,
         struct DlpBlob& message2, uint32_t offset, bool isEncrypt);
-    int32_t WriteFistBlockData(uint32_t offset, void* buf, uint32_t size);
+    int32_t WriteFirstBlockData(uint32_t offset, void* buf, uint32_t size);
 
     bool isFuseLink_;
     bool isReadOnly_;

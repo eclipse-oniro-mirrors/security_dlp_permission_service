@@ -34,6 +34,8 @@ static const int DEFAULT_INODE_ACCESS = 0640;
 static const size_t FUSE_MAX_BUF_SIZE = 1024 * 1024 * 10;  // 10M
 static const unsigned int MAX_INT_NUMBER = 0x7fffffff;
 static const unsigned int MAX_KEY_LEN = 0x10000;  // 64K
+static const std::string DEFAULT_DLP_LINK_FILE = "default.dlp";
+static const std::string DEFAULT_DLP_LINK_FILE_PATH = "/data/fuse/"+ DEFAULT_DLP_LINK_FILE;
 
 enum CryptAlgo {
     AES_CTR = 1,
@@ -56,6 +58,7 @@ public:
     static int WaitDaemonEnable(void);
     static void NotifyDaemonEnable(void);
     static void NotifyDaemonDisable(void);
+    static void NotifyKernelNoFlush(void);
     static void InitRootFileStat(void);
     static void FuseFsDaemonThread(int fuseFd);
 

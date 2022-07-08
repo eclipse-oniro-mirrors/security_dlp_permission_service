@@ -37,6 +37,7 @@ std::mutex FuseDaemon::daemonEnableMtx_;
 struct stat FuseDaemon::rootFileStat_;
 bool FuseDaemon::init_ = false;
 static const uint32_t MAX_FUSE_READ_BUFF_SIZE = 10 * 1024 * 1024; // 10M
+static const int32_t INVALID_DLP_FD = -1;
 
 static DlpLinkFile* GetFileNode(fuse_ino_t ino)
 {
@@ -326,6 +327,27 @@ void FuseDaemon::FuseFsDaemonThread(int fuseFd)
     fuse_opt_free_args(&args);
 }
 
+void FuseDaemon::NotifyKernelNoFlush(void)
+{
+    std::shared_ptr<DlpFile> defaultfilePtr = std::make_shared<DlpFile>(INVALID_DLP_FD);
+    if (DlpLinkManager::GetInstance().AddDlpLinkFile(defaultfilePtr, DEFAULT_DLP_LINK_FILE) != DLP_LINK_SUCCESS) {
+        DLP_LOG_ERROR(LABEL, "add default dlp failed!");
+        return;
+    }
+
+    int defaultFd = open(DEFAULT_DLP_LINK_FILE_PATH.c_str(), O_RDWR);
+    if (defaultFd == -1) {
+        DlpLinkManager::GetInstance().DeleteDlpLinkFile(defaultfilePtr);
+        DLP_LOG_ERROR(LABEL, "open default dlp file failed!");
+        return;
+    }
+
+    // we need kernel to know that fs has no flush interface, close will trigger kernel flush
+    close(defaultFd);
+    DlpLinkManager::GetInstance().DeleteDlpLinkFile(defaultfilePtr);
+    DLP_LOG_INFO(LABEL, "success");
+}
+
 int FuseDaemon::InitFuseFs(int fuseDevFd)
 {
     if (init_) {
@@ -342,7 +364,12 @@ int FuseDaemon::InitFuseFs(int fuseDevFd)
 
     std::thread daemonThread(FuseFsDaemonThread, fuseDevFd);
     daemonThread.detach();
-    return WaitDaemonEnable();
+    int result = WaitDaemonEnable();
+    if (result == 0) {
+        std::thread notifyThread(NotifyKernelNoFlush);
+        notifyThread.detach();
+    }
+    return result;
 }
 }  // namespace DlpPermission
 }  // namespace Security

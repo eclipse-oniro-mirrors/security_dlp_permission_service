@@ -30,11 +30,18 @@ DlpLinkManager::DlpLinkManager()
     FuseDaemon::InitFuseFs(FUSE_DEV_FD);
 }
 
+static bool IsLinkNameValid(const std::string& linkName)
+{
+    uint32_t size = linkName.size();
+    return !(size == 0 || size > MAX_FILE_NAME_LEN);
+}
+
 int32_t DlpLinkManager::AddDlpLinkFile(std::shared_ptr<DlpFile>& filePtr, const std::string& dlpLinkName)
 {
-    if (filePtr == nullptr) {
+    if (filePtr == nullptr || !IsLinkNameValid(dlpLinkName)) {
         return DLP_LINK_FAILURE;
     }
+
     Utils::UniqueWriteGuard<Utils::RWLock> infoGuard(g_DlpLinkMapLock_);
     if (g_DlpLinkFileNameMap_.count(dlpLinkName) > 0) {
         DLP_LOG_WARN(LABEL, "dlpLinkName %{public}s exist.", dlpLinkName.c_str());
@@ -78,7 +85,7 @@ int32_t DlpLinkManager::DeleteDlpLinkFile(std::shared_ptr<DlpFile>& filePtr)
 DlpLinkFile* DlpLinkManager::LookUpDlpLinkFile(const std::string& dlpLinkName)
 {
     Utils::UniqueReadGuard<Utils::RWLock> infoGuard(g_DlpLinkMapLock_);
-    if (g_DlpLinkFileNameMap_.count(dlpLinkName) < 0) {
+    if (g_DlpLinkFileNameMap_.count(dlpLinkName) <= 0) {
         DLP_LOG_ERROR(LABEL, "dlpLinkName %{public}s is not exist.", dlpLinkName.c_str());
         return nullptr;
     }

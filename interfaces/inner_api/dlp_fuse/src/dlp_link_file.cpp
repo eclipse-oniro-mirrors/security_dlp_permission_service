@@ -107,7 +107,7 @@ int32_t DlpLinkFile::FillHoleData(uint32_t holeStart, uint32_t holeSize)
 
 int32_t DlpLinkFile::Write(uint32_t offset, void* buf, uint32_t size)
 {
-    DLP_LOG_DEBUG(LABEL, "read offset %{public}u size %{public}u", offset, size);
+    DLP_LOG_DEBUG(LABEL, "write offset %{public}u size %{public}u", offset, size);
     if (dlpFile_ == nullptr) {
         DLP_LOG_ERROR(LABEL, "no dlp file to write");
         return DLP_LINK_FAILURE;
