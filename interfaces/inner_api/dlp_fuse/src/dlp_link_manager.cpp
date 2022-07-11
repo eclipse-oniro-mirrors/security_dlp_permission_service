@@ -67,11 +67,11 @@ int32_t DlpLinkManager::DeleteDlpLinkFile(std::shared_ptr<DlpFile>& filePtr)
     }
 
     Utils::UniqueWriteGuard<Utils::RWLock> infoGuard(g_DlpLinkMapLock_);
-    for (auto iter = g_DlpLinkFileNameMap_.begin(); iter != g_DlpLinkFileNameMap_.end();) {
+    for (auto iter = g_DlpLinkFileNameMap_.begin(); iter != g_DlpLinkFileNameMap_.end(); iter++) {
         DlpLinkFile* tmp = iter->second;
         if (tmp != nullptr && filePtr == tmp->GetDlpFilePtr()) {
             filePtr->RemoveLinkStatus();
-            g_DlpLinkFileNameMap_.erase(iter++);
+            g_DlpLinkFileNameMap_.erase(iter);
             if (tmp->SubAndCheckZeroRef(1)) {
                 delete tmp;
             }
