@@ -122,11 +122,10 @@ int32_t DlpLinkFile::Write(uint32_t offset, void* buf, uint32_t size)
         }
     }
     res = dlpFile_->DlpFileWrite(offset, buf, size);
-    if (res > 0) {
-        UpdateMtimeStat();
-    } else {
+    if (res < 0) {
         DLP_LOG_ERROR(LABEL, "link file write failed, res %{public}d.", res);
     }
+    UpdateMtimeStat();
     return res;
 }
 
