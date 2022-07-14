@@ -62,7 +62,7 @@ int32_t DlpPermissionProxy::GenerateDlpCertificate(
         static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GENERATE_DLP_CERTIFICATE), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
-        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+        return requestResult;
     }
     int32_t res;
     if (!reply.ReadInt32(res)) {
@@ -102,7 +102,7 @@ int32_t DlpPermissionProxy::ParseDlpCertificate(
         static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::PARSE_DLP_CERTIFICATE), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
-        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+        return requestResult;
     }
     int32_t res;
     if (!reply.ReadInt32(res)) {
@@ -147,7 +147,7 @@ int32_t DlpPermissionProxy::InstallDlpSandbox(
         static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::INSTALL_DLP_SANDBOX), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
-        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+        return requestResult;
     }
     int32_t res;
     if (!reply.ReadInt32(res)) {
@@ -196,7 +196,7 @@ int32_t DlpPermissionProxy::UninstallDlpSandbox(const std::string& bundleName, i
         static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::UNINSTALL_DLP_SANDBOX), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
-        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+        return requestResult;
     }
     int32_t res;
     if (!reply.ReadInt32(res)) {

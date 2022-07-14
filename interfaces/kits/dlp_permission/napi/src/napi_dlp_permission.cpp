@@ -202,6 +202,15 @@ void NapiDlpPermission::OpenDlpFileComplete(napi_env env, napi_status status, vo
         } else {
             resJs = instance;
         }
+    } else {
+        if (asyncContext->dlpFileNative != nullptr) {
+            std::string contactAccount = "";
+            asyncContext->dlpFileNative->GetContactAccount(contactAccount);
+            if (!contactAccount.empty()) {
+                NAPI_CALL_RETURN_VOID(
+                    env, napi_create_string_utf8(env, contactAccount.c_str(), NAPI_AUTO_LENGTH, &resJs));
+            }
+        }
     }
 
     ProcessCallbackOrPromise(env, asyncContext, resJs);

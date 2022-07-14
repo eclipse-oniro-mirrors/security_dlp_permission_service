@@ -17,14 +17,17 @@
 #include <chrono>
 #include <thread>
 #include <unistd.h>
+#include "accesstoken_kit.h"
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
 #include "dlp_policy.h"
 #include "hex_string.h"
 #include "securec.h"
+#include "token_setproc.h"
 
 using namespace testing::ext;
 using namespace OHOS::Security::DlpPermission;
+using namespace OHOS::Security::AccessToken;
 
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionKitTest"};
@@ -50,17 +53,23 @@ const int64_t INVALID_DELTA_EXPIRY_TIME = -100;
 
 constexpr char BUNDLE_NAME[] = "com.example.Browser";
 const int32_t DEFAULT_USERID = 100;
+
+static AccessTokenID g_selfTokenId = 0;
 }  // namespace
 
 void DlpPermissionKitTest::SetUpTestCase()
 {
     // make test case clean
     DLP_LOG_INFO(LABEL, "SetUpTestCase.");
+    g_selfTokenId = GetSelfTokenID();
+    AccessTokenID tokenId = AccessTokenKit::GetHapTokenID(DEFAULT_USERID, "com.ohos.dlpmanager", 0);
+    SetSelfTokenID(tokenId);
 }
 
 void DlpPermissionKitTest::TearDownTestCase()
 {
     DLP_LOG_INFO(LABEL, "TearDownTestCase.");
+    SetSelfTokenID(g_selfTokenId);
 }
 
 void DlpPermissionKitTest::SetUp()
@@ -257,7 +266,7 @@ HWTEST_F(DlpPermissionKitTest, ParseDlpCertificate001, TestSize.Level1)
     PermissionPolicy policy;
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, DlpPermissionKit::ParseDlpCertificate(cert, policy));
     cert = {1, 2, 3};
-    ASSERT_EQ(DLP_SERVICE_ERROR_JSON_OPERATE_FAIL, DlpPermissionKit::ParseDlpCertificate(cert, policy));
+    ASSERT_EQ(1, DlpPermissionKit::ParseDlpCertificate(cert, policy)); // credential error code 1
 }
 
 /**

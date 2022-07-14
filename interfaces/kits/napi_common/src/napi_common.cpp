@@ -15,13 +15,10 @@
 
 #include "napi_common.h"
 #include <unistd.h>
-#include "bundle_mgr_proxy.h"
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
-#include "iservice_registry.h"
 #include "napi_error_msg.h"
 #include "securec.h"
-#include "system_ability_definition.h"
 
 namespace OHOS {
 namespace Security {
@@ -33,10 +30,6 @@ static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_
 CommonAsyncContext::CommonAsyncContext(napi_env napiEnv)
 {
     env = napiEnv;
-    if (!CheckPermission()) {
-        DLP_LOG_ERROR(LABEL, "no permission to invoke this api");
-        errCode = DLP_NAPI_ERROR_PERMISSION_DENY;
-    }
 }
 
 CommonAsyncContext::~CommonAsyncContext()
@@ -116,36 +109,7 @@ napi_value CreateEnumAccountType(napi_env env, napi_value exports)
     return exports;
 }
 
-static std::string GetBundleName()
-{
-    std::string bundleName = "";
-    uid_t uid = getuid();
-    sptr<ISystemAbilityManager> systemAbilityManager =
-        SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
-    if (systemAbilityManager == nullptr) {
-        return bundleName;
-    }
-    sptr<IRemoteObject> remoteObject = systemAbilityManager->GetSystemAbility(BUNDLE_MGR_SERVICE_SYS_ABILITY_ID);
-    if (remoteObject == nullptr) {
-        return bundleName;
-    }
-
-    sptr<AppExecFwk::IBundleMgr> bundleMgr(new AppExecFwk::BundleMgrProxy(remoteObject));
-    if (bundleMgr == nullptr) {
-        return bundleName;
-    }
-    bundleMgr->GetBundleNameForUid(uid, bundleName);
-    return bundleName;
-}
-
-bool CheckPermission()
-{
-    std::string bundleName = GetBundleName();
-    DLP_LOG_DEBUG(LABEL, "current bundle name is %{public}s", bundleName.c_str());
-    return bundleName == "com.ohos.dlpmanager" ? true : false;
-}
-
-void CreateNapiRetMsg(napi_env env, int32_t errorCode, napi_value* result)
+void CreateNapiRetMsg(napi_env env, int32_t errorCode, napi_value* result, napi_value data)
 {
     DLP_LOG_DEBUG(LABEL, "called");
     if (errorCode == DLP_OK) {
@@ -164,6 +128,11 @@ void CreateNapiRetMsg(napi_env env, int32_t errorCode, napi_value* result)
     NAPI_CALL_RETURN_VOID(env, napi_create_string_utf8(env, msg.c_str(), NAPI_AUTO_LENGTH, &errMsgJs));
     NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, errInfoJs, "code", errorCodeJs));
     NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, errInfoJs, "data", errMsgJs));
+
+    if (data != nullptr) {
+        NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, errInfoJs, "extra", data));
+    }
+
     result[0] = errInfoJs;
 }
 
@@ -171,7 +140,7 @@ void ProcessCallbackOrPromise(napi_env env, const CommonAsyncContext* asyncConte
 {
     size_t argc = PARAM_SIZE_TWO;
     napi_value args[PARAM_SIZE_TWO] = {nullptr};
-    CreateNapiRetMsg(env, asyncContext->errCode, &args[PARAM0]);
+    CreateNapiRetMsg(env, asyncContext->errCode, &args[PARAM0], data);
     args[PARAM1] = data;
     if (asyncContext->deferred) {
         DLP_LOG_DEBUG(LABEL, "Promise");
@@ -392,7 +361,6 @@ void GetInstallDlpSandboxParams(
     DLP_LOG_DEBUG(LABEL, "bundleName: %{private}s, permType: %{private}d, userId: %{private}d",
         asyncContext.bundleName.c_str(), asyncContext.permType, asyncContext.userId);
 }
-
 
 bool GetDlpProperty(napi_env env, napi_value jsObject, DlpProperty& property)
 {

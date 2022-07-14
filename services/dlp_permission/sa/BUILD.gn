@@ -72,12 +72,17 @@ ohos_static_library("dlp_credential_service_static") {
     "${dlp_root_dir}/frameworks/common/include",
   ]
 
-  sources = [ "credential_test/dlp_credential_service.c" ]
+  sources = [
+    "credential_test/account_adapt.cpp",
+    "credential_test/dlp_credential_service.c",
+  ]
 
   cflags = [ "-DHILOG_ENABLE" ]
 
   external_deps = [
     "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+    "os_account:libaccountkits",
     "utils_base:utils",
   ]
 }
@@ -117,6 +122,7 @@ ohos_shared_library("dlp_permission_service") {
 
   external_deps = [
     "ability_base:want",
+    "access_token:libaccesstoken_sdk",
     "bundle_framework:appexecfwk_base",
     "bundle_framework:appexecfwk_core",
     "hiviewdfx_hilog_native:libhilog",

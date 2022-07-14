@@ -16,6 +16,7 @@
 #include "dlp_credential_service.h"
 #include <pthread.h>
 #include <unistd.h>
+#include "account_adapt.h"
 #include "dlp_permission_log.h"
 #include "securec.h"
 
@@ -25,6 +26,8 @@
 #endif
 
 static uint64_t g_requestId = 0;
+static const size_t STRING_LEN = 256;
+static const uint32_t MAX_CERT_LEN = 1024 * 1024;
 static pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct PackPolicyCallbackTaskPara {
@@ -36,6 +39,7 @@ typedef struct PackPolicyCallbackTaskPara {
 
 typedef struct RestorePolicyCallbackTaskPara {
     DLP_RestorePolicyCallback callback;
+    uint32_t userId;
     uint64_t requestId;
     int errorCode;
     DLP_EncPolicyData* encData;
@@ -93,6 +97,53 @@ static void* PackPolicyCallbackTask(void* inputTaskParams)
     return NULL;
 }
 
+static int CheckAccountInList(uint8_t* data, uint32_t len, uint32_t userId)
+{
+    if (data == NULL || len == 0) {
+        return INVALID_VALUE;
+    }
+    char* account = NULL;
+    if (GetLocalAccountName(&account, userId) != 0) {
+        DLP_LOG_ERROR("Get local account fail");
+        return GET_ACCOUNT_ERROR;
+    }
+    DLP_LOG_DEBUG("Get local account: %{public}s", account);
+
+    char* policy = (char*)malloc(len + 1);
+    if (policy == NULL) {
+        free(account);
+        return MEM_OPERATE_FAIL;
+    }
+    int res;
+    if (memcpy_s(policy, len + 1, data, len) != EOK) {
+        res = MEM_OPERATE_FAIL;
+        goto end;
+    }
+    policy[len] = '\0';
+    char owner[STRING_LEN];
+    if (sprintf_s(owner, STRING_LEN, "\"ownerAccount\":\"%s\"", account) <= 0) {
+        res = MEM_OPERATE_FAIL;
+        goto end;
+    }
+
+    char user[STRING_LEN];
+    if (sprintf_s(user, STRING_LEN, "\"authAccount\":\"%s\"", account) <= 0) {
+        res = MEM_OPERATE_FAIL;
+        goto end;
+    }
+
+    if (strstr(policy, owner) != NULL || strstr(policy, user) != NULL) {
+        res = CREDENTIAL_OK;
+    } else {
+        DLP_LOG_ERROR("No permission to parse policy");
+        res = PERMISSION_DENY;
+    }
+end:
+    free(policy);
+    free(account);
+    return res;
+}
+
 static void* RestorePolicyCallbackTask(void* inputTaskParams)
 {
     DLP_LOG_DEBUG("Called");
@@ -107,10 +158,16 @@ static void* RestorePolicyCallbackTask(void* inputTaskParams)
         return NULL;
     }
 
-    DLP_RestorePolicyData outParams = {
-        .data = taskParams->encData->data,
-        .dataLen = taskParams->encData->dataLen,
-    };
+    DLP_RestorePolicyData outParams;
+    taskParams->errorCode =
+        CheckAccountInList(taskParams->encData->data, taskParams->encData->dataLen, taskParams->userId);
+    if (taskParams->errorCode != CREDENTIAL_OK) {
+        outParams.data = NULL;
+        outParams.dataLen = 0;
+    } else {
+        outParams.data = taskParams->encData->data;
+        outParams.dataLen = taskParams->encData->dataLen;
+    }
 
     taskParams->callback(taskParams->requestId, taskParams->errorCode, &outParams);
     DLP_LOG_INFO("End thread, requestId: %{public}llu", (unsigned long long)taskParams->requestId);
@@ -158,7 +215,7 @@ int DLP_PackPolicy(
     (void)userId;
     DLP_LOG_DEBUG("Called");
     if (packParams == NULL || packParams->data == NULL || packParams->featureName == NULL || callback == NULL ||
-        requestId == NULL) {
+        requestId == NULL || packParams->dataLen == 0 || packParams->dataLen > MAX_CERT_LEN) {
         DLP_LOG_ERROR("Callback or params is null");
         return -1;
     }
@@ -191,7 +248,7 @@ int DLP_PackPolicy(
 }
 
 static RestorePolicyCallbackTaskPara* TransEncPolicyData(
-    const DLP_EncPolicyData* params, DLP_RestorePolicyCallback callback, uint64_t requestId)
+    const DLP_EncPolicyData* params, DLP_RestorePolicyCallback callback, uint64_t requestId, uint32_t userId)
 {
     RestorePolicyCallbackTaskPara* taskParams =
         (RestorePolicyCallbackTaskPara*)malloc(sizeof(RestorePolicyCallbackTaskPara));
@@ -199,6 +256,7 @@ static RestorePolicyCallbackTaskPara* TransEncPolicyData(
         goto err;
     }
     taskParams->callback = callback;
+    taskParams->userId = userId;
     taskParams->requestId = requestId;
     taskParams->errorCode = 0;
     taskParams->encData = (DLP_EncPolicyData*)malloc(sizeof(DLP_EncPolicyData));
@@ -227,10 +285,9 @@ err:
 int DLP_RestorePolicy(
     uint32_t userId, const DLP_EncPolicyData* encData, DLP_RestorePolicyCallback callback, uint64_t* requestId)
 {
-    (void)userId;
     DLP_LOG_DEBUG("Called");
     if (encData == NULL || encData->data == NULL || encData->featureName == NULL || callback == NULL ||
-        requestId == NULL) {
+        requestId == NULL || encData->dataLen == 0 || encData->dataLen > MAX_CERT_LEN) {
         DLP_LOG_ERROR("Callback or params is null");
         return -1;
     }
@@ -240,7 +297,7 @@ int DLP_RestorePolicy(
     pthread_mutex_unlock(&g_mutex);
     *requestId = id;
 
-    RestorePolicyCallbackTaskPara* taskParams = TransEncPolicyData(encData, callback, *requestId);
+    RestorePolicyCallbackTaskPara* taskParams = TransEncPolicyData(encData, callback, *requestId, userId);
     if (taskParams == NULL) {
         return -1;
     }

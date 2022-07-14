@@ -67,6 +67,10 @@ static const std::unordered_map<int32_t, std::string> g_dlpErrMsg = {
         "service error, ipc request fail",
     },
     {
+        DLP_SERVICE_ERROR_PERMISSION_DENY,
+        "service error, permission denied",
+    },
+    {
         DLP_SERVICE_ERROR_CREDENTIAL_OPERATE_FAIL,
         "service error, credential operate fail",
     },

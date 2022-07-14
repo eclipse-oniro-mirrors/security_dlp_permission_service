@@ -85,10 +85,9 @@ struct InstallDlpSandboxAsyncContext : public CommonAsyncContext {
     int32_t appIndex = -1;
 };
 
-bool CheckPermission();
 napi_value CreateEnumAuthPermType(napi_env env, napi_value exports);
 napi_value CreateEnumAccountType(napi_env env, napi_value exports);
-void CreateNapiRetMsg(napi_env env, int32_t errorCode, napi_value* result);
+void CreateNapiRetMsg(napi_env env, int32_t errorCode, napi_value* result, napi_value data);
 void ProcessCallbackOrPromise(napi_env env, const CommonAsyncContext* asyncContext, napi_value data);
 
 void GetGenerateDlpFileParams(

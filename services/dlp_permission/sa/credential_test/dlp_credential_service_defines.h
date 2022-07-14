@@ -20,6 +20,14 @@
 #define RESERVED_LEN 64
 
 typedef enum {
+    CREDENTIAL_OK = 0,
+    PERMISSION_DENY = 1,
+    GET_ACCOUNT_ERROR,
+    MEM_OPERATE_FAIL,
+    INVALID_VALUE,
+} CredentialErrorNo;
+
+typedef enum {
     CLOUD_ACCOUNT = 1,
     DOMAIN_ACCOUNT,
     APPLICATION_ACCOUNT,

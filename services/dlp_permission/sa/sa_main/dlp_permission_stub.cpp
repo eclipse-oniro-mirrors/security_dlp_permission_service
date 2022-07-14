@@ -14,6 +14,7 @@
  */
 
 #include "dlp_permission_stub.h"
+#include "accesstoken_kit.h"
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
 #include "ipc_skeleton.h"
@@ -25,6 +26,19 @@ namespace Security {
 namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionStub"};
+const std::string PERMISSION_ACCESS_DLP_FILE = "ohos.permission.ACCESS_DLP_FILE";
+}  // namespace
+
+static bool CheckPermission(const std::string& permission)
+{
+    Security::AccessToken::AccessTokenID callingToken = IPCSkeleton::GetCallingTokenID();
+    int res = Security::AccessToken::AccessTokenKit::VerifyAccessToken(callingToken, permission);
+    if (res == Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
+        DLP_LOG_INFO(LABEL, "check permission %{public}s pass", permission.c_str());
+        return true;
+    }
+    DLP_LOG_ERROR(LABEL, "check permission %{public}s fail", permission.c_str());
+    return false;
 }
 
 int32_t DlpPermissionStub::OnRemoteRequest(
@@ -53,6 +67,10 @@ int32_t DlpPermissionStub::OnRemoteRequest(
 
 int32_t DlpPermissionStub::GenerateDlpCertificateInner(MessageParcel& data, MessageParcel& reply)
 {
+    if (!CheckPermission(PERMISSION_ACCESS_DLP_FILE)) {
+        return DLP_SERVICE_ERROR_PERMISSION_DENY;
+    }
+
     sptr<DlpPolicyParcel> policyParcel = data.ReadParcelable<DlpPolicyParcel>();
     if (policyParcel == nullptr) {
         DLP_LOG_ERROR(LABEL, "Read parcel fail");
@@ -81,6 +99,10 @@ int32_t DlpPermissionStub::GenerateDlpCertificateInner(MessageParcel& data, Mess
 
 int32_t DlpPermissionStub::ParseDlpCertificateInner(MessageParcel& data, MessageParcel& reply)
 {
+    if (!CheckPermission(PERMISSION_ACCESS_DLP_FILE)) {
+        return DLP_SERVICE_ERROR_PERMISSION_DENY;
+    }
+
     std::vector<uint8_t> cert;
     if (!data.ReadUInt8Vector(&cert)) {
         DLP_LOG_ERROR(LABEL, "Read uint8 vector fail");
@@ -108,6 +130,10 @@ int32_t DlpPermissionStub::ParseDlpCertificateInner(MessageParcel& data, Message
 
 int32_t DlpPermissionStub::InstallDlpSandboxInner(MessageParcel& data, MessageParcel& reply)
 {
+    if (!CheckPermission(PERMISSION_ACCESS_DLP_FILE)) {
+        return DLP_SERVICE_ERROR_PERMISSION_DENY;
+    }
+
     std::string bundleName;
     if (!data.ReadString(bundleName)) {
         DLP_LOG_ERROR(LABEL, "Read string fail");
@@ -142,6 +168,10 @@ int32_t DlpPermissionStub::InstallDlpSandboxInner(MessageParcel& data, MessagePa
 
 int32_t DlpPermissionStub::UninstallDlpSandboxInner(MessageParcel& data, MessageParcel& reply)
 {
+    if (!CheckPermission(PERMISSION_ACCESS_DLP_FILE)) {
+        return DLP_SERVICE_ERROR_PERMISSION_DENY;
+    }
+
     std::string bundleName;
     if (!data.ReadString(bundleName)) {
         DLP_LOG_ERROR(LABEL, "Read string fail");
