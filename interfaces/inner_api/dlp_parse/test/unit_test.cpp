@@ -22,6 +22,7 @@
 #include <thread>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include "accesstoken_kit.h"
 #include "base_object.h"
 #include "dlp_crypt.h"
 #include "dlp_file_kits.h"
@@ -29,24 +30,25 @@
 #include "dlp_permission_log.h"
 #include "int_wrapper.h"
 #include "string_wrapper.h"
+#include "token_setproc.h"
 #include "want_params_wrapper.h"
 
 using namespace testing::ext;
 using namespace OHOS::Security::DlpParseUnitTest;
 using namespace OHOS::Security::DlpPermission;
 using namespace std;
+using namespace OHOS::Security::AccessToken;
 
 using Want = OHOS::AAFwk::Want;
 using WantParams = OHOS::AAFwk::WantParams;
-using IWantParams = OHOS::AAFwk::IWantParams;
-using IString = OHOS::AAFwk::IString;
-using IInteger = OHOS::AAFwk::IInteger;
 using WantParamWrapper = OHOS::AAFwk::WantParamWrapper;
 using String = OHOS::AAFwk::String;
 using Integer = OHOS::AAFwk::Integer;
 
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpParseUnitTest"};
+static const int32_t DEFAULT_USERID = 100;
+static AccessTokenID g_selfTokenId = 0;
 
 uint8_t g_key[32] = { 0xdc, 0x7c, 0x8d, 0xe, 0xeb, 0x41, 0x4b, 0xb0, 0x8e, 0x24, 0x8, 0x32, 0xc7, 0x88, 0x96, 0xb6,
     0x2, 0x69, 0x65, 0x49, 0xaf, 0x3c, 0xa7, 0x8f, 0x38, 0x3d, 0xe3, 0xf1, 0x23, 0xb6, 0x22, 0xfb };
@@ -84,6 +86,9 @@ static void CreateDlpFileFd()
 
 void DlpParseUnitTest::SetUpTestCase()
 {
+    g_selfTokenId = GetSelfTokenID();
+    AccessTokenID tokenId = AccessTokenKit::GetHapTokenID(DEFAULT_USERID, "com.ohos.dlpmanager", 0);
+    SetSelfTokenID(tokenId);
     CreateDlpFileFd();
 }
 
@@ -92,6 +97,7 @@ void DlpParseUnitTest::TearDownTestCase()
     if (g_dlpFileFd != -1) {
         close(g_dlpFileFd);
     }
+    SetSelfTokenID(g_selfTokenId);
 }
 
 void DlpParseUnitTest::SetUp() {}

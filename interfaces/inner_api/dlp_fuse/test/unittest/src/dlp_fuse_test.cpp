@@ -23,15 +23,18 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <thread>
+#include "accesstoken_kit.h"
 #include "dlp_file.h"
 #include "dlp_file_manager.h"
 #include "dlp_link_file.h"
 #include "dlp_link_manager.h"
 #include "dlp_permission_log.h"
 #include "fuse_daemon.h"
+#include "token_setproc.h"
 
 using namespace testing::ext;
 using namespace OHOS::Security::DlpPermission;
+using namespace OHOS::Security::AccessToken;
 
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpFuseTest"};
@@ -53,10 +56,16 @@ static int g_plainFileFd = -1;
 static int g_dlpFileFd = -1;
 static int g_recoveryFileFd = -1;
 static std::shared_ptr<DlpFile> g_Dlpfile = nullptr;
+static const int32_t DEFAULT_USERID = 100;
+static AccessTokenID g_selfTokenId = 0;
 }
 
 void DlpFuseTest::SetUpTestCase()
-{}
+{
+    g_selfTokenId = GetSelfTokenID();
+    AccessTokenID tokenId = AccessTokenKit::GetHapTokenID(DEFAULT_USERID, "com.ohos.dlpmanager", 0);
+    SetSelfTokenID(tokenId);
+}
 
 void DlpFuseTest::TearDownTestCase()
 {
@@ -64,6 +73,8 @@ void DlpFuseTest::TearDownTestCase()
     int ret = umount(MOUNT_POINT_DIR.c_str());
     DLP_LOG_INFO(LABEL, "umount ret %{public}d", ret);
     rmdir(MOUNT_POINT_DIR.c_str());
+
+    SetSelfTokenID(g_selfTokenId);
 }
 
 void DlpFuseTest::SetUp()
