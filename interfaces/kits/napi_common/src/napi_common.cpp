@@ -518,7 +518,7 @@ bool GetInt64Value(napi_env env, napi_value jsObject, int64_t& result)
         DLP_LOG_ERROR(LABEL, "object is no a number");
         return false;
     }
-    NAPI_CALL(env, napi_get_value_int64(env, jsObject, &result));
+    NAPI_CALL_BASE(env, napi_get_value_int64(env, jsObject, &result), false);
     return true;
 }
 
@@ -539,7 +539,7 @@ bool GetUint32Value(napi_env env, napi_value jsObject, uint32_t& result)
         DLP_LOG_ERROR(LABEL, "object is no a number");
         return false;
     }
-    NAPI_CALL(env, napi_get_value_uint32(env, jsObject, &result));
+    NAPI_CALL_BASE(env, napi_get_value_uint32(env, jsObject, &result), false);
     return true;
 }
 
@@ -570,7 +570,7 @@ bool GetVectorAuthUser(napi_env env, napi_value jsObject, std::vector<AuthUserIn
     }
     for (uint32_t i = 0; i < size; i++) {
         napi_value obj;
-        NAPI_CALL(env, napi_get_element(env, jsObject, i, &obj));
+        NAPI_CALL_BASE(env, napi_get_element(env, jsObject, i, &obj), false);
         AuthUserInfo userInfo;
         if (!GetStringValueByKey(env, obj, "authAccount", userInfo.authAccount)) {
             DLP_LOG_ERROR(LABEL, "js get auth account fail");

@@ -99,6 +99,8 @@ static void* PackPolicyCallbackTask(void* inputTaskParams)
 
 static int CheckAccountInList(const uint8_t* data, uint32_t len, uint32_t userId)
 {
+    char owner[STRING_LEN];
+    char user[STRING_LEN];
     if (data == NULL || len == 0) {
         return INVALID_VALUE;
     }
@@ -120,13 +122,11 @@ static int CheckAccountInList(const uint8_t* data, uint32_t len, uint32_t userId
         goto end;
     }
     policy[len] = '\0';
-    char owner[STRING_LEN];
     if (sprintf_s(owner, STRING_LEN, "\"ownerAccount\":\"%s\"", account) <= 0) {
         res = MEM_OPERATE_FAIL;
         goto end;
     }
 
-    char user[STRING_LEN];
     if (sprintf_s(user, STRING_LEN, "\"authAccount\":\"%s\"", account) <= 0) {
         res = MEM_OPERATE_FAIL;
         goto end;
