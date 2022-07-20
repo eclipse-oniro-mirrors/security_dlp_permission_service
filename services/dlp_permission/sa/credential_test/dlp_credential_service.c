@@ -97,7 +97,7 @@ static void* PackPolicyCallbackTask(void* inputTaskParams)
     return NULL;
 }
 
-static int CheckAccountInList(uint8_t* data, uint32_t len, uint32_t userId)
+static int CheckAccountInList(const uint8_t* data, uint32_t len, uint32_t userId)
 {
     if (data == NULL || len == 0) {
         return INVALID_VALUE;
