@@ -42,7 +42,7 @@ ohos_shared_library("libdlppermission_napi") {
   external_deps = [
     "ability_base:want",
     "hiviewdfx_hilog_native:libhilog",
-    "samgr_standard:samgr_proxy",
+    "samgr:samgr_proxy",
     "utils_base:utils",
   ]
 
