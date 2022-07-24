@@ -49,6 +49,11 @@ struct DlpProperty {
     DlpAccountType ownerAccountType = INVALID_ACCOUNT;
 };
 
+typedef enum SandBoxExternalAuthorType {
+    DENY_START_ABILITY,
+    ALLOW_START_ABILITY,
+} SandBoxExternalAuthorType;
+
 class PermissionPolicy final {
 public:
     PermissionPolicy();

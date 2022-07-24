@@ -124,6 +124,13 @@ int32_t DlpPermissionKit::UninstallDlpSandbox(const std::string& bundleName, int
     DLP_LOG_DEBUG(LABEL, "Called");
     return DlpPermissionClient::GetInstance().UninstallDlpSandbox(bundleName, appIndex, userId);
 }
+
+int32_t DlpPermissionKit::GetSandboxExternalAuthorization(int sandboxUid,
+    const AAFwk::Want& want, SandBoxExternalAuthorType& authType)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    return DlpPermissionClient::GetInstance().GetSandboxExternalAuthorization(sandboxUid, want, authType);
+}
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS

@@ -36,6 +36,7 @@ private:
     int32_t ParseDlpCertificateInner(MessageParcel& data, MessageParcel& reply);
     int32_t InstallDlpSandboxInner(MessageParcel& data, MessageParcel& reply);
     int32_t UninstallDlpSandboxInner(MessageParcel& data, MessageParcel& reply);
+    int32_t GetSandboxExternalAuthorizationInner(MessageParcel& data, MessageParcel& reply);
 
     using RequestFuncType = int32_t (DlpPermissionStub::*)(MessageParcel& data, MessageParcel& reply);
     std::map<uint32_t, RequestFuncType> requestFuncMap_;

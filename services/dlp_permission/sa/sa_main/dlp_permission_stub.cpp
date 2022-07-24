@@ -41,6 +41,14 @@ static bool CheckPermission(const std::string& permission)
     return false;
 }
 
+static bool IsSaCall()
+{
+    Security::AccessToken::AccessTokenID callingToken = IPCSkeleton::GetCallingTokenID();
+    Security::AccessToken::TypeATokenTypeEnum res =
+        Security::AccessToken::AccessTokenKit::GetTokenType(callingToken);
+    return (res == Security::AccessToken::TOKEN_NATIVE);
+}
+
 int32_t DlpPermissionStub::OnRemoteRequest(
     uint32_t code, MessageParcel& data, MessageParcel& reply, MessageOption& option)
 {
@@ -198,6 +206,38 @@ int32_t DlpPermissionStub::UninstallDlpSandboxInner(MessageParcel& data, Message
     return DLP_OK;
 }
 
+int32_t DlpPermissionStub::GetSandboxExternalAuthorizationInner(MessageParcel& data,
+    MessageParcel& reply)
+{
+    if (!IsSaCall() && !CheckPermission(PERMISSION_ACCESS_DLP_FILE)) {
+        DLP_LOG_ERROR(LABEL, "Caller is not SA or has no ACCESS_DLP_FILE permission");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    int32_t sandboxUid;
+    if (!data.ReadInt32(sandboxUid)) {
+        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    AAFwk::Want *want = data.ReadParcelable<AAFwk::Want>();
+    if (want == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Read want fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    SandBoxExternalAuthorType authType;
+    int32_t res = this->GetSandboxExternalAuthorization(sandboxUid, *want, authType);
+    if (res != DLP_OK) {
+        return res;
+    }
+
+    if (!reply.WriteInt32(authType)) {
+        DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    return DLP_OK;
+}
+
 DlpPermissionStub::DlpPermissionStub()
 {
     requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GENERATE_DLP_CERTIFICATE)] =
@@ -208,6 +248,8 @@ DlpPermissionStub::DlpPermissionStub()
         &DlpPermissionStub::InstallDlpSandboxInner;
     requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::UNINSTALL_DLP_SANDBOX)] =
         &DlpPermissionStub::UninstallDlpSandboxInner;
+    requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_SANDBOX_EXTERNAL_AUTH)] =
+        &DlpPermissionStub::GetSandboxExternalAuthorizationInner;
 }
 
 DlpPermissionStub::~DlpPermissionStub()

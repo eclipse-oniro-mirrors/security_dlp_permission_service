@@ -42,6 +42,8 @@ public:
         const std::vector<uint8_t>& cert, std::shared_ptr<ParseDlpCertificateCallback> callback);
     int32_t InstallDlpSandbox(const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex);
     int32_t UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId);
+    int32_t GetSandboxExternalAuthorization(int sandboxUid, const AAFwk::Want& want,
+        SandBoxExternalAuthorType& authType);
 
     void LoadDlpPermission();
     void FinishStartSASuccess(const sptr<IRemoteObject>& remoteObject);

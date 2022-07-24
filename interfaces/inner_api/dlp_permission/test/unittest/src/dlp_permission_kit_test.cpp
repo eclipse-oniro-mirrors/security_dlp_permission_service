@@ -24,6 +24,7 @@
 #include "hex_string.h"
 #include "securec.h"
 #include "token_setproc.h"
+#include "want.h"
 
 using namespace testing::ext;
 using namespace OHOS::Security::DlpPermission;
@@ -51,7 +52,7 @@ const uint32_t INVALID_AUTH_PERM_UPPER = 5;
 const uint32_t INVALID_AUTH_PERM_LOWER = 0;
 const int64_t INVALID_DELTA_EXPIRY_TIME = -100;
 
-constexpr char BUNDLE_NAME[] = "com.example.Browser";
+constexpr char BUNDLE_NAME[] = "com.ohos.dlpmanager";
 const int32_t DEFAULT_USERID = 100;
 
 static AccessTokenID g_selfTokenId = 0;
@@ -282,6 +283,23 @@ HWTEST_F(DlpPermissionKitTest, InstallDlpSandbox001, TestSize.Level1)
     AuthPermType permType = READ_ONLY;
     ASSERT_EQ(DLP_OK, DlpPermissionKit::InstallDlpSandbox(BUNDLE_NAME, permType, DEFAULT_USERID, appIndex));
     ASSERT_TRUE(appIndex != 0);
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::UninstallDlpSandbox(BUNDLE_NAME, appIndex, DEFAULT_USERID));
     ASSERT_EQ(DLP_OK, DlpPermissionKit::InstallDlpSandbox(BUNDLE_NAME, permType, DEFAULT_USERID, appIndex));
     ASSERT_TRUE(appIndex != 0);
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::UninstallDlpSandbox(BUNDLE_NAME, appIndex, DEFAULT_USERID));
+}
+
+/**
+ * @tc.name: GetSandboxExternalAuthorization001
+ * @tc.desc: GetSandboxExternalAuthorization test.
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIR1
+ */
+HWTEST_F(DlpPermissionKitTest, GetSandboxExternalAuthorization001, TestSize.Level1)
+{
+    OHOS::AAFwk::Want want;
+    SandBoxExternalAuthorType authType;
+    ASSERT_NE(DLP_OK, DlpPermissionKit::GetSandboxExternalAuthorization(-1, want, authType));
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::GetSandboxExternalAuthorization(1000, want, authType));
+    ASSERT_TRUE(authType == DENY_START_ABILITY);
 }

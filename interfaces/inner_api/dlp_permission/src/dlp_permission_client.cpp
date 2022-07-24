@@ -124,6 +124,23 @@ int32_t DlpPermissionClient::UninstallDlpSandbox(const std::string& bundleName, 
     return proxy->UninstallDlpSandbox(bundleName, appIndex, userId);
 }
 
+int32_t DlpPermissionClient::GetSandboxExternalAuthorization(int sandboxUid,
+    const AAFwk::Want& want, SandBoxExternalAuthorType& auth)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    auto proxy = GetProxy();
+    if (proxy == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Proxy is null, dlpmanager service no start.");
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
+    }
+
+    if (sandboxUid < 0) {
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+
+    return proxy->GetSandboxExternalAuthorization(sandboxUid, want, auth);
+}
+
 void DlpPermissionClient::LoadDlpPermission()
 {
     {

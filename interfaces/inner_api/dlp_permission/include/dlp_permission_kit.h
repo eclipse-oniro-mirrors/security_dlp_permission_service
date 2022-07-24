@@ -21,6 +21,7 @@
 #include "dlp_policy.h"
 #include "dlp_permission_callback.h"
 #include "parcel.h"
+#include "want.h"
 
 namespace OHOS {
 namespace Security {
@@ -56,6 +57,8 @@ public:
     static int32_t InstallDlpSandbox(
         const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex);
     static int32_t UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId);
+    static int32_t GetSandboxExternalAuthorization(int sandboxUid, const AAFwk::Want& want,
+        SandBoxExternalAuthorType& authType);
 };
 }  // namespace DlpPermission
 }  // namespace Security

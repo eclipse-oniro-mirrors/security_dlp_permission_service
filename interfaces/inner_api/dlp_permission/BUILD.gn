@@ -16,7 +16,10 @@ import("//build/ohos.gni")
 
 config("dlp_permission_config") {
   visibility = [ ":*" ]
-  include_dirs = [ "include" ]
+  include_dirs = [
+    "include",
+    "${dlp_root_dir}/frameworks/common/include"
+  ]
 }
 
 ohos_shared_library("libdlp_permission_sdk") {

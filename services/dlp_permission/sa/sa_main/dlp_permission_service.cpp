@@ -127,6 +127,18 @@ int32_t DlpPermissionService::UninstallDlpSandbox(const std::string& bundleName,
     AppExecFwk::BundleMgrClient bundleMgrClient;
     return bundleMgrClient.UninstallSandboxApp(bundleName, appIndex, userId);
 }
+
+int32_t DlpPermissionService::GetSandboxExternalAuthorization(int sandboxUid,
+    const AAFwk::Want& want, SandBoxExternalAuthorType& authType)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    if (sandboxUid < 0) {
+        DLP_LOG_ERROR(LABEL, "param is invalid");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    authType = DENY_START_ABILITY;
+    return DLP_OK;
+}
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS

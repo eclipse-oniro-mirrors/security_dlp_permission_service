@@ -205,6 +205,51 @@ int32_t DlpPermissionProxy::UninstallDlpSandbox(const std::string& bundleName, i
     }
     return res;
 }
+
+int32_t DlpPermissionProxy::GetSandboxExternalAuthorization(int sandboxUid,
+    const AAFwk::Want& want, SandBoxExternalAuthorType& authType)
+{
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
+        DLP_LOG_ERROR(LABEL, "Write descriptor fail");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+
+    if (!data.WriteInt32(sandboxUid)) {
+        DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+
+    if (!data.WriteParcelable(&want)) {
+        DLP_LOG_ERROR(LABEL, "Write want fail");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
+    sptr<IRemoteObject> remote = Remote();
+    if (remote == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Remote service is null");
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
+    }
+    int32_t requestResult = remote->SendRequest(
+        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_SANDBOX_EXTERNAL_AUTH), data, reply, option);
+    if (requestResult != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    int32_t res;
+    if (!reply.ReadInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    if (res < DENY_START_ABILITY || res > ALLOW_START_ABILITY) {
+        DLP_LOG_ERROR(LABEL, "Read authType result value error");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    authType = static_cast<SandBoxExternalAuthorType>(res);
+    return DLP_OK;
+}
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS
