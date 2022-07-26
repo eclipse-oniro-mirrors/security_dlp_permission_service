@@ -77,12 +77,27 @@ struct CloseDlpFileAsyncContext : public CommonAsyncContext {
     std::shared_ptr<DlpFile> dlpFileNative = nullptr;
 };
 
-struct InstallDlpSandboxAsyncContext : public CommonAsyncContext {
-    explicit InstallDlpSandboxAsyncContext(napi_env env) : CommonAsyncContext(env){};
+struct DlpSandboxAsyncContext : public CommonAsyncContext {
+    explicit DlpSandboxAsyncContext(napi_env env) : CommonAsyncContext(env){};
     std::string bundleName;
     AuthPermType permType = PERM_MAX;
     int32_t userId = -1;
     int32_t appIndex = -1;
+};
+
+struct QueryFileAccessAsyncContext : public CommonAsyncContext {
+    explicit QueryFileAccessAsyncContext(napi_env env) : CommonAsyncContext(env){};
+    AuthPermType permType = PERM_MAX;
+};
+
+struct IsInSandboxAsyncContext : public CommonAsyncContext {
+    explicit IsInSandboxAsyncContext(napi_env env) : CommonAsyncContext(env){};
+    bool inSandbox = false;
+};
+
+struct GetDlpSupportFileTypeAsyncContext : public CommonAsyncContext {
+    explicit GetDlpSupportFileTypeAsyncContext(napi_env env) : CommonAsyncContext(env){};
+    std::vector<std::string> supportFileType;
 };
 
 napi_value CreateEnumAuthPermType(napi_env env, napi_value exports);
@@ -100,7 +115,14 @@ void GetRecoverDlpFileParams(
     const napi_env env, const napi_callback_info info, RecoverDlpFileAsyncContext& asyncContext);
 void GetCloseDlpFileParams(const napi_env env, const napi_callback_info info, CloseDlpFileAsyncContext& asyncContext);
 void GetInstallDlpSandboxParams(
-    const napi_env env, const napi_callback_info info, InstallDlpSandboxAsyncContext& asyncContext);
+    const napi_env env, const napi_callback_info info, DlpSandboxAsyncContext& asyncContext);
+void GetUninstallDlpSandboxParams(
+    const napi_env env, const napi_callback_info info, DlpSandboxAsyncContext& asyncContext);
+void GetQueryFileAccessParams(
+    const napi_env env, const napi_callback_info info, QueryFileAccessAsyncContext& asyncContext);
+void GetIsInSandboxParams(const napi_env env, const napi_callback_info info, IsInSandboxAsyncContext& asyncContext);
+void GetGetDlpSupportFileTypeParams(
+    const napi_env env, const napi_callback_info info, GetDlpSupportFileTypeAsyncContext& asyncContext);
 
 bool GetDlpProperty(napi_env env, napi_value object, DlpProperty& property);
 void GetCallback(const napi_env env, napi_value jsObject, CommonAsyncContext& asyncContext);
@@ -118,6 +140,7 @@ bool GetVectorAuthUserByKey(
     napi_env env, napi_value jsObject, const std::string& key, std::vector<AuthUserInfo>& resultVec);
 napi_value DlpPropertyToJs(napi_env env, const DlpProperty& property);
 napi_value VectorAuthUserToJs(napi_env env, const std::vector<AuthUserInfo>& users);
+napi_value VectorStringToJs(napi_env env, const std::vector<std::string>& value);
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS

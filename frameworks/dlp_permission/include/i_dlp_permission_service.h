@@ -43,12 +43,24 @@ public:
     virtual int32_t GetSandboxExternalAuthorization(int sandboxUid, const AAFwk::Want& want,
         SandBoxExternalAuthorType& authType) = 0;
 
+    virtual int32_t QueryDlpFileAccess(AuthPermType& permType) = 0;
+
+    virtual int32_t QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t tokenId) = 0;
+
+    virtual int32_t IsInDlpSandbox(bool& inSandbox) = 0;
+
+    virtual int32_t GetDlpSupportFileType(std::vector<std::string>& supportFileType) = 0;
+
     enum class InterfaceCode {
         GENERATE_DLP_CERTIFICATE = 0xff01,
         PARSE_DLP_CERTIFICATE = 0xff02,
         INSTALL_DLP_SANDBOX = 0xff03,
         UNINSTALL_DLP_SANDBOX = 0xff04,
         GET_SANDBOX_EXTERNAL_AUTH = 0xff05,
+        QUERY_DLP_FILE_ACCESS = 0xff06,
+        IS_IN_DLP_SANDBOX = 0xff07,
+        GET_DLP_SUPPORT_FILE_TYPE = 0xff08,
+        QUERY_DLP_FILE_ACCESS_BY_TOKEN_ID = 0xff09,
     };
 };
 }  // namespace DlpPermission

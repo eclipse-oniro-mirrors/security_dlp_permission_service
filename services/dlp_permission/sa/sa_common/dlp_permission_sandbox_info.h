@@ -13,17 +13,24 @@
  * limitations under the License.
  */
 
-#ifndef ACCOUNT_ADAPT_H
-#define ACCOUNT_ADAPT_H
+#ifndef DLP_PERMISSION_SANDBOX_INFO_H
+#define DLP_PERMISSION_SANDBOX_INFO_H
 
-#include <stdint.h>
+#include "dlp_policy.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-int8_t GetLocalAccountName(char** account, uint32_t userId);
-#ifdef __cplusplus
-}
-#endif
-
-#endif
+namespace OHOS {
+namespace Security {
+namespace DlpPermission {
+class DlpSandboxInfo {
+public:
+    int uid = -1;
+    int32_t userId = -1;
+    int32_t appIndex = -1;
+    unsigned int tokenId = 0;
+    AuthPermType permType = PERM_MAX;
+    std::string bundleName;
+};
+}  // namespace DlpPermission
+}  // namespace Security
+}  // namespace OHOS
+#endif  // DLP_PERMISSION_SANDBOX_INFO_H

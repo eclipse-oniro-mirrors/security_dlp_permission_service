@@ -31,9 +31,7 @@ namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpCredential"};
 constexpr static int UID_TRANSFORM_DIVISOR = 200000;
-static const int32_t PAUSE_INTERVAL = 5;
 static const size_t MAX_REQUEST_NUM = 100;
-static size_t g_newTaskNum = 0;
 static std::unordered_map<uint64_t, sptr<IDlpPermissionCallback>> g_requestMap;
 std::mutex g_lockRequest;
 }  // namespace
@@ -169,41 +167,8 @@ static void FreeDlpPackPolicyParams(DLP_PackPolicyParams& packPolicy)
     }
 }
 
-static void GetRequestIdle(size_t& curTasks, size_t& newTasks)
-{
-    std::lock_guard<std::mutex> lock(g_lockRequest);
-    newTasks = g_newTaskNum;
-    curTasks = g_requestMap.size();
-}
-
-static void Listenner()
-{
-    bool exitFlag = false;
-    while (1) {
-        sleep(PAUSE_INTERVAL);
-        size_t curTaskNum, newTaskNum;
-        GetRequestIdle(curTaskNum, newTaskNum);
-        DLP_LOG_INFO(LABEL, "Left tasks: %{public}zu, new tasks: %{public}zu", curTaskNum, newTaskNum);
-        if (curTaskNum == 0 && newTaskNum == 0) {
-            if (exitFlag) {
-                DLP_LOG_INFO(LABEL, "No task, process exit");
-                exit(0);
-            }
-            DLP_LOG_INFO(LABEL, "No task, process will exit");
-            exitFlag = true;
-        } else {
-            std::lock_guard<std::mutex> lock(g_lockRequest);
-            g_newTaskNum = 0;
-            exitFlag = false;
-        }
-    }
-}
-
 DlpCredential::DlpCredential()
-{
-    std::thread initThread(Listenner);
-    initThread.detach();
-}
+{}
 
 static int GetOsAccountIdFromUid(int uid)
 {
@@ -225,7 +190,6 @@ int32_t DlpCredential::GenerateDlpCertificate(
     int res = 0;
     {
         std::lock_guard<std::mutex> lock(g_lockRequest);
-        g_newTaskNum++;
         int32_t status = QueryRequestIdle();
         if (status != DLP_OK) {
             FreeDlpPackPolicyParams(packPolicy);
@@ -285,7 +249,6 @@ int32_t DlpCredential::ParseDlpCertificate(const std::vector<uint8_t>& cert, spt
     int res = 0;
     {
         std::lock_guard<std::mutex> lock(g_lockRequest);
-        g_newTaskNum++;
         int32_t status = QueryRequestIdle();
         if (status != DLP_OK) {
             FreeDLPEncPolicyData(encPolicy);

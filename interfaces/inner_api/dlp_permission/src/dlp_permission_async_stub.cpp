@@ -37,7 +37,7 @@ DlpPermissionAsyncStub::DlpPermissionAsyncStub(std::shared_ptr<ParseDlpCertifica
 int32_t DlpPermissionAsyncStub::OnRemoteRequest(
     uint32_t code, MessageParcel& data, MessageParcel& reply, MessageOption& option)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
+    DLP_LOG_INFO(LABEL, "Called, code: 0x%{public}x", code);
 
     std::u16string descripter = DlpPermissionAsyncStub::GetDescriptor();
     std::u16string remoteDescripter = data.ReadInterfaceToken();

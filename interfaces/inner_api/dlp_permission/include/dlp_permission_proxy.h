@@ -38,6 +38,10 @@ public:
     int32_t UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId) override;
     int32_t GetSandboxExternalAuthorization(int sandboxUid, const AAFwk::Want& want,
         SandBoxExternalAuthorType& authType) override;
+    int32_t QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t tokenId) override;
+    int32_t QueryDlpFileAccess(AuthPermType& permType) override;
+    int32_t IsInDlpSandbox(bool& inSandbox) override;
+    int32_t GetDlpSupportFileType(std::vector<std::string>& supportFileType) override;
 
 private:
     static inline BrokerDelegator<DlpPermissionProxy> delegator_;

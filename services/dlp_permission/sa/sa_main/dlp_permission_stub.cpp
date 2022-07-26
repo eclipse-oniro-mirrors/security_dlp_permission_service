@@ -44,15 +44,14 @@ static bool CheckPermission(const std::string& permission)
 static bool IsSaCall()
 {
     Security::AccessToken::AccessTokenID callingToken = IPCSkeleton::GetCallingTokenID();
-    Security::AccessToken::TypeATokenTypeEnum res =
-        Security::AccessToken::AccessTokenKit::GetTokenType(callingToken);
+    Security::AccessToken::TypeATokenTypeEnum res = Security::AccessToken::AccessTokenKit::GetTokenType(callingToken);
     return (res == Security::AccessToken::TOKEN_NATIVE);
 }
 
 int32_t DlpPermissionStub::OnRemoteRequest(
     uint32_t code, MessageParcel& data, MessageParcel& reply, MessageOption& option)
 {
-    DLP_LOG_INFO(LABEL, "Called, code: %{public}u", code);
+    DLP_LOG_INFO(LABEL, "Called, code: 0x%{public}x", code);
 
     std::u16string descripter = DlpPermissionStub::GetDescriptor();
     std::u16string remoteDescripter = data.ReadInterfaceToken();
@@ -206,8 +205,7 @@ int32_t DlpPermissionStub::UninstallDlpSandboxInner(MessageParcel& data, Message
     return DLP_OK;
 }
 
-int32_t DlpPermissionStub::GetSandboxExternalAuthorizationInner(MessageParcel& data,
-    MessageParcel& reply)
+int32_t DlpPermissionStub::GetSandboxExternalAuthorizationInner(MessageParcel& data, MessageParcel& reply)
 {
     if (!IsSaCall() && !CheckPermission(PERMISSION_ACCESS_DLP_FILE)) {
         DLP_LOG_ERROR(LABEL, "Caller is not SA or has no ACCESS_DLP_FILE permission");
@@ -219,7 +217,7 @@ int32_t DlpPermissionStub::GetSandboxExternalAuthorizationInner(MessageParcel& d
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
-    AAFwk::Want *want = data.ReadParcelable<AAFwk::Want>();
+    AAFwk::Want* want = data.ReadParcelable<AAFwk::Want>();
     if (want == nullptr) {
         DLP_LOG_ERROR(LABEL, "Read want fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
@@ -238,6 +236,78 @@ int32_t DlpPermissionStub::GetSandboxExternalAuthorizationInner(MessageParcel& d
     return DLP_OK;
 }
 
+int32_t DlpPermissionStub::QueryDlpFileCopyableByTokenIdInner(MessageParcel& data, MessageParcel& reply)
+{
+    uint32_t tokenId;
+    if (!data.ReadUint32(tokenId)) {
+        DLP_LOG_ERROR(LABEL, "Read uint32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    bool copyable = false;
+    int32_t res = this->QueryDlpFileCopyableByTokenId(copyable, tokenId);
+    if (!reply.WriteInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (!reply.WriteBool(copyable)) {
+        DLP_LOG_ERROR(LABEL, "Write bool fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    return DLP_OK;
+}
+
+int32_t DlpPermissionStub::QueryDlpFileAccessInner(MessageParcel& data, MessageParcel& reply)
+{
+    AuthPermType permType = PERM_MAX;
+    int32_t res = this->QueryDlpFileAccess(permType);
+    if (!reply.WriteInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (!reply.WriteUint32(permType)) {
+        DLP_LOG_ERROR(LABEL, "Write uint32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    return DLP_OK;
+}
+
+int32_t DlpPermissionStub::IsInDlpSandboxInner(MessageParcel& data, MessageParcel& reply)
+{
+    bool inSandbox = false;
+    int32_t res = this->IsInDlpSandbox(inSandbox);
+    if (!reply.WriteInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (!reply.WriteBool(inSandbox)) {
+        DLP_LOG_ERROR(LABEL, "Write bool fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    return DLP_OK;
+}
+
+int32_t DlpPermissionStub::GetDlpSupportFileTypeInner(MessageParcel& data, MessageParcel& reply)
+{
+    std::vector<std::string> supportFileType;
+    int32_t res = this->GetDlpSupportFileType(supportFileType);
+    if (!reply.WriteInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    size_t listNum = supportFileType.size();
+    if (!reply.WriteUint32(listNum)) {
+        DLP_LOG_ERROR(LABEL, "Write uint32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    for (const auto& iter : supportFileType) {
+        if (!reply.WriteString(iter)) {
+            DLP_LOG_ERROR(LABEL, "Write string fail");
+            return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+        }
+    }
+    return DLP_OK;
+}
+
 DlpPermissionStub::DlpPermissionStub()
 {
     requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GENERATE_DLP_CERTIFICATE)] =
@@ -250,6 +320,14 @@ DlpPermissionStub::DlpPermissionStub()
         &DlpPermissionStub::UninstallDlpSandboxInner;
     requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_SANDBOX_EXTERNAL_AUTH)] =
         &DlpPermissionStub::GetSandboxExternalAuthorizationInner;
+    requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::QUERY_DLP_FILE_ACCESS_BY_TOKEN_ID)] =
+        &DlpPermissionStub::QueryDlpFileCopyableByTokenIdInner;
+    requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::QUERY_DLP_FILE_ACCESS)] =
+        &DlpPermissionStub::QueryDlpFileAccessInner;
+    requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::IS_IN_DLP_SANDBOX)] =
+        &DlpPermissionStub::IsInDlpSandboxInner;
+    requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_DLP_SUPPORT_FILE_TYPE)] =
+        &DlpPermissionStub::GetDlpSupportFileTypeInner;
 }
 
 DlpPermissionStub::~DlpPermissionStub()

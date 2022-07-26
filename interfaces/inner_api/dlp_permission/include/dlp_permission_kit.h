@@ -59,6 +59,10 @@ public:
     static int32_t UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId);
     static int32_t GetSandboxExternalAuthorization(int sandboxUid, const AAFwk::Want& want,
         SandBoxExternalAuthorType& authType);
+    static int32_t QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t tokenId);
+    static int32_t QueryDlpFileAccess(AuthPermType& permType);
+    static int32_t IsInDlpSandbox(bool& inSandbox);
+    static int32_t GetDlpSupportFileType(std::vector<std::string>& supportFileType);
 };
 }  // namespace DlpPermission
 }  // namespace Security

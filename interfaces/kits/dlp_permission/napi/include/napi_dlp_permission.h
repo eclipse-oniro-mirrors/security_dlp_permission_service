@@ -68,6 +68,22 @@ private:
     static void InstallDlpSandboxExcute(napi_env env, void* data);
     static void InstallDlpSandboxComplete(napi_env env, napi_status status, void* data);
     static napi_value InstallDlpSandbox(napi_env env, napi_callback_info cbInfo);
+
+    static void UninstallDlpSandboxExcute(napi_env env, void* data);
+    static void UninstallDlpSandboxComplete(napi_env env, napi_status status, void* data);
+    static napi_value UninstallDlpSandbox(napi_env env, napi_callback_info cbInfo);
+
+    static void QueryFileAccessExcute(napi_env env, void* data);
+    static void QueryFileAccessComplete(napi_env env, napi_status status, void* data);
+    static napi_value QueryFileAccess(napi_env env, napi_callback_info cbInfo);
+
+    static void IsInSandboxExcute(napi_env env, void* data);
+    static void IsInSandboxComplete(napi_env env, napi_status status, void* data);
+    static napi_value IsInSandbox(napi_env env, napi_callback_info cbInfo);
+
+    static void GetDlpSupportFileTypeExcute(napi_env env, void* data);
+    static void GetDlpSupportFileTypeComplete(napi_env env, napi_status status, void* data);
+    static napi_value GetDlpSupportFileType(napi_env env, napi_callback_info cbInfo);
 };
 }  // namespace DlpPermission
 }  // namespace Security

@@ -17,9 +17,12 @@
 #define FRAMEWORKS_COMMON_DLP_PERMISSION_H
 
 #include <inttypes.h>
+#include <string>
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
+const std::string DLP_MANAGER_APP = "com.ohos.dlpmanager";
+
 enum DLPErrCode : int32_t {
     DLP_OK = 0,
     DLP_NAPI_ERROR_PERMISSION_DENY = -1,
@@ -34,6 +37,7 @@ enum DLPErrCode : int32_t {
     DLP_SERVICE_ERROR_JSON_OPERATE_FAIL = -53,
     DLP_SERVICE_ERROR_IPC_REQUEST_FAIL = -54,
     DLP_SERVICE_ERROR_PERMISSION_DENY = -55,
+    DLP_SERVICE_ERROR_APPOBSERVER_NULL = -56,
     DLP_SERVICE_ERROR_CREDENTIAL_OPERATE_FAIL = -60,
     DLP_SERVICE_ERROR_CREDENTIAL_BUSY = -61,
     DLP_SERVICE_ERROR_CREDENTIAL_TASK_DUPLICATE = -62,

@@ -38,6 +38,11 @@ private:
     int32_t UninstallDlpSandboxInner(MessageParcel& data, MessageParcel& reply);
     int32_t GetSandboxExternalAuthorizationInner(MessageParcel& data, MessageParcel& reply);
 
+    int32_t QueryDlpFileCopyableByTokenIdInner(MessageParcel& data, MessageParcel& reply);
+    int32_t QueryDlpFileAccessInner(MessageParcel& data, MessageParcel& reply);
+    int32_t IsInDlpSandboxInner(MessageParcel& data, MessageParcel& reply);
+    int32_t GetDlpSupportFileTypeInner(MessageParcel& data, MessageParcel& reply);
+
     using RequestFuncType = int32_t (DlpPermissionStub::*)(MessageParcel& data, MessageParcel& reply);
     std::map<uint32_t, RequestFuncType> requestFuncMap_;
 };

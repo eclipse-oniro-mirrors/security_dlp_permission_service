@@ -49,7 +49,7 @@ int32_t DlpPermissionClient::GenerateDlpCertificate(
     if (!policy.IsValid() || callback == nullptr) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
-    auto proxy = GetProxy();
+    auto proxy = GetProxy(true);
     if (proxy == nullptr) {
         DLP_LOG_ERROR(LABEL, "Proxy is null");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
@@ -78,7 +78,7 @@ int32_t DlpPermissionClient::ParseDlpCertificate(
     if (callback == nullptr || cert.size() == 0) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
-    auto proxy = GetProxy();
+    auto proxy = GetProxy(true);
     if (proxy == nullptr) {
         DLP_LOG_ERROR(LABEL, "Proxy is null");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
@@ -100,7 +100,7 @@ int32_t DlpPermissionClient::InstallDlpSandbox(
     if (bundleName.empty() || permType >= PERM_MAX || permType < READ_ONLY) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
-    auto proxy = GetProxy();
+    auto proxy = GetProxy(true);
     if (proxy == nullptr) {
         DLP_LOG_ERROR(LABEL, "Proxy is null");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
@@ -115,7 +115,7 @@ int32_t DlpPermissionClient::UninstallDlpSandbox(const std::string& bundleName, 
     if (bundleName.empty() || appIndex < 0 || userId < 0) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
-    auto proxy = GetProxy();
+    auto proxy = GetProxy(true);
     if (proxy == nullptr) {
         DLP_LOG_ERROR(LABEL, "Proxy is null");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
@@ -128,7 +128,7 @@ int32_t DlpPermissionClient::GetSandboxExternalAuthorization(int sandboxUid,
     const AAFwk::Want& want, SandBoxExternalAuthorType& auth)
 {
     DLP_LOG_DEBUG(LABEL, "Called");
-    auto proxy = GetProxy();
+    auto proxy = GetProxy(false);
     if (proxy == nullptr) {
         DLP_LOG_ERROR(LABEL, "Proxy is null, dlpmanager service no start.");
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
@@ -141,7 +141,65 @@ int32_t DlpPermissionClient::GetSandboxExternalAuthorization(int sandboxUid,
     return proxy->GetSandboxExternalAuthorization(sandboxUid, want, auth);
 }
 
-void DlpPermissionClient::LoadDlpPermission()
+int32_t DlpPermissionClient::QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t tokenId)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    if (tokenId == 0) {
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+
+    auto proxy = GetProxy(false);
+    if (proxy == nullptr) {
+        DLP_LOG_INFO(LABEL, "Proxy is null");
+        copyable = true;
+        return DLP_OK;
+    }
+
+    return proxy->QueryDlpFileCopyableByTokenId(copyable, tokenId);
+}
+
+int32_t DlpPermissionClient::QueryDlpFileAccess(AuthPermType& permType)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+
+    auto proxy = GetProxy(false);
+    if (proxy == nullptr) {
+        DLP_LOG_INFO(LABEL, "Proxy is null");
+        permType = PERM_MAX;
+        return DLP_OK;
+    }
+
+    return proxy->QueryDlpFileAccess(permType);
+}
+
+int32_t DlpPermissionClient::IsInDlpSandbox(bool& inSandbox)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+
+    auto proxy = GetProxy(false);
+    if (proxy == nullptr) {
+        DLP_LOG_INFO(LABEL, "Proxy is null");
+        inSandbox = false;
+        return DLP_OK;
+    }
+
+    return proxy->IsInDlpSandbox(inSandbox);
+}
+
+int32_t DlpPermissionClient::GetDlpSupportFileType(std::vector<std::string>& supportFileType)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+
+    auto proxy = GetProxy(false);
+    if (proxy == nullptr) {
+        DLP_LOG_INFO(LABEL, "Proxy is null");
+        return DLP_OK;
+    }
+
+    return proxy->GetDlpSupportFileType(supportFileType);
+}
+
+void DlpPermissionClient::LoadDlpPermissionSa()
 {
     {
         std::unique_lock<std::mutex> lock(cvLock_);
@@ -164,7 +222,26 @@ void DlpPermissionClient::LoadDlpPermission()
         DLP_LOG_ERROR(LABEL, "LoadSystemAbility %{public}d failed", SA_ID_DLP_PERMISSION_SERVICE);
         return;
     }
-    DLP_LOG_INFO(LABEL, "LoadSystemAbility!");
+    DLP_LOG_INFO(LABEL, "LoadSystemAbility %{public}d success", SA_ID_DLP_PERMISSION_SERVICE);
+}
+
+void DlpPermissionClient::GetDlpPermissionSa()
+{
+    auto sam = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (sam == nullptr) {
+        DLP_LOG_ERROR(LABEL, "GetSystemAbilityManager return null");
+        return;
+    }
+
+    auto dlpPermissionSa = sam->GetSystemAbility(SA_ID_DLP_PERMISSION_SERVICE);
+    if (dlpPermissionSa == nullptr) {
+        DLP_LOG_ERROR(LABEL, "GetSystemAbility %{public}d is null", SA_ID_DLP_PERMISSION_SERVICE);
+        return;
+    }
+
+    SetRemoteObject(dlpPermissionSa);
+
+    DLP_LOG_INFO(LABEL, "GetSystemAbility %{public}d success", SA_ID_DLP_PERMISSION_SERVICE);
 }
 
 void DlpPermissionClient::FinishStartSASuccess(const sptr<IRemoteObject>& remoteObject)
@@ -195,27 +272,31 @@ void DlpPermissionClient::FinishStartSAFail()
     dlpPermissionCon_.notify_one();
 }
 
-void DlpPermissionClient::InitProxy()
+void DlpPermissionClient::InitProxy(bool doLoadSa)
 {
-    LoadDlpPermission();
-    // wait_for release lock and block until time out(60s) or match the condition with notice
-    {
-        std::unique_lock<std::mutex> lock(cvLock_);
-        auto waitStatus = dlpPermissionCon_.wait_for(
-            lock, std::chrono::milliseconds(DLP_PERMISSION_LOAD_SA_TIMEOUT_MS), [this]() { return readyFlag_; });
-        if (!waitStatus) {
-            // time out or loadcallback fail
-            DLP_LOG_ERROR(LABEL, "Dlp Permission load sa timeout");
+    if (doLoadSa) {
+        LoadDlpPermissionSa();
+        // wait_for release lock and block until time out(60s) or match the condition with notice
+        {
+            std::unique_lock<std::mutex> lock(cvLock_);
+            auto waitStatus = dlpPermissionCon_.wait_for(
+                lock, std::chrono::milliseconds(DLP_PERMISSION_LOAD_SA_TIMEOUT_MS), [this]() { return readyFlag_; });
+            if (!waitStatus) {
+                // time out or loadcallback fail
+                DLP_LOG_ERROR(LABEL, "Dlp Permission load sa timeout");
+                return;
+            }
+        }
+        if (GetRemoteObject() == nullptr) {
+            DLP_LOG_ERROR(LABEL, "RemoteObject is null");
             return;
         }
-    }
-    if (GetRemoteObject() == nullptr) {
-        DLP_LOG_ERROR(LABEL, "RemoteObject is null");
-        return;
-    }
-    serviceDeathObserver_ = new (std::nothrow) DlpPermissionDeathRecipient();
-    if (serviceDeathObserver_ != nullptr) {
-        GetRemoteObject()->AddDeathRecipient(serviceDeathObserver_);
+        serviceDeathObserver_ = new (std::nothrow) DlpPermissionDeathRecipient();
+        if (serviceDeathObserver_ != nullptr) {
+            GetRemoteObject()->AddDeathRecipient(serviceDeathObserver_);
+        }
+    } else {
+        GetDlpPermissionSa();
     }
 }
 
@@ -239,12 +320,12 @@ sptr<IRemoteObject> DlpPermissionClient::GetRemoteObject()
     return remoteObject_;
 }
 
-sptr<IDlpPermissionService> DlpPermissionClient::GetProxy()
+sptr<IDlpPermissionService> DlpPermissionClient::GetProxy(bool doLoadSa)
 {
     {
         std::unique_lock<std::mutex> lock(proxyMutex_);
         if (GetRemoteObject() == nullptr) {
-            InitProxy();
+            InitProxy(doLoadSa);
         }
     }
     sptr<IDlpPermissionService> proxy = iface_cast<IDlpPermissionService>(GetRemoteObject());

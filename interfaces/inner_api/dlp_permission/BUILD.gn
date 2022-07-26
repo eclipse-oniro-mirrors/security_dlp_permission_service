@@ -18,7 +18,7 @@ config("dlp_permission_config") {
   visibility = [ ":*" ]
   include_dirs = [
     "include",
-    "${dlp_root_dir}/frameworks/common/include"
+    "${dlp_root_dir}/frameworks/common/include",
   ]
 }
 

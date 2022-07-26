@@ -44,7 +44,10 @@ ohos_unittest("libdlp_permission_sdk_test") {
     "ability_base:want",
     "access_token:libaccesstoken_sdk",
     "access_token:libtoken_setproc",
+    "bundle_framework:appexecfwk_base",
+    "bundle_framework:appexecfwk_core",
     "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
     "utils_base:utils",
   ]
 }

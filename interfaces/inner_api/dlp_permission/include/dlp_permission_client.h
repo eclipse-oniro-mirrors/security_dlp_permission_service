@@ -44,8 +44,13 @@ public:
     int32_t UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId);
     int32_t GetSandboxExternalAuthorization(int sandboxUid, const AAFwk::Want& want,
         SandBoxExternalAuthorType& authType);
+    int32_t QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t tokenId);
+    int32_t QueryDlpFileAccess(AuthPermType& permType);
+    int32_t IsInDlpSandbox(bool& inSandbox);
+    int32_t GetDlpSupportFileType(std::vector<std::string>& supportFileType);
 
-    void LoadDlpPermission();
+    void GetDlpPermissionSa();
+    void LoadDlpPermissionSa();
     void FinishStartSASuccess(const sptr<IRemoteObject>& remoteObject);
     void FinishStartSAFail();
 
@@ -64,8 +69,8 @@ private:
     std::condition_variable dlpPermissionCon_;
     sptr<IRemoteObject> remoteObject_ = nullptr;
     sptr<DlpPermissionDeathRecipient> serviceDeathObserver_ = nullptr;
-    void InitProxy();
-    sptr<IDlpPermissionService> GetProxy();
+    void InitProxy(bool doLoadSa);
+    sptr<IDlpPermissionService> GetProxy(bool doLoadSa);
 };
 }  // namespace DlpPermission
 }  // namespace Security

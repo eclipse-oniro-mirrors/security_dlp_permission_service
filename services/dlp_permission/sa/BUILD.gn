@@ -61,37 +61,12 @@ ohos_static_library("dlp_permission_serializer_static") {
   ]
 }
 
-ohos_static_library("dlp_credential_service_static") {
-  subsystem_name = "security"
-  part_name = "dlp_permission_service"
-
-  include_dirs = [
-    "sa_common",
-    "credential_test",
-    "${dlp_root_dir}/interfaces/inner_api/dlp_permission/include",
-    "${dlp_root_dir}/frameworks/common/include",
-  ]
-
-  sources = [
-    "credential_test/account_adapt.cpp",
-    "credential_test/dlp_credential_service.c",
-  ]
-
-  cflags = [ "-DHILOG_ENABLE" ]
-
-  external_deps = [
-    "hiviewdfx_hilog_native:libhilog",
-    "ipc:ipc_core",
-    "os_account:libaccountkits",
-    "utils_base:utils",
-  ]
-}
-
 ohos_shared_library("dlp_permission_service") {
   subsystem_name = "security"
   part_name = "dlp_permission_service"
 
   include_dirs = [
+    "adapt",
     "sa_main",
     "sa_common",
     "credential_test",
@@ -105,6 +80,9 @@ ohos_shared_library("dlp_permission_service") {
     "${dlp_root_dir}/frameworks/common/src/dlp_policy.cpp",
     "${dlp_root_dir}/frameworks/dlp_permission/src/auth_user_info_parcel.cpp",
     "${dlp_root_dir}/frameworks/dlp_permission/src/dlp_policy_parcel.cpp",
+    "adapt/account_adapt.cpp",
+    "adapt/app_state_observer.cpp",
+    "credential_test/dlp_credential_service.c",
     "sa_main/dlp_credential_adapt.cpp",
     "sa_main/dlp_permission_async_proxy.cpp",
     "sa_main/dlp_permission_service.cpp",
@@ -112,9 +90,9 @@ ohos_shared_library("dlp_permission_service") {
   ]
 
   cflags_cc = [ "-DHILOG_ENABLE" ]
+  cflags = [ "-DHILOG_ENABLE" ]
 
   deps = [
-    ":dlp_credential_service_static",
     ":dlp_hex_string_static",
     ":dlp_permission_serializer_static",
     ":dlp_permission_service.rc",
@@ -122,11 +100,14 @@ ohos_shared_library("dlp_permission_service") {
 
   external_deps = [
     "ability_base:want",
+    "ability_runtime:app_manager",
     "access_token:libaccesstoken_sdk",
     "bundle_framework:appexecfwk_base",
     "bundle_framework:appexecfwk_core",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
+    "os_account:libaccountkits",
+    "os_account:os_account_innerkits",
     "safwk:system_ability_fwk",
     "samgr_standard:samgr_proxy",
     "utils_base:utils",

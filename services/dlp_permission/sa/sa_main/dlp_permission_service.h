@@ -18,6 +18,7 @@
 
 #include <string>
 #include <vector>
+#include "app_state_observer.h"
 #include "dlp_permission_stub.h"
 #include "iremote_object.h"
 #include "nocopyable.h"
@@ -37,19 +38,32 @@ public:
     void OnStart() override;
     void OnStop() override;
 
+    bool RegisterAppStateObserver();
+    void UnregisterAppStateObserver();
+
     int32_t GenerateDlpCertificate(
         const sptr<DlpPolicyParcel>& policyParcel, sptr<IDlpPermissionCallback>& callback) override;
     int32_t ParseDlpCertificate(const std::vector<uint8_t>& cert, sptr<IDlpPermissionCallback>& callback) override;
     int32_t InstallDlpSandbox(
         const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex) override;
     int32_t UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId) override;
-    int32_t GetSandboxExternalAuthorization(int sandboxUid, const AAFwk::Want& want,
-        SandBoxExternalAuthorType& authType) override;
+    int32_t GetSandboxExternalAuthorization(
+        int sandboxUid, const AAFwk::Want& want, SandBoxExternalAuthorType& authType) override;
+
+    int32_t QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t tokenId) override;
+    int32_t QueryDlpFileAccess(AuthPermType& permType) override;
+    int32_t IsInDlpSandbox(bool& inSandbox) override;
+    int32_t GetDlpSupportFileType(std::vector<std::string>& supportFileType) override;
 
 private:
     bool Initialize() const;
 
+    void InsertDlpSandboxInfo(const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t appIndex);
+    void DeleteDlpSandboxInfo(const std::string& bundleName, int32_t appIndex, int32_t userId);
+
     ServiceRunningState state_;
+    sptr<AppExecFwk::IAppMgr> iAppMgr_;
+    sptr<AppStateObserver> appStateObserver_;
 };
 }  // namespace DlpPermission
 }  // namespace Security

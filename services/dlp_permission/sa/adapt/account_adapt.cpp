@@ -14,7 +14,13 @@
  */
 
 #include "account_adapt.h"
+#include "dlp_permission_log.h"
 #include "ohos_account_kits.h"
+#include "os_account_manager.h"
+
+namespace {
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "AccountAdapt"};
+}
 
 int8_t GetLocalAccountName(char** account, uint32_t userId)
 {
@@ -25,4 +31,31 @@ int8_t GetLocalAccountName(char** account, uint32_t userId)
         return 0;
     }
     return -1;
+}
+
+int8_t GetCurrentUserId(int32_t* userId)
+{
+    std::vector<int32_t> activeIds;
+    int32_t ret = OHOS::AccountSA::OsAccountManager::QueryActiveOsAccountIds(activeIds);
+    if (ret != 0) {
+        DLP_LOG_ERROR(LABEL, "get current userId failed, result:%{public}d", ret);
+        return -1;
+    }
+
+    if (activeIds.empty()) {
+        DLP_LOG_ERROR(LABEL, "active userIds empty");
+        return -1;
+    }
+    *userId = activeIds[0];
+    DLP_LOG_INFO(LABEL, "get current userId: %{public}d", *userId);
+    return 0;
+}
+
+int8_t GetUserIdFromUid(int32_t uid, int32_t* userId)
+{
+    if (OHOS::AccountSA::OsAccountManager::GetOsAccountLocalIdFromUid(uid, *userId) != 0) {
+        DLP_LOG_INFO(LABEL, "get userId from uid failed, uid: %{public}d", uid);
+        return -1;
+    }
+    return 0;
 }

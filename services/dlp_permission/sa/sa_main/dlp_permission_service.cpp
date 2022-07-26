@@ -14,13 +14,19 @@
  */
 
 #include "dlp_permission_service.h"
+#include "accesstoken_kit.h"
 #include "bundle_mgr_client.h"
 #include "dlp_credential_service.h"
 #include "dlp_credential_adapt.h"
 #include "dlp_permission.h"
 #include "dlp_policy.h"
 #include "dlp_permission_log.h"
+#include "dlp_permission_sandbox_info.h"
 #include "dlp_permission_serializer.h"
+#include "if_system_ability_manager.h"
+#include "ipc_skeleton.h"
+#include "iservice_registry.h"
+#include "system_ability_definition.h"
 
 namespace OHOS {
 namespace Security {
@@ -39,6 +45,7 @@ DlpPermissionService::DlpPermissionService(int saId, bool runOnCreate)
 DlpPermissionService::~DlpPermissionService()
 {
     DLP_LOG_INFO(LABEL, "~DlpPermissionService()");
+    UnregisterAppStateObserver();
 }
 
 void DlpPermissionService::OnStart()
@@ -48,6 +55,10 @@ void DlpPermissionService::OnStart()
         return;
     }
     DLP_LOG_INFO(LABEL, "DlpPermissionService is starting");
+    if (!RegisterAppStateObserver()) {
+        DLP_LOG_ERROR(LABEL, "Failed to register app state observer!");
+        return;
+    }
     state_ = ServiceRunningState::STATE_RUNNING;
     bool ret = Publish(this);
     if (!ret) {
@@ -61,6 +72,46 @@ void DlpPermissionService::OnStop()
 {
     DLP_LOG_INFO(LABEL, "Stop service");
     state_ = ServiceRunningState::STATE_NOT_START;
+}
+
+bool DlpPermissionService::RegisterAppStateObserver()
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    if (appStateObserver_ != nullptr) {
+        DLP_LOG_INFO(LABEL, "AppStateObserver instance already create");
+        return true;
+    }
+    appStateObserver_ = new (std::nothrow) AppStateObserver();
+    if (appStateObserver_ == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Failed to create AppStateObserver instance");
+        return false;
+    }
+    sptr<ISystemAbilityManager> samgrClient = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+    if (samgrClient == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Failed to get system ability manager");
+        return false;
+    }
+    iAppMgr_ = iface_cast<AppExecFwk::IAppMgr>(samgrClient->GetSystemAbility(APP_MGR_SERVICE_ID));
+    if (iAppMgr_ == nullptr) {
+        appStateObserver_ = nullptr;
+        DLP_LOG_ERROR(LABEL, "Failed to get ability manager service");
+        return false;
+    }
+    int32_t result = iAppMgr_->RegisterApplicationStateObserver(appStateObserver_);
+    if (result != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Failed to Register app state observer");
+        return false;
+    }
+    return true;
+}
+
+void DlpPermissionService::UnregisterAppStateObserver()
+{
+    if (iAppMgr_) {
+        iAppMgr_->UnregisterApplicationStateObserver(appStateObserver_);
+    }
+    iAppMgr_ = nullptr;
+    appStateObserver_ = nullptr;
 }
 
 int32_t DlpPermissionService::GenerateDlpCertificate(
@@ -103,6 +154,33 @@ int32_t DlpPermissionService::ParseDlpCertificate(
     return DLP_OK;
 }
 
+void DlpPermissionService::InsertDlpSandboxInfo(
+    const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t appIndex)
+{
+    if (appStateObserver_ == nullptr) {
+        DLP_LOG_WARN(LABEL, "Failed to get app state observer instance");
+        return;
+    }
+
+    DlpSandboxInfo sandboxInfo;
+    sandboxInfo.permType = permType;
+    sandboxInfo.bundleName = bundleName;
+    sandboxInfo.userId = userId;
+    sandboxInfo.appIndex = appIndex;
+    AppExecFwk::BundleInfo info;
+    AppExecFwk::BundleMgrClient bundleMgrClient;
+    if (bundleMgrClient.GetSandboxBundleInfo(bundleName, appIndex, userId, info) != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Get sandbox bundle info fail");
+        return;
+    } else {
+        sandboxInfo.uid = info.uid;
+    }
+    sandboxInfo.tokenId = AccessToken::AccessTokenKit::GetHapTokenID(userId, bundleName, appIndex);
+    appStateObserver_->AddDlpSandboxInfo(sandboxInfo);
+
+    return;
+}
+
 int32_t DlpPermissionService::InstallDlpSandbox(
     const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex)
 {
@@ -113,7 +191,31 @@ int32_t DlpPermissionService::InstallDlpSandbox(
     }
 
     AppExecFwk::BundleMgrClient bundleMgrClient;
-    return bundleMgrClient.InstallSandboxApp(bundleName, permType, userId, appIndex);
+    int32_t res = bundleMgrClient.InstallSandboxApp(bundleName, permType, userId, appIndex);
+    if (res != DLP_OK) {
+        return res;
+    }
+    InsertDlpSandboxInfo(bundleName, permType, userId, appIndex);
+    return DLP_OK;
+}
+
+void DlpPermissionService::DeleteDlpSandboxInfo(const std::string& bundleName, int32_t appIndex, int32_t userId)
+{
+    if (appStateObserver_ == nullptr) {
+        DLP_LOG_WARN(LABEL, "Failed to get app state observer instance");
+        return;
+    }
+
+    AppExecFwk::BundleMgrClient bundleMgrClient;
+    AppExecFwk::BundleInfo info;
+    int32_t result = bundleMgrClient.GetSandboxBundleInfo(bundleName, appIndex, userId, info);
+    if (result != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Get sandbox bundle info fail");
+        return;
+    }
+
+    appStateObserver_->EraseDlpSandboxInfo(info.uid);
+    return;
 }
 
 int32_t DlpPermissionService::UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId)
@@ -124,12 +226,13 @@ int32_t DlpPermissionService::UninstallDlpSandbox(const std::string& bundleName,
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
+    DeleteDlpSandboxInfo(bundleName, appIndex, userId);
     AppExecFwk::BundleMgrClient bundleMgrClient;
     return bundleMgrClient.UninstallSandboxApp(bundleName, appIndex, userId);
 }
 
-int32_t DlpPermissionService::GetSandboxExternalAuthorization(int sandboxUid,
-    const AAFwk::Want& want, SandBoxExternalAuthorType& authType)
+int32_t DlpPermissionService::GetSandboxExternalAuthorization(
+    int sandboxUid, const AAFwk::Want& want, SandBoxExternalAuthorType& authType)
 {
     DLP_LOG_DEBUG(LABEL, "Called");
     if (sandboxUid < 0) {
@@ -137,6 +240,56 @@ int32_t DlpPermissionService::GetSandboxExternalAuthorization(int sandboxUid,
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
     authType = DENY_START_ABILITY;
+    return DLP_OK;
+}
+
+int32_t DlpPermissionService::QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t tokenId)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    if (tokenId <= 0) {
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    if (appStateObserver_ == nullptr) {
+        DLP_LOG_WARN(LABEL, "Failed to get app state observer instance");
+        return DLP_SERVICE_ERROR_APPOBSERVER_NULL;
+    }
+    return appStateObserver_->QueryDlpFileCopyableByTokenId(copyable, tokenId);
+}
+
+int32_t DlpPermissionService::QueryDlpFileAccess(AuthPermType& permType)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    if (appStateObserver_ == nullptr) {
+        DLP_LOG_WARN(LABEL, "Failed to get app state observer instance");
+        return DLP_SERVICE_ERROR_APPOBSERVER_NULL;
+    }
+    int32_t uid = IPCSkeleton::GetCallingUid();
+    return appStateObserver_->QueryDlpFileAccessByUid(permType, uid);
+}
+
+int32_t DlpPermissionService::IsInDlpSandbox(bool& inSandbox)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    if (appStateObserver_ == nullptr) {
+        DLP_LOG_WARN(LABEL, "Failed to get app state observer instance");
+        return DLP_SERVICE_ERROR_APPOBSERVER_NULL;
+    }
+    int32_t uid = IPCSkeleton::GetCallingUid();
+    return appStateObserver_->IsInDlpSandbox(inSandbox, uid);
+}
+
+int32_t DlpPermissionService::GetDlpSupportFileType(std::vector<std::string>& supportFileType)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    if (appStateObserver_ == nullptr) {
+        DLP_LOG_WARN(LABEL, "Failed to get app state observer instance");
+        return DLP_SERVICE_ERROR_APPOBSERVER_NULL;
+    }
+    supportFileType = {
+        ".doc", ".docm", ".docx", ".dot", ".dotm", ".dotx", ".odp", ".odt", ".pdf", ".pot", ".potm", ".potx", ".ppa",
+        ".ppam", ".pps", ".ppsm", ".ppsx", ".ppt", ".pptm", ".pptx", ".rtf", ".txt", ".wps", ".xla", ".xlam", ".xls",
+        ".xlsb", ".xlsm", ".xlsx", ".xlt", ".xltm", ".xltx", ".xlw", ".xml", ".xps"
+    };
     return DLP_OK;
 }
 }  // namespace DlpPermission

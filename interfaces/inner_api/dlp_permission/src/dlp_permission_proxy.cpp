@@ -250,6 +250,156 @@ int32_t DlpPermissionProxy::GetSandboxExternalAuthorization(int sandboxUid,
     authType = static_cast<SandBoxExternalAuthorType>(res);
     return DLP_OK;
 }
+
+int32_t DlpPermissionProxy::QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t tokenId)
+{
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
+        DLP_LOG_ERROR(LABEL, "Write descriptor fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    if (!data.WriteUint32(tokenId)) {
+        DLP_LOG_ERROR(LABEL, "Write uint32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
+    sptr<IRemoteObject> remote = Remote();
+    if (remote == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Remote service is null");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    int32_t requestResult = remote->SendRequest(
+        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::QUERY_DLP_FILE_ACCESS_BY_TOKEN_ID), data, reply,
+        option);
+    if (requestResult != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
+        return requestResult;
+    }
+    int32_t res;
+    if (!reply.ReadInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (!reply.ReadBool(copyable)) {
+        DLP_LOG_ERROR(LABEL, "Read bool fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    return res;
+}
+
+int32_t DlpPermissionProxy::QueryDlpFileAccess(AuthPermType& permType)
+{
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
+        DLP_LOG_ERROR(LABEL, "Write descriptor fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
+    sptr<IRemoteObject> remote = Remote();
+    if (remote == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Remote service is null");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    int32_t requestResult = remote->SendRequest(
+        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::QUERY_DLP_FILE_ACCESS), data, reply, option);
+    if (requestResult != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
+        return requestResult;
+    }
+    int32_t res;
+    if (!reply.ReadInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    uint32_t perm;
+    if (!reply.ReadUint32(perm)) {
+        DLP_LOG_ERROR(LABEL, "Read uint32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    permType = static_cast<AuthPermType>(perm);
+    return res;
+}
+
+int32_t DlpPermissionProxy::IsInDlpSandbox(bool& inSandbox)
+{
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
+        DLP_LOG_ERROR(LABEL, "Write descriptor fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
+    sptr<IRemoteObject> remote = Remote();
+    if (remote == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Remote service is null");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    int32_t requestResult = remote->SendRequest(
+        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::IS_IN_DLP_SANDBOX), data, reply, option);
+    if (requestResult != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
+        return requestResult;
+    }
+    int32_t res;
+    if (!reply.ReadInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (!reply.ReadBool(inSandbox)) {
+        DLP_LOG_ERROR(LABEL, "Read bool fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    return res;
+}
+
+int32_t DlpPermissionProxy::GetDlpSupportFileType(std::vector<std::string>& supportFileType)
+{
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
+        DLP_LOG_ERROR(LABEL, "Write descriptor fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
+    sptr<IRemoteObject> remote = Remote();
+    if (remote == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Remote service is null");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    int32_t requestResult = remote->SendRequest(
+        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_DLP_SUPPORT_FILE_TYPE), data, reply, option);
+    if (requestResult != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
+        return requestResult;
+    }
+    int32_t res;
+    if (!reply.ReadInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    uint32_t listNum;
+    if (!reply.ReadUint32(listNum)) {
+        DLP_LOG_ERROR(LABEL, "Read uint32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    for (uint32_t i = 0; i < listNum; i++) {
+        std::string fileType;
+        if (!reply.ReadString(fileType)) {
+            DLP_LOG_ERROR(LABEL, "Read string fail");
+            return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+        }
+        supportFileType.emplace_back(fileType);
+    }
+
+    return res;
+}
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS

@@ -327,8 +327,7 @@ void GetCloseDlpFileParams(const napi_env env, const napi_callback_info info, Cl
     }
 }
 
-void GetInstallDlpSandboxParams(
-    const napi_env env, const napi_callback_info info, InstallDlpSandboxAsyncContext& asyncContext)
+void GetInstallDlpSandboxParams(const napi_env env, const napi_callback_info info, DlpSandboxAsyncContext& asyncContext)
 {
     DLP_LOG_DEBUG(LABEL, "Called");
     size_t argc = PARAM_SIZE_FOUR;
@@ -360,6 +359,81 @@ void GetInstallDlpSandboxParams(
 
     DLP_LOG_DEBUG(LABEL, "bundleName: %{private}s, permType: %{private}d, userId: %{private}d",
         asyncContext.bundleName.c_str(), asyncContext.permType, asyncContext.userId);
+}
+
+void GetUninstallDlpSandboxParams(
+    const napi_env env, const napi_callback_info info, DlpSandboxAsyncContext& asyncContext)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    size_t argc = PARAM_SIZE_FOUR;
+    napi_value argv[PARAM_SIZE_FOUR] = {nullptr};
+    NAPI_CALL_RETURN_VOID(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
+
+    if (!GetStringValue(env, argv[PARAM0], asyncContext.bundleName)) {
+        DLP_LOG_ERROR(LABEL, "js get bundle name fail");
+        asyncContext.errCode = DLP_NAPI_ERROR_PARSE_JS_PARAM;
+        return;
+    }
+
+    int64_t res;
+    if (!GetInt64Value(env, argv[PARAM1], res)) {
+        DLP_LOG_ERROR(LABEL, "js get user id fail");
+        asyncContext.errCode = DLP_NAPI_ERROR_PARSE_JS_PARAM;
+        return;
+    }
+    asyncContext.userId = static_cast<int32_t>(res);
+
+    if (!GetInt64Value(env, argv[PARAM2], res)) {
+        DLP_LOG_ERROR(LABEL, "js get app index fail");
+        asyncContext.errCode = DLP_NAPI_ERROR_PARSE_JS_PARAM;
+        return;
+    }
+    asyncContext.appIndex = static_cast<int32_t>(res);
+
+    if (argc == PARAM_SIZE_FOUR) {
+        GetCallback(env, argv[PARAM3], asyncContext);
+    }
+
+    DLP_LOG_DEBUG(LABEL, "bundleName: %{private}s, userId: %{private}d, appIndex: %{private}d",
+        asyncContext.bundleName.c_str(), asyncContext.userId, asyncContext.appIndex);
+}
+
+void GetQueryFileAccessParams(
+    const napi_env env, const napi_callback_info info, QueryFileAccessAsyncContext& asyncContext)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    size_t argc = PARAM_SIZE_ONE;
+    napi_value argv[PARAM_SIZE_ONE] = {nullptr};
+    NAPI_CALL_RETURN_VOID(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
+
+    if (argc == PARAM_SIZE_ONE) {
+        GetCallback(env, argv[PARAM0], asyncContext);
+    }
+}
+
+void GetIsInSandboxParams(const napi_env env, const napi_callback_info info, IsInSandboxAsyncContext& asyncContext)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    size_t argc = PARAM_SIZE_ONE;
+    napi_value argv[PARAM_SIZE_ONE] = {nullptr};
+    NAPI_CALL_RETURN_VOID(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
+
+    if (argc == PARAM_SIZE_ONE) {
+        GetCallback(env, argv[PARAM0], asyncContext);
+    }
+}
+
+void GetGetDlpSupportFileTypeParams(
+    const napi_env env, const napi_callback_info info, GetDlpSupportFileTypeAsyncContext& asyncContext)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    size_t argc = PARAM_SIZE_ONE;
+    napi_value argv[PARAM_SIZE_ONE] = {nullptr};
+    NAPI_CALL_RETURN_VOID(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
+
+    if (argc == PARAM_SIZE_ONE) {
+        GetCallback(env, argv[PARAM0], asyncContext);
+    }
 }
 
 bool GetDlpProperty(napi_env env, napi_value jsObject, DlpProperty& property)
@@ -443,6 +517,22 @@ napi_value VectorAuthUserToJs(napi_env env, const std::vector<AuthUserInfo>& use
         index++;
     }
     return vectorAuthUserJs;
+}
+
+napi_value VectorStringToJs(napi_env env, const std::vector<std::string>& value)
+{
+    napi_value jsArray = nullptr;
+    uint32_t index = 0;
+    NAPI_CALL(env, napi_create_array(env, &jsArray));
+    for (const auto& iter : value) {
+        napi_value jsValue = nullptr;
+        if (napi_create_string_utf8(env, iter.c_str(), NAPI_AUTO_LENGTH, &jsValue) == napi_ok) {
+            if (napi_set_element(env, jsArray, index, jsValue) == napi_ok) {
+                index++;
+            }
+        }
+    }
+    return jsArray;
 }
 
 void GetCallback(const napi_env env, napi_value jsObject, CommonAsyncContext& asyncContext)

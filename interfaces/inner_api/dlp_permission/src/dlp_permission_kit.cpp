@@ -131,6 +131,30 @@ int32_t DlpPermissionKit::GetSandboxExternalAuthorization(int sandboxUid,
     DLP_LOG_DEBUG(LABEL, "Called");
     return DlpPermissionClient::GetInstance().GetSandboxExternalAuthorization(sandboxUid, want, authType);
 }
+
+int32_t DlpPermissionKit::QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t tokenId)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    return DlpPermissionClient::GetInstance().QueryDlpFileCopyableByTokenId(copyable, tokenId);
+}
+
+int32_t DlpPermissionKit::QueryDlpFileAccess(AuthPermType& permType)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    return DlpPermissionClient::GetInstance().QueryDlpFileAccess(permType);
+}
+
+int32_t DlpPermissionKit::IsInDlpSandbox(bool& inSandbox)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    return DlpPermissionClient::GetInstance().IsInDlpSandbox(inSandbox);
+}
+
+int32_t DlpPermissionKit::GetDlpSupportFileType(std::vector<std::string>& supportFileType)
+{
+    DLP_LOG_DEBUG(LABEL, "Called");
+    return DlpPermissionClient::GetInstance().GetDlpSupportFileType(supportFileType);
+}
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS

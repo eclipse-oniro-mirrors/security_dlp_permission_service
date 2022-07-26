@@ -75,7 +75,7 @@ static void FuzzTest(const uint8_t* data, size_t size)
 bool ParseCertFuzzTest(const uint8_t* data, size_t size)
 {
     int selfTokenId = GetSelfTokenID();
-    AccessTokenID tokenId = AccessTokenKit::GetHapTokenID(100, "com.ohos.dlpmanager", 0);  // user_id = 100
+    AccessTokenID tokenId = AccessTokenKit::GetHapTokenID(100, DLP_MANAGER_APP, 0);  // user_id = 100
     SetSelfTokenID(tokenId);
     FuzzTest(data, size);
     SetSelfTokenID(selfTokenId);
