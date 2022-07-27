@@ -239,7 +239,19 @@ int32_t DlpPermissionService::GetSandboxExternalAuthorization(
         DLP_LOG_ERROR(LABEL, "param is invalid");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
-    authType = DENY_START_ABILITY;
+
+    if (appStateObserver_ == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Failed to get app state observer instance");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+
+    bool isSandbox = false;
+    appStateObserver_->IsInDlpSandbox(isSandbox, sandboxUid);
+    if (isSandbox) {
+        authType = DENY_START_ABILITY;
+    } else {
+        authType = ALLOW_START_ABILITY;
+    }
     return DLP_OK;
 }
 

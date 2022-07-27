@@ -375,11 +375,22 @@ HWTEST_F(DlpPermissionKitTest, UninstallDlpSandbox001, TestSize.Level1)
  */
 HWTEST_F(DlpPermissionKitTest, GetSandboxExternalAuthorization001, TestSize.Level1)
 {
+    // sandboxUid is invalid
     OHOS::AAFwk::Want want;
     SandBoxExternalAuthorType authType;
     ASSERT_NE(DLP_OK, DlpPermissionKit::GetSandboxExternalAuthorization(-1, want, authType));
-    ASSERT_EQ(DLP_OK, DlpPermissionKit::GetSandboxExternalAuthorization(1000, want, authType));
+
+    // sandboxUid is ok
+    int32_t appIndex = 0;
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::InstallDlpSandbox(DLP_MANAGER_APP, READ_ONLY, DEFAULT_USERID, appIndex));
+    int sandboxUid = GetAppUid(DLP_MANAGER_APP, appIndex, DEFAULT_USERID);
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::GetSandboxExternalAuthorization(sandboxUid, want, authType));
     ASSERT_TRUE(authType == DENY_START_ABILITY);
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::UninstallDlpSandbox(DLP_MANAGER_APP, appIndex, DEFAULT_USERID));
+
+    // uid is not sandbox
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::GetSandboxExternalAuthorization(1000, want, authType));
+    ASSERT_TRUE(authType == ALLOW_START_ABILITY);
 }
 
 /**
