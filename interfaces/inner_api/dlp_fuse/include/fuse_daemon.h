@@ -37,9 +37,23 @@ static const unsigned int MAX_KEY_LEN = 0x10000;  // 64K
 static const std::string DEFAULT_DLP_LINK_FILE = "default.dlp";
 static const std::string DEFAULT_DLP_LINK_FILE_PATH = "/data/fuse/" + DEFAULT_DLP_LINK_FILE;
 
+static const uint32_t MAX_READ_DIR_BUF_SIZE = 100 * 1024; // 100K
+static const std::string CUR_DIR = ".";
+static const std::string UPPER_DIR = "..";
+
 enum CryptAlgo {
     AES_CTR = 1,
 };
+
+typedef struct DirAddParams {
+    fuse_req_t req;
+    char *directBuf;
+    size_t bufLen;
+    std::string entryName;
+    struct stat* entryStat;
+    off_t nextOff;
+    off_t curOff;
+} DirAddParams;
 
 enum DaemonStatus {
     DAEMON_UNDEF,

@@ -220,6 +220,99 @@ static void FuseDaemonForgot(fuse_req_t req, fuse_ino_t ino, uint64_t nlookup)
     }
 }
 
+static int AddDirentry(DirAddParams& param)
+{
+    size_t shouldSize = fuse_add_direntry(param.req, nullptr, 0, param.entryName.c_str(), nullptr, 0);
+    if (shouldSize > param.bufLen) {
+        return -1;
+    }
+    param.curOff = param.nextOff;
+    size_t addSize = fuse_add_direntry(param.req, param.directBuf, param.bufLen,
+        param.entryName.c_str(), param.entryStat, param.curOff);
+    param.directBuf += addSize;
+    param.bufLen -= addSize;
+    param.nextOff += addSize;
+    return 0;
+}
+
+static int AddRootDirentry(DirAddParams& params)
+{
+    struct stat rootStat = FuseDaemon::GetRootFileStat();
+    params.entryName = CUR_DIR;
+    params.entryStat = &rootStat;
+
+    if (AddDirentry(params) != 0) {
+        fuse_reply_err(params.req, EINVAL);
+        return -1;
+    }
+
+    params.entryName = UPPER_DIR;
+    if (AddDirentry(params) != 0) {
+        fuse_reply_err(params.req, EINVAL);
+        return -1;
+    }
+    return 0;
+}
+
+static int AddLinkFilesDirentry(DirAddParams& params)
+{
+    std::vector<DlpLinkFileInfo> linkList;
+    DlpLinkManager::GetInstance().DumpDlpLinkFile(linkList);
+    int listSize = (int)linkList.size();
+    for (int i = 0; i < listSize; i++) {
+        params.entryName = linkList[i].dlpLinkName;
+        params.entryStat = &linkList[i].fileStat;
+        if (AddDirentry(params) != 0) {
+            fuse_reply_err(params.req, EINVAL);
+            return -1;
+        }
+    }
+    return 0;
+}
+
+
+static void FuseDaemonReadDir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
+{
+    if (ino != ROOT_INODE) {
+        fuse_reply_err(req, ENOTDIR);
+        return;
+    }
+    if (size > MAX_READ_DIR_BUF_SIZE) {
+        fuse_reply_err(req, EINVAL);
+        return;
+    }
+
+    char *readBuf = (char *)malloc(size);
+    if (readBuf == nullptr) {
+        fuse_reply_err(req, EFAULT);
+        return;
+    }
+    (void)memset_s(readBuf, size, 0, size);
+
+    struct DirAddParams params;
+    params.req = req;
+    params.directBuf = readBuf;
+    params.bufLen = size;
+    params.nextOff = 0;
+
+    if (AddRootDirentry(params) != 0) {
+        free(readBuf);
+        return;
+    }
+
+    if (AddLinkFilesDirentry(params) != 0) {
+        free(readBuf);
+        return;
+    }
+
+    if (params.curOff <= off) {
+        fuse_reply_buf(req, nullptr, 0);
+    } else {
+        fuse_reply_buf(req, readBuf + off, params.nextOff - off);
+    }
+    free(readBuf);
+}
+
 static const struct fuse_lowlevel_ops g_fuseDaemonOper = {
     .lookup = FuseDaemonLookup,
     .getattr = FuseDaemonGetattr,
@@ -227,6 +320,7 @@ static const struct fuse_lowlevel_ops g_fuseDaemonOper = {
     .read = FuseDaemonRead,
     .write = FuseDaemonWrite,
     .forget = FuseDaemonForgot,
+    .readdir = FuseDaemonReadDir,
 };
 
 struct stat FuseDaemon::GetRootFileStat()

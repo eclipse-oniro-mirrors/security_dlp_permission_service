@@ -98,6 +98,21 @@ DlpLinkFile* DlpLinkManager::LookUpDlpLinkFile(const std::string& dlpLinkName)
     return node;
 }
 
+void DlpLinkManager::DumpDlpLinkFile(std::vector<DlpLinkFileInfo>& linkList)
+{
+    Utils::UniqueReadGuard<Utils::RWLock> infoGuard(g_DlpLinkMapLock_);
+    for (auto iter = g_DlpLinkFileNameMap_.begin(); iter != g_DlpLinkFileNameMap_.end(); iter++) {
+        DlpLinkFile* filePtr = iter->second;
+        if (filePtr == nullptr) {
+            continue;
+        }
+        DlpLinkFileInfo info;
+        info.dlpLinkName = filePtr->GetLinkName();
+        info.fileStat = filePtr->GetLinkStat();
+        linkList.emplace_back(info);
+    }
+}
+
 DlpLinkManager& DlpLinkManager::GetInstance()
 {
     static DlpLinkManager instance;

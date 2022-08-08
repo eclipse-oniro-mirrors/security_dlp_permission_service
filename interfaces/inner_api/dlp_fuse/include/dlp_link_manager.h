@@ -34,6 +34,7 @@ public:
     int32_t AddDlpLinkFile(std::shared_ptr<DlpFile>& filePtr, const std::string& dlpLinkName);
     int32_t DeleteDlpLinkFile(std::shared_ptr<DlpFile>& filePtr);
     DlpLinkFile* LookUpDlpLinkFile(const std::string& dlpLinkName);
+    void DumpDlpLinkFile(std::vector<DlpLinkFileInfo>& linkList);
 
 private:
     DlpLinkManager();

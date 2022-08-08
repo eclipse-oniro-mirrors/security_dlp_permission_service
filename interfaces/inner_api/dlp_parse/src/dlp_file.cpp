@@ -571,6 +571,11 @@ int32_t DlpFile::RemoveDlpPermission(int32_t outPlainFileFd)
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
 
+    if (fileLen == head_.txtOffset) {
+        DLP_LOG_INFO(LABEL, "Dlp file have no content");
+        return DLP_OK;
+    }
+
     return DoDlpContentCryptyOperation(dlpFd_, outPlainFileFd, head_.txtOffset, fileLen, false);
 }
 
