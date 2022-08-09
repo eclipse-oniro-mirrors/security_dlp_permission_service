@@ -258,7 +258,7 @@ int32_t DlpPermissionStub::QueryDlpFileCopyableByTokenIdInner(MessageParcel& dat
 
 int32_t DlpPermissionStub::QueryDlpFileAccessInner(MessageParcel& data, MessageParcel& reply)
 {
-    AuthPermType permType = PERM_MAX;
+    AuthPermType permType = DEFAULT_PERM;
     int32_t res = this->QueryDlpFileAccess(permType);
     if (!reply.WriteInt32(res)) {
         DLP_LOG_ERROR(LABEL, "Write int32 fail");

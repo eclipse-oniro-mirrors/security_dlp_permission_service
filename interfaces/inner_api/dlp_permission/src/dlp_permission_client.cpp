@@ -14,13 +14,15 @@
  */
 
 #include "dlp_permission_client.h"
+#include <unistd.h>
+#include "accesstoken_kit.h"
 #include "dlp_policy.h"
 #include "dlp_permission_async_stub.h"
 #include "dlp_permission_load_callback.h"
 #include "dlp_permission_log.h"
 #include "dlp_permission_proxy.h"
 #include "iservice_registry.h"
-#include <unistd.h>
+#include "token_setproc.h"
 
 namespace OHOS {
 namespace Security {
@@ -41,6 +43,17 @@ DlpPermissionClient::DlpPermissionClient()
 
 DlpPermissionClient::~DlpPermissionClient()
 {}
+
+static int32_t CheckSandboxFlag(AccessToken::AccessTokenID tokenId, bool& sandboxFlag)
+{
+    int32_t res = AccessToken::AccessTokenKit::GetHapDlpFlag(tokenId);
+    if (res < 0) {
+        DLP_LOG_ERROR(LABEL, "Invalid tokenId");
+        return res;
+    }
+    sandboxFlag = (res == 1);
+    return DLP_OK;
+}
 
 int32_t DlpPermissionClient::GenerateDlpCertificate(
     const PermissionPolicy& policy, std::shared_ptr<GenerateDlpCertificateCallback> callback)
@@ -97,7 +110,7 @@ int32_t DlpPermissionClient::InstallDlpSandbox(
     const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex)
 {
     DLP_LOG_DEBUG(LABEL, "Called");
-    if (bundleName.empty() || permType >= PERM_MAX || permType < READ_ONLY) {
+    if (bundleName.empty() || permType >= DEFAULT_PERM || permType < READ_ONLY) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
     auto proxy = GetProxy(true);
@@ -124,8 +137,8 @@ int32_t DlpPermissionClient::UninstallDlpSandbox(const std::string& bundleName, 
     return proxy->UninstallDlpSandbox(bundleName, appIndex, userId);
 }
 
-int32_t DlpPermissionClient::GetSandboxExternalAuthorization(int sandboxUid,
-    const AAFwk::Want& want, SandBoxExternalAuthorType& auth)
+int32_t DlpPermissionClient::GetSandboxExternalAuthorization(
+    int sandboxUid, const AAFwk::Want& want, SandBoxExternalAuthorType& auth)
 {
     DLP_LOG_DEBUG(LABEL, "Called");
     auto proxy = GetProxy(false);
@@ -144,14 +157,21 @@ int32_t DlpPermissionClient::GetSandboxExternalAuthorization(int sandboxUid,
 int32_t DlpPermissionClient::QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t tokenId)
 {
     DLP_LOG_DEBUG(LABEL, "Called");
-    if (tokenId == 0) {
+    bool sandboxFlag;
+    if ((tokenId == 0) || (CheckSandboxFlag(tokenId, sandboxFlag) != DLP_OK)) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+
+    if (!sandboxFlag) {
+        DLP_LOG_INFO(LABEL, "it is not a sandbox app");
+        copyable = true;
+        return DLP_OK;
     }
 
     auto proxy = GetProxy(false);
     if (proxy == nullptr) {
-        DLP_LOG_INFO(LABEL, "Proxy is null");
-        copyable = true;
+        DLP_LOG_ERROR(LABEL, "Proxy is null");
+        copyable = false;
         return DLP_OK;
     }
 
@@ -162,10 +182,21 @@ int32_t DlpPermissionClient::QueryDlpFileAccess(AuthPermType& permType)
 {
     DLP_LOG_DEBUG(LABEL, "Called");
 
+    bool sandboxFlag;
+    if (CheckSandboxFlag(GetSelfTokenID(), sandboxFlag) != DLP_OK) {
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+
+    if (!sandboxFlag) {
+        DLP_LOG_INFO(LABEL, "it is not a sandbox app");
+        permType = DEFAULT_PERM;
+        return DLP_OK;
+    }
+
     auto proxy = GetProxy(false);
     if (proxy == nullptr) {
         DLP_LOG_INFO(LABEL, "Proxy is null");
-        permType = PERM_MAX;
+        permType = DEFAULT_PERM;
         return DLP_OK;
     }
 
@@ -176,10 +207,21 @@ int32_t DlpPermissionClient::IsInDlpSandbox(bool& inSandbox)
 {
     DLP_LOG_DEBUG(LABEL, "Called");
 
+    bool sandboxFlag;
+    if (CheckSandboxFlag(GetSelfTokenID(), sandboxFlag) != DLP_OK) {
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+
+    if (!sandboxFlag) {
+        DLP_LOG_INFO(LABEL, "it is not a sandbox app");
+        inSandbox = false;
+        return DLP_OK;
+    }
+
     auto proxy = GetProxy(false);
     if (proxy == nullptr) {
-        DLP_LOG_INFO(LABEL, "Proxy is null");
-        inSandbox = false;
+        DLP_LOG_ERROR(LABEL, "Proxy is null");
+        inSandbox = true;
         return DLP_OK;
     }
 

@@ -80,14 +80,14 @@ struct CloseDlpFileAsyncContext : public CommonAsyncContext {
 struct DlpSandboxAsyncContext : public CommonAsyncContext {
     explicit DlpSandboxAsyncContext(napi_env env) : CommonAsyncContext(env){};
     std::string bundleName;
-    AuthPermType permType = PERM_MAX;
+    AuthPermType permType = DEFAULT_PERM;
     int32_t userId = -1;
     int32_t appIndex = -1;
 };
 
 struct QueryFileAccessAsyncContext : public CommonAsyncContext {
     explicit QueryFileAccessAsyncContext(napi_env env) : CommonAsyncContext(env){};
-    AuthPermType permType = PERM_MAX;
+    AuthPermType permType = DEFAULT_PERM;
 };
 
 struct IsInSandboxAsyncContext : public CommonAsyncContext {

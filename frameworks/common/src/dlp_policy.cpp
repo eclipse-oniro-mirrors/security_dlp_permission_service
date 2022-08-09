@@ -56,7 +56,7 @@ static bool CheckAccount(const std::string& account)
 static bool CheckPerm(uint32_t perm)
 {
     DLP_LOG_DEBUG(LABEL, "Called, %{private}d", perm);
-    if (perm <= 0 || perm >= PERM_MAX) {
+    if (perm <= 0 || perm >= DEFAULT_PERM) {
         DLP_LOG_ERROR(LABEL, "Perm is invalid");
         return false;
     }

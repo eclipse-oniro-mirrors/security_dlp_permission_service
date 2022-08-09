@@ -185,7 +185,7 @@ int32_t DlpPermissionService::InstallDlpSandbox(
     const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex)
 {
     DLP_LOG_DEBUG(LABEL, "Called");
-    if (bundleName.empty() || permType >= PERM_MAX || permType < READ_ONLY) {
+    if (bundleName.empty() || permType >= DEFAULT_PERM || permType < READ_ONLY) {
         DLP_LOG_ERROR(LABEL, "param is invalid");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }

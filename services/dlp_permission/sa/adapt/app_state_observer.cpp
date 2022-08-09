@@ -224,7 +224,7 @@ int32_t AppStateObserver::QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t
         copyable = true;
         return DLP_OK;
     }
-    AuthPermType permType = PERM_MAX;
+    AuthPermType permType = DEFAULT_PERM;
     int32_t res = QueryDlpFileAccessByUid(permType, uid);
     copyable = (permType == READ_ONLY) ? false : true;
     return res;
@@ -235,7 +235,7 @@ int32_t AppStateObserver::QueryDlpFileAccessByUid(AuthPermType& permType, int32_
     DlpSandboxInfo appInfo;
     if (!GetSandboxInfo(uid, appInfo)) {
         DLP_LOG_WARN(LABEL, "current uid %{public}d is not a sandbox app", uid);
-        permType = PERM_MAX;
+        permType = DEFAULT_PERM;
         return DLP_OK;
     }
     permType = appInfo.permType;

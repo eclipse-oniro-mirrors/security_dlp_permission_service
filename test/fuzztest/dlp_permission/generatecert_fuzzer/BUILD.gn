@@ -15,7 +15,7 @@ import("//base/security/dlp_permission_service/dlp_permission_service.gni")
 import("//build/config/features.gni")
 import("//build/test.gni")
 
-module_output_path = "dlp_permission/dlp_permission"
+module_output_path = "dlp_permission_service/dlp_permission_service"
 
 ohos_fuzztest("GenerateCertFuzzTest") {
   module_out_path = module_output_path

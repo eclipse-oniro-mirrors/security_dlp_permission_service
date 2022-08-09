@@ -27,7 +27,7 @@ public:
     int32_t userId = -1;
     int32_t appIndex = -1;
     unsigned int tokenId = 0;
-    AuthPermType permType = PERM_MAX;
+    AuthPermType permType = DEFAULT_PERM;
     std::string bundleName;
 };
 }  // namespace DlpPermission

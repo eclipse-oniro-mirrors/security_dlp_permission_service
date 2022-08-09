@@ -32,12 +32,12 @@ enum DlpAccountType : uint32_t {
 enum AuthPermType : uint32_t {
     READ_ONLY = 1,
     FULL_CONTROL = 2,
-    PERM_MAX,
+    DEFAULT_PERM,
 };
 
 typedef struct AuthUserInfo {
     std::string authAccount;
-    AuthPermType authPerm = PERM_MAX;
+    AuthPermType authPerm = DEFAULT_PERM;
     uint64_t permExpiryTime = 0;
     DlpAccountType authAccountType = INVALID_ACCOUNT;
 } AuthUserInfo;
