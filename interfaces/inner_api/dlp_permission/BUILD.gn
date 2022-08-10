@@ -52,10 +52,10 @@ ohos_shared_library("libdlp_permission_sdk") {
     "ability_base:want",
     "access_token:libaccesstoken_sdk",
     "access_token:libtoken_setproc",
+    "c_utils:utils",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
     "samgr:samgr_proxy",
-    "utils_base:utils",
   ]
 
   cflags_cc = [ "-DHILOG_ENABLE" ]

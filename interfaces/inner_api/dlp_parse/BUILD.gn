@@ -47,10 +47,10 @@ ohos_shared_library("libdlpparse") {
 
   external_deps = [
     "ability_base:want",
+    "c_utils:utils",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
     "os_account:libaccountkits",
-    "utils_base:utils",
   ]
 
   cflags_cc = [ "-DHILOG_ENABLE" ]

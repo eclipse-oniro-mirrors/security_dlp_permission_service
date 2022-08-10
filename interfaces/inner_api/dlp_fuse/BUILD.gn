@@ -44,8 +44,8 @@ ohos_shared_library("libdlp_fuse") {
   ]
 
   external_deps = [
+    "c_utils:utils",
     "hiviewdfx_hilog_native:libhilog",
-    "utils_base:utils",
   ]
 
   cflags_cc = [
