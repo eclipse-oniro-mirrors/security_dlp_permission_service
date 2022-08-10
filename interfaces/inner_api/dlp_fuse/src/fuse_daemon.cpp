@@ -157,6 +157,10 @@ static DlpLinkFile* GetValidFileNode(fuse_req_t req, fuse_ino_t ino)
 static void FuseDaemonRead(fuse_req_t req, fuse_ino_t ino, size_t size, off_t offset, struct fuse_file_info* fi)
 {
     (void)fi;
+    if (offset < 0) {
+        fuse_reply_err(req, EINVAL);
+        return;
+    }
     if (size > MAX_FUSE_READ_BUFF_SIZE) {
         DLP_LOG_ERROR(LABEL, "read size %{public}zu too large", size);
         fuse_reply_err(req, EINVAL);
@@ -189,6 +193,10 @@ static void FuseDaemonWrite(
 {
     DLP_LOG_INFO(LABEL, "write size %{public}zu", size);
     (void)fi;
+    if (off < 0) {
+        fuse_reply_err(req, EINVAL);
+        return;
+    }
     DlpLinkFile* dlp = GetValidFileNode(req, ino);
     if (dlp == nullptr) {
         return;
@@ -231,7 +239,7 @@ static int AddDirentry(DirAddParams& param)
         param.entryName.c_str(), param.entryStat, param.curOff);
     param.directBuf += addSize;
     param.bufLen -= addSize;
-    param.nextOff += addSize;
+    param.nextOff += (int)addSize;
     return 0;
 }
 
@@ -273,6 +281,12 @@ static int AddLinkFilesDirentry(DirAddParams& params)
 
 static void FuseDaemonReadDir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
 {
+    (void)fi;
+    if (off < 0) {
+        fuse_reply_err(req, ENOTDIR);
+        return;
+    }
+
     if (ino != ROOT_INODE) {
         fuse_reply_err(req, ENOTDIR);
         return;
