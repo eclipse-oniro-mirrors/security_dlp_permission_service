@@ -28,19 +28,10 @@
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
-enum {
-    DLP_LINK_SUCCESS,
-    DLP_LINK_FAILURE,
-};
-
 typedef struct DlpLinkFileInfo {
     std::string dlpLinkName;
     struct stat fileStat;
 } DlpLinkFileInfo;
-
-static const uint32_t HOLE_BUFF_SIZE = 16 * 1024;
-static const uint32_t HOLE_BUFF_SMALL_SIZE = 1 * 1024;
-static const uint32_t MAX_HOLE_SIZE = 50 * 1024 * 1024; // 50M
 
 class DlpLinkFile final {
 public:
@@ -63,9 +54,9 @@ public:
         return dlpLinkName_;
     }
 
-private:
-    int32_t FillHoleData(uint32_t holeStart, uint32_t holeSize);
+    int32_t Truncate(off_t modifySize);
 
+private:
     std::string dlpLinkName_;
     std::shared_ptr<DlpFile> dlpFile_;
     struct stat fileStat_;

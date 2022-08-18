@@ -32,6 +32,10 @@ static const uint32_t DLP_FUSE_MAX_BUFFLEN = (10 * 1024 * 1024); // 10M
 static const uint32_t DLP_BLOCK_SIZE = 16;
 static const uint32_t BYTE_LEN = 8;
 
+static const uint32_t HOLE_BUFF_SIZE = 16 * 1024;
+static const uint32_t HOLE_BUFF_SMALL_SIZE = 1 * 1024;
+static const uint32_t MAX_HOLE_SIZE = 50 * 1024 * 1024; // 50M
+
 enum DlpOperation {
     DLP_ENCRYPTION = 1,
     DLP_DECRYPTION = 2,
@@ -73,7 +77,7 @@ public:
     int32_t RemoveDlpPermission(int outPlainFileFd);
     int32_t DlpFileRead(uint32_t offset, void* buf, uint32_t size);
     int32_t DlpFileWrite(uint32_t offset, void* buf, uint32_t size);
-    uint32_t GetFsContextSize() const;
+    uint32_t GetFsContentSize() const;
     void UpdateDlpFilePermission();
 
     int32_t SetPolicy(const PermissionPolicy& policy);
@@ -98,6 +102,7 @@ public:
         isFuseLink_ = false;
     };
 
+    int32_t Truncate(uint32_t size);
     int32_t dlpFd_;
 
 private:
@@ -116,6 +121,9 @@ private:
     int32_t DoDlpBlockCryptOperation(struct DlpBlob& message1,
         struct DlpBlob& message2, uint32_t offset, bool isEncrypt);
     int32_t WriteFirstBlockData(uint32_t offset, void* buf, uint32_t size);
+    int32_t FillHoleData(uint32_t holeStart, uint32_t holeSize);
+    int32_t DoDlpFileWrite(uint32_t offset, void* buf, uint32_t size);
+    void UpdateDlpFileContentSize();
 
     bool isFuseLink_;
     bool isReadOnly_;

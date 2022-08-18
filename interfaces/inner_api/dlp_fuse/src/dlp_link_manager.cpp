@@ -15,6 +15,7 @@
 #include "dlp_link_manager.h"
 
 #include "dlp_file.h"
+#include "dlp_permission.h"
 #include "dlp_permission_log.h"
 #include "fuse_daemon.h"
 
@@ -38,32 +39,37 @@ static bool IsLinkNameValid(const std::string& linkName)
 
 int32_t DlpLinkManager::AddDlpLinkFile(std::shared_ptr<DlpFile>& filePtr, const std::string& dlpLinkName)
 {
-    if (filePtr == nullptr || !IsLinkNameValid(dlpLinkName)) {
-        return DLP_LINK_FAILURE;
+    if (filePtr == nullptr) {
+        DLP_LOG_ERROR(LABEL, "dlp file is null.");
+        return DLP_FUSE_ERROR_DLP_FILE_NULL;
+    }
+    if (!IsLinkNameValid(dlpLinkName)) {
+        DLP_LOG_ERROR(LABEL, "Link name %{private}s is invalid.", dlpLinkName.c_str());
+        return DLP_FUSE_ERROR_VALUE_INVALID;
     }
 
     Utils::UniqueWriteGuard<Utils::RWLock> infoGuard(g_DlpLinkMapLock_);
     if (g_DlpLinkFileNameMap_.count(dlpLinkName) > 0) {
         DLP_LOG_WARN(LABEL, "dlpLinkName %{public}s exist.", dlpLinkName.c_str());
-        return DLP_LINK_FAILURE;
+        return DLP_FUSE_ERROR_LINKFILE_EXIST;
     }
 
     DlpLinkFile *node = new (std::nothrow) DlpLinkFile(dlpLinkName, filePtr);
     if (node == nullptr) {
         DLP_LOG_ERROR(LABEL, "alloc Dlp link file %{public}s failed.", dlpLinkName.c_str());
-        return DLP_LINK_FAILURE;
+        return DLP_FUSE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
-    DLP_LOG_INFO(LABEL, "add dlp link filename %{public}s", dlpLinkName.c_str());
+    DLP_LOG_INFO(LABEL, "add dlp link file name %{public}s", dlpLinkName.c_str());
     g_DlpLinkFileNameMap_[dlpLinkName] = node;
     filePtr->SetLinkStatus();
-    return DLP_LINK_SUCCESS;
+    return DLP_OK;
 }
 
 int32_t DlpLinkManager::DeleteDlpLinkFile(std::shared_ptr<DlpFile>& filePtr)
 {
     if (filePtr == nullptr) {
-        return DLP_LINK_FAILURE;
+        return DLP_FUSE_ERROR_DLP_FILE_NULL;
     }
 
     Utils::UniqueWriteGuard<Utils::RWLock> infoGuard(g_DlpLinkMapLock_);
@@ -79,7 +85,7 @@ int32_t DlpLinkManager::DeleteDlpLinkFile(std::shared_ptr<DlpFile>& filePtr)
         }
     }
 
-    return DLP_LINK_SUCCESS;
+    return DLP_OK;
 }
 
 DlpLinkFile* DlpLinkManager::LookUpDlpLinkFile(const std::string& dlpLinkName)

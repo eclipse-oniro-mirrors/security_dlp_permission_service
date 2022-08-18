@@ -19,9 +19,11 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <vector>
 
 #include "dlp_link_file.h"
 #include "dlp_link_manager.h"
+#include "dlp_permission.h"
 #include "dlp_permission_log.h"
 
 namespace OHOS {
@@ -133,6 +135,15 @@ static void FuseDaemonOpen(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info
         DLP_LOG_ERROR(LABEL, "open wrong ino file");
         fuse_reply_err(req, ENOENT);
         return;
+    }
+    if ((fi->flags & O_TRUNC) != 0) {
+        int32_t ret = dlp->Truncate(0);
+        if (ret != DLP_OK) {
+            DLP_LOG_ERROR(LABEL, "Dlp file truncate failed, ret %{public}d", ret);
+            fuse_reply_err(req, EINVAL);
+            return;
+        }
+        DLP_LOG_INFO(LABEL, "Dlp file open with o_trunc ok");
     }
 
     fuse_reply_open(req, fi);
@@ -278,7 +289,6 @@ static int AddLinkFilesDirentry(DirAddParams& params)
     return 0;
 }
 
-
 static void FuseDaemonReadDir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
 {
     (void)fi;
@@ -327,6 +337,47 @@ static void FuseDaemonReadDir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t
     free(readBuf);
 }
 
+void FuseDaemonSetAttr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int toSet, struct fuse_file_info *fi)
+{
+    (void)fi;
+    if (attr == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Attr is invalid");
+        fuse_reply_err(req, EINVAL);
+        return;
+    }
+
+    if (ino == ROOT_INODE) {
+        DLP_LOG_ERROR(LABEL, "Root inode can not be set attr");
+        fuse_reply_err(req, EACCES);
+        return;
+    }
+
+    DlpLinkFile* dlpLink = GetFileNode(ino);
+    if (dlpLink == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Link file does not exist");
+        fuse_reply_err(req, ENOENT);
+        return;
+    }
+
+    if (toSet != FUSE_SET_ATTR_SIZE) {
+        DLP_LOG_ERROR(LABEL, "Setattr type %{public}d not support", toSet);
+        fuse_reply_err(req, EACCES);
+        return;
+    }
+
+    off_t modifySize = attr->st_size;
+    int32_t ret = dlpLink->Truncate(modifySize);
+    if (ret != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Link file set size failed, ret %{public}d", ret);
+        fuse_reply_err(req, EINVAL);
+        return;
+    }
+
+    DLP_LOG_INFO(LABEL, "Setattr size ok");
+    struct stat fileStat = dlpLink->GetLinkStat();
+    fuse_reply_attr(req, &fileStat, DEFAULT_ATTR_TIMEOUT);
+}
+
 static const struct fuse_lowlevel_ops g_fuseDaemonOper = {
     .lookup = FuseDaemonLookup,
     .getattr = FuseDaemonGetattr,
@@ -335,6 +386,7 @@ static const struct fuse_lowlevel_ops g_fuseDaemonOper = {
     .write = FuseDaemonWrite,
     .forget = FuseDaemonForgot,
     .readdir = FuseDaemonReadDir,
+    .setattr = FuseDaemonSetAttr,
 };
 
 struct stat FuseDaemon::GetRootFileStat()
@@ -438,7 +490,7 @@ void FuseDaemon::FuseFsDaemonThread(int fuseFd)
 void FuseDaemon::NotifyKernelNoFlush(void)
 {
     std::shared_ptr<DlpFile> defaultfilePtr = std::make_shared<DlpFile>(INVALID_DLP_FD);
-    if (DlpLinkManager::GetInstance().AddDlpLinkFile(defaultfilePtr, DEFAULT_DLP_LINK_FILE) != DLP_LINK_SUCCESS) {
+    if (DlpLinkManager::GetInstance().AddDlpLinkFile(defaultfilePtr, DEFAULT_DLP_LINK_FILE) != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "add default dlp failed!");
         return;
     }

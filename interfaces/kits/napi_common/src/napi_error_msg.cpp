@@ -163,6 +163,27 @@ static const std::unordered_map<int32_t, std::string> g_dlpErrMsg = {
         DLP_PARSE_ERROR_OPERATION_UNSUPPORTED,
         "parse error, operation unsupported",
     },
+
+    {
+        DLP_FUSE_ERROR_VALUE_INVALID,
+        "link fuse error, input param invalid",
+    },
+    {
+        DLP_FUSE_ERROR_DLP_FILE_NULL,
+        "link fuse error, dlp file is null",
+    },
+    {
+        DLP_FUSE_ERROR_LINKFILE_EXIST,
+        "link fuse error, link file is exist",
+    },
+    {
+        DLP_FUSE_ERROR_LINKFILE_NOT_EXIST,
+        "link fuse error, link file is not exist",
+    },
+    {
+        DLP_FUSE_ERROR_MEMORY_OPERATE_FAIL,
+        "link fuse error, memory operate fail",
+    },
 };
 
 std::string GetErrStr(int32_t errNo)

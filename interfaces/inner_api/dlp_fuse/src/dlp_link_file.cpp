@@ -16,6 +16,7 @@
 #include "dlp_link_file.h"
 
 #include <securec.h>
+#include "dlp_permission.h"
 #include "dlp_permission_log.h"
 #include "fuse_daemon.h"
 
@@ -63,12 +64,34 @@ void DlpLinkFile::IncreaseRef()
 
 struct stat DlpLinkFile::GetLinkStat()
 {
-    uint32_t res = dlpFile_->GetFsContextSize();
+    uint32_t res = dlpFile_->GetFsContentSize();
     if (res != INVALID_FILE_SIZE) {
         fileStat_.st_size = res;
     }
     return fileStat_;
 }
+
+int32_t DlpLinkFile::Truncate(off_t modifySize)
+{
+    if (modifySize > INVALID_FILE_SIZE || modifySize < 0) {
+        DLP_LOG_ERROR(LABEL, "Modify size is invalid");
+        return DLP_FUSE_ERROR_VALUE_INVALID;
+    }
+
+    if (dlpFile_ == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Link dlp file is null");
+        return DLP_FUSE_ERROR_DLP_FILE_NULL;
+    }
+    int32_t res = dlpFile_->Truncate(static_cast<uint32_t>(modifySize));
+    if (res < 0) {
+        DLP_LOG_ERROR(LABEL, "Link dlp file truncate failed, res %{public}d.", res);
+    } else {
+        DLP_LOG_INFO(LABEL, "Link dlp file truncate size %{public}u ok.", static_cast<uint32_t>(modifySize));
+    }
+    UpdateMtimeStat();
+    return res;
+}
+
 void DlpLinkFile::UpdateAtimeStat()
 {
     UpdateCurrTimeStat(&fileStat_.st_atim);
@@ -79,49 +102,13 @@ void DlpLinkFile::UpdateMtimeStat()
     UpdateCurrTimeStat(&fileStat_.st_mtim);
 }
 
-int32_t DlpLinkFile::FillHoleData(uint32_t holeStart, uint32_t holeSize)
-{
-    DLP_LOG_INFO(LABEL, "Need create a hole filled with 0s, hole start %{public}x size %{public}x",
-        holeStart, holeSize);
-    uint32_t holeBufSize = (holeSize < HOLE_BUFF_SMALL_SIZE) ? HOLE_BUFF_SMALL_SIZE : HOLE_BUFF_SIZE;
-    uint8_t* holeBuff = new (std::nothrow) uint8_t[holeBufSize]();
-    if (holeBuff == nullptr) {
-        DLP_LOG_ERROR(LABEL, "new buf failed.");
-        return DLP_LINK_FAILURE;
-    }
-
-    uint32_t fillLen = 0;
-    int res = DLP_LINK_SUCCESS;
-    while (fillLen < holeSize) {
-        uint32_t writeSize = ((holeSize - fillLen) < holeBufSize) ? (holeSize - fillLen) : holeBufSize;
-        int32_t res = dlpFile_->DlpFileWrite(holeStart + fillLen, holeBuff, writeSize);
-        if (res < 0) {
-            DLP_LOG_ERROR(LABEL, "write failed, error %{public}d.", res);
-            break;
-        }
-        fillLen += writeSize;
-    }
-    delete[] holeBuff;
-    return res;
-}
-
 int32_t DlpLinkFile::Write(uint32_t offset, void* buf, uint32_t size)
 {
-    DLP_LOG_DEBUG(LABEL, "write offset %{public}u size %{public}u", offset, size);
     if (dlpFile_ == nullptr) {
         DLP_LOG_ERROR(LABEL, "no dlp file to write");
-        return DLP_LINK_FAILURE;
+        return DLP_FUSE_ERROR_DLP_FILE_NULL;
     }
-    int32_t res;
-    uint32_t curSize = dlpFile_->GetFsContextSize();
-    if (curSize != INVALID_FILE_SIZE && curSize < offset) {
-        res = FillHoleData(curSize, offset - curSize);
-        if (res != DLP_LINK_SUCCESS) {
-            DLP_LOG_ERROR(LABEL, "fill hole data failed");
-            return DLP_LINK_FAILURE;
-        }
-    }
-    res = dlpFile_->DlpFileWrite(offset, buf, size);
+    int32_t res = dlpFile_->DlpFileWrite(offset, buf, size);
     if (res < 0) {
         DLP_LOG_ERROR(LABEL, "link file write failed, res %{public}d.", res);
     }
@@ -134,7 +121,7 @@ int32_t DlpLinkFile::Read(uint32_t offset, void* buf, uint32_t size)
     DLP_LOG_DEBUG(LABEL, "read offset %{public}u size %{public}u", offset, size);
     if (dlpFile_ == nullptr) {
         DLP_LOG_ERROR(LABEL, "no dlp file to read");
-        return DLP_LINK_FAILURE;
+        return DLP_FUSE_ERROR_DLP_FILE_NULL;
     }
     UpdateAtimeStat();
     return dlpFile_->DlpFileRead(offset, buf, size);

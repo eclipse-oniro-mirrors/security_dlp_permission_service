@@ -700,19 +700,8 @@ int32_t DlpFile::WriteFirstBlockData(uint32_t offset, void* buf, uint32_t size)
     return requestSize;
 }
 
-int32_t DlpFile::DlpFileWrite(uint32_t offset, void* buf, uint32_t size)
+int32_t DlpFile::DoDlpFileWrite(uint32_t offset, void* buf, uint32_t size)
 {
-    if (isReadOnly_) {
-        DLP_LOG_ERROR(LABEL, "dlp file is readonly, write failed");
-        return DLP_PARSE_ERROR_FILE_READ_ONLY;
-    }
-
-    if (buf == nullptr || size == 0 || size > DLP_FUSE_MAX_BUFFLEN ||
-        dlpFd_ < 0 || !IsValidCipher(cipher_.encKey, cipher_.usageSpec)) {
-        DLP_LOG_ERROR(LABEL, "dlp file param invalid");
-        return DLP_PARSE_ERROR_VALUE_INVALID;
-    }
-
     uint32_t alignOffset = (offset / DLP_BLOCK_SIZE * DLP_BLOCK_SIZE);
     if (lseek(dlpFd_, head_.txtOffset + alignOffset, SEEK_SET) == (off_t)-1) {
         DLP_LOG_ERROR(LABEL, "lseek dlp file offset %{public}d failed, %{public}s",
@@ -759,7 +748,7 @@ int32_t DlpFile::DlpFileWrite(uint32_t offset, void* buf, uint32_t size)
     return ret + (int32_t)writenSize;
 }
 
-uint32_t DlpFile::GetFsContextSize() const
+uint32_t DlpFile::GetFsContentSize() const
 {
     struct stat fileStat;
     int32_t ret = fstat(dlpFd_, &fileStat);
@@ -770,6 +759,108 @@ uint32_t DlpFile::GetFsContextSize() const
         return INVALID_FILE_SIZE;
     }
     return (uint32_t)fileStat.st_size - head_.txtOffset;
+}
+
+void DlpFile::UpdateDlpFileContentSize()
+{
+    uint32_t contentSize = GetFsContentSize();
+    if (contentSize == INVALID_FILE_SIZE) {
+        DLP_LOG_ERROR(LABEL, "get fs content size failed");
+        return;
+    }
+    head_.txtSize = contentSize;
+    DLP_LOG_DEBUG(LABEL, "Update dlp file content size");
+
+    if (lseek(dlpFd_, 0, SEEK_SET) == static_cast<off_t>(-1)) {
+        DLP_LOG_ERROR(LABEL, "Lseek failed, %{public}s", strerror(errno));
+        return;
+    }
+
+    if (write(dlpFd_, &head_, sizeof(head_)) != sizeof(head_)) {
+        DLP_LOG_ERROR(LABEL, "Write failed, %{public}s", strerror(errno));
+        return;
+    }
+}
+
+int32_t DlpFile::FillHoleData(uint32_t holeStart, uint32_t holeSize)
+{
+    DLP_LOG_INFO(LABEL, "Need create a hole filled with 0s, hole start %{public}x size %{public}x",
+        holeStart, holeSize);
+    uint32_t holeBufSize = (holeSize < HOLE_BUFF_SMALL_SIZE) ? HOLE_BUFF_SMALL_SIZE : HOLE_BUFF_SIZE;
+    std::unique_ptr<uint8_t[]> holeBuff(new (std::nothrow) uint8_t[holeBufSize]());
+    if (holeBuff == nullptr) {
+        DLP_LOG_ERROR(LABEL, "New buf failed.");
+        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
+    }
+
+    uint32_t fillLen = 0;
+    while (fillLen < holeSize) {
+        uint32_t writeSize = ((holeSize - fillLen) < holeBufSize) ? (holeSize - fillLen) : holeBufSize;
+        int32_t res = DoDlpFileWrite(holeStart + fillLen, holeBuff.get(), writeSize);
+        if (res < 0) {
+            DLP_LOG_ERROR(LABEL, "Write failed, error %{public}d.", res);
+            break;
+        }
+        fillLen += writeSize;
+    }
+    return DLP_OK;
+}
+
+int32_t DlpFile::DlpFileWrite(uint32_t offset, void* buf, uint32_t size)
+{
+    if (isReadOnly_) {
+        DLP_LOG_ERROR(LABEL, "Dlp file is readonly, write failed");
+        return DLP_PARSE_ERROR_FILE_READ_ONLY;
+    }
+
+    if (buf == nullptr || size == 0 || size > DLP_FUSE_MAX_BUFFLEN ||
+        dlpFd_ < 0 || !IsValidCipher(cipher_.encKey, cipher_.usageSpec)) {
+        DLP_LOG_ERROR(LABEL, "Dlp file param invalid");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
+
+    uint32_t curSize = GetFsContentSize();
+    if (curSize != INVALID_FILE_SIZE && curSize < offset &&
+        (FillHoleData(curSize, offset - curSize) != DLP_OK)) {
+        DLP_LOG_ERROR(LABEL, "Fill hole data failed");
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+    int32_t res = DoDlpFileWrite(offset, buf, size);
+    UpdateDlpFileContentSize();
+    return res;
+}
+
+int32_t DlpFile::Truncate(uint32_t size)
+{
+    DLP_LOG_INFO(LABEL, "Truncate file size %{public}d", size);
+
+    if (isReadOnly_) {
+        DLP_LOG_ERROR(LABEL, "Dlp file is readonly, truncate failed");
+        return DLP_PARSE_ERROR_FILE_READ_ONLY;
+    }
+
+    if (dlpFd_ < 0 || size >= INVALID_FILE_SIZE - head_.txtOffset) {
+        DLP_LOG_ERROR(LABEL, "Param invalid");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
+
+    uint32_t curSize = GetFsContentSize();
+    int res = DLP_OK;
+    if (size < curSize) {
+        res = ftruncate(dlpFd_, head_.txtOffset + size);
+        UpdateDlpFileContentSize();
+    } else if (size > curSize) {
+        res = FillHoleData(curSize, size - curSize);
+        UpdateDlpFileContentSize();
+    } else {
+        DLP_LOG_INFO(LABEL, "Truncate file size equals origin file");
+    }
+
+    if (res != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Truncate file size %{public}d failed, %{public}s", size, strerror(errno));
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+    return DLP_OK;
 }
 }  // namespace DlpPermission
 }  // namespace Security
