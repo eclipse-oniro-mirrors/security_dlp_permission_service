@@ -57,6 +57,7 @@ const int32_t DEFAULT_USERID = 100;
 static AccessTokenID g_selfTokenId = 0;
 static AccessTokenID g_dlpManagerTokenId = 0;
 static int32_t g_selfUid = 0;
+constexpr const char* DLP_MANAGER_APP = "com.ohos.dlpmanager";
 }  // namespace
 
 static void TestRecordProcessInfo()

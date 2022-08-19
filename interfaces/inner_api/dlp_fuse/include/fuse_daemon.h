@@ -26,25 +26,6 @@
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
-static const int ROOT_INODE = 1;
-static const int DEFAULT_ATTR_TIMEOUT = 10000;
-static const int MAX_FILE_NAME_LEN = 256;
-static const int ROOT_INODE_ACCESS = 0711;
-static const int DEFAULT_INODE_ACCESS = 0640;
-static const size_t FUSE_MAX_BUF_SIZE = 1024 * 1024 * 10;  // 10M
-static const unsigned int MAX_INT_NUMBER = 0x7fffffff;
-static const unsigned int MAX_KEY_LEN = 0x10000;  // 64K
-static const std::string DEFAULT_DLP_LINK_FILE = "default.dlp";
-static const std::string DEFAULT_DLP_LINK_FILE_PATH = "/data/fuse/" + DEFAULT_DLP_LINK_FILE;
-
-static const uint32_t MAX_READ_DIR_BUF_SIZE = 100 * 1024; // 100K
-static const std::string CUR_DIR = ".";
-static const std::string UPPER_DIR = "..";
-
-enum CryptAlgo {
-    AES_CTR = 1,
-};
-
 typedef struct DirAddParams {
     fuse_req_t req;
     char *directBuf;

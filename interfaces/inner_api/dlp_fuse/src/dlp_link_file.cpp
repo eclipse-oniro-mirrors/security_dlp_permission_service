@@ -25,6 +25,7 @@ namespace Security {
 namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpLinkFile"};
+static const int DEFAULT_INODE_ACCESS = 0640;
 } // namespace
 
 DlpLinkFile::DlpLinkFile(std::string dlpLinkName, std::shared_ptr<DlpFile> dlpFile)

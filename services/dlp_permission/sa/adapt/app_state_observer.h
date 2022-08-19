@@ -44,6 +44,7 @@ private:
     void UninstallDlpSandbox(DlpSandboxInfo& appInfo);
     void UninstallAllDlpSandboxForUser(int32_t userId);
     void UninstallAllDlpSandbox();
+    void ExitSaAfterAllDlpManagerDie();
     void EraseUserId(int32_t userId);
     void AddUserId(int32_t userId);
 

@@ -18,6 +18,7 @@
 #include "dlp_permission_log.h"
 #include "dlp_policy.h"
 #include "dlp_policy_parcel.h"
+#include "ipc_skeleton.h"
 
 namespace OHOS {
 namespace Security {
@@ -37,7 +38,8 @@ DlpPermissionAsyncStub::DlpPermissionAsyncStub(std::shared_ptr<ParseDlpCertifica
 int32_t DlpPermissionAsyncStub::OnRemoteRequest(
     uint32_t code, MessageParcel& data, MessageParcel& reply, MessageOption& option)
 {
-    DLP_LOG_INFO(LABEL, "Called, code: 0x%{public}x", code);
+    DLP_LOG_INFO(LABEL, "Called, code: 0x%{public}x, pid: %{public}d, uid: %{public}d", code,
+        IPCSkeleton::GetCallingPid(), IPCSkeleton::GetCallingUid());
 
     std::u16string descripter = DlpPermissionAsyncStub::GetDescriptor();
     std::u16string remoteDescripter = data.ReadInterfaceToken();

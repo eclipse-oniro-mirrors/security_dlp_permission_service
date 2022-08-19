@@ -24,6 +24,7 @@ namespace Security {
 namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpLinkManager"};
+static const int MAX_FILE_NAME_LEN = 256;
 }
 
 DlpLinkManager::DlpLinkManager()

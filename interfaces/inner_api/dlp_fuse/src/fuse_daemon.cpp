@@ -31,6 +31,15 @@ namespace Security {
 namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "FuseDaemon"};
+static const int ROOT_INODE = 1;
+static const int DEFAULT_ATTR_TIMEOUT = 10000;
+static const int MAX_FILE_NAME_LEN = 256;
+static const int ROOT_INODE_ACCESS = 0711;
+static const uint32_t MAX_READ_DIR_BUF_SIZE = 100 * 1024;  // 100K
+static constexpr const char* CUR_DIR = ".";
+static constexpr const char* UPPER_DIR = "..";
+static constexpr const char* DEFAULT_DLP_LINK_FILE = "default.dlp";
+static constexpr const char* DEFAULT_DLP_LINK_FILE_PATH = "/data/fuse/default.dlp";
 }  // namespace
 
 std::condition_variable FuseDaemon::daemonEnableCv_;
@@ -495,7 +504,7 @@ void FuseDaemon::NotifyKernelNoFlush(void)
         return;
     }
 
-    int defaultFd = open(DEFAULT_DLP_LINK_FILE_PATH.c_str(), O_RDWR);
+    int defaultFd = open(DEFAULT_DLP_LINK_FILE_PATH, O_RDWR);
     if (defaultFd == -1) {
         DlpLinkManager::GetInstance().DeleteDlpLinkFile(defaultfilePtr);
         DLP_LOG_ERROR(LABEL, "open default dlp file failed!");

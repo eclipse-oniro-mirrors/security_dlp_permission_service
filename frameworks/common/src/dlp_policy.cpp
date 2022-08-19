@@ -280,7 +280,7 @@ void FreeCharBuffer(char* buff, uint32_t buffLen)
 bool CheckAesParamLen(uint32_t len)
 {
     DLP_LOG_DEBUG(LABEL, "Called, %{private}u", len);
-    return VALID_AESPARAM_LEN.count(len);
+    return VALID_AESPARAM_LEN.count(len) > 0;
 }
 }  // namespace DlpPermission
 }  // namespace Security

@@ -51,7 +51,8 @@ static bool IsSaCall()
 int32_t DlpPermissionStub::OnRemoteRequest(
     uint32_t code, MessageParcel& data, MessageParcel& reply, MessageOption& option)
 {
-    DLP_LOG_INFO(LABEL, "Called, code: 0x%{public}x", code);
+    DLP_LOG_INFO(LABEL, "Called, code: 0x%{public}x, pid: %{public}d, uid: %{public}d", code,
+        IPCSkeleton::GetCallingPid(), IPCSkeleton::GetCallingUid());
 
     std::u16string descripter = DlpPermissionStub::GetDescriptor();
     std::u16string remoteDescripter = data.ReadInterfaceToken();
@@ -217,7 +218,7 @@ int32_t DlpPermissionStub::GetSandboxExternalAuthorizationInner(MessageParcel& d
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
-    AAFwk::Want* want = data.ReadParcelable<AAFwk::Want>();
+    std::unique_ptr<AAFwk::Want> want(data.ReadParcelable<AAFwk::Want>());
     if (want == nullptr) {
         DLP_LOG_ERROR(LABEL, "Read want fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;

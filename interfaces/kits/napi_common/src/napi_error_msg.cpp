@@ -75,6 +75,10 @@ static const std::unordered_map<int32_t, std::string> g_dlpErrMsg = {
         "service error, app observer is null",
     },
     {
+        DLP_SERVICE_ERROR_APPOBSERVER_ERROR,
+        "service error, app observer error",
+    },
+    {
         DLP_SERVICE_ERROR_CREDENTIAL_OPERATE_FAIL,
         "service error, credential operate fail",
     },

@@ -24,6 +24,9 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PER
 
 int8_t GetLocalAccountName(char** account, uint32_t userId)
 {
+    if (account == nullptr) {
+        return -1;
+    }
     std::pair<bool, OHOS::AccountSA::OhosAccountInfo> accountInfo =
         OHOS::AccountSA::OhosAccountKits::GetInstance().QueryOhosAccountInfoByUserId(userId);
     if (accountInfo.first) {

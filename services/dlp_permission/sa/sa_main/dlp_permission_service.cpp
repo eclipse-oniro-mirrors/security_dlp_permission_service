@@ -46,6 +46,8 @@ DlpPermissionService::~DlpPermissionService()
 {
     DLP_LOG_INFO(LABEL, "~DlpPermissionService()");
     UnregisterAppStateObserver();
+    iAppMgr_ = nullptr;
+    appStateObserver_ = nullptr;
 }
 
 void DlpPermissionService::OnStart()
@@ -89,17 +91,20 @@ bool DlpPermissionService::RegisterAppStateObserver()
     sptr<ISystemAbilityManager> samgrClient = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (samgrClient == nullptr) {
         DLP_LOG_ERROR(LABEL, "Failed to get system ability manager");
+        appStateObserver_ = nullptr;
         return false;
     }
     iAppMgr_ = iface_cast<AppExecFwk::IAppMgr>(samgrClient->GetSystemAbility(APP_MGR_SERVICE_ID));
     if (iAppMgr_ == nullptr) {
-        appStateObserver_ = nullptr;
         DLP_LOG_ERROR(LABEL, "Failed to get ability manager service");
+        appStateObserver_ = nullptr;
         return false;
     }
     int32_t result = iAppMgr_->RegisterApplicationStateObserver(appStateObserver_);
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Failed to Register app state observer");
+        iAppMgr_ = nullptr;
+        appStateObserver_ = nullptr;
         return false;
     }
     return true;
@@ -107,11 +112,9 @@ bool DlpPermissionService::RegisterAppStateObserver()
 
 void DlpPermissionService::UnregisterAppStateObserver()
 {
-    if (iAppMgr_) {
+    if (iAppMgr_ != nullptr && appStateObserver_ != nullptr) {
         iAppMgr_->UnregisterApplicationStateObserver(appStateObserver_);
     }
-    iAppMgr_ = nullptr;
-    appStateObserver_ = nullptr;
 }
 
 int32_t DlpPermissionService::GenerateDlpCertificate(
@@ -292,11 +295,6 @@ int32_t DlpPermissionService::IsInDlpSandbox(bool& inSandbox)
 
 int32_t DlpPermissionService::GetDlpSupportFileType(std::vector<std::string>& supportFileType)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
-    if (appStateObserver_ == nullptr) {
-        DLP_LOG_WARN(LABEL, "Failed to get app state observer instance");
-        return DLP_SERVICE_ERROR_APPOBSERVER_NULL;
-    }
     supportFileType = {
         ".doc", ".docm", ".docx", ".dot", ".dotm", ".dotx", ".odp", ".odt", ".pdf", ".pot", ".potm", ".potx", ".ppa",
         ".ppam", ".pps", ".ppsm", ".ppsx", ".ppt", ".pptm", ".pptx", ".rtf", ".txt", ".wps", ".xla", ".xlam", ".xls",

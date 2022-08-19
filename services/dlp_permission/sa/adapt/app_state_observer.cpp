@@ -50,7 +50,7 @@ void AppStateObserver::UninstallAllDlpSandboxForUser(int32_t userId)
     AppExecFwk::BundleMgrClient bundleMgrClient;
     std::lock_guard<std::mutex> lock(sandboxInfoLock_);
     for (auto iter = sandboxInfo_.begin(); iter != sandboxInfo_.end();) {
-        auto appInfo = iter->second;
+        auto& appInfo = iter->second;
         if (appInfo.userId != userId) {
             ++iter;
             continue;
@@ -67,7 +67,16 @@ void AppStateObserver::UninstallAllDlpSandbox()
     std::lock_guard<std::mutex> lock(userIdListLock_);
     for (const auto& iter : userIdList_) {
         UninstallAllDlpSandboxForUser(iter);
-        userIdList_.erase(iter);
+    }
+    userIdList_.clear();
+}
+
+void AppStateObserver::ExitSaAfterAllDlpManagerDie()
+{
+    std::lock_guard<std::mutex> lock(userIdListLock_);
+    if (userIdList_.empty()) {
+        DLP_LOG_INFO(LABEL, "all dlp manager app die, service exit");
+        exit(0);
     }
 }
 
@@ -87,7 +96,7 @@ void AppStateObserver::EraseUserId(int32_t userId)
 void AppStateObserver::AddUserId(int32_t userId)
 {
     std::lock_guard<std::mutex> lock(userIdListLock_);
-    if (!userIdList_.count(userId)) {
+    if (userIdList_.count(userId) <= 0) {
         DLP_LOG_INFO(LABEL, "add userId %{public}d", userId);
         userIdList_.emplace(userId);
     }
@@ -121,7 +130,7 @@ void AppStateObserver::AddSandboxInfo(const DlpSandboxInfo& appInfo)
 {
     auto sandboxBundleName = appInfo.bundleName + std::to_string(appInfo.appIndex);
     std::lock_guard<std::mutex> lock(sandboxInfoLock_);
-    if (sandboxInfo_.count(appInfo.uid)) {
+    if (sandboxInfo_.count(appInfo.uid) > 0) {
         DLP_LOG_WARN(LABEL, "sandbox app %{public}s is already insert, ignore it", sandboxBundleName.c_str());
     } else {
         sandboxInfo_[appInfo.uid] = appInfo;
@@ -159,7 +168,7 @@ void AppStateObserver::OnProcessDied(const AppExecFwk::ProcessData& processData)
     DLP_LOG_INFO(LABEL, "%{public}s is died, uid: %{public}d", processData.bundleName.c_str(), processData.uid);
 
     // current died process is dlpmanager
-    if (processData.bundleName == DLP_MANAGER_APP) {
+    if (processData.bundleName == "com.ohos.dlpmanager") {
         int32_t userId;
         if (GetUserIdFromUid(processData.uid, &userId) != 0) {
             return;
@@ -167,6 +176,7 @@ void AppStateObserver::OnProcessDied(const AppExecFwk::ProcessData& processData)
         DLP_LOG_INFO(LABEL, "%{public}s in userId %{public}d is died", processData.bundleName.c_str(), userId);
         UninstallAllDlpSandboxForUser(userId);
         EraseUserId(userId);
+        ExitSaAfterAllDlpManagerDie();
         return;
     }
 
@@ -196,7 +206,7 @@ void AppStateObserver::AddUidWithTokenId(uint32_t tokenId, int32_t uid)
         return;
     }
     std::lock_guard<std::mutex> lock(tokenIdToUidMapLock_);
-    if (tokenIdToUidMap_.count(tokenId)) {
+    if (tokenIdToUidMap_.count(tokenId) > 0) {
         return;
     }
     DLP_LOG_INFO(LABEL, "add tokenId: %{public}d, uid: %{public}d", tokenId, uid);
@@ -215,28 +225,44 @@ bool AppStateObserver::GetUidByTokenId(uint32_t tokenId, int32_t& uid)
     return false;
 }
 
+static bool IsCopyable(AuthPermType permType)
+{
+    switch (permType) {
+        case READ_ONLY:
+            return false;
+        case FULL_CONTROL:
+            return true;
+        default:
+            return false;
+    }
+}
+
 int32_t AppStateObserver::QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t tokenId)
 {
     int32_t uid;
     copyable = false;
     if (!GetUidByTokenId(tokenId, uid)) {
         DLP_LOG_WARN(LABEL, "current tokenId %{public}d is not a sandbox app", tokenId);
-        copyable = true;
-        return DLP_OK;
+        copyable = false;
+        return DLP_SERVICE_ERROR_APPOBSERVER_ERROR;
     }
     AuthPermType permType = DEFAULT_PERM;
     int32_t res = QueryDlpFileAccessByUid(permType, uid);
-    copyable = (permType == READ_ONLY) ? false : true;
+    if (res != DLP_OK) {
+        copyable = false;
+    } else {
+        copyable = IsCopyable(permType);
+    }
     return res;
 }
 
 int32_t AppStateObserver::QueryDlpFileAccessByUid(AuthPermType& permType, int32_t uid)
 {
     DlpSandboxInfo appInfo;
-    if (!GetSandboxInfo(uid, appInfo)) {
-        DLP_LOG_WARN(LABEL, "current uid %{public}d is not a sandbox app", uid);
+    if (!GetSandboxInfo(uid, appInfo) || appInfo.permType == DEFAULT_PERM) {
+        DLP_LOG_ERROR(LABEL, "current uid %{public}d is not a sandbox app", uid);
         permType = DEFAULT_PERM;
-        return DLP_OK;
+        return DLP_SERVICE_ERROR_APPOBSERVER_ERROR;
     }
     permType = appInfo.permType;
     auto sandboxBundleName = appInfo.bundleName + std::to_string(appInfo.appIndex);

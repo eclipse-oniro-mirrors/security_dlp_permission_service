@@ -398,33 +398,8 @@ void GetUninstallDlpSandboxParams(
         asyncContext.bundleName.c_str(), asyncContext.userId, asyncContext.appIndex);
 }
 
-void GetQueryFileAccessParams(
-    const napi_env env, const napi_callback_info info, QueryFileAccessAsyncContext& asyncContext)
-{
-    DLP_LOG_DEBUG(LABEL, "Called");
-    size_t argc = PARAM_SIZE_ONE;
-    napi_value argv[PARAM_SIZE_ONE] = {nullptr};
-    NAPI_CALL_RETURN_VOID(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-
-    if (argc == PARAM_SIZE_ONE) {
-        GetCallback(env, argv[PARAM0], asyncContext);
-    }
-}
-
-void GetIsInSandboxParams(const napi_env env, const napi_callback_info info, IsInSandboxAsyncContext& asyncContext)
-{
-    DLP_LOG_DEBUG(LABEL, "Called");
-    size_t argc = PARAM_SIZE_ONE;
-    napi_value argv[PARAM_SIZE_ONE] = {nullptr};
-    NAPI_CALL_RETURN_VOID(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
-
-    if (argc == PARAM_SIZE_ONE) {
-        GetCallback(env, argv[PARAM0], asyncContext);
-    }
-}
-
-void GetGetDlpSupportFileTypeParams(
-    const napi_env env, const napi_callback_info info, GetDlpSupportFileTypeAsyncContext& asyncContext)
+void GetThirdInterfaceParams(
+    const napi_env env, const napi_callback_info info, CommonAsyncContext& asyncContext)
 {
     DLP_LOG_DEBUG(LABEL, "Called");
     size_t argc = PARAM_SIZE_ONE;

@@ -118,11 +118,8 @@ void GetInstallDlpSandboxParams(
     const napi_env env, const napi_callback_info info, DlpSandboxAsyncContext& asyncContext);
 void GetUninstallDlpSandboxParams(
     const napi_env env, const napi_callback_info info, DlpSandboxAsyncContext& asyncContext);
-void GetQueryFileAccessParams(
-    const napi_env env, const napi_callback_info info, QueryFileAccessAsyncContext& asyncContext);
-void GetIsInSandboxParams(const napi_env env, const napi_callback_info info, IsInSandboxAsyncContext& asyncContext);
-void GetGetDlpSupportFileTypeParams(
-    const napi_env env, const napi_callback_info info, GetDlpSupportFileTypeAsyncContext& asyncContext);
+void GetThirdInterfaceParams(
+    const napi_env env, const napi_callback_info info, CommonAsyncContext& asyncContext);
 
 bool GetDlpProperty(napi_env env, napi_value object, DlpProperty& property);
 void GetCallback(const napi_env env, napi_value jsObject, CommonAsyncContext& asyncContext);
