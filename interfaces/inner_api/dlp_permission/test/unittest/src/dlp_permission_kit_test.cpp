@@ -420,7 +420,7 @@ HWTEST_F(DlpPermissionKitTest, InstallDlpSandbox002, TestSize.Level1)
  * @tc.name: UninstallDlpSandbox001
  * @tc.desc: UninstallDlpSandbox test.
  * @tc.type: FUNC
- * @tc.require:AR000GVIGG
+ * @tc.require: SR000GVIGF AR000GVIGG
  */
 HWTEST_F(DlpPermissionKitTest, UninstallDlpSandbox001, TestSize.Level1)
 {
@@ -434,7 +434,7 @@ HWTEST_F(DlpPermissionKitTest, UninstallDlpSandbox001, TestSize.Level1)
  * @tc.name: UninstallDlpSandbox002
  * @tc.desc: UninstallDlpSandbox invalid input.
  * @tc.type: FUNC
- * @tc.require:AR000GVIGG
+ * @tc.require: SR000GVIGF AR000GVIGG
  */
 HWTEST_F(DlpPermissionKitTest, UninstallDlpSandbox002, TestSize.Level1)
 {
@@ -447,7 +447,7 @@ HWTEST_F(DlpPermissionKitTest, UninstallDlpSandbox002, TestSize.Level1)
  * @tc.name: GetSandboxExternalAuthorization001
  * @tc.desc: GetSandboxExternalAuthorization test.
  * @tc.type: FUNC
- * @tc.require:AR000GVIR1
+ * @tc.require: SR000GVIR0 AR000GVIR1
  */
 HWTEST_F(DlpPermissionKitTest, GetSandboxExternalAuthorization001, TestSize.Level1)
 {
@@ -474,7 +474,7 @@ HWTEST_F(DlpPermissionKitTest, GetSandboxExternalAuthorization001, TestSize.Leve
  * @tc.name: QueryDlpFileCopyableByTokenId001
  * @tc.desc: QueryDlpFileCopyableByTokenId with read only sandbox app tokenId.
  * @tc.type: FUNC
- * @tc.require:AR000GVIGM
+ * @tc.require: SR000GVIGL AR000GVIGM
  */
 HWTEST_F(DlpPermissionKitTest, QueryDlpFileCopyableByTokenId001, TestSize.Level1)
 {
@@ -494,7 +494,7 @@ HWTEST_F(DlpPermissionKitTest, QueryDlpFileCopyableByTokenId001, TestSize.Level1
  * @tc.name: QueryDlpFileCopyableByTokenId002
  * @tc.desc: QueryDlpFileCopyableByTokenId with full control sandbox app tokenId.
  * @tc.type: FUNC
- * @tc.require:AR000GVIGM
+ * @tc.require: SR000GVIGL AR000GVIGM
  */
 HWTEST_F(DlpPermissionKitTest, QueryDlpFileCopyableByTokenId002, TestSize.Level1)
 {
@@ -514,7 +514,7 @@ HWTEST_F(DlpPermissionKitTest, QueryDlpFileCopyableByTokenId002, TestSize.Level1
  * @tc.name: QueryDlpFileCopyableByTokenId003
  * @tc.desc: QueryDlpFileCopyableByTokenId with normal app tokenId.
  * @tc.type: FUNC
- * @tc.require:AR000GVIGM
+ * @tc.require: SR000GVIGL AR000GVIGM
  */
 HWTEST_F(DlpPermissionKitTest, QueryDlpFileCopyableByTokenId003, TestSize.Level1)
 {
@@ -530,7 +530,7 @@ HWTEST_F(DlpPermissionKitTest, QueryDlpFileCopyableByTokenId003, TestSize.Level1
  * @tc.name: QueryDlpFileCopyableByTokenId004
  * @tc.desc: QueryDlpFileCopyableByTokenId invalid input.
  * @tc.type: FUNC
- * @tc.require:AR000GVIGM
+ * @tc.require: SR000GVIGL AR000GVIGM
  */
 HWTEST_F(DlpPermissionKitTest, QueryDlpFileCopyableByTokenId004, TestSize.Level1)
 {
@@ -544,7 +544,7 @@ HWTEST_F(DlpPermissionKitTest, QueryDlpFileCopyableByTokenId004, TestSize.Level1
  * @tc.name: QueryDlpFileAccess001
  * @tc.desc: QueryDlpFileAccess in normal app.
  * @tc.type: FUNC
- * @tc.require:AR000GVIGO
+ * @tc.require: SR000GVIGN AR000GVIGO
  */
 HWTEST_F(DlpPermissionKitTest, QueryDlpFileAccess001, TestSize.Level1)
 {
@@ -564,7 +564,7 @@ HWTEST_F(DlpPermissionKitTest, QueryDlpFileAccess001, TestSize.Level1)
  * @tc.name: QueryDlpFileAccess002
  * @tc.desc: QueryDlpFileAccess in read only sandbox app.
  * @tc.type: FUNC
- * @tc.require:AR000GVIGO
+ * @tc.require: SR000GVIGN AR000GVIGO
  */
 HWTEST_F(DlpPermissionKitTest, QueryDlpFileAccess002, TestSize.Level1)
 {
@@ -588,7 +588,7 @@ HWTEST_F(DlpPermissionKitTest, QueryDlpFileAccess002, TestSize.Level1)
  * @tc.name: QueryDlpFileAccess003
  * @tc.desc: QueryDlpFileAccess in full control sandbox app.
  * @tc.type: FUNC
- * @tc.require:AR000GVIGO
+ * @tc.require: SR000GVIGN AR000GVIGO
  */
 HWTEST_F(DlpPermissionKitTest, QueryDlpFileAccess003, TestSize.Level1)
 {
@@ -612,7 +612,7 @@ HWTEST_F(DlpPermissionKitTest, QueryDlpFileAccess003, TestSize.Level1)
  * @tc.name: IsInDlpSandbox001
  * @tc.desc: IsInDlpSandbox in normal app.
  * @tc.type: FUNC
- * @tc.require:AR000GVIGO
+ * @tc.require: SR000GVIGN AR000GVIGO
  */
 HWTEST_F(DlpPermissionKitTest, IsInDlpSandbox001, TestSize.Level1)
 {
@@ -633,7 +633,7 @@ HWTEST_F(DlpPermissionKitTest, IsInDlpSandbox001, TestSize.Level1)
  * @tc.name: IsInDlpSandbox002
  * @tc.desc: IsInDlpSandbox in read only sandbox app.
  * @tc.type: FUNC
- * @tc.require:AR000GVIGO
+ * @tc.require: SR000GVIGN AR000GVIGO
  */
 HWTEST_F(DlpPermissionKitTest, IsInDlpSandbox002, TestSize.Level1)
 {
@@ -656,7 +656,7 @@ HWTEST_F(DlpPermissionKitTest, IsInDlpSandbox002, TestSize.Level1)
  * @tc.name: IsInDlpSandbox003
  * @tc.desc: IsInDlpSandbox in full control sandbox app.
  * @tc.type: FUNC
- * @tc.require:AR000GVIGO
+ * @tc.require: SR000GVIGN AR000GVIGO
  */
 HWTEST_F(DlpPermissionKitTest, IsInDlpSandbox003, TestSize.Level1)
 {
@@ -680,7 +680,7 @@ HWTEST_F(DlpPermissionKitTest, IsInDlpSandbox003, TestSize.Level1)
  * @tc.name: GetDlpSupportFileType001
  * @tc.desc: GetDlpSupportFileType in normal app.
  * @tc.type: FUNC
- * @tc.require:AR000GVIGO
+ * @tc.require: SR000GVIGN AR000GVIGO
  */
 HWTEST_F(DlpPermissionKitTest, GetDlpSupportFileType001, TestSize.Level1)
 {
@@ -700,7 +700,7 @@ HWTEST_F(DlpPermissionKitTest, GetDlpSupportFileType001, TestSize.Level1)
  * @tc.name: GetDlpSupportFileType002
  * @tc.desc: GetDlpSupportFileType in read only sandbox app.
  * @tc.type: FUNC
- * @tc.require:AR000GVIGO
+ * @tc.require: SR000GVIGN AR000GVIGO
  */
 HWTEST_F(DlpPermissionKitTest, GetDlpSupportFileType002, TestSize.Level1)
 {
@@ -723,7 +723,7 @@ HWTEST_F(DlpPermissionKitTest, GetDlpSupportFileType002, TestSize.Level1)
  * @tc.name: GetDlpSupportFileType003
  * @tc.desc: GetDlpSupportFileType in full control sandbox app.
  * @tc.type: FUNC
- * @tc.require:AR000GVIGO
+ * @tc.require: SR000GVIGN AR000GVIGO
  */
 HWTEST_F(DlpPermissionKitTest, GetDlpSupportFileType003, TestSize.Level1)
 {
