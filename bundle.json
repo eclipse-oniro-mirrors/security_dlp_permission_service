@@ -15,6 +15,7 @@
     "syscap": [
       "SystemCapability.Security.DlpPermissionService"
     ],
+    "features": [ "dlp_permission_service_feature_coverage = false" ],
     "adapted_system_type": [
       "standard"
     ],

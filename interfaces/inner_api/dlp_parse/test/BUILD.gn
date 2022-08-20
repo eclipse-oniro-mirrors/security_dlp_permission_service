@@ -43,6 +43,8 @@ ohos_unittest("dlp_parse_test") {
     "c_utils:utils",
     "hiviewdfx_hilog_native:libhilog",
   ]
+  configs = [ "//base/security/dlp_permission_service/config:coverage_flags" ]
+
   cflags_cc = [ "-DHILOG_ENABLE" ]
 }
 

@@ -34,6 +34,7 @@ ohos_fuzztest("ParseCertFuzzTest") {
     "-Wno-unused-variable",
     "-fno-omit-frame-pointer",
   ]
+  configs = [ "//base/security/dlp_permission_service/config:coverage_flags" ]
 
   cflags_cc = [ "-DHILOG_ENABLE" ]
   sources = [

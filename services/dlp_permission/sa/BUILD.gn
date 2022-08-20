@@ -32,6 +32,8 @@ ohos_static_library("dlp_hex_string_static") {
 
   sources = [ "${dlp_root_dir}/frameworks/common/src/hex_string.cpp" ]
 
+  configs = [ "//base/security/dlp_permission_service/config:coverage_flags" ]
+
   cflags_cc = [ "-DHILOG_ENABLE" ]
 
   external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
@@ -52,6 +54,8 @@ ohos_static_library("dlp_permission_serializer_static") {
   sources = [ "sa_common/dlp_permission_serializer.cpp" ]
 
   cflags_cc = [ "-DHILOG_ENABLE" ]
+
+  configs = [ "//base/security/dlp_permission_service/config:coverage_flags" ]
 
   deps = [ ":dlp_hex_string_static" ]
 
@@ -97,6 +101,8 @@ ohos_shared_library("dlp_permission_service") {
     ":dlp_permission_serializer_static",
     ":dlp_permission_service.rc",
   ]
+
+  configs = [ "//base/security/dlp_permission_service/config:coverage_flags" ]
 
   external_deps = [
     "ability_base:want",

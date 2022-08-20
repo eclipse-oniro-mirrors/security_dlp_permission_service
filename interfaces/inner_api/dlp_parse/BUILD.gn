@@ -55,6 +55,8 @@ ohos_shared_library("libdlpparse") {
 
   cflags_cc = [ "-DHILOG_ENABLE" ]
   public_configs = [ ":dlpparse_public_config" ]
+  configs = [ "//base/security/dlp_permission_service/config:coverage_flags" ]
+
   part_name = "dlp_permission_service"
   subsystem_name = "security"
 }
