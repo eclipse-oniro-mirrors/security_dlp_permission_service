@@ -88,9 +88,6 @@ void AppStateObserver::EraseUserId(int32_t userId)
         DLP_LOG_INFO(LABEL, "erase userId %{public}d", userId);
         userIdList_.erase(userId);
     }
-    if (userIdList_.empty()) {
-        exit(0);
-    }
 }
 
 void AppStateObserver::AddUserId(int32_t userId)
