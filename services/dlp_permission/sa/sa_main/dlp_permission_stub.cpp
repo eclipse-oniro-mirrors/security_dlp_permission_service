@@ -15,6 +15,7 @@
 
 #include "dlp_permission_stub.h"
 #include "accesstoken_kit.h"
+#include "dlp_dfx_define.h"
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
 #include "ipc_skeleton.h"
@@ -37,6 +38,11 @@ static bool CheckPermission(const std::string& permission)
         DLP_LOG_INFO(LABEL, "check permission %{public}s pass", permission.c_str());
         return true;
     }
+
+    HiviewDFX::HiSysEvent::Write(HiviewDFX::HiSysEvent::Domain::DLP, "DLP_PERMISSION_REPORT",
+        HiviewDFX::HiSysEvent::EventType::SECURITY, "CODE", DLP_PERMISSION_VERIFY_ERROR,
+        "CALLER_TOKENID", callingToken);
+
     DLP_LOG_ERROR(LABEL, "check permission %{public}s fail", permission.c_str());
     return false;
 }

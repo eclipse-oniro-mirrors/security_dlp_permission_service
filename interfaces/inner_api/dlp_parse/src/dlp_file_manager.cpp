@@ -14,11 +14,12 @@
  */
 #include "dlp_file_manager.h"
 
-#include "dlp_file.h"
 #include "dlp_crypt.h"
+#include "dlp_file.h"
 #include "dlp_permission.h"
 #include "dlp_permission_kit.h"
 #include "dlp_permission_log.h"
+#include "hitrace_meter.h"
 #include "securec.h"
 
 namespace OHOS {
@@ -62,7 +63,9 @@ std::shared_ptr<DlpFile> DlpFileManager::GetDlpFile(int32_t dlpFd)
 int32_t DlpFileManager::GenerateCertData(const PermissionPolicy& policy, struct DlpBlob& certData) const
 {
     std::vector<uint8_t> cert;
+    StartTrace(HITRACE_TAG_ACCESS_CONTROL, "DlpGenerateCertificate");
     int32_t result = DlpPermissionKit::GenerateDlpCertificate(policy, cert);
+    FinishTrace(HITRACE_TAG_ACCESS_CONTROL);
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "generate dlp cert failed.");
         return result;
@@ -157,7 +160,9 @@ int32_t DlpFileManager::ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr) co
     std::vector<uint8_t> certBuf = std::vector<uint8_t>(cert.data, cert.data + cert.size);
     PermissionPolicy policy;
     DLP_LOG_DEBUG(LABEL, "certBuf size %{public}zu.", certBuf.size());
+    StartTrace(HITRACE_TAG_ACCESS_CONTROL, "DlpParseCertificate");
     result = DlpPermissionKit::ParseDlpCertificate(certBuf, policy);
+    FinishTrace(HITRACE_TAG_ACCESS_CONTROL);
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "parse dlp cert failed.");
         return result;

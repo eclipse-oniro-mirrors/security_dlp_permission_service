@@ -55,6 +55,8 @@ public:
     int32_t IsInDlpSandbox(bool& inSandbox) override;
     int32_t GetDlpSupportFileType(std::vector<std::string>& supportFileType) override;
 
+    int Dump(int fd, const std::vector<std::u16string>& args) override;
+
 private:
     bool Initialize() const;
 

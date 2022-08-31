@@ -292,6 +292,27 @@ int32_t DlpPermissionService::GetDlpSupportFileType(std::vector<std::string>& su
     };
     return DLP_OK;
 }
+
+int DlpPermissionService::Dump(int fd, const std::vector<std::u16string>& args)
+{
+    if (fd < 0) {
+        return ERR_INVALID_VALUE;
+    }
+
+    std::string arg0 = (args.size() == 0) ? "" : Str16ToStr8(args.at(0));
+    if (arg0.compare("-h") == 0) {
+        dprintf(fd, "Usage:\n");
+        dprintf(fd, "      -h: command help\n");
+        dprintf(fd, "      -d: default dump\n");
+    } else if (arg0.compare("-d") == 0) {
+        if (appStateObserver_ != nullptr) {
+            appStateObserver_->DumpSandbox(fd);
+        } else {
+            return ERR_INVALID_VALUE;
+        }
+    }
+    return ERR_OK;
+}
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS

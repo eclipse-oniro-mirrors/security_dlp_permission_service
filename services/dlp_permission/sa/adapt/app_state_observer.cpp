@@ -278,6 +278,18 @@ int32_t AppStateObserver::IsInDlpSandbox(bool& inSandbox, int32_t uid)
     DLP_LOG_INFO(LABEL, "uid: %{public}d, inSandbox: %{public}d", uid, inSandbox);
     return DLP_OK;
 }
+
+void AppStateObserver::DumpSandbox(int fd)
+{
+    std::lock_guard<std::mutex> lock(sandboxInfoLock_);
+    dprintf(fd, "DlpSandbox:\n");
+    for (auto iter = sandboxInfo_.begin(); iter != sandboxInfo_.end(); iter++) {
+        DlpSandboxInfo& appInfo = iter->second;
+        dprintf(fd, "userId:%d;bundleName:%s;sandboxIndex:%d;permType:%s\n",
+            appInfo.userId, appInfo.bundleName.c_str(), appInfo.appIndex,
+            appInfo.permType == READ_ONLY ? "ReadOnly" : "FullControl");
+    }
+}
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS

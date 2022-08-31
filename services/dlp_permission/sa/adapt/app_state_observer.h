@@ -40,6 +40,8 @@ public:
     void AddDlpSandboxInfo(const DlpSandboxInfo& appInfo);
     void EraseDlpSandboxInfo(int uid);
 
+    void DumpSandbox(int fd);
+
 private:
     void UninstallDlpSandbox(DlpSandboxInfo& appInfo);
     void UninstallAllDlpSandboxForUser(int32_t userId);

@@ -15,6 +15,9 @@
     "syscap": [
       "SystemCapability.Security.DlpPermissionService"
     ],
+    "hisysevent_config": [
+      "//base/security/dlp_permission_service/hisysevent.yaml"
+    ],
     "features": [ "dlp_permission_service_feature_coverage = false" ],
     "adapted_system_type": [
       "standard"
@@ -23,19 +26,21 @@
     "ram": "5102KB",
     "deps": {
       "components": [
+        "aafwk_standard",
         "ability_base",
         "ability_runtime",
-        "hiviewdfx_hilog_native",
-        "ipc_core",
-        "aafwk_standard",
-        "system_ability_fwk",
-        "samgr_proxy",
         "appexecfwk_standard",
-        "eventhandler",
+        "hiviewdfx_hilog_native",
+        "hisysevent_native",
+        "ipc_core",
         "napi",
         "safwk",
         "samgr",
-        "c_utils"
+        "c_utils",
+        "samgr_proxy",
+        "samgr_standard",
+        "system_ability_fwk",
+        "utils_base"
       ],
       "third_party": [
         "cJSON",
