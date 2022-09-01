@@ -111,7 +111,6 @@ napi_value CreateEnumAccountType(napi_env env, napi_value exports)
 
 void CreateNapiRetMsg(napi_env env, int32_t errorCode, napi_value* result, napi_value data)
 {
-    DLP_LOG_DEBUG(LABEL, "called");
     if (errorCode == DLP_OK) {
         NAPI_CALL_RETURN_VOID(env, napi_create_int32(env, DLP_OK, result));
         return;
@@ -162,7 +161,6 @@ void ProcessCallbackOrPromise(napi_env env, const CommonAsyncContext* asyncConte
 void GetGenerateDlpFileParams(
     const napi_env env, const napi_callback_info info, GenerateDlpFileAsyncContext& asyncContext)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     size_t argc = PARAM_SIZE_FOUR;
     napi_value argv[PARAM_SIZE_FOUR] = {nullptr};
     NAPI_CALL_RETURN_VOID(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
@@ -197,7 +195,6 @@ void GetGenerateDlpFileParams(
 
 void GetOpenDlpFileParams(const napi_env env, const napi_callback_info info, DlpFileAsyncContext& asyncContext)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     size_t argc = PARAM_SIZE_TWO;
     napi_value argv[PARAM_SIZE_TWO] = {nullptr};
     NAPI_CALL_RETURN_VOID(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
@@ -217,7 +214,6 @@ void GetOpenDlpFileParams(const napi_env env, const napi_callback_info info, Dlp
 
 void GetIsDlpFileParams(const napi_env env, const napi_callback_info info, DlpFileAsyncContext& asyncContext)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     size_t argc = PARAM_SIZE_TWO;
     napi_value argv[PARAM_SIZE_TWO] = {nullptr};
     NAPI_CALL_RETURN_VOID(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
@@ -237,7 +233,6 @@ void GetIsDlpFileParams(const napi_env env, const napi_callback_info info, DlpFi
 
 void GetDlpLinkFileParams(const napi_env env, const napi_callback_info info, DlpLinkFileAsyncContext& asyncContext)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     napi_value thisVar = nullptr;
     size_t argc = PARAM_SIZE_TWO;
     napi_value argv[PARAM_SIZE_TWO] = {nullptr};
@@ -271,7 +266,6 @@ void GetDlpLinkFileParams(const napi_env env, const napi_callback_info info, Dlp
 void GetRecoverDlpFileParams(
     const napi_env env, const napi_callback_info info, RecoverDlpFileAsyncContext& asyncContext)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     napi_value thisVar = nullptr;
     size_t argc = PARAM_SIZE_TWO;
     napi_value argv[PARAM_SIZE_TWO] = {nullptr};
@@ -304,7 +298,6 @@ void GetRecoverDlpFileParams(
 
 void GetCloseDlpFileParams(const napi_env env, const napi_callback_info info, CloseDlpFileAsyncContext& asyncContext)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     napi_value thisVar = nullptr;
     size_t argc = PARAM_SIZE_ONE;
     napi_value argv[PARAM_SIZE_ONE] = {nullptr};
@@ -329,7 +322,6 @@ void GetCloseDlpFileParams(const napi_env env, const napi_callback_info info, Cl
 
 void GetInstallDlpSandboxParams(const napi_env env, const napi_callback_info info, DlpSandboxAsyncContext& asyncContext)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     size_t argc = PARAM_SIZE_FOUR;
     napi_value argv[PARAM_SIZE_FOUR] = {nullptr};
     NAPI_CALL_RETURN_VOID(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
@@ -364,7 +356,6 @@ void GetInstallDlpSandboxParams(const napi_env env, const napi_callback_info inf
 void GetUninstallDlpSandboxParams(
     const napi_env env, const napi_callback_info info, DlpSandboxAsyncContext& asyncContext)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     size_t argc = PARAM_SIZE_FOUR;
     napi_value argv[PARAM_SIZE_FOUR] = {nullptr};
     NAPI_CALL_RETURN_VOID(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));
@@ -401,7 +392,6 @@ void GetUninstallDlpSandboxParams(
 void GetThirdInterfaceParams(
     const napi_env env, const napi_callback_info info, CommonAsyncContext& asyncContext)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     size_t argc = PARAM_SIZE_ONE;
     napi_value argv[PARAM_SIZE_ONE] = {nullptr};
     NAPI_CALL_RETURN_VOID(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr));

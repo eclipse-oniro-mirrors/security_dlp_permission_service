@@ -49,7 +49,6 @@ static napi_value BindingJsWithNative(napi_env env, napi_value* argv, size_t arg
 
 napi_value NapiDlpPermission::GenerateDlpFile(napi_env env, napi_callback_info cbInfo)
 {
-    DLP_LOG_DEBUG(LABEL, "called");
     auto* asyncContext = new (std::nothrow) GenerateDlpFileAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
@@ -124,7 +123,6 @@ void NapiDlpPermission::GenerateDlpFileComplete(napi_env env, napi_status status
 
 napi_value NapiDlpPermission::OpenDlpFile(napi_env env, napi_callback_info cbInfo)
 {
-    DLP_LOG_DEBUG(LABEL, "called");
     auto* asyncContext = new (std::nothrow) DlpFileAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
@@ -218,7 +216,6 @@ void NapiDlpPermission::OpenDlpFileComplete(napi_env env, napi_status status, vo
 
 napi_value NapiDlpPermission::IsDlpFile(napi_env env, napi_callback_info cbInfo)
 {
-    DLP_LOG_DEBUG(LABEL, "called");
     auto* asyncContext = new (std::nothrow) DlpFileAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
@@ -282,7 +279,6 @@ void NapiDlpPermission::IsDlpFileComplete(napi_env env, napi_status status, void
 
 napi_value NapiDlpPermission::AddDlpLinkFile(napi_env env, napi_callback_info cbInfo)
 {
-    DLP_LOG_DEBUG(LABEL, "called");
     auto* asyncContext = new (std::nothrow) DlpLinkFileAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
@@ -342,7 +338,6 @@ void NapiDlpPermission::AddDlpLinkFileComplete(napi_env env, napi_status status,
 
 napi_value NapiDlpPermission::DeleteDlpLinkFile(napi_env env, napi_callback_info cbInfo)
 {
-    DLP_LOG_DEBUG(LABEL, "called");
     auto* asyncContext = new (std::nothrow) DlpLinkFileAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
@@ -401,7 +396,6 @@ void NapiDlpPermission::DeleteDlpLinkFileComplete(napi_env env, napi_status stat
 
 napi_value NapiDlpPermission::RecoverDlpFile(napi_env env, napi_callback_info cbInfo)
 {
-    DLP_LOG_DEBUG(LABEL, "called");
     auto* asyncContext = new (std::nothrow) RecoverDlpFileAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
@@ -461,7 +455,6 @@ void NapiDlpPermission::RecoverDlpFileComplete(napi_env env, napi_status status,
 
 napi_value NapiDlpPermission::CloseDlpFile(napi_env env, napi_callback_info cbInfo)
 {
-    DLP_LOG_DEBUG(LABEL, "called");
     auto* asyncContext = new (std::nothrow) CloseDlpFileAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
@@ -520,7 +513,6 @@ void NapiDlpPermission::CloseDlpFileComplete(napi_env env, napi_status status, v
 
 napi_value NapiDlpPermission::InstallDlpSandbox(napi_env env, napi_callback_info cbInfo)
 {
-    DLP_LOG_DEBUG(LABEL, "called");
     auto* asyncContext = new (std::nothrow) DlpSandboxAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
@@ -582,7 +574,6 @@ void NapiDlpPermission::InstallDlpSandboxComplete(napi_env env, napi_status stat
 
 napi_value NapiDlpPermission::UninstallDlpSandbox(napi_env env, napi_callback_info cbInfo)
 {
-    DLP_LOG_DEBUG(LABEL, "called");
     auto* asyncContext = new (std::nothrow) DlpSandboxAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
@@ -642,7 +633,6 @@ void NapiDlpPermission::UninstallDlpSandboxComplete(napi_env env, napi_status st
 
 napi_value NapiDlpPermission::QueryFileAccess(napi_env env, napi_callback_info cbInfo)
 {
-    DLP_LOG_DEBUG(LABEL, "called");
     auto* asyncContext = new (std::nothrow) QueryFileAccessAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
@@ -703,7 +693,6 @@ void NapiDlpPermission::QueryFileAccessComplete(napi_env env, napi_status status
 
 napi_value NapiDlpPermission::IsInSandbox(napi_env env, napi_callback_info cbInfo)
 {
-    DLP_LOG_DEBUG(LABEL, "called");
     auto* asyncContext = new (std::nothrow) IsInSandboxAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
@@ -764,7 +753,6 @@ void NapiDlpPermission::IsInSandboxComplete(napi_env env, napi_status status, vo
 
 napi_value NapiDlpPermission::GetDlpSupportFileType(napi_env env, napi_callback_info cbInfo)
 {
-    DLP_LOG_DEBUG(LABEL, "called");
     auto* asyncContext = new (std::nothrow) GetDlpSupportFileTypeAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
@@ -825,8 +813,6 @@ void NapiDlpPermission::GetDlpSupportFileTypeComplete(napi_env env, napi_status 
 
 napi_value NapiDlpPermission::DlpFile(napi_env env, napi_callback_info cbInfo)
 {
-    DLP_LOG_DEBUG(LABEL, "called");
-
     napi_value instance = nullptr;
     napi_value constructor = nullptr;
 
@@ -847,8 +833,6 @@ napi_value NapiDlpPermission::DlpFile(napi_env env, napi_callback_info cbInfo)
 
 napi_value NapiDlpPermission::Init(napi_env env, napi_value exports)
 {
-    DLP_LOG_DEBUG(LABEL, "called");
-
     napi_property_descriptor desc[] = {
         DECLARE_NAPI_FUNCTION("generateDlpFile", GenerateDlpFile),
         DECLARE_NAPI_FUNCTION("openDlpFile", OpenDlpFile),
@@ -888,7 +872,6 @@ napi_value NapiDlpPermission::Init(napi_env env, napi_value exports)
 
 napi_value NapiDlpPermission::JsConstructor(napi_env env, napi_callback_info cbinfo)
 {
-    DLP_LOG_DEBUG(LABEL, "called");
     napi_value thisVar = nullptr;
     size_t argc = 2;
     napi_value argv[2] = {nullptr};

@@ -73,7 +73,6 @@ static void FreeRestorePolicyCallbackTaskPara(RestorePolicyCallbackTaskPara* tas
 
 static void* PackPolicyCallbackTask(void* inputTaskParams)
 {
-    DLP_LOG_DEBUG("Called");
     if (inputTaskParams == NULL) {
         DLP_LOG_ERROR("InputTaskParams is null");
         return NULL;
@@ -146,7 +145,6 @@ end:
 
 static void* RestorePolicyCallbackTask(void* inputTaskParams)
 {
-    DLP_LOG_DEBUG("Called");
     if (inputTaskParams == NULL) {
         DLP_LOG_ERROR("InputTaskParams is null");
         return NULL;
@@ -213,7 +211,6 @@ int DLP_PackPolicy(
     uint32_t userId, const DLP_PackPolicyParams* packParams, DLP_PackPolicyCallback callback, uint64_t* requestId)
 {
     (void)userId;
-    DLP_LOG_DEBUG("Called");
     if (packParams == NULL || packParams->data == NULL || packParams->featureName == NULL || callback == NULL ||
         requestId == NULL || packParams->dataLen == 0 || packParams->dataLen > MAX_CERT_LEN) {
         DLP_LOG_ERROR("Callback or params is null");
@@ -285,7 +282,6 @@ err:
 int DLP_RestorePolicy(
     uint32_t userId, const DLP_EncPolicyData* encData, DLP_RestorePolicyCallback callback, uint64_t* requestId)
 {
-    DLP_LOG_DEBUG("Called");
     if (encData == NULL || encData->data == NULL || encData->featureName == NULL || callback == NULL ||
         requestId == NULL || encData->dataLen == 0 || encData->dataLen > MAX_CERT_LEN) {
         DLP_LOG_ERROR("Callback or params is null");

@@ -13,21 +13,13 @@
  * limitations under the License.
  */
 #include "dlp_permission_death_recipient.h"
-
 #include "dlp_permission_client.h"
-#include "dlp_permission_log.h"
 
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
-namespace {
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {
-    LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionDeathRecipient"};
-}  // namespace
-
 void DlpPermissionDeathRecipient::OnRemoteDied(const wptr<IRemoteObject>& object)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     DlpPermissionClient::GetInstance().OnRemoteDiedHandle();
 }
 }  // namespace DlpPermission

@@ -45,7 +45,6 @@ static bool CheckAesParam(const uint8_t* buff, uint32_t len)
 
 static bool CheckAccount(const std::string& account)
 {
-    DLP_LOG_DEBUG(LABEL, "Called, %{private}s", account.c_str());
     if (account.empty() || account.size() > MAX_ACCOUNT_SIZE) {
         DLP_LOG_ERROR(LABEL, "Account is invalid");
         return false;
@@ -55,7 +54,6 @@ static bool CheckAccount(const std::string& account)
 
 static bool CheckPerm(uint32_t perm)
 {
-    DLP_LOG_DEBUG(LABEL, "Called, %{private}d", perm);
     if (perm <= 0 || perm >= DEFAULT_PERM) {
         DLP_LOG_ERROR(LABEL, "Perm is invalid");
         return false;
@@ -65,7 +63,6 @@ static bool CheckPerm(uint32_t perm)
 
 static bool CheckTime(uint64_t time)
 {
-    DLP_LOG_DEBUG(LABEL, "Called, %{private}lu", time);
     uint64_t curTime = static_cast<uint64_t>(
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     if (time < curTime) {
@@ -77,14 +74,12 @@ static bool CheckTime(uint64_t time)
 
 static bool CheckAuthUserInfo(const AuthUserInfo& info)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     return (CheckAccount(info.authAccount) && CheckPerm(info.authPerm) && CheckTime(info.permExpiryTime) &&
             CheckAccountType(info.authAccountType));
 }
 
 static bool CheckAuthUserInfoList(const std::vector<AuthUserInfo>& authUsers_)
 {
-    DLP_LOG_DEBUG(LABEL, "Called, %{private}zu", authUsers_.size());
     if (authUsers_.size() <= MAX_ACCOUNT_NUM) {
         for (auto iter : authUsers_) {
             if (!CheckAuthUserInfo(iter)) {
@@ -118,7 +113,6 @@ void PermissionPolicy::FreePermissionPolicyMem()
 
 PermissionPolicy::PermissionPolicy()
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     ownerAccount_ = "";
     ownerAccountType_ = INVALID_ACCOUNT;
     authUsers_ = {};
@@ -130,7 +124,6 @@ PermissionPolicy::PermissionPolicy()
 
 PermissionPolicy::PermissionPolicy(const DlpProperty& property)
 {
-    DLP_LOG_DEBUG(LABEL, "called");
     ownerAccount_ = property.ownerAccount;
     ownerAccountType_ = property.ownerAccountType;
     authUsers_ = property.authUsers;
@@ -142,7 +135,6 @@ PermissionPolicy::PermissionPolicy(const DlpProperty& property)
 
 PermissionPolicy::~PermissionPolicy()
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     FreePermissionPolicyMem();
 }
 
@@ -225,7 +217,6 @@ uint32_t PermissionPolicy::GetIvLen() const
 
 void PermissionPolicy::CopyPermissionPolicy(const PermissionPolicy& srcPolicy)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     if (!srcPolicy.IsValid()) {
         DLP_LOG_ERROR(LABEL, "dest policy is invalid");
         return;
@@ -260,7 +251,6 @@ void PermissionPolicy::CopyPermissionPolicy(const PermissionPolicy& srcPolicy)
 
 bool CheckAccountType(DlpAccountType accountType)
 {
-    DLP_LOG_DEBUG(LABEL, "Called, %{private}d", accountType);
     if (accountType > APPLICATION_ACCOUNT || accountType < CLOUD_ACCOUNT) {
         DLP_LOG_ERROR(LABEL, "account type is invalid");
         return false;
@@ -279,7 +269,6 @@ void FreeCharBuffer(char* buff, uint32_t buffLen)
 
 bool CheckAesParamLen(uint32_t len)
 {
-    DLP_LOG_DEBUG(LABEL, "Called, %{private}u", len);
     return VALID_AESPARAM_LEN.count(len) > 0;
 }
 }  // namespace DlpPermission

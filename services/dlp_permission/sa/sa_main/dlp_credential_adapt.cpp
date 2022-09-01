@@ -74,7 +74,8 @@ static int32_t QueryRequestIdle()
 
 static void DlpPackPolicyCallback(uint64_t requestId, int errorCode, DLP_EncPolicyData* outParams)
 {
-    DLP_LOG_DEBUG(LABEL, "Called, requestId: %{public}llu", static_cast<unsigned long long>(requestId));
+    DLP_LOG_INFO(LABEL, "Called, requestId: %{public}llu", static_cast<unsigned long long>(requestId));
+
     auto callback = GetCallbackFromRequestMap(requestId);
     if (callback == nullptr) {
         DLP_LOG_ERROR(LABEL, "callback is null");
@@ -99,7 +100,7 @@ static void DlpPackPolicyCallback(uint64_t requestId, int errorCode, DLP_EncPoli
 
 static void DlpRestorePolicyCallback(uint64_t requestId, int errorCode, DLP_RestorePolicyData* outParams)
 {
-    DLP_LOG_DEBUG(LABEL, "Called, requestId: %{public}llu", static_cast<unsigned long long>(requestId));
+    DLP_LOG_INFO(LABEL, "Called, requestId: %{public}llu", static_cast<unsigned long long>(requestId));
 
     auto callback = GetCallbackFromRequestMap(requestId);
     if (callback == nullptr) {
@@ -178,8 +179,6 @@ static int GetOsAccountIdFromUid(int uid)
 int32_t DlpCredential::GenerateDlpCertificate(
     const std::string& policy, DlpAccountType accountType, sptr<IDlpPermissionCallback>& callback)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
-
     DLP_PackPolicyParams packPolicy = {
         .featureName = strdup("dlp_permission_service"),
         .data = (uint8_t*)strdup(policy.c_str()),
@@ -229,7 +228,6 @@ static void FreeDLPEncPolicyData(DLP_EncPolicyData& encPolicy)
 
 int32_t DlpCredential::ParseDlpCertificate(const std::vector<uint8_t>& cert, sptr<IDlpPermissionCallback>& callback)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     auto data = new (std::nothrow) uint8_t[cert.size()];
     if (data == nullptr) {
         DLP_LOG_ERROR(LABEL, "New memory fail");

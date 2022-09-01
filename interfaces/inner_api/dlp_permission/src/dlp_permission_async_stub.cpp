@@ -60,8 +60,6 @@ int32_t DlpPermissionAsyncStub::OnRemoteRequest(
 
 int32_t DlpPermissionAsyncStub::onGenerateDlpCertificateStub(MessageParcel& data, MessageParcel& reply)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
-
     std::vector<uint8_t> cert;
     int32_t result;
 
@@ -81,8 +79,6 @@ int32_t DlpPermissionAsyncStub::onGenerateDlpCertificateStub(MessageParcel& data
 
 void DlpPermissionAsyncStub::onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
-
     if (generateDlpCertificateCallback_ == nullptr) {
         DLP_LOG_ERROR(LABEL, "Callback is null");
         return;
@@ -93,8 +89,6 @@ void DlpPermissionAsyncStub::onGenerateDlpCertificate(int32_t result, const std:
 
 int32_t DlpPermissionAsyncStub::onParseDlpCertificateStub(MessageParcel& data, MessageParcel& reply)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
-
     int32_t result;
     if (!data.ReadInt32(result)) {
         DLP_LOG_ERROR(LABEL, "Read int32 fail");
@@ -114,8 +108,6 @@ int32_t DlpPermissionAsyncStub::onParseDlpCertificateStub(MessageParcel& data, M
 
 void DlpPermissionAsyncStub::onParseDlpCertificate(int32_t result, const PermissionPolicy& policy)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
-
     if (parseDlpCertificateCallback_ == nullptr) {
         DLP_LOG_ERROR(LABEL, "Callback is null");
         return;

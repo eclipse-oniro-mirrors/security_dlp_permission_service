@@ -78,7 +78,6 @@ void DlpPermissionService::OnStop()
 
 bool DlpPermissionService::RegisterAppStateObserver()
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     if (appStateObserver_ != nullptr) {
         DLP_LOG_INFO(LABEL, "AppStateObserver instance already create");
         return true;
@@ -120,7 +119,6 @@ void DlpPermissionService::UnregisterAppStateObserver()
 int32_t DlpPermissionService::GenerateDlpCertificate(
     const sptr<DlpPolicyParcel>& policyParcel, sptr<IDlpPermissionCallback>& callback)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     if (callback == nullptr) {
         DLP_LOG_ERROR(LABEL, "Callback is null");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
@@ -145,8 +143,6 @@ int32_t DlpPermissionService::GenerateDlpCertificate(
 int32_t DlpPermissionService::ParseDlpCertificate(
     const std::vector<uint8_t>& cert, sptr<IDlpPermissionCallback>& callback)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
-
     if (callback == nullptr) {
         DLP_LOG_ERROR(LABEL, "Callback is null");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
@@ -187,7 +183,6 @@ void DlpPermissionService::InsertDlpSandboxInfo(
 int32_t DlpPermissionService::InstallDlpSandbox(
     const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     if (bundleName.empty() || permType >= DEFAULT_PERM || permType < READ_ONLY) {
         DLP_LOG_ERROR(LABEL, "param is invalid");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
@@ -223,7 +218,6 @@ void DlpPermissionService::DeleteDlpSandboxInfo(const std::string& bundleName, i
 
 int32_t DlpPermissionService::UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     if (bundleName.empty() || appIndex < 0 || userId < 0) {
         DLP_LOG_ERROR(LABEL, "param is invalid");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
@@ -237,7 +231,6 @@ int32_t DlpPermissionService::UninstallDlpSandbox(const std::string& bundleName,
 int32_t DlpPermissionService::GetSandboxExternalAuthorization(
     int sandboxUid, const AAFwk::Want& want, SandBoxExternalAuthorType& authType)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     if (sandboxUid < 0) {
         DLP_LOG_ERROR(LABEL, "param is invalid");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
@@ -260,7 +253,6 @@ int32_t DlpPermissionService::GetSandboxExternalAuthorization(
 
 int32_t DlpPermissionService::QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t tokenId)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     if (tokenId <= 0) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
@@ -273,7 +265,6 @@ int32_t DlpPermissionService::QueryDlpFileCopyableByTokenId(bool& copyable, uint
 
 int32_t DlpPermissionService::QueryDlpFileAccess(AuthPermType& permType)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     if (appStateObserver_ == nullptr) {
         DLP_LOG_WARN(LABEL, "Failed to get app state observer instance");
         return DLP_SERVICE_ERROR_APPOBSERVER_NULL;
@@ -284,7 +275,6 @@ int32_t DlpPermissionService::QueryDlpFileAccess(AuthPermType& permType)
 
 int32_t DlpPermissionService::IsInDlpSandbox(bool& inSandbox)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     if (appStateObserver_ == nullptr) {
         DLP_LOG_WARN(LABEL, "Failed to get app state observer instance");
         return DLP_SERVICE_ERROR_APPOBSERVER_NULL;

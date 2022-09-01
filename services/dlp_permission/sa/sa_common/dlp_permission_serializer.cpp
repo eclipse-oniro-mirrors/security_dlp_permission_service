@@ -191,7 +191,6 @@ int32_t DlpPermissionSerializer::SerializeDlpPermission(const PermissionPolicy& 
 
 int32_t DlpPermissionSerializer::DeserializeDlpPermission(const nlohmann::json& permJson, PermissionPolicy& policy)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     if (permJson.find(AUTH_USER_LIST) != permJson.end() && permJson.at(AUTH_USER_LIST).is_array()) {
         auto jsonList = permJson.at(AUTH_USER_LIST).get<std::vector<nlohmann::json>>();
         std::vector<AuthUserInfo> userList;

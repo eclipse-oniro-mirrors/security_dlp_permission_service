@@ -49,7 +49,6 @@ void ClientParseDlpCertificateCallback::onParseDlpCertificate(int32_t result, co
 
 int32_t DlpPermissionKit::GenerateDlpCertificate(const PermissionPolicy& policy, std::vector<uint8_t>& cert)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     std::shared_ptr<ClientGenerateDlpCertificateCallback> callback =
         std::make_shared<ClientGenerateDlpCertificateCallback>();
     if (callback == nullptr) {
@@ -82,7 +81,6 @@ int32_t DlpPermissionKit::GenerateDlpCertificate(const PermissionPolicy& policy,
 
 int32_t DlpPermissionKit::ParseDlpCertificate(const std::vector<uint8_t>& cert, PermissionPolicy& policy)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     std::shared_ptr<ClientParseDlpCertificateCallback> callback = std::make_shared<ClientParseDlpCertificateCallback>();
     if (callback == nullptr) {
         DLP_LOG_ERROR(LABEL, "Callback is null");
@@ -115,44 +113,37 @@ int32_t DlpPermissionKit::ParseDlpCertificate(const std::vector<uint8_t>& cert, 
 int32_t DlpPermissionKit::InstallDlpSandbox(
     const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     return DlpPermissionClient::GetInstance().InstallDlpSandbox(bundleName, permType, userId, appIndex);
 }
 
 int32_t DlpPermissionKit::UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     return DlpPermissionClient::GetInstance().UninstallDlpSandbox(bundleName, appIndex, userId);
 }
 
 int32_t DlpPermissionKit::GetSandboxExternalAuthorization(int sandboxUid,
     const AAFwk::Want& want, SandBoxExternalAuthorType& authType)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     return DlpPermissionClient::GetInstance().GetSandboxExternalAuthorization(sandboxUid, want, authType);
 }
 
 int32_t DlpPermissionKit::QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t tokenId)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     return DlpPermissionClient::GetInstance().QueryDlpFileCopyableByTokenId(copyable, tokenId);
 }
 
 int32_t DlpPermissionKit::QueryDlpFileAccess(AuthPermType& permType)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     return DlpPermissionClient::GetInstance().QueryDlpFileAccess(permType);
 }
 
 int32_t DlpPermissionKit::IsInDlpSandbox(bool& inSandbox)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     return DlpPermissionClient::GetInstance().IsInDlpSandbox(inSandbox);
 }
 
 int32_t DlpPermissionKit::GetDlpSupportFileType(std::vector<std::string>& supportFileType)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     return DlpPermissionClient::GetInstance().GetDlpSupportFileType(supportFileType);
 }
 }  // namespace DlpPermission

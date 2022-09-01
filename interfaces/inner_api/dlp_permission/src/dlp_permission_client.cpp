@@ -58,7 +58,6 @@ static int32_t CheckSandboxFlag(AccessToken::AccessTokenID tokenId, bool& sandbo
 int32_t DlpPermissionClient::GenerateDlpCertificate(
     const PermissionPolicy& policy, std::shared_ptr<GenerateDlpCertificateCallback> callback)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     if (!policy.IsValid() || callback == nullptr) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
@@ -87,7 +86,6 @@ int32_t DlpPermissionClient::GenerateDlpCertificate(
 int32_t DlpPermissionClient::ParseDlpCertificate(
     const std::vector<uint8_t>& cert, std::shared_ptr<ParseDlpCertificateCallback> callback)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     if (callback == nullptr || cert.size() == 0) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
@@ -109,7 +107,6 @@ int32_t DlpPermissionClient::ParseDlpCertificate(
 int32_t DlpPermissionClient::InstallDlpSandbox(
     const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     if (bundleName.empty() || permType >= DEFAULT_PERM || permType < READ_ONLY) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
@@ -124,7 +121,6 @@ int32_t DlpPermissionClient::InstallDlpSandbox(
 
 int32_t DlpPermissionClient::UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     if (bundleName.empty() || appIndex < 0 || userId < 0) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
@@ -140,7 +136,6 @@ int32_t DlpPermissionClient::UninstallDlpSandbox(const std::string& bundleName, 
 int32_t DlpPermissionClient::GetSandboxExternalAuthorization(
     int sandboxUid, const AAFwk::Want& want, SandBoxExternalAuthorType& auth)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     auto proxy = GetProxy(false);
     if (proxy == nullptr) {
         DLP_LOG_ERROR(LABEL, "Proxy is null, dlpmanager service no start.");
@@ -156,7 +151,6 @@ int32_t DlpPermissionClient::GetSandboxExternalAuthorization(
 
 int32_t DlpPermissionClient::QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t tokenId)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
     bool sandboxFlag;
     if ((tokenId == 0) || (CheckSandboxFlag(tokenId, sandboxFlag) != DLP_OK)) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
@@ -180,8 +174,6 @@ int32_t DlpPermissionClient::QueryDlpFileCopyableByTokenId(bool& copyable, uint3
 
 int32_t DlpPermissionClient::QueryDlpFileAccess(AuthPermType& permType)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
-
     bool sandboxFlag;
     if (CheckSandboxFlag(GetSelfTokenID(), sandboxFlag) != DLP_OK) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
@@ -205,8 +197,6 @@ int32_t DlpPermissionClient::QueryDlpFileAccess(AuthPermType& permType)
 
 int32_t DlpPermissionClient::IsInDlpSandbox(bool& inSandbox)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
-
     bool sandboxFlag;
     if (CheckSandboxFlag(GetSelfTokenID(), sandboxFlag) != DLP_OK) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
@@ -230,8 +220,6 @@ int32_t DlpPermissionClient::IsInDlpSandbox(bool& inSandbox)
 
 int32_t DlpPermissionClient::GetDlpSupportFileType(std::vector<std::string>& supportFileType)
 {
-    DLP_LOG_DEBUG(LABEL, "Called");
-
     auto proxy = GetProxy(false);
     if (proxy == nullptr) {
         DLP_LOG_INFO(LABEL, "Proxy is null");
