@@ -16,6 +16,8 @@
 #ifndef INTERFACES_INNER_API_DLP_PERMISSION_KIT_H
 #define INTERFACES_INNER_API_DLP_PERMISSION_KIT_H
 
+#include <condition_variable>
+#include <mutex>
 #include <string>
 #include <vector>
 #include "dlp_policy.h"
@@ -36,6 +38,8 @@ public:
     int32_t result_ = -1;
     std::vector<uint8_t> cert_;
     bool isCallBack_ = false;
+    std::mutex generateMtx_;
+    std::condition_variable generateCv_;
 };
 
 class ClientParseDlpCertificateCallback : public ParseDlpCertificateCallback {
@@ -48,6 +52,8 @@ public:
     int32_t result_ = -1;
     PermissionPolicy policy_;
     bool isCallBack_ = false;
+    std::mutex parseMtx_;
+    std::condition_variable parseCv_;
 };
 
 class DlpPermissionKit {

@@ -28,7 +28,6 @@ namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionKit"};
 const int64_t TIME_WAIT_TIME_OUT = 10;
-const int32_t WAIT_ONE_TIME = 10;
 }  // namespace
 
 void ClientGenerateDlpCertificateCallback::onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert)
@@ -36,7 +35,9 @@ void ClientGenerateDlpCertificateCallback::onGenerateDlpCertificate(int32_t resu
     DLP_LOG_INFO(LABEL, "Callback");
     this->result_ = result;
     this->cert_ = cert;
+    std::unique_lock<std::mutex> lck(generateMtx_);
     this->isCallBack_ = true;
+    generateCv_.notify_all();
 }
 
 void ClientParseDlpCertificateCallback::onParseDlpCertificate(int32_t result, const PermissionPolicy& policy)
@@ -44,7 +45,9 @@ void ClientParseDlpCertificateCallback::onParseDlpCertificate(int32_t result, co
     DLP_LOG_INFO(LABEL, "Callback");
     this->result_ = result;
     this->policy_.CopyPermissionPolicy(policy);
+    std::unique_lock<std::mutex> lck(parseMtx_);
     this->isCallBack_ = true;
+    parseCv_.notify_all();
 }
 
 int32_t DlpPermissionKit::GenerateDlpCertificate(const PermissionPolicy& policy, std::vector<uint8_t>& cert)
@@ -62,13 +65,11 @@ int32_t DlpPermissionKit::GenerateDlpCertificate(const PermissionPolicy& policy,
     }
 
     // wait callback
-    struct tm startTime = {0};
-    struct tm nowTime = {0};
-    OHOS::GetSystemCurrentTime(&startTime);
-    OHOS::GetSystemCurrentTime(&nowTime);
-    while (OHOS::GetSecondsBetween(startTime, nowTime) < TIME_WAIT_TIME_OUT && !callback->isCallBack_) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(WAIT_ONE_TIME));
-        OHOS::GetSystemCurrentTime(&nowTime);
+    {
+        std::unique_lock<std::mutex> lck(callback->generateMtx_);
+        if (!callback->isCallBack_) {
+            callback->generateCv_.wait_for(lck, std::chrono::seconds(TIME_WAIT_TIME_OUT));
+        }
     }
     if (!callback->isCallBack_) {
         DLP_LOG_ERROR(LABEL, "service did not call back! timeout!");
@@ -93,13 +94,11 @@ int32_t DlpPermissionKit::ParseDlpCertificate(const std::vector<uint8_t>& cert, 
     }
 
     // wait callback
-    struct tm startTime = {0};
-    struct tm nowTime = {0};
-    OHOS::GetSystemCurrentTime(&startTime);
-    OHOS::GetSystemCurrentTime(&nowTime);
-    while (OHOS::GetSecondsBetween(startTime, nowTime) < TIME_WAIT_TIME_OUT && !callback->isCallBack_) {
-        std::this_thread::sleep_for(std::chrono::milliseconds(WAIT_ONE_TIME));
-        OHOS::GetSystemCurrentTime(&nowTime);
+    {
+        std::unique_lock<std::mutex> lck(callback->parseMtx_);
+        if (!callback->isCallBack_) {
+            callback->parseCv_.wait_for(lck, std::chrono::seconds(TIME_WAIT_TIME_OUT));
+        }
     }
     if (!callback->isCallBack_) {
         DLP_LOG_ERROR(LABEL, "service did not call back! timeout!");
