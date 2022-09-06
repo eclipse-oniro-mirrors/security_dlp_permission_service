@@ -66,15 +66,15 @@ fuse_ino_t GetFileInode(DlpLinkFile* node)
 
 static void FuseDaemonLookup(fuse_req_t req, fuse_ino_t parent, const char* name)
 {
-    DLP_LOG_DEBUG(LABEL, "loopup file name %{public}s", name);
     if (name == nullptr) {
-        DLP_LOG_ERROR(LABEL, "name is null");
+        DLP_LOG_ERROR(LABEL, "Look up link file fail, name is null");
         fuse_reply_err(req, ENOENT);
         return;
     }
+    DLP_LOG_DEBUG(LABEL, "Look up link file, name=%{private}s", name);
 
     if (parent != ROOT_INODE) {
-        DLP_LOG_ERROR(LABEL, "parent is not root inode, can not look up");
+        DLP_LOG_ERROR(LABEL, "Look up link file fail, parent is not root inode");
         fuse_reply_err(req, ENOENT);
         return;
     }
@@ -91,10 +91,10 @@ static void FuseDaemonLookup(fuse_req_t req, fuse_ino_t parent, const char* name
     std::string nameStr = name;
     DlpLinkFile* node = DlpLinkManager::GetInstance().LookUpDlpLinkFile(nameStr);
     if (node == nullptr) {
-        DLP_LOG_ERROR(LABEL, "name %{public}s can not found", name);
+        DLP_LOG_ERROR(LABEL, "Look up link file fail, file %{public}s can not found", name);
         fuse_reply_err(req, ENOENT);
     } else {
-        DLP_LOG_DEBUG(LABEL, "name %{public}s has found", name);
+        DLP_LOG_DEBUG(LABEL, "Look up link file succ, file %{public}s found", name);
         fep.ino = GetFileInode(node);
         fep.attr = node->GetLinkStat();
         fuse_reply_entry(req, &fep);
@@ -109,10 +109,8 @@ void UpdateCurrTimeStat(struct timespec* ts)
 static void FuseDaemonGetattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info* fi)
 {
     (void)fi;
-    DLP_LOG_DEBUG(LABEL, "FuseDaemonGetattr");
 
     if (ino == ROOT_INODE) {
-        DLP_LOG_DEBUG(LABEL, "get root inode attr\n");
         struct stat fileStat = FuseDaemon::GetRootFileStat();
         fuse_reply_attr(req, &fileStat, DEFAULT_ATTR_TIMEOUT);
         return;
@@ -120,7 +118,7 @@ static void FuseDaemonGetattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_i
 
     DlpLinkFile* dlp = GetFileNode(ino);
     if (dlp == nullptr) {
-        DLP_LOG_ERROR(LABEL, "get file attr is error");
+        DLP_LOG_ERROR(LABEL, "Get link file attr fail, wrong ino");
         fuse_reply_err(req, ENOENT);
         return;
     }
@@ -132,27 +130,26 @@ static void FuseDaemonGetattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_i
 // we will handle open flag later
 static void FuseDaemonOpen(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info* fi)
 {
-    DLP_LOG_DEBUG(LABEL, "enter");
     if (ino == ROOT_INODE) {
-        DLP_LOG_ERROR(LABEL, "can not open root dir");
+        DLP_LOG_ERROR(LABEL, "Open link file fail, can not open root dir");
         fuse_reply_err(req, ENOENT);
         return;
     }
 
     DlpLinkFile* dlp = GetFileNode(ino);
     if (dlp == nullptr) {
-        DLP_LOG_ERROR(LABEL, "open wrong ino file");
+        DLP_LOG_ERROR(LABEL, "Open link file fail, wrong ino");
         fuse_reply_err(req, ENOENT);
         return;
     }
     if ((fi->flags & O_TRUNC) != 0) {
         int32_t ret = dlp->Truncate(0);
         if (ret != DLP_OK) {
-            DLP_LOG_ERROR(LABEL, "Dlp file truncate failed, ret %{public}d", ret);
+            DLP_LOG_ERROR(LABEL, "Open link file with truncate fail, ret=%{public}d", ret);
             fuse_reply_err(req, EINVAL);
             return;
         }
-        DLP_LOG_INFO(LABEL, "Dlp file open with o_trunc ok");
+        DLP_LOG_INFO(LABEL, "Open link file with truncate succ");
     }
 
     fuse_reply_open(req, fi);
@@ -167,7 +164,6 @@ static DlpLinkFile* GetValidFileNode(fuse_req_t req, fuse_ino_t ino)
     }
     DlpLinkFile* dlp = GetFileNode(ino);
     if (dlp == nullptr) {
-        DLP_LOG_ERROR(LABEL, "dlp file params error");
         fuse_reply_err(req, EBADF);
         return nullptr;
     }
@@ -182,17 +178,19 @@ static void FuseDaemonRead(fuse_req_t req, fuse_ino_t ino, size_t size, off_t of
         return;
     }
     if (size > MAX_FUSE_READ_BUFF_SIZE) {
-        DLP_LOG_ERROR(LABEL, "read size %{public}zu too large", size);
+        DLP_LOG_ERROR(LABEL, "Read link file fail, read size %{public}zu too large", size);
         fuse_reply_err(req, EINVAL);
         return;
     }
     DlpLinkFile* dlp = GetValidFileNode(req, ino);
     if (dlp == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Read link file fail, wrong ino");
         return;
     }
 
     char* buf = (char*)malloc(size);
     if (buf == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Read link file fail, malloc %{public}zu buff fail", size);
         fuse_reply_err(req, EINVAL);
         return;
     }
@@ -211,7 +209,6 @@ static void FuseDaemonRead(fuse_req_t req, fuse_ino_t ino, size_t size, off_t of
 static void FuseDaemonWrite(
     fuse_req_t req, fuse_ino_t ino, const char* buf, size_t size, off_t off, struct fuse_file_info* fi)
 {
-    DLP_LOG_INFO(LABEL, "write size %{public}zu", size);
     (void)fi;
     if (off < 0) {
         fuse_reply_err(req, EINVAL);
@@ -219,9 +216,10 @@ static void FuseDaemonWrite(
     }
     DlpLinkFile* dlp = GetValidFileNode(req, ino);
     if (dlp == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Write link file fail, wrong ino");
         return;
     }
-
+    DLP_LOG_INFO(LABEL, "Write link file, size %{public}zu", size);
     int32_t res = dlp->Write((uint32_t)off, (void*)buf, (uint32_t)size);
     if (res < 0) {
         fuse_reply_err(req, EIO);
@@ -232,7 +230,7 @@ static void FuseDaemonWrite(
 
 static void FuseDaemonForgot(fuse_req_t req, fuse_ino_t ino, uint64_t nlookup)
 {
-    DLP_LOG_INFO(LABEL, "nlookup %{public}u", (uint32_t)nlookup);
+    DLP_LOG_INFO(LABEL, "Forgot link file, nlookup=%{public}u", (uint32_t)nlookup);
     if (ino == ROOT_INODE) {
         fuse_reply_err(req, ENOENT);
         return;
@@ -240,6 +238,7 @@ static void FuseDaemonForgot(fuse_req_t req, fuse_ino_t ino, uint64_t nlookup)
 
     DlpLinkFile* dlp = GetFileNode(ino);
     if (dlp == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Forgot link file fail, wrong ino");
         fuse_reply_err(req, EBADF);
         return;
     }
@@ -350,26 +349,26 @@ void FuseDaemonSetAttr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to
 {
     (void)fi;
     if (attr == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Attr is invalid");
+        DLP_LOG_ERROR(LABEL, "Set link file attr fail, attr invalid");
         fuse_reply_err(req, EINVAL);
         return;
     }
 
     if (ino == ROOT_INODE) {
-        DLP_LOG_ERROR(LABEL, "Root inode can not be set attr");
+        DLP_LOG_ERROR(LABEL, "Set link file attr fail, cannot set attr on root inode");
         fuse_reply_err(req, EACCES);
         return;
     }
 
     DlpLinkFile* dlpLink = GetFileNode(ino);
     if (dlpLink == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Link file does not exist");
+        DLP_LOG_ERROR(LABEL, "Set link file attr fail, wrong ino");
         fuse_reply_err(req, ENOENT);
         return;
     }
 
     if (toSet != FUSE_SET_ATTR_SIZE) {
-        DLP_LOG_ERROR(LABEL, "Setattr type %{public}d not support", toSet);
+        DLP_LOG_ERROR(LABEL, "Set link file attr fail, type %{public}d not support", toSet);
         fuse_reply_err(req, EACCES);
         return;
     }
@@ -377,12 +376,12 @@ void FuseDaemonSetAttr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to
     off_t modifySize = attr->st_size;
     int32_t ret = dlpLink->Truncate(modifySize);
     if (ret != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Link file set size failed, ret %{public}d", ret);
+        DLP_LOG_ERROR(LABEL, "Set link file attr fail, truncate error=%{public}d", ret);
         fuse_reply_err(req, EINVAL);
         return;
     }
 
-    DLP_LOG_INFO(LABEL, "Setattr size ok");
+    DLP_LOG_INFO(LABEL, "Set link file attr succ");
     struct stat fileStat = dlpLink->GetLinkStat();
     fuse_reply_attr(req, &fileStat, DEFAULT_ATTR_TIMEOUT);
 }
@@ -432,19 +431,18 @@ void FuseDaemon::NotifyDaemonDisable(void)
 
 int FuseDaemon::WaitDaemonEnable(void)
 {
-    DLP_LOG_INFO(LABEL, "InitFuseFs start!");
+    DLP_LOG_INFO(LABEL, "Wait fuse fs daemon enable");
     std::unique_lock<std::mutex> lck(daemonEnableMtx_);
     if (daemonStatus_ == DAEMON_UNDEF) {
-        DLP_LOG_INFO(LABEL, "InitFuseFs wait...!");
         daemonEnableCv_.wait_for(lck, std::chrono::seconds(1));
     }
 
     if (daemonStatus_ == DAEMON_ENABLE) {
-        DLP_LOG_INFO(LABEL, "InitFuseFs ok!");
+        DLP_LOG_INFO(LABEL, "Wait fuse fs daemon enable succ");
         return 0;
     }
 
-    DLP_LOG_INFO(LABEL, "InitFuseFs failed!");
+    DLP_LOG_INFO(LABEL, "Wait fuse fs daemon enable fail, time out");
     return -1;
 }
 
@@ -452,7 +450,7 @@ void FuseDaemon::FuseFsDaemonThread(int fuseFd)
 {
     struct stat fileStat;
     if (fstat(fuseFd, &fileStat) < 0) {
-        DLP_LOG_ERROR(LABEL, "%{public}d is wrong fd.", fuseFd);
+        DLP_LOG_ERROR(LABEL, "Fuse fs daemon exit, %{public}d is wrong fd", fuseFd);
         NotifyDaemonDisable();
         return;
     }
@@ -460,7 +458,7 @@ void FuseDaemon::FuseFsDaemonThread(int fuseFd)
     char mountPoint[MAX_FILE_NAME_LEN] = {0};
     int ret = snprintf_s(mountPoint, sizeof(mountPoint), MAX_FILE_NAME_LEN, "/dev/fd/%d", fuseFd);
     if (ret <= 0) {
-        DLP_LOG_ERROR(LABEL, "fuseFd is error!");
+        DLP_LOG_ERROR(LABEL, "Fuse fs daemon exit, snprintf_s fail");
         NotifyDaemonDisable();
         return;
     }
@@ -470,14 +468,14 @@ void FuseDaemon::FuseFsDaemonThread(int fuseFd)
 
     struct fuse_session* se = fuse_session_new(&args, &g_fuseDaemonOper, sizeof(g_fuseDaemonOper), NULL);
     if (se == NULL) {
-        DLP_LOG_ERROR(LABEL, "create fuse session failed!");
+        DLP_LOG_ERROR(LABEL, "Fuse fs daemon exit, create fuse session fail");
         NotifyDaemonDisable();
         fuse_opt_free_args(&args);
         return;
     }
 
     if (fuse_session_mount(se, mountPoint) != 0) {
-        DLP_LOG_ERROR(LABEL, "create fuse session failed!");
+        DLP_LOG_ERROR(LABEL, "Fuse fs daemon exit, mount fuse session fail");
         NotifyDaemonDisable();
         fuse_session_destroy(se);
         fuse_opt_free_args(&args);
@@ -487,9 +485,8 @@ void FuseDaemon::FuseFsDaemonThread(int fuseFd)
     InitRootFileStat();
     NotifyDaemonEnable();
 
-    ret = fuse_session_loop(se);
-    if (ret != 0) {
-        DLP_LOG_ERROR(LABEL, "fuse_session_loop end!");
+    if (fuse_session_loop(se) != 0) {
+        DLP_LOG_ERROR(LABEL, "Fuse fs daemon exit, fuse session loop end");
     }
 
     fuse_session_destroy(se);
@@ -500,33 +497,33 @@ void FuseDaemon::NotifyKernelNoFlush(void)
 {
     std::shared_ptr<DlpFile> defaultfilePtr = std::make_shared<DlpFile>(INVALID_DLP_FD);
     if (DlpLinkManager::GetInstance().AddDlpLinkFile(defaultfilePtr, DEFAULT_DLP_LINK_FILE) != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "add default dlp failed!");
+        DLP_LOG_ERROR(LABEL, "Add default dlp file fail");
         return;
     }
 
     int defaultFd = open(DEFAULT_DLP_LINK_FILE_PATH, O_RDWR);
     if (defaultFd == -1) {
+        DLP_LOG_ERROR(LABEL, "Open default dlp file fail");
         DlpLinkManager::GetInstance().DeleteDlpLinkFile(defaultfilePtr);
-        DLP_LOG_ERROR(LABEL, "open default dlp file failed!");
         return;
     }
 
     // we need kernel to know that fs has no flush interface, close will trigger kernel flush
     close(defaultFd);
     DlpLinkManager::GetInstance().DeleteDlpLinkFile(defaultfilePtr);
-    DLP_LOG_INFO(LABEL, "success");
+    DLP_LOG_INFO(LABEL, "Notify kernel no flush succ");
 }
 
 int FuseDaemon::InitFuseFs(int fuseDevFd)
 {
     if (init_) {
-        DLP_LOG_ERROR(LABEL, "InitFuseFs has already!");
+        DLP_LOG_ERROR(LABEL, "Fuse fs has init already!");
         return -1;
     }
     init_ = true;
 
     if (fuseDevFd < 0) {
-        DLP_LOG_ERROR(LABEL, "InitFuseFs failed: dev fd is error!");
+        DLP_LOG_ERROR(LABEL, "Init fuse fs fail: dev fd is error");
         return -1;
     }
     daemonStatus_ = DAEMON_UNDEF;

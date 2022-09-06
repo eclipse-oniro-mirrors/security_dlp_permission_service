@@ -41,27 +41,27 @@ static bool IsLinkNameValid(const std::string& linkName)
 int32_t DlpLinkManager::AddDlpLinkFile(std::shared_ptr<DlpFile>& filePtr, const std::string& dlpLinkName)
 {
     if (filePtr == nullptr) {
-        DLP_LOG_ERROR(LABEL, "dlp file is null.");
+        DLP_LOG_ERROR(LABEL, "Add link file fail, dlp file is null");
         return DLP_FUSE_ERROR_DLP_FILE_NULL;
     }
     if (!IsLinkNameValid(dlpLinkName)) {
-        DLP_LOG_ERROR(LABEL, "Link name %{private}s is invalid.", dlpLinkName.c_str());
+        DLP_LOG_ERROR(LABEL, "Add link file fail, link file name %{private}s invalid", dlpLinkName.c_str());
         return DLP_FUSE_ERROR_VALUE_INVALID;
     }
 
     Utils::UniqueWriteGuard<Utils::RWLock> infoGuard(g_DlpLinkMapLock_);
     if (g_DlpLinkFileNameMap_.count(dlpLinkName) > 0) {
-        DLP_LOG_WARN(LABEL, "dlpLinkName %{public}s exist.", dlpLinkName.c_str());
+        DLP_LOG_ERROR(LABEL, "Add link file fail, link file %{public}s exist", dlpLinkName.c_str());
         return DLP_FUSE_ERROR_LINKFILE_EXIST;
     }
 
     DlpLinkFile *node = new (std::nothrow) DlpLinkFile(dlpLinkName, filePtr);
     if (node == nullptr) {
-        DLP_LOG_ERROR(LABEL, "alloc Dlp link file %{public}s failed.", dlpLinkName.c_str());
+        DLP_LOG_ERROR(LABEL, "Add link file fail, alloc link file %{public}s fail", dlpLinkName.c_str());
         return DLP_FUSE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
-    DLP_LOG_INFO(LABEL, "add dlp link file name %{public}s", dlpLinkName.c_str());
+    DLP_LOG_INFO(LABEL, "Add link file succ, file name %{public}s", dlpLinkName.c_str());
     g_DlpLinkFileNameMap_[dlpLinkName] = node;
     filePtr->SetLinkStatus();
     return DLP_OK;
@@ -93,12 +93,12 @@ DlpLinkFile* DlpLinkManager::LookUpDlpLinkFile(const std::string& dlpLinkName)
 {
     Utils::UniqueReadGuard<Utils::RWLock> infoGuard(g_DlpLinkMapLock_);
     if (g_DlpLinkFileNameMap_.count(dlpLinkName) <= 0) {
-        DLP_LOG_ERROR(LABEL, "dlpLinkName %{public}s is not exist.", dlpLinkName.c_str());
+        DLP_LOG_ERROR(LABEL, "Look up link file fail, file %{public}s not exist", dlpLinkName.c_str());
         return nullptr;
     }
     DlpLinkFile* node = g_DlpLinkFileNameMap_[dlpLinkName];
     if (node == nullptr) {
-        DLP_LOG_ERROR(LABEL, "dlpLinkName %{public}s is nullptr.", dlpLinkName.c_str());
+        DLP_LOG_ERROR(LABEL, "Look up link file fail, file %{public}s found but file ptr is null", dlpLinkName.c_str());
         return nullptr;
     }
     node->IncreaseRef();

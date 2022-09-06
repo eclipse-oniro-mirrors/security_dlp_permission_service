@@ -75,19 +75,19 @@ struct stat DlpLinkFile::GetLinkStat()
 int32_t DlpLinkFile::Truncate(off_t modifySize)
 {
     if (modifySize > INVALID_FILE_SIZE || modifySize < 0) {
-        DLP_LOG_ERROR(LABEL, "Modify size is invalid");
+        DLP_LOG_ERROR(LABEL, "Truncate link file fail, modify size %{public}ld is invalid", modifySize);
         return DLP_FUSE_ERROR_VALUE_INVALID;
     }
 
     if (dlpFile_ == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Link dlp file is null");
+        DLP_LOG_ERROR(LABEL, "Truncate link file fail, dlp file is null");
         return DLP_FUSE_ERROR_DLP_FILE_NULL;
     }
     int32_t res = dlpFile_->Truncate(static_cast<uint32_t>(modifySize));
     if (res < 0) {
-        DLP_LOG_ERROR(LABEL, "Link dlp file truncate failed, res %{public}d.", res);
+        DLP_LOG_ERROR(LABEL, "Truncate %{public}ld in link file fail, res=%{public}d", modifySize, res);
     } else {
-        DLP_LOG_INFO(LABEL, "Link dlp file truncate size %{public}u ok.", static_cast<uint32_t>(modifySize));
+        DLP_LOG_INFO(LABEL, "Truncate %{public}ld in link file succ", modifySize);
     }
     UpdateMtimeStat();
     return res;
@@ -106,12 +106,12 @@ void DlpLinkFile::UpdateMtimeStat()
 int32_t DlpLinkFile::Write(uint32_t offset, void* buf, uint32_t size)
 {
     if (dlpFile_ == nullptr) {
-        DLP_LOG_ERROR(LABEL, "no dlp file to write");
+        DLP_LOG_ERROR(LABEL, "Write link file fail, dlp file is null");
         return DLP_FUSE_ERROR_DLP_FILE_NULL;
     }
     int32_t res = dlpFile_->DlpFileWrite(offset, buf, size);
     if (res < 0) {
-        DLP_LOG_ERROR(LABEL, "link file write failed, res %{public}d.", res);
+        DLP_LOG_ERROR(LABEL, "Write link file fail, err=%{public}d.", res);
     }
     UpdateMtimeStat();
     return res;
@@ -119,11 +119,11 @@ int32_t DlpLinkFile::Write(uint32_t offset, void* buf, uint32_t size)
 
 int32_t DlpLinkFile::Read(uint32_t offset, void* buf, uint32_t size)
 {
-    DLP_LOG_DEBUG(LABEL, "read offset %{public}u size %{public}u", offset, size);
     if (dlpFile_ == nullptr) {
-        DLP_LOG_ERROR(LABEL, "no dlp file to read");
+        DLP_LOG_ERROR(LABEL, "Read link file fail, dlp file is null");
         return DLP_FUSE_ERROR_DLP_FILE_NULL;
     }
+    DLP_LOG_DEBUG(LABEL, "Read link file, offset=%{public}u, size=%{public}u", offset, size);
     UpdateAtimeStat();
     return dlpFile_->DlpFileRead(offset, buf, size);
 }
