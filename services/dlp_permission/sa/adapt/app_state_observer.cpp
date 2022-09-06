@@ -285,7 +285,7 @@ void AppStateObserver::DumpSandbox(int fd)
     dprintf(fd, "DlpSandbox:\n");
     for (auto iter = sandboxInfo_.begin(); iter != sandboxInfo_.end(); iter++) {
         DlpSandboxInfo& appInfo = iter->second;
-        dprintf(fd, "userId:%d;bundleName:%s;sandboxIndex:%d;permType:%s\n",
+        dprintf(fd, "    userId:%d;bundleName:%s;sandboxIndex:%d;permType:%s\n",
             appInfo.userId, appInfo.bundleName.c_str(), appInfo.appIndex,
             appInfo.permType == READ_ONLY ? "ReadOnly" : "FullControl");
     }

@@ -299,12 +299,13 @@ int DlpPermissionService::Dump(int fd, const std::vector<std::u16string>& args)
         return ERR_INVALID_VALUE;
     }
 
+    dprintf(fd, "DlpPermission Dump:\n");
     std::string arg0 = (args.size() == 0) ? "" : Str16ToStr8(args.at(0));
     if (arg0.compare("-h") == 0) {
         dprintf(fd, "Usage:\n");
         dprintf(fd, "      -h: command help\n");
         dprintf(fd, "      -d: default dump\n");
-    } else if (arg0.compare("-d") == 0) {
+    } else if (arg0.compare("-d") == 0 || arg0.compare("") == 0) {
         if (appStateObserver_ != nullptr) {
             appStateObserver_->DumpSandbox(fd);
         } else {
