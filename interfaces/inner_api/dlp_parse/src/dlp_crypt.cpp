@@ -30,58 +30,54 @@ static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_
 extern "C" {
 #endif
 
-inline int32_t DlpOpensslCheckBlob(const struct DlpBlob* blob)
+inline bool DlpOpensslCheckBlob(const struct DlpBlob* blob)
 {
-    if ((blob == nullptr) || (blob->data == nullptr)) {
-        return DLP_PARSE_ERROR_VALUE_INVALID;
-    }
-    return DLP_OK;
+    return (blob != nullptr) && (blob->data != nullptr);
 }
 
-inline int32_t DlpOpensslCheckBlobZero(const struct DlpBlob* blob)
+inline bool DlpOpensslCheckBlobZero(const struct DlpBlob* blob)
 {
     if (blob == nullptr) {
-        return DLP_PARSE_ERROR_VALUE_INVALID;
+        return false;
     }
 
     if (blob->data == nullptr && blob->size == 0) {
-        return DLP_OK;
+        return true;
     }
 
     if (blob->data == nullptr) {
-        return DLP_PARSE_ERROR_VALUE_INVALID;
+        return false;
     }
 
-    return DLP_OK;
+    return true;
 }
 
-static int32_t AesGenKeyCheckParam(const uint32_t keySize)
+static bool AesGenKeyCheckParam(const uint32_t keySize)
 {
-    if ((keySize != DLP_AES_KEY_SIZE_128) && (keySize != DLP_AES_KEY_SIZE_192) && (keySize != DLP_AES_KEY_SIZE_256)) {
-        DLP_LOG_ERROR(LABEL, "Invalid aes key len %x!", keySize);
-        return DLP_PARSE_ERROR_VALUE_INVALID;
-    }
-    return DLP_OK;
+    return (keySize == DLP_AES_KEY_SIZE_128) || (keySize == DLP_AES_KEY_SIZE_192) || (keySize == DLP_AES_KEY_SIZE_256);
 }
 
 int32_t DlpOpensslGenerateRandomKey(const uint32_t keySize, struct DlpBlob* key)
 {
-    if (AesGenKeyCheckParam(keySize) != DLP_OK || key == nullptr) {
-        DLP_LOG_ERROR(LABEL, "aes generate key invalid params!");
+    if (key == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Generate key fail, blob is nullptr");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
+    if (!AesGenKeyCheckParam(keySize)) {
+        DLP_LOG_ERROR(LABEL, "Generate key fail, key size %{public}d is invalid", keySize);
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
     uint32_t keySizeByte = keySize / BIT_NUM_OF_UINT8;
 
     uint8_t* tmpKey = (uint8_t*)malloc(keySizeByte);
-
     if (tmpKey == nullptr) {
-        DLP_LOG_ERROR(LABEL, "malloc buffer failed");
+        DLP_LOG_ERROR(LABEL, "Generate key fail, alloc %{public}u buffer fail", keySizeByte);
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
     int res = RAND_bytes(tmpKey, keySizeByte);
     if (res <= 0) {
-        DLP_LOG_ERROR(LABEL, "generate key is failed, errorCode: %{public}d", res);
+        DLP_LOG_ERROR(LABEL, "Generate key fail, generate rand bytes error, errno=%{public}d", res);
         (void)memset_s(tmpKey, keySizeByte, 0, keySizeByte);
         free(tmpKey);
         return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
@@ -118,12 +114,9 @@ static const EVP_CIPHER* GetCipherType(uint32_t keySize, uint32_t mode)
 inline void DlpLogOpensslError(void)
 {
     char szErr[DLP_OPENSSL_ERROR_LEN] = {0};
-    unsigned long errCode;
-
-    errCode = ERR_get_error();
+    unsigned long errCode = ERR_get_error();
     ERR_error_string_n(errCode, szErr, DLP_OPENSSL_ERROR_LEN);
-
-    DLP_LOG_ERROR(LABEL, "Openssl engine fail, error code = %{public}lu, error string = %{public}s", errCode, szErr);
+    DLP_LOG_ERROR(LABEL, "Openssl engine error, errno=%{public}lu, errmsg=%{public}s", errCode, szErr);
 }
 
 static int32_t OpensslAesCipherInit(
@@ -140,6 +133,7 @@ static int32_t OpensslAesCipherInit(
 
     const EVP_CIPHER* cipher = GetCipherType(key->size, usageSpec->mode);
     if (cipher == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Aes cipher init fail, get cipher type error");
         EVP_CIPHER_CTX_free(*ctx);
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
@@ -238,6 +232,7 @@ static int32_t OpensslAesCipherCryptInit(
 
     const EVP_CIPHER* cipher = GetCipherType(key->size, usageSpec->mode);
     if (cipher == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Aes cipher crypt init fail, get cipher type error");
         EVP_CIPHER_CTX_free(ctx);
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
@@ -256,12 +251,13 @@ static int32_t OpensslAesCipherCryptInit(
     ret = OpensslAesCipherCryptInitParams(key, ctx, cipherParam, isEncrypt);
     if (ret != DLP_OK) {
         EVP_CIPHER_CTX_free(ctx);
-        DLP_LOG_ERROR(LABEL, "OpensslAesCipherCryptInitParams fail, ret = %d", ret);
+        DLP_LOG_ERROR(LABEL, "Aes cipher crypt init fail, init cipher params error, errno=%d", ret);
         return ret;
     }
 
     struct DlpOpensslAesCtx* outCtx = (struct DlpOpensslAesCtx*)malloc(sizeof(DlpOpensslAesCtx));
     if (outCtx == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Aes cipher crypt init fail, alloc aes ctx fail");
         EVP_CIPHER_CTX_free(ctx);
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
@@ -278,7 +274,6 @@ static int32_t OpensslAesCipherEncryptUpdate(void* cryptoCtx, const struct DlpBl
 {
     struct DlpOpensslAesCtx* aesCtx = (struct DlpOpensslAesCtx*)cryptoCtx;
     EVP_CIPHER_CTX* ctx = (EVP_CIPHER_CTX*)aesCtx->append;
-
     if (ctx == nullptr) {
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
@@ -413,12 +408,15 @@ static int32_t OpensslAesCipherDecryptFinal(
 int32_t DlpOpensslAesEncryptInit(void** cryptoCtx, const struct DlpBlob* key, const struct DlpUsageSpec* usageSpec)
 {
     if (cryptoCtx == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Invalid param cryptoCtx!");
+        DLP_LOG_ERROR(LABEL, "Aes encrypt init fail, ctx is null");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
-
-    if (DlpOpensslCheckBlob(key) != DLP_OK || usageSpec == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Invalid param!");
+    if (usageSpec == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Aes encrypt init fail, usage spec is null");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
+    if (!DlpOpensslCheckBlob(key)) {
+        DLP_LOG_ERROR(LABEL, "Aes encrypt init fail, key is invalid");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
@@ -427,13 +425,13 @@ int32_t DlpOpensslAesEncryptInit(void** cryptoCtx, const struct DlpBlob* key, co
         case DLP_MODE_CTR:
             ret = OpensslAesCipherCryptInit(key, usageSpec, true, cryptoCtx);
             if (ret != DLP_OK) {
-                DLP_LOG_ERROR(LABEL, "OpensslAesCipherCryptInit fail, ret = %d", ret);
+                DLP_LOG_ERROR(LABEL, "Aes encrypt init fail, errno=%{public}d", ret);
                 return ret;
             }
             break;
 
         default:
-            DLP_LOG_ERROR(LABEL, "Unsupport aes mode! mode = 0x%x", usageSpec->mode);
+            DLP_LOG_ERROR(LABEL, "Aes encrypt init fail, aes mode 0x%{public}x unsupport", usageSpec->mode);
             return DLP_PARSE_ERROR_OPERATION_UNSUPPORTED;
     }
 
@@ -443,12 +441,15 @@ int32_t DlpOpensslAesEncryptInit(void** cryptoCtx, const struct DlpBlob* key, co
 int32_t DlpOpensslAesEncryptUpdate(void* cryptoCtx, const struct DlpBlob* message, struct DlpBlob* cipherText)
 {
     if (cryptoCtx == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Invalid param cryptoCtx!");
+        DLP_LOG_ERROR(LABEL, "Aes encrypt update fail, ctx is null");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
-
-    if (DlpOpensslCheckBlob(message) != DLP_OK || DlpOpensslCheckBlob(cipherText) != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Invalid param!");
+    if (!DlpOpensslCheckBlobZero(message)) {
+        DLP_LOG_ERROR(LABEL, "Aes encrypt update fail, msg is invalid");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
+    if (!DlpOpensslCheckBlob(cipherText)) {
+        DLP_LOG_ERROR(LABEL, "Aes encrypt update fail, cipher text is invalid");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
@@ -460,12 +461,12 @@ int32_t DlpOpensslAesEncryptUpdate(void* cryptoCtx, const struct DlpBlob* messag
         case DLP_MODE_CTR:
             ret = OpensslAesCipherEncryptUpdate(cryptoCtx, message, cipherText);
             if (ret != DLP_OK) {
-                DLP_LOG_ERROR(LABEL, "OpensslAesCipherEncryptUpdate fail, ret = %d", ret);
+                DLP_LOG_ERROR(LABEL, "Aes encrypt update fail, errno=%{public}d", ret);
                 return ret;
             }
             break;
         default:
-            DLP_LOG_ERROR(LABEL, "Unsupport aes mode! mode = 0x%x", mode);
+            DLP_LOG_ERROR(LABEL, "Aes encrypt update fail, aes mode 0x%{public}x unsupport", mode);
             return DLP_PARSE_ERROR_OPERATION_UNSUPPORTED;
     }
 
@@ -475,12 +476,15 @@ int32_t DlpOpensslAesEncryptUpdate(void* cryptoCtx, const struct DlpBlob* messag
 int32_t DlpOpensslAesEncryptFinal(void** cryptoCtx, const struct DlpBlob* message, struct DlpBlob* cipherText)
 {
     if (cryptoCtx == nullptr || *cryptoCtx == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Invalid param cryptoCtx!");
+        DLP_LOG_ERROR(LABEL, "Aes encrypt final fail, ctx is null");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
-
-    if (DlpOpensslCheckBlobZero(message) != DLP_OK || DlpOpensslCheckBlob(cipherText) != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Invalid param!");
+    if (!DlpOpensslCheckBlobZero(message)) {
+        DLP_LOG_ERROR(LABEL, "Aes encrypt final fail, msg is invalid");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
+    if (!DlpOpensslCheckBlob(cipherText)) {
+        DLP_LOG_ERROR(LABEL, "Aes encrypt final fail, cipher text is invalid");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
@@ -492,12 +496,12 @@ int32_t DlpOpensslAesEncryptFinal(void** cryptoCtx, const struct DlpBlob* messag
         case DLP_MODE_CTR:
             ret = OpensslAesCipherEncryptFinalThree(cryptoCtx, message, cipherText);
             if (ret != DLP_OK) {
-                DLP_LOG_ERROR(LABEL, "OpensslAesCipherEncryptFinalThree fail, ret = %d", ret);
+                DLP_LOG_ERROR(LABEL, "Aes encrypt final fail, errno=%{public}d", ret);
                 return ret;
             }
             break;
         default:
-            DLP_LOG_ERROR(LABEL, "Unsupport aes mode! mode = 0x%x", mode);
+            DLP_LOG_ERROR(LABEL, "Aes encrypt final fail, aes mode 0x%{public}x unsupport", mode);
             return DLP_PARSE_ERROR_OPERATION_UNSUPPORTED;
     }
 
@@ -507,12 +511,15 @@ int32_t DlpOpensslAesEncryptFinal(void** cryptoCtx, const struct DlpBlob* messag
 int32_t DlpOpensslAesDecryptInit(void** cryptoCtx, const struct DlpBlob* key, const struct DlpUsageSpec* usageSpec)
 {
     if (cryptoCtx == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Invalid param cryptoCtx!");
+        DLP_LOG_ERROR(LABEL, "Aes decrypt init fail, ctx is null");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
-
-    if (DlpOpensslCheckBlob(key) != DLP_OK || usageSpec == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Invalid param!");
+    if (usageSpec == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Aes decrypt init fail, usage spec is null");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
+    if (!DlpOpensslCheckBlob(key)) {
+        DLP_LOG_ERROR(LABEL, "Aes decrypt init fail, key is invalid");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
@@ -521,12 +528,12 @@ int32_t DlpOpensslAesDecryptInit(void** cryptoCtx, const struct DlpBlob* key, co
         case DLP_MODE_CTR:
             ret = OpensslAesCipherCryptInit(key, usageSpec, false, cryptoCtx);
             if (ret != DLP_OK) {
-                DLP_LOG_ERROR(LABEL, "OpensslAesCipherCryptInit fail, ret = %d", ret);
+                DLP_LOG_ERROR(LABEL, "Aes decrypt init fail, errno=%{public}d", ret);
                 return ret;
             }
             break;
         default:
-            DLP_LOG_ERROR(LABEL, "Unsupport aes mode! mode = 0x%x", usageSpec->mode);
+            DLP_LOG_ERROR(LABEL, "Aes decrypt init fail, aes mode 0x%{public}x unsupport", usageSpec->mode);
             return DLP_PARSE_ERROR_OPERATION_UNSUPPORTED;
     }
 
@@ -536,11 +543,15 @@ int32_t DlpOpensslAesDecryptInit(void** cryptoCtx, const struct DlpBlob* key, co
 int32_t DlpOpensslAesDecryptUpdate(void* cryptoCtx, const struct DlpBlob* message, struct DlpBlob* plainText)
 {
     if (cryptoCtx == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Invalid param cryptoCtx!");
+        DLP_LOG_ERROR(LABEL, "Aes decrypt update fail, ctx is null");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
-    if (DlpOpensslCheckBlob(message) != DLP_OK || DlpOpensslCheckBlob(plainText) != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Invalid param!");
+    if (!DlpOpensslCheckBlobZero(message)) {
+        DLP_LOG_ERROR(LABEL, "Aes decrypt update fail, msg is invalid");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
+    if (!DlpOpensslCheckBlob(plainText)) {
+        DLP_LOG_ERROR(LABEL, "Aes decrypt update fail, plain text is invalid");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
@@ -552,12 +563,12 @@ int32_t DlpOpensslAesDecryptUpdate(void* cryptoCtx, const struct DlpBlob* messag
         case DLP_MODE_CTR:
             ret = OpensslAesCipherDecryptUpdate(cryptoCtx, message, plainText);
             if (ret != DLP_OK) {
-                DLP_LOG_ERROR(LABEL, "OpensslAesCipherDecryptUpdate fail, ret = %d", ret);
+                DLP_LOG_ERROR(LABEL, "Aes decrypt update fail, errno=%{public}d", ret);
                 return ret;
             }
             break;
         default:
-            DLP_LOG_ERROR(LABEL, "Unsupport aes mode! mode = 0x%x", mode);
+            DLP_LOG_ERROR(LABEL, "Aes decrypt update fail, aes mode 0x%{public}x unsupport", mode);
             return DLP_PARSE_ERROR_OPERATION_UNSUPPORTED;
     }
 
@@ -567,11 +578,15 @@ int32_t DlpOpensslAesDecryptUpdate(void* cryptoCtx, const struct DlpBlob* messag
 int32_t DlpOpensslAesDecryptFinal(void** cryptoCtx, const struct DlpBlob* message, struct DlpBlob* cipherText)
 {
     if (cryptoCtx == nullptr || *cryptoCtx == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Invalid param cryptoCtx!");
+        DLP_LOG_ERROR(LABEL, "Aes decrypt final fail, ctx is null");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
-    if (DlpOpensslCheckBlobZero(message) != DLP_OK || DlpOpensslCheckBlob(cipherText) != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Invalid param!");
+    if (!DlpOpensslCheckBlobZero(message)) {
+        DLP_LOG_ERROR(LABEL, "Aes decrypt final fail, msg is invalid");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
+    if (!DlpOpensslCheckBlob(cipherText)) {
+        DLP_LOG_ERROR(LABEL, "Aes decrypt final fail, cipher text is invalid");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
@@ -583,12 +598,12 @@ int32_t DlpOpensslAesDecryptFinal(void** cryptoCtx, const struct DlpBlob* messag
         case DLP_MODE_CTR:
             ret = OpensslAesCipherDecryptFinalThree(cryptoCtx, message, cipherText);
             if (ret != DLP_OK) {
-                DLP_LOG_ERROR(LABEL, "OpensslAesCipherDecryptFinalThree fail, ret = %d", ret);
+                DLP_LOG_ERROR(LABEL, "Aes decrypt final fail, errno=%{public}d", ret);
                 return ret;
             }
             break;
         default:
-            DLP_LOG_ERROR(LABEL, "Unsupport aes mode! mode = 0x%x", mode);
+            DLP_LOG_ERROR(LABEL, "Aes decrypt final fail, aes mode 0x%{public}x unsupport", mode);
             return DLP_PARSE_ERROR_OPERATION_UNSUPPORTED;
     }
 
@@ -598,7 +613,7 @@ int32_t DlpOpensslAesDecryptFinal(void** cryptoCtx, const struct DlpBlob* messag
 void DlpOpensslAesHalFreeCtx(void** cryptoCtx)
 {
     if (cryptoCtx == nullptr || *cryptoCtx == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Openssl aes free ctx is null");
+        DLP_LOG_ERROR(LABEL, "Aes free ctx fail, cxt is null");
         return;
     }
 
@@ -612,43 +627,44 @@ void DlpOpensslAesHalFreeCtx(void** cryptoCtx)
             break;
 
         default:
-            DLP_LOG_ERROR(LABEL, "Unsupport aes mode! mode = 0x%x", opensslAesCtx->mode);
+            DLP_LOG_ERROR(LABEL, "Aes free ctx fail, aes mode 0x%{public}x unsupport", opensslAesCtx->mode);
             break;
     }
 
     DLP_FREE_PTR(*cryptoCtx);
 }
 
-static int32_t AesParamCheck(const struct DlpBlob* key, const struct DlpUsageSpec* usageSpec,
+static bool AesParamCheck(const struct DlpBlob* key, const struct DlpUsageSpec* usageSpec,
     const struct DlpBlob* message, struct DlpBlob* cipherText)
 {
-    if (DlpOpensslCheckBlob(key) != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Invalid param key!");
-        return DLP_PARSE_ERROR_VALUE_INVALID;
-    }
-
-    if (DlpOpensslCheckBlob(message) != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Invalid param message!");
-        return DLP_PARSE_ERROR_VALUE_INVALID;
-    }
-
-    if (DlpOpensslCheckBlob(cipherText) != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Invalid param cipherText!");
-        return DLP_PARSE_ERROR_VALUE_INVALID;
-    }
-
     if (usageSpec == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Invalid param usageSpec!");
-        return DLP_PARSE_ERROR_VALUE_INVALID;
+        DLP_LOG_ERROR(LABEL, "Check aes params fail, usage spec is null");
+        return false;
     }
 
-    return DLP_OK;
+    if (!DlpOpensslCheckBlob(key)) {
+        DLP_LOG_ERROR(LABEL, "Check aes params fail, key is invalid");
+        return false;
+    }
+
+    if (!DlpOpensslCheckBlob(message)) {
+        DLP_LOG_ERROR(LABEL, "Check aes params fail, msg in invalid");
+        return false;
+    }
+
+    if (!DlpOpensslCheckBlob(cipherText)) {
+        DLP_LOG_ERROR(LABEL, "Check aes params fail, cipher text is invalid");
+        return false;
+    }
+
+    return true;
 }
 
 int32_t DlpOpensslAesEncrypt(const struct DlpBlob* key, const struct DlpUsageSpec* usageSpec,
     const struct DlpBlob* message, struct DlpBlob* cipherText)
 {
-    if (AesParamCheck(key, usageSpec, message, cipherText) != DLP_OK) {
+    if (!AesParamCheck(key, usageSpec, message, cipherText)) {
+        DLP_LOG_ERROR(LABEL, "Aes encrypt fail, check aes params error");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
@@ -660,19 +676,19 @@ int32_t DlpOpensslAesEncrypt(const struct DlpBlob* key, const struct DlpUsageSpe
         case DLP_MODE_CTR:
             ret = OpensslAesCipherInit(key, usageSpec, true, &ctx);
             if (ret != DLP_OK) {
-                DLP_LOG_ERROR(LABEL, "OpensslAesCipherInit fail, ret = %d", ret);
+                DLP_LOG_ERROR(LABEL, "Aes encrypt fail, encrypt init error, errno=%{public}d", ret);
                 return ret;
             }
 
             ret = OpensslAesCipherEncryptFinal(ctx, message, &tmpCipherText);
             if (ret != DLP_OK) {
-                DLP_LOG_ERROR(LABEL, "OpensslAesCipherEncryptFinal fail, ret = %d", ret);
+                DLP_LOG_ERROR(LABEL, "Aes encrypt fail, encrypt final error, errno=%{public}d", ret);
                 return ret;
             }
             break;
 
         default:
-            DLP_LOG_ERROR(LABEL, "Unsupport aes mode! mode = 0x%x", usageSpec->mode);
+            DLP_LOG_ERROR(LABEL, "Aes encrypt fail, aes mode 0x%{public}x unsupport", usageSpec->mode);
             return DLP_PARSE_ERROR_OPERATION_UNSUPPORTED;
     }
 
@@ -683,7 +699,8 @@ int32_t DlpOpensslAesEncrypt(const struct DlpBlob* key, const struct DlpUsageSpe
 int32_t DlpOpensslAesDecrypt(const struct DlpBlob* key, const struct DlpUsageSpec* usageSpec,
     const struct DlpBlob* message, struct DlpBlob* plainText)
 {
-    if (AesParamCheck(key, usageSpec, message, plainText) != DLP_OK) {
+    if (!AesParamCheck(key, usageSpec, message, plainText)) {
+        DLP_LOG_ERROR(LABEL, "Aes decrypt fail, check aes params error");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
     EVP_CIPHER_CTX* ctx = nullptr;
@@ -694,18 +711,18 @@ int32_t DlpOpensslAesDecrypt(const struct DlpBlob* key, const struct DlpUsageSpe
         case DLP_MODE_CTR:
             ret = OpensslAesCipherInit(key, usageSpec, false, &ctx);
             if (ret != DLP_OK) {
-                DLP_LOG_ERROR(LABEL, "OpensslAesCipherInit fail, ret = %d", ret);
+                DLP_LOG_ERROR(LABEL, "Aes decrypt fail, decrypt init error, errno=%{public}d", ret);
                 return ret;
             }
 
             ret = OpensslAesCipherDecryptFinal(ctx, message, &tmpPlainText);
             if (ret != DLP_OK) {
-                DLP_LOG_ERROR(LABEL, "OpensslAesCipherDecryptFinal fail, ret = %d", ret);
+                DLP_LOG_ERROR(LABEL, "Aes decrypt fail, decrypt final error, errno=%{public}d", ret);
                 return ret;
             }
             break;
         default:
-            DLP_LOG_ERROR(LABEL, "Unsupport aes mode! mode = 0x%x", usageSpec->mode);
+            DLP_LOG_ERROR(LABEL, "Aes decrypt fail, aes mode 0x%{public}x unsupport", usageSpec->mode);
             return DLP_PARSE_ERROR_OPERATION_UNSUPPORTED;
     }
 
@@ -713,19 +730,16 @@ int32_t DlpOpensslAesDecrypt(const struct DlpBlob* key, const struct DlpUsageSpe
     return ret;
 }
 
-static int32_t CheckDigestAlg(uint32_t alg)
+static bool CheckDigestAlg(uint32_t alg)
 {
     switch (alg) {
         case DLP_DIGEST_SHA256:
         case DLP_DIGEST_SHA384:
         case DLP_DIGEST_SHA512:
-            break;
+            return true;
         default:
-            DLP_LOG_ERROR(LABEL, "Unsupport HASH Type!");
-            return DLP_PARSE_ERROR_DIGEST_INVALID;
+            return false;
     }
-
-    return DLP_OK;
 }
 
 const EVP_MD* GetOpensslAlg(uint32_t alg)
@@ -753,26 +767,26 @@ static uint32_t GetHashLen(uint32_t alg)
     }
 }
 
-static int32_t HashCheckParam(uint32_t alg, const struct DlpBlob* msg, struct DlpBlob* hash)
+static bool HashCheckParam(uint32_t alg, const struct DlpBlob* msg, struct DlpBlob* hash)
 {
-    if (CheckDigestAlg(alg) != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Unsupport HASH Type!");
+    if (!CheckDigestAlg(alg)) {
+        DLP_LOG_ERROR(LABEL, "Check hash param fail, alg type is unsupported");
         return DLP_PARSE_ERROR_DIGEST_INVALID;
     }
 
-    if (DlpOpensslCheckBlob(hash) != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Invalid param hash!");
+    if (!DlpOpensslCheckBlob(hash)) {
+        DLP_LOG_ERROR(LABEL, "Check hash param fail, hash is invalid");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
     uint32_t hashLen = GetHashLen(alg);
     if (hash->size < hashLen) {
-        DLP_LOG_ERROR(LABEL, "hash buff too short!");
+        DLP_LOG_ERROR(LABEL, "Check hash param fail, hash buff too short");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    if (DlpOpensslCheckBlob(msg) != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Invalid param msg!");
+    if (!DlpOpensslCheckBlob(msg)) {
+        DLP_LOG_ERROR(LABEL, "Check hash param fail, msg is invalid");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
@@ -781,19 +795,18 @@ static int32_t HashCheckParam(uint32_t alg, const struct DlpBlob* msg, struct Dl
 
 int32_t DlpOpensslHash(uint32_t alg, const struct DlpBlob* msg, struct DlpBlob* hash)
 {
-    int32_t ret = HashCheckParam(alg, msg, hash);
-    if (ret != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Invalid Params!");
+    if (!HashCheckParam(alg, msg, hash)) {
+        DLP_LOG_ERROR(LABEL, "Openssl hash fail, param is invalid");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
     const EVP_MD* opensslAlg = GetOpensslAlg(alg);
     if (opensslAlg == nullptr) {
-        DLP_LOG_ERROR(LABEL, "get openssl algorithm fail");
+        DLP_LOG_ERROR(LABEL, "Openssl hash fail, get alg fail");
         return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
 
-    ret = EVP_Digest(msg->data, msg->size, hash->data, &hash->size, opensslAlg, nullptr);
+    int32_t ret = EVP_Digest(msg->data, msg->size, hash->data, &hash->size, opensslAlg, nullptr);
     if (ret != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
         return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
@@ -803,19 +816,22 @@ int32_t DlpOpensslHash(uint32_t alg, const struct DlpBlob* msg, struct DlpBlob* 
 
 int32_t DlpOpensslHashInit(void** cryptoCtx, uint32_t alg)
 {
-    if (cryptoCtx == nullptr || CheckDigestAlg(alg) != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "invalid param!");
+    if (cryptoCtx == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Openssl hash init fail, ctx is null");
         return DLP_PARSE_ERROR_DIGEST_INVALID;
     }
-
+    if (!CheckDigestAlg(alg)) {
+        DLP_LOG_ERROR(LABEL, "Openssl hash init fail, alg is invalid");
+        return DLP_PARSE_ERROR_DIGEST_INVALID;
+    }
     const EVP_MD* opensslAlg = GetOpensslAlg(alg);
     if (opensslAlg == nullptr) {
-        DLP_LOG_ERROR(LABEL, "get openssl algorithm fail");
+        DLP_LOG_ERROR(LABEL, "Openssl hash init fail, get alg fail");
         return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
-
     EVP_MD_CTX* tmpctx = EVP_MD_CTX_new();
     if (tmpctx == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Openssl hash init fail, alloc ctx fail");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
@@ -833,12 +849,11 @@ int32_t DlpOpensslHashInit(void** cryptoCtx, uint32_t alg)
 int32_t DlpOpensslHashUpdate(void* cryptoCtx, const struct DlpBlob* msg)
 {
     if (cryptoCtx == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Invalid param cryptoCtx!");
+        DLP_LOG_ERROR(LABEL, "Openssl hash update fail, ctx is null");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
-
-    if (DlpOpensslCheckBlob(msg) != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Invalid param msg!");
+    if (!DlpOpensslCheckBlob(msg)) {
+        DLP_LOG_ERROR(LABEL, "Openssl hash update fail, msg is invalid");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
@@ -853,16 +868,15 @@ int32_t DlpOpensslHashUpdate(void* cryptoCtx, const struct DlpBlob* msg)
 int32_t DlpOpensslHashFinal(void** cryptoCtx, const struct DlpBlob* msg, struct DlpBlob* hash)
 {
     if (cryptoCtx == nullptr || *cryptoCtx == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Invalid param cryptoCtx!");
+        DLP_LOG_ERROR(LABEL, "Openssl hash final fail, ctx is null");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
-
-    if (DlpOpensslCheckBlobZero(msg) != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Invalid param msg!");
+    if (!DlpOpensslCheckBlobZero(msg)) {
+        DLP_LOG_ERROR(LABEL, "Openssl hash final fail, msg is invalid");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
-    if (DlpOpensslCheckBlob(hash) != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Invalid param hash!");
+    if (!DlpOpensslCheckBlob(hash)) {
+        DLP_LOG_ERROR(LABEL, "Openssl hash final fail, hash is invalid");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
@@ -893,7 +907,7 @@ int32_t DlpOpensslHashFinal(void** cryptoCtx, const struct DlpBlob* msg, struct 
 void DlpOpensslHashFreeCtx(void** cryptoCtx)
 {
     if (cryptoCtx == nullptr || *cryptoCtx == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Openssl Hash freeCtx param error");
+        DLP_LOG_ERROR(LABEL, "Openssl hash free ctx fail, param is invalid");
         return;
     }
 
