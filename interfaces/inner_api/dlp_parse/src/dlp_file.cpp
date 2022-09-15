@@ -342,6 +342,7 @@ int32_t DlpFile::GetEncryptCert(struct DlpBlob& cert) const
 int32_t DlpFile::SetEncryptCert(const struct DlpBlob& cert)
 {
     if (cert.data == nullptr || cert.size > DLP_MAX_CERT_SIZE) {
+        DLP_LOG_ERROR(LABEL, "Cert data invalid");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
@@ -351,6 +352,7 @@ int32_t DlpFile::SetEncryptCert(const struct DlpBlob& cert)
     }
 
     if (CopyBlobParam(cert, cert_) != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Cert copy failed");
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
@@ -448,13 +450,14 @@ int32_t DlpFile::DoDlpContentCryptyOperation(int32_t inFd, int32_t outFd, uint32
         (void)memset_s(message.data, DLP_BUFF_LEN, 0, DLP_BUFF_LEN);
         (void)memset_s(outMessage.data, DLP_BUFF_LEN, 0, DLP_BUFF_LEN);
         if (read(inFd, message.data, readLen) != readLen) {
+            DLP_LOG_ERROR(LABEL, "Read size do not equal readLen");
             ret = DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
             break;
         }
 
         message.size = readLen;
         outMessage.size = readLen;
-        // Implicit condition: DLP_BUFF_LEN must DLP_BLOCK_SIZE aligned
+        // Implicit condition: DLP_BUFF_LEN must be DLP_BLOCK_SIZE aligned
         ret = DoDlpBlockCryptOperation(message, outMessage, inOffset - dlpContentOffset, isEncrypt);
         if (ret != DLP_OK) {
             DLP_LOG_ERROR(LABEL, "do crypt operation fail");
@@ -521,7 +524,7 @@ int32_t DlpFile::GenFile(int32_t inPlainFileFd)
     }
 
     if (fileLen == 0) {
-        DLP_LOG_INFO(LABEL, "origin file len is 0, do not need encrypt");
+        DLP_LOG_INFO(LABEL, "Plaintext file len is 0, do not need encrypt");
         return DLP_OK;
     }
     return DoDlpContentCryptyOperation(inPlainFileFd, dlpFd_, 0, fileLen, true);

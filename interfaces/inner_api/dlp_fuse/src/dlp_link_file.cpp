@@ -50,6 +50,15 @@ DlpLinkFile::~DlpLinkFile()
 bool DlpLinkFile::SubAndCheckZeroRef(int ref)
 {
     std::lock_guard<std::mutex> lock(refLock_);
+    if (ref <= 0) {
+        DLP_LOG_WARN(LABEL, "Need sub reference %{public}d is error", ref);
+        return false;
+    }
+    if (refcount_ < ref) {
+        DLP_LOG_WARN(LABEL, "Need sub reference %{public}d is larger than refcount %{public}d",
+            ref, static_cast<int>(refcount_));
+        return true;
+    }
     refcount_ -= ref;
     return (refcount_ <= 0);
 }
@@ -58,6 +67,7 @@ void DlpLinkFile::IncreaseRef()
 {
     std::lock_guard<std::mutex> lock(refLock_);
     if (refcount_ <= 0) {
+        DLP_LOG_WARN(LABEL, "refcount <= 0, can not increase");
         return;
     }
     refcount_++;
@@ -65,6 +75,11 @@ void DlpLinkFile::IncreaseRef()
 
 struct stat DlpLinkFile::GetLinkStat()
 {
+    if (dlpFile_ == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Get link file stat fail, dlpFile is null");
+        return fileStat_;
+    }
+
     uint32_t res = dlpFile_->GetFsContentSize();
     if (res != INVALID_FILE_SIZE) {
         fileStat_.st_size = res;
@@ -123,9 +138,12 @@ int32_t DlpLinkFile::Read(uint32_t offset, void* buf, uint32_t size)
         DLP_LOG_ERROR(LABEL, "Read link file fail, dlp file is null");
         return DLP_FUSE_ERROR_DLP_FILE_NULL;
     }
-    DLP_LOG_DEBUG(LABEL, "Read link file, offset=%{public}u, size=%{public}u", offset, size);
     UpdateAtimeStat();
-    return dlpFile_->DlpFileRead(offset, buf, size);
+    int32_t res = dlpFile_->DlpFileRead(offset, buf, size);
+    if (res < 0) {
+        DLP_LOG_ERROR(LABEL, "Read link file failed, res %{public}d.", res);
+    }
+    return res;
 }
 }  // namespace DlpPermission
 }  // namespace Security

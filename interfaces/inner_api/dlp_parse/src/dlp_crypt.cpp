@@ -69,7 +69,7 @@ int32_t DlpOpensslGenerateRandomKey(const uint32_t keySize, struct DlpBlob* key)
     }
     uint32_t keySizeByte = keySize / BIT_NUM_OF_UINT8;
 
-    uint8_t* tmpKey = (uint8_t*)malloc(keySizeByte);
+    uint8_t* tmpKey = new (std::nothrow) uint8_t[keySizeByte];
     if (tmpKey == nullptr) {
         DLP_LOG_ERROR(LABEL, "Generate key fail, alloc %{public}u buffer fail", keySizeByte);
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
@@ -79,7 +79,7 @@ int32_t DlpOpensslGenerateRandomKey(const uint32_t keySize, struct DlpBlob* key)
     if (res <= 0) {
         DLP_LOG_ERROR(LABEL, "Generate key fail, generate rand bytes error, errno=%{public}d", res);
         (void)memset_s(tmpKey, keySizeByte, 0, keySizeByte);
-        free(tmpKey);
+        delete[] tmpKey;
         return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     } else {
         key->data = tmpKey;

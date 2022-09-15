@@ -83,7 +83,7 @@ static void FuseDaemonLookup(fuse_req_t req, fuse_ino_t parent, const char* name
     (void)memset_s(&fep, sizeof(struct fuse_entry_param), 0, sizeof(struct fuse_entry_param));
     if (!strcmp(name, ".") || !strcmp(name, "..")) {
         fep.ino = ROOT_INODE;
-        fep.attr = FuseDaemon::GetRootFileStat();
+        fep.attr = *(FuseDaemon::GetRootFileStat());
         fuse_reply_entry(req, &fep);
         return;
     }
@@ -111,8 +111,8 @@ static void FuseDaemonGetattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_i
     (void)fi;
 
     if (ino == ROOT_INODE) {
-        struct stat fileStat = FuseDaemon::GetRootFileStat();
-        fuse_reply_attr(req, &fileStat, DEFAULT_ATTR_TIMEOUT);
+        struct stat* fileStat = FuseDaemon::GetRootFileStat();
+        fuse_reply_attr(req, fileStat, DEFAULT_ATTR_TIMEOUT);
         return;
     }
 
@@ -202,7 +202,8 @@ static void FuseDaemonRead(fuse_req_t req, fuse_ino_t ino, size_t size, off_t of
     } else {
         fuse_reply_buf(req, buf, (size_t)res);
     }
-
+    DLP_LOG_DEBUG(LABEL, "Read file name %{private}s offset %{public}u size %{public}u res %{public}d",
+        dlp->GetLinkName().c_str(), static_cast<uint32_t>(offset), static_cast<uint32_t>(size), res);
     free(buf);
 }
 
@@ -219,19 +220,20 @@ static void FuseDaemonWrite(
         DLP_LOG_ERROR(LABEL, "Write link file fail, wrong ino");
         return;
     }
-    DLP_LOG_INFO(LABEL, "Write link file, size %{public}zu", size);
     int32_t res = dlp->Write((uint32_t)off, (void*)buf, (uint32_t)size);
     if (res < 0) {
         fuse_reply_err(req, EIO);
     } else {
         fuse_reply_write(req, (size_t)res);
     }
+    DLP_LOG_DEBUG(LABEL, "Write file name %{private}s offset %{public}u size %{public}u res %{public}d",
+        dlp->GetLinkName().c_str(), (uint32_t)off, (uint32_t)size, res);
 }
 
-static void FuseDaemonForgot(fuse_req_t req, fuse_ino_t ino, uint64_t nlookup)
+static void FuseDaemonForget(fuse_req_t req, fuse_ino_t ino, uint64_t nlookup)
 {
-    DLP_LOG_INFO(LABEL, "Forgot link file, nlookup=%{public}u", (uint32_t)nlookup);
     if (ino == ROOT_INODE) {
+        DLP_LOG_WARN(LABEL, "Forget root dir is forbidden");
         fuse_reply_err(req, ENOENT);
         return;
     }
@@ -242,7 +244,10 @@ static void FuseDaemonForgot(fuse_req_t req, fuse_ino_t ino, uint64_t nlookup)
         fuse_reply_err(req, EBADF);
         return;
     }
+    DLP_LOG_DEBUG(LABEL, "Forget link file name %{private}s nlookup %{public}d",
+        dlp->GetLinkName().c_str(), (uint32_t)nlookup);
     if (dlp->SubAndCheckZeroRef(nlookup)) {
+        DLP_LOG_INFO(LABEL, "Link file reference is less than 0, delete link file ok");
         delete dlp;
     }
 }
@@ -264,9 +269,9 @@ static int AddDirentry(DirAddParams& param)
 
 static int AddRootDirentry(DirAddParams& params)
 {
-    struct stat rootStat = FuseDaemon::GetRootFileStat();
+    struct stat* rootStat = FuseDaemon::GetRootFileStat();
     params.entryName = CUR_DIR;
-    params.entryStat = &rootStat;
+    params.entryStat = rootStat;
 
     if (AddDirentry(params) != 0) {
         fuse_reply_err(params.req, EINVAL);
@@ -386,20 +391,31 @@ void FuseDaemonSetAttr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to
     fuse_reply_attr(req, &fileStat, DEFAULT_ATTR_TIMEOUT);
 }
 
+static void FuseDaemonInit(void *userdata, struct fuse_conn_info *conn)
+{
+    (void)userdata;
+    if (conn == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Fuse init, fuse conn info is null");
+        return;
+    }
+    conn->want |= FUSE_CAP_WRITEBACK_CACHE;
+}
+
 static const struct fuse_lowlevel_ops g_fuseDaemonOper = {
+    .init = FuseDaemonInit,
     .lookup = FuseDaemonLookup,
     .getattr = FuseDaemonGetattr,
     .open = FuseDaemonOpen,
     .read = FuseDaemonRead,
     .write = FuseDaemonWrite,
-    .forget = FuseDaemonForgot,
+    .forget = FuseDaemonForget,
     .readdir = FuseDaemonReadDir,
     .setattr = FuseDaemonSetAttr,
 };
 
-struct stat FuseDaemon::GetRootFileStat()
+struct stat* FuseDaemon::GetRootFileStat()
 {
-    return FuseDaemon::rootFileStat_;
+    return &FuseDaemon::rootFileStat_;
 }
 
 void FuseDaemon::InitRootFileStat(void)

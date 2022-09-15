@@ -107,7 +107,7 @@ int32_t DlpFileManager::PrepareDlpEncryptParms(
     struct DlpCipherParam* tagIv = new (std::nothrow) struct DlpCipherParam;
     if (tagIv == nullptr) {
         DLP_LOG_ERROR(LABEL, "alloc cipher param failed.");
-        delete key.data;
+        delete[] key.data;
         key.data = nullptr;
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
@@ -115,7 +115,7 @@ int32_t DlpFileManager::PrepareDlpEncryptParms(
     res = DlpOpensslGenerateRandomKey(IV_SIZE * BIT_NUM_OF_UINT8, &tagIv->iv);
     if (res != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "alloc crypt iv failed.");
-        delete key.data;
+        delete[] key.data;
         delete tagIv;
         key.data = nullptr;
         tagIv = nullptr;
@@ -130,11 +130,13 @@ int32_t DlpFileManager::PrepareDlpEncryptParms(
     res = GenerateCertData(policy, certData);
     if (res != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "generate cert data failed.");
-        delete key.data;
-        delete tagIv->iv.data;
+        delete[] key.data;
+        delete[] tagIv->iv.data;
+        tagIv->iv.data = nullptr;
+
         delete tagIv;
         key.data = nullptr;
-        tagIv->iv.data = nullptr;
+
         tagIv = nullptr;
         return res;
     }
@@ -193,17 +195,17 @@ int32_t DlpFileManager::ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr) co
 void DlpFileManager::FreeChiperBlob(struct DlpBlob& key, struct DlpBlob& certData, struct DlpUsageSpec& usage) const
 {
     if (key.data != nullptr) {
-        delete key.data;
+        delete[] key.data;
         key.data = nullptr;
     }
 
     if (certData.data != nullptr) {
-        delete certData.data;
+        delete[] certData.data;
         certData.data = nullptr;
     }
     if (usage.algParam != nullptr) {
         if (usage.algParam->iv.data != nullptr) {
-            delete usage.algParam->iv.data;
+            delete[] usage.algParam->iv.data;
             usage.algParam->iv.data = nullptr;
         }
         delete usage.algParam;

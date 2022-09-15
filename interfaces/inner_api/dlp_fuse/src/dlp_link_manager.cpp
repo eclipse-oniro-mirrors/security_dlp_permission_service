@@ -80,13 +80,17 @@ int32_t DlpLinkManager::DeleteDlpLinkFile(std::shared_ptr<DlpFile>& filePtr)
             filePtr->RemoveLinkStatus();
             g_DlpLinkFileNameMap_.erase(iter);
             if (tmp->SubAndCheckZeroRef(1)) {
+                DLP_LOG_INFO(LABEL, "Delete link file %{private}s ok", tmp->GetLinkName().c_str());
                 delete tmp;
+            } else {
+                DLP_LOG_INFO(LABEL, "Link file %{private}s is still referenced by kernel, only remove it from map",
+                    tmp->GetLinkName().c_str());
             }
-            break;
+            return DLP_OK;
         }
     }
-
-    return DLP_OK;
+    DLP_LOG_ERROR(LABEL, "Delete link file fail, it does not exist.");
+    return DLP_FUSE_ERROR_LINKFILE_NOT_EXIST;
 }
 
 DlpLinkFile* DlpLinkManager::LookUpDlpLinkFile(const std::string& dlpLinkName)
@@ -98,7 +102,8 @@ DlpLinkFile* DlpLinkManager::LookUpDlpLinkFile(const std::string& dlpLinkName)
     }
     DlpLinkFile* node = g_DlpLinkFileNameMap_[dlpLinkName];
     if (node == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Look up link file fail, file %{public}s found but file ptr is null", dlpLinkName.c_str());
+        DLP_LOG_ERROR(LABEL, "Look up link file fail, file %{public}s found but file ptr is null",
+            dlpLinkName.c_str());
         return nullptr;
     }
     node->IncreaseRef();
