@@ -47,28 +47,46 @@ typedef struct RestorePolicyCallbackTaskPara {
 
 static void FreePackPolicyCallbackTaskPara(PackPolicyCallbackTaskPara* taskParams)
 {
-    if (taskParams != NULL) {
+    if (taskParams == NULL) {
+        return;
+    }
+    if (taskParams->packParams == NULL) {
+        free(taskParams);
+        return;
+    }
+    if (taskParams->packParams->featureName != NULL) {
         free(taskParams->packParams->featureName);
         taskParams->packParams->featureName = NULL;
+    }
+    if (taskParams->packParams->data != NULL) {
         free(taskParams->packParams->data);
         taskParams->packParams->data = NULL;
-        free(taskParams->packParams);
-        taskParams->packParams = NULL;
-        free(taskParams);
     }
+    free(taskParams->packParams);
+    taskParams->packParams = NULL;
+    free(taskParams);
 }
 
 static void FreeRestorePolicyCallbackTaskPara(RestorePolicyCallbackTaskPara* taskParams)
 {
-    if (taskParams != NULL) {
+    if (taskParams == NULL) {
+        return;
+    }
+    if (taskParams->encData == NULL) {
+        free(taskParams);
+        return;
+    }
+    if (taskParams->encData->featureName != NULL) {
         free(taskParams->encData->featureName);
         taskParams->encData->featureName = NULL;
+    }
+    if (taskParams->encData->data != NULL) {
         free(taskParams->encData->data);
         taskParams->encData->data = NULL;
-        free(taskParams->encData);
-        taskParams->encData = NULL;
-        free(taskParams);
     }
+    free(taskParams->encData);
+    taskParams->encData = NULL;
+    free(taskParams);
 }
 
 static void* PackPolicyCallbackTask(void* inputTaskParams)
@@ -176,14 +194,14 @@ static void* RestorePolicyCallbackTask(void* inputTaskParams)
 static PackPolicyCallbackTaskPara* TransPackPolicyParams(
     const DLP_PackPolicyParams* params, DLP_PackPolicyCallback callback, uint64_t requestId)
 {
-    PackPolicyCallbackTaskPara* taskParams = (PackPolicyCallbackTaskPara*)malloc(sizeof(PackPolicyCallbackTaskPara));
+    PackPolicyCallbackTaskPara* taskParams = (PackPolicyCallbackTaskPara*)calloc(1, sizeof(PackPolicyCallbackTaskPara));
     if (taskParams == NULL) {
         goto err;
     }
     taskParams->callback = callback;
     taskParams->requestId = requestId;
     taskParams->errorCode = 0;
-    taskParams->packParams = (DLP_PackPolicyParams*)malloc(sizeof(DLP_PackPolicyParams));
+    taskParams->packParams = (DLP_PackPolicyParams*)calloc(1, sizeof(DLP_PackPolicyParams));
     if (taskParams->packParams == NULL) {
         goto err;
     }
@@ -191,7 +209,7 @@ static PackPolicyCallbackTaskPara* TransPackPolicyParams(
     if (taskParams->packParams->featureName == NULL) {
         goto err;
     }
-    taskParams->packParams->data = (uint8_t*)malloc(params->dataLen);
+    taskParams->packParams->data = (uint8_t*)calloc(1, params->dataLen);
     if (taskParams->packParams->data == NULL) {
         goto err;
     }
@@ -248,7 +266,7 @@ static RestorePolicyCallbackTaskPara* TransEncPolicyData(
     const DLP_EncPolicyData* params, DLP_RestorePolicyCallback callback, uint64_t requestId, uint32_t userId)
 {
     RestorePolicyCallbackTaskPara* taskParams =
-        (RestorePolicyCallbackTaskPara*)malloc(sizeof(RestorePolicyCallbackTaskPara));
+        (RestorePolicyCallbackTaskPara*)calloc(1, sizeof(RestorePolicyCallbackTaskPara));
     if (taskParams == NULL) {
         goto err;
     }
@@ -256,7 +274,7 @@ static RestorePolicyCallbackTaskPara* TransEncPolicyData(
     taskParams->userId = userId;
     taskParams->requestId = requestId;
     taskParams->errorCode = 0;
-    taskParams->encData = (DLP_EncPolicyData*)malloc(sizeof(DLP_EncPolicyData));
+    taskParams->encData = (DLP_EncPolicyData*)calloc(1, sizeof(DLP_EncPolicyData));
     if (taskParams->encData == NULL) {
         goto err;
     }
@@ -264,7 +282,7 @@ static RestorePolicyCallbackTaskPara* TransEncPolicyData(
     if (taskParams->encData->featureName == NULL) {
         goto err;
     }
-    taskParams->encData->data = (uint8_t*)malloc(params->dataLen);
+    taskParams->encData->data = (uint8_t*)calloc(1, params->dataLen);
     if (taskParams->encData->data == NULL) {
         goto err;
     }

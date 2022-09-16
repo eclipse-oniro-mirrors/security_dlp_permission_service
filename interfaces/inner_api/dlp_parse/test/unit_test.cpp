@@ -58,6 +58,7 @@ static int g_dlpFileFd = -1;
 static const std::string PLAIN_FILE_NAME = "/data/fuse_test.txt";
 static const std::string DLP_FILE_NAME = "/data/fuse_test.txt.dlp";
 static const int DLP_FILE_PERMISSION = 0777;
+static const int ENC_BUF_LEN = 10 * 1024 * 1024;
 
 static void CreateDlpFileFd()
 {
@@ -121,13 +122,14 @@ static void dumpptr(uint8_t *ptr, uint32_t len)
 
 
 /**
- * @tc.name: Dlp001
+ * @tc.name: DlpOpensslAesEncryptAndDecrypt001
  * @tc.desc: Dlp encrypt && decrypt test.
  * @tc.type: FUNC
  * @tc.require:AR000GJSDQ
  */
-HWTEST_F(DlpParseUnitTest, Dlp001, TestSize.Level1)
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptAndDecrypt001, TestSize.Level1)
 {
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesEncryptAndDecrypt001");
     struct DlpBlob key = { 32, nullptr };
     key.data = g_key;
     int32_t ret;
@@ -170,13 +172,14 @@ HWTEST_F(DlpParseUnitTest, Dlp001, TestSize.Level1)
 }
 
 /**
- * @tc.name: Dlp002
+ * @tc.name: DlpOpensslAesEncryptAndDecrypt002
  * @tc.desc: Dlp encrypt && decrypt test for split interface
  * @tc.type: FUNC
  * @tc.require:AR000GJSDQ
  */
-HWTEST_F(DlpParseUnitTest, Dlp002, TestSize.Level1)
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptAndDecrypt002, TestSize.Level1)
 {
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesEncryptAndDecrypt002");
     struct DlpBlob key = { 32, nullptr };
     key.data = g_key;
     int32_t ret;
@@ -250,130 +253,14 @@ HWTEST_F(DlpParseUnitTest, Dlp002, TestSize.Level1)
 }
 
 /**
- * @tc.name: Dlp003
- * @tc.desc: HASH test
- * @tc.type: FUNC
- * @tc.require:AR000GJSDQ
- */
-HWTEST_F(DlpParseUnitTest, Dlp003, TestSize.Level1)
-{
-    uint8_t input[16] = "aaaaaaaaaaaaaaa";
-    uint8_t out[64] = {0};
-    struct DlpBlob mIn = {
-        .data = nullptr,
-        .size = 15
-    };
-    mIn.data = input;
-    struct DlpBlob mOut = {
-        .data = nullptr,
-        .size = 64
-    };
-    mOut.data = out;
-    int ret;
-
-    ret = DlpOpensslHash(DLP_DIGEST_SHA256, &mIn, &mOut);
-    cout << "sha256:";
-    dumpptr(out, 16);
-    ASSERT_EQ(0, ret);
-    mOut.size = 64;
-    ret = DlpOpensslHash(DLP_DIGEST_SHA384, &mIn, &mOut);
-    cout << "sha384:";
-    dumpptr(out, 16);
-    ASSERT_EQ(0, ret);
-    mOut.size = 64;
-    ret = DlpOpensslHash(DLP_DIGEST_SHA512, &mIn, &mOut);
-    cout << "sha512:";
-    dumpptr(out, 16);
-    ASSERT_EQ(0, ret);
-}
-
-/**
- * @tc.name: Dlp004
- * @tc.desc: split hash test
- * @tc.type: FUNC
- * @tc.require:AR000GJSDQ
- */
-HWTEST_F(DlpParseUnitTest, Dlp004, TestSize.Level1)
-{
-    uint8_t input[16] = "aaaaaaaaaaaaaaa";
-    uint8_t out[64] = {0};
-    struct DlpBlob mIn = {
-        .data = nullptr,
-        .size = 15
-    };
-    mIn.data = input;
-    struct DlpBlob mOut = {
-        .data = nullptr,
-        .size = 15
-    };
-    mOut.data = out;
-    struct DlpBlob mNull = {
-        .data = nullptr,
-        .size = 0
-    };
-    int i = 0;
-    int ret;
-    void *ctx;
-
-    ret = DlpOpensslHashInit(&ctx, DLP_DIGEST_SHA256);
-    ASSERT_EQ(0, ret);
-
-    mIn.size = 1;
-    while (i < 15) {
-        ret = DlpOpensslHashUpdate(ctx, &mIn);
-        ASSERT_EQ(0, ret);
-        mIn.data = mIn.data + 1;
-        i++;
-    }
-    ret = DlpOpensslHashFinal(&ctx, &mNull, &mOut);
-    ASSERT_EQ(0, ret);
-    DlpOpensslHashFreeCtx(&ctx);
-
-    cout << "sha256sum:";
-    dumpptr(out, 16);
-    ASSERT_EQ(0, ret);
-}
-
-/**
- * @tc.name: Dlp005
- * @tc.desc: random generate test
- * @tc.type: FUNC
- * @tc.require:AR000GJSDQ
- */
-HWTEST_F(DlpParseUnitTest, Dlp005, TestSize.Level1)
-{
-    int ret = 0;
-    struct DlpBlob mIn = {
-        .data = nullptr,
-        .size = 32
-    };
-
-    ret = DlpOpensslGenerateRandomKey(DLP_AES_KEY_SIZE_256, &mIn);
-    ASSERT_EQ(0, ret);
-    cout << "random key:";
-    dumpptr(mIn.data, 16);
-    free(mIn.data);
-    ret = DlpOpensslGenerateRandomKey(DLP_AES_KEY_SIZE_192, &mIn);
-    ASSERT_EQ(0, ret);
-    cout << "random key:";
-    dumpptr(mIn.data, 16);
-    free(mIn.data);
-    ret = DlpOpensslGenerateRandomKey(DLP_AES_KEY_SIZE_128, &mIn);
-    ASSERT_EQ(0, ret);
-    cout << "random key:";
-    dumpptr(mIn.data, 16);
-    free(mIn.data);
-}
-
-/**
- * @tc.name: Dlp006
+ * @tc.name: DlpOpensslAesEncryptAndDecrypt003
  * @tc.desc: Dlp encrypt && decrypt test.
  * @tc.type: FUNC
  * @tc.require:AR000GJSDQ
  */
-#define ENC_BUF_LEN (10 * 1024 * 1024)
-HWTEST_F(DlpParseUnitTest, Dlp006, TestSize.Level1)
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptAndDecrypt003, TestSize.Level1)
 {
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesEncryptAndDecrypt003");
     struct DlpBlob key = { 32, nullptr };
     key.data = g_key;
     int32_t ret;
@@ -428,13 +315,14 @@ HWTEST_F(DlpParseUnitTest, Dlp006, TestSize.Level1)
 }
 
 /**
- * @tc.name: Dlp0007
+ * @tc.name: DlpOpensslAesEncryptAndDecrypt004
  * @tc.desc: Dlp encrypt && decrypt test with invalid args.
  * @tc.type: FUNC
  * @tc.require:AR000GJSDQ
  */
-HWTEST_F(DlpParseUnitTest, Dlp0007, TestSize.Level1)
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptAndDecrypt004, TestSize.Level1)
 {
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesEncryptAndDecrypt004");
     int32_t ret;
 
     ret = DlpOpensslAesEncrypt(nullptr, nullptr, nullptr, nullptr);
@@ -444,7 +332,126 @@ HWTEST_F(DlpParseUnitTest, Dlp0007, TestSize.Level1)
 }
 
 /**
- * @tc.name: GetSanboxFlag001
+ * @tc.name: DlpOpensslHash001
+ * @tc.desc: HASH test
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslHash001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslHash001");
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    uint8_t out[64] = {0};
+    struct DlpBlob mIn = {
+        .data = nullptr,
+        .size = 15
+    };
+    mIn.data = input;
+    struct DlpBlob mOut = {
+        .data = nullptr,
+        .size = 64
+    };
+    mOut.data = out;
+    int ret;
+
+    ret = DlpOpensslHash(DLP_DIGEST_SHA256, &mIn, &mOut);
+    cout << "sha256:";
+    dumpptr(out, 16);
+    ASSERT_EQ(0, ret);
+    mOut.size = 64;
+    ret = DlpOpensslHash(DLP_DIGEST_SHA384, &mIn, &mOut);
+    cout << "sha384:";
+    dumpptr(out, 16);
+    ASSERT_EQ(0, ret);
+    mOut.size = 64;
+    ret = DlpOpensslHash(DLP_DIGEST_SHA512, &mIn, &mOut);
+    cout << "sha512:";
+    dumpptr(out, 16);
+    ASSERT_EQ(0, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslHash002
+ * @tc.desc: split hash test
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslHash002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslHash002");
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    uint8_t out[64] = {0};
+    struct DlpBlob mIn = {
+        .data = nullptr,
+        .size = 15
+    };
+    mIn.data = input;
+    struct DlpBlob mOut = {
+        .data = nullptr,
+        .size = 15
+    };
+    mOut.data = out;
+    struct DlpBlob mNull = {
+        .data = nullptr,
+        .size = 0
+    };
+    int i = 0;
+    int ret;
+    void *ctx;
+
+    ret = DlpOpensslHashInit(&ctx, DLP_DIGEST_SHA256);
+    ASSERT_EQ(0, ret);
+
+    mIn.size = 1;
+    while (i < 15) {
+        ret = DlpOpensslHashUpdate(ctx, &mIn);
+        ASSERT_EQ(0, ret);
+        mIn.data = mIn.data + 1;
+        i++;
+    }
+    ret = DlpOpensslHashFinal(&ctx, &mNull, &mOut);
+    ASSERT_EQ(0, ret);
+    DlpOpensslHashFreeCtx(&ctx);
+
+    cout << "sha256sum:";
+    dumpptr(out, 16);
+    ASSERT_EQ(0, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslGenerateRandomKey001
+ * @tc.desc: random generate test
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslGenerateRandomKey001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslGenerateRandomKey001");
+    int ret = 0;
+    struct DlpBlob mIn = {
+        .data = nullptr,
+        .size = 32
+    };
+
+    ret = DlpOpensslGenerateRandomKey(DLP_AES_KEY_SIZE_256, &mIn);
+    ASSERT_EQ(0, ret);
+    cout << "random key:";
+    dumpptr(mIn.data, 16);
+    free(mIn.data);
+    ret = DlpOpensslGenerateRandomKey(DLP_AES_KEY_SIZE_192, &mIn);
+    ASSERT_EQ(0, ret);
+    cout << "random key:";
+    dumpptr(mIn.data, 16);
+    free(mIn.data);
+    ret = DlpOpensslGenerateRandomKey(DLP_AES_KEY_SIZE_128, &mIn);
+    ASSERT_EQ(0, ret);
+    cout << "random key:";
+    dumpptr(mIn.data, 16);
+    free(mIn.data);
+}
+
+/**
+ * @tc.name: GetSandboxFlag001
  * @tc.desc: Get Sandbox flag, want valid
  * @tc.type: FUNC
  * @tc.require:AR000H7BOC
@@ -499,14 +506,14 @@ HWTEST_F(DlpParseUnitTest, GetSandboxFlag002, TestSize.Level1)
 }
 
 /**
- * @tc.name: GetSanboxFlag003
+ * @tc.name: GetSandboxFlag003
  * @tc.desc: Get Sandbox flag, no fileName param
  * @tc.type: FUNC
  * @tc.require:AR000H7BOC
  */
-HWTEST_F(DlpParseUnitTest, GetSanboxFlag003, TestSize.Level1)
+HWTEST_F(DlpParseUnitTest, GetSandboxFlag003, TestSize.Level1)
 {
-    DLP_LOG_INFO(LABEL, "GetSanboxFlag003");
+    DLP_LOG_INFO(LABEL, "GetSandboxFlag003");
     OHOS::AAFwk::Want want;
     want.SetAction(TAG_ACTION_VIEW);
 
@@ -522,7 +529,7 @@ HWTEST_F(DlpParseUnitTest, GetSanboxFlag003, TestSize.Level1)
 }
 
 /**
- * @tc.name: GetSanboxFlag004
+ * @tc.name: GetSandboxFlag004
  * @tc.desc: Get Sandbox flag, file name is not dlp
  * @tc.type: FUNC
  * @tc.require:AR000H7BOC
@@ -549,7 +556,7 @@ HWTEST_F(DlpParseUnitTest, GetSandboxFlag004, TestSize.Level1)
 }
 
 /**
- * @tc.name: GetSanboxFlag005
+ * @tc.name: GetSandboxFlag005
  * @tc.desc: Get Sandbox flag, file name is .dlp
  * @tc.type: FUNC
  * @tc.require:AR000H7BOC
@@ -576,7 +583,7 @@ HWTEST_F(DlpParseUnitTest, GetSandboxFlag005, TestSize.Level1)
 }
 
 /**
- * @tc.name: GetSanboxFlag006
+ * @tc.name: GetSandboxFlag006
  * @tc.desc: Get Sandbox flag, file name is less than ".dlp"
  * @tc.type: FUNC
  * @tc.require:AR000H7BOC
@@ -603,7 +610,7 @@ HWTEST_F(DlpParseUnitTest, GetSandboxFlag006, TestSize.Level1)
 }
 
 /**
- * @tc.name: GetSanboxFlag007
+ * @tc.name: GetSandboxFlag007
  * @tc.desc: Get Sandbox flag, file name has not origin suffix
  * @tc.type: FUNC
  * @tc.require:AR000H7BOC
@@ -630,7 +637,7 @@ HWTEST_F(DlpParseUnitTest, GetSandboxFlag007, TestSize.Level1)
 }
 
 /**
- * @tc.name: GetSanboxFlag008
+ * @tc.name: GetSandboxFlag008
  * @tc.desc: Get Sandbox flag, no keyFd
  * @tc.type: FUNC
  * @tc.require:AR000H7BOC
@@ -652,7 +659,7 @@ HWTEST_F(DlpParseUnitTest, GetSandboxFlag008, TestSize.Level1)
 }
 
 /**
- * @tc.name: GetSanboxFlag009
+ * @tc.name: GetSandboxFlag009
  * @tc.desc: Get Sandbox flag, keyFd type is not FD
  * @tc.type: FUNC
  * @tc.require:AR000H7BOC
@@ -679,7 +686,7 @@ HWTEST_F(DlpParseUnitTest, GetSandboxFlag009, TestSize.Level1)
 }
 
 /**
- * @tc.name: GetSanboxFlag010
+ * @tc.name: GetSandboxFlag010
  * @tc.desc: Get Sandbox flag, fileFd has no value key
  * @tc.type: FUNC
  * @tc.require:AR000H7BOC
@@ -705,7 +712,7 @@ HWTEST_F(DlpParseUnitTest, GetSandboxFlag010, TestSize.Level1)
 }
 
 /**
- * @tc.name: GetSanboxFlag011
+ * @tc.name: GetSandboxFlag011
  * @tc.desc: Get Sandbox flag, fileFd fd = -1
  * @tc.type: FUNC
  * @tc.require:AR000H7BOC
@@ -732,14 +739,14 @@ HWTEST_F(DlpParseUnitTest, GetSandboxFlag011, TestSize.Level1)
 }
 
 /**
- * @tc.name: GetSanboxFlag012
+ * @tc.name: GetSandboxFlag012
  * @tc.desc: Get Sandbox flag, fileFd fd is real, but is not dlpfile fd
  * @tc.type: FUNC
  * @tc.require:AR000H7BOC
  */
-HWTEST_F(DlpParseUnitTest, GetSanboxFlag012, TestSize.Level1)
+HWTEST_F(DlpParseUnitTest, GetSandboxFlag012, TestSize.Level1)
 {
-    DLP_LOG_INFO(LABEL, "GetSanboxFlag012");
+    DLP_LOG_INFO(LABEL, "GetSandboxFlag012");
     int plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
     ASSERT_GE(plainFileFd, 0);
 

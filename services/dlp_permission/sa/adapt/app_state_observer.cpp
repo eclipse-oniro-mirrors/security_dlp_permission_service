@@ -215,8 +215,8 @@ bool AppStateObserver::GetUidByTokenId(uint32_t tokenId, int32_t& uid)
     std::lock_guard<std::mutex> lock(tokenIdToUidMapLock_);
     auto iter = tokenIdToUidMap_.find(tokenId);
     if (iter != tokenIdToUidMap_.end()) {
-        DLP_LOG_INFO(LABEL, "tokenId: %{public}d, uid: %{public}d", tokenId, uid);
         uid = iter->second;
+        DLP_LOG_INFO(LABEL, "tokenId: %{public}d, uid: %{public}d", tokenId, uid);
         return true;
     }
     return false;

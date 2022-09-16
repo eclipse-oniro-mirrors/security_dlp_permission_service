@@ -771,26 +771,26 @@ static bool HashCheckParam(uint32_t alg, const struct DlpBlob* msg, struct DlpBl
 {
     if (!CheckDigestAlg(alg)) {
         DLP_LOG_ERROR(LABEL, "Check hash param fail, alg type is unsupported");
-        return DLP_PARSE_ERROR_DIGEST_INVALID;
+        return false;
     }
 
     if (!DlpOpensslCheckBlob(hash)) {
         DLP_LOG_ERROR(LABEL, "Check hash param fail, hash is invalid");
-        return DLP_PARSE_ERROR_VALUE_INVALID;
+        return false;
     }
 
     uint32_t hashLen = GetHashLen(alg);
     if (hash->size < hashLen) {
         DLP_LOG_ERROR(LABEL, "Check hash param fail, hash buff too short");
-        return DLP_PARSE_ERROR_VALUE_INVALID;
+        return false;
     }
 
     if (!DlpOpensslCheckBlob(msg)) {
         DLP_LOG_ERROR(LABEL, "Check hash param fail, msg is invalid");
-        return DLP_PARSE_ERROR_VALUE_INVALID;
+        return false;
     }
 
-    return DLP_OK;
+    return true;
 }
 
 int32_t DlpOpensslHash(uint32_t alg, const struct DlpBlob* msg, struct DlpBlob* hash)
