@@ -24,13 +24,10 @@ ohos_unittest("dlp_permission_test") {
     "//third_party/googletest/include",
     "${dlp_root_dir}/frameworks/common/include",
     "${dlp_root_dir}/frameworks/dlp_permission/include",
-    "${dlp_root_dir}/services/dlp_permission/sa/sa_common",
     "${dlp_root_dir}/interfaces/inner_api/dlp_permission/include",
   ]
 
   sources = [
-    "${dlp_root_dir}/frameworks/common/src/hex_string.cpp",
-    "${dlp_root_dir}/services/dlp_permission/sa/sa_common/dlp_permission_serializer.cpp",
     "unittest/src/dlp_permission_kit_test.cpp",
   ]
 
