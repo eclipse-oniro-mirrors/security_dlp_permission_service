@@ -142,7 +142,7 @@ static void FuseDaemonOpen(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info
         fuse_reply_err(req, ENOENT);
         return;
     }
-    if ((fi->flags & O_TRUNC) != 0) {
+    if ((static_cast<uint32_t>(fi->flags) & O_TRUNC) != 0) {
         int32_t ret = dlp->Truncate(0);
         if (ret != DLP_OK) {
             DLP_LOG_ERROR(LABEL, "Open link file with truncate fail, ret=%{public}d", ret);
@@ -372,7 +372,7 @@ void FuseDaemonSetAttr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to
         return;
     }
 
-    if (toSet != FUSE_SET_ATTR_SIZE) {
+    if ((static_cast<uint32_t>(toSet) & FUSE_SET_ATTR_SIZE) == 0) {
         DLP_LOG_ERROR(LABEL, "Set link file attr fail, type %{public}d not support", toSet);
         fuse_reply_err(req, EACCES);
         return;

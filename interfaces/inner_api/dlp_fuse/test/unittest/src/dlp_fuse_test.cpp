@@ -826,7 +826,11 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile008, TestSize.Level1)
     // dlp header txtSize will 4
     ASSERT_NE(lseek(linkfd, 3, SEEK_SET), -1);
     ASSERT_NE(write(linkfd, "1", strlen("1")), -1);
+
+    // write back cache enable, need fsync
+    fsync(linkfd);
     close(linkfd);
+
     g_linkFdArry[0] = 0;
     ASSERT_EQ(DlpLinkManager::GetInstance().DeleteDlpLinkFile(g_Dlpfile), 0);
     ASSERT_EQ(DlpFileManager::GetInstance().CloseDlpFile(g_Dlpfile), 0);

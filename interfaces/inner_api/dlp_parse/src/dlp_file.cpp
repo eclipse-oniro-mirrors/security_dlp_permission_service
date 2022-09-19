@@ -718,12 +718,12 @@ int32_t DlpFile::DoDlpFileWrite(uint32_t offset, void* buf, uint32_t size)
         DLP_LOG_ERROR(LABEL, "encrypt prefix data failed");
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
-    if ((uint32_t)writenSize >= size) {
+    if (static_cast<uint32_t>(writenSize) >= size) {
         return writenSize;
     }
 
     uint8_t *restBlocksPtr = (uint8_t *)buf + writenSize;
-    uint32_t restBlocksSize = size - writenSize;
+    uint32_t restBlocksSize = size - static_cast<uint32_t>(writenSize);
     uint8_t* writeBuff = new (std::nothrow) uint8_t[restBlocksSize]();
     if (writeBuff == nullptr) {
         DLP_LOG_ERROR(LABEL, "alloc write buffer fail");

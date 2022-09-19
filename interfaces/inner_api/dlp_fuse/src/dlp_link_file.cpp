@@ -25,7 +25,8 @@ namespace Security {
 namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpLinkFile"};
-static const int DEFAULT_INODE_ACCESS = 0640;
+static const int DEFAULT_INODE_RO_ACCESS = 0440;
+static const int DEFAULT_INODE_RW_ACCESS = 0640;
 } // namespace
 
 DlpLinkFile::DlpLinkFile(std::string dlpLinkName, std::shared_ptr<DlpFile> dlpFile)
@@ -33,7 +34,12 @@ DlpLinkFile::DlpLinkFile(std::string dlpLinkName, std::shared_ptr<DlpFile> dlpFi
 {
     (void)memset_s(&fileStat_, sizeof(fileStat_), 0, sizeof(fileStat_));
     fileStat_.st_ino = GetFileInode(this);
-    fileStat_.st_mode = S_IFREG | DEFAULT_INODE_ACCESS;
+    if (dlpFile != nullptr) {
+        uint32_t fileMode = dlpFile->GetReadOnlyFlag() ? DEFAULT_INODE_RO_ACCESS : DEFAULT_INODE_RW_ACCESS;
+        fileStat_.st_mode = S_IFREG | fileMode;
+    } else {
+        fileStat_.st_mode = 0;
+    }
     fileStat_.st_nlink = 1;
     fileStat_.st_uid = getuid();
     fileStat_.st_gid = getgid();

@@ -102,6 +102,11 @@ public:
         isFuseLink_ = false;
     };
 
+    bool GetReadOnlyFlag()
+    {
+        return isReadOnly_;
+    };
+
     int32_t Truncate(uint32_t size);
     int32_t dlpFd_;
 
