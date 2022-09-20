@@ -182,14 +182,14 @@ static int32_t OpensslAesCipherEncryptFinal(
         EVP_CIPHER_CTX_free(ctx);
         return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
-    cipherText->size = (uint32_t)outLen;
+    cipherText->size = static_cast<uint32_t>(outLen);
 
     if (EVP_EncryptFinal_ex(ctx, cipherText->data + outLen, &outLen) != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
         EVP_CIPHER_CTX_free(ctx);
         return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
-    cipherText->size += (uint32_t)outLen;
+    cipherText->size += static_cast<uint32_t>(outLen);
 
     EVP_CIPHER_CTX_free(ctx);
     return DLP_OK;
@@ -222,7 +222,7 @@ static int32_t OpensslAesCipherCryptInit(
     const struct DlpBlob* key, const struct DlpUsageSpec* usageSpec, bool isEncrypt, void** cryptoCtx)
 {
     int32_t ret;
-    struct DlpCipherParam* cipherParam = (struct DlpCipherParam*)usageSpec->algParam;
+    struct DlpCipherParam* cipherParam = reinterpret_cast<struct DlpCipherParam*>(usageSpec->algParam);
 
     EVP_CIPHER_CTX* ctx = EVP_CIPHER_CTX_new();
     if (ctx == nullptr) {
@@ -273,7 +273,7 @@ static int32_t OpensslAesCipherCryptInit(
 static int32_t OpensslAesCipherEncryptUpdate(void* cryptoCtx, const struct DlpBlob* message, struct DlpBlob* cipherText)
 {
     struct DlpOpensslAesCtx* aesCtx = (struct DlpOpensslAesCtx*)cryptoCtx;
-    EVP_CIPHER_CTX* ctx = (EVP_CIPHER_CTX*)aesCtx->append;
+    EVP_CIPHER_CTX* ctx = reinterpret_cast<EVP_CIPHER_CTX*>(aesCtx->append);
     if (ctx == nullptr) {
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
@@ -283,7 +283,7 @@ static int32_t OpensslAesCipherEncryptUpdate(void* cryptoCtx, const struct DlpBl
         DlpLogOpensslError();
         return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
-    cipherText->size = (uint32_t)outLen;
+    cipherText->size = static_cast<uint32_t>(outLen);
 
     return DLP_OK;
 }
@@ -292,7 +292,7 @@ static int32_t OpensslAesCipherEncryptFinalThree(
     void** cryptoCtx, const struct DlpBlob* message, struct DlpBlob* cipherText)
 {
     struct DlpOpensslAesCtx* aesCtx = (struct DlpOpensslAesCtx*)*cryptoCtx;
-    EVP_CIPHER_CTX* ctx = (EVP_CIPHER_CTX*)aesCtx->append;
+    EVP_CIPHER_CTX* ctx = reinterpret_cast<EVP_CIPHER_CTX*>(aesCtx->append);
 
     if (ctx == nullptr) {
         DLP_FREE_PTR(*cryptoCtx);
@@ -309,7 +309,7 @@ static int32_t OpensslAesCipherEncryptFinalThree(
                 ret = DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
                 break;
             }
-            cipherText->size = (uint32_t)outLen;
+            cipherText->size = static_cast<uint32_t>(outLen);
         }
 
         if (EVP_EncryptFinal_ex(ctx, (cipherText->data + outLen), &outLen) != DLP_OPENSSL_SUCCESS) {
@@ -317,7 +317,7 @@ static int32_t OpensslAesCipherEncryptFinalThree(
             ret = DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
             break;
         }
-        cipherText->size += (uint32_t)outLen;
+        cipherText->size += static_cast<uint32_t>(outLen);
     } while (0);
 
     EVP_CIPHER_CTX_free(ctx);
@@ -330,7 +330,7 @@ static int32_t OpensslAesCipherEncryptFinalThree(
 static int32_t OpensslAesCipherDecryptUpdate(void* cryptoCtx, const struct DlpBlob* message, struct DlpBlob* plainText)
 {
     struct DlpOpensslAesCtx* aesCtx = (struct DlpOpensslAesCtx*)cryptoCtx;
-    EVP_CIPHER_CTX* ctx = (EVP_CIPHER_CTX*)aesCtx->append;
+    EVP_CIPHER_CTX* ctx = reinterpret_cast<EVP_CIPHER_CTX*>(aesCtx->append);
 
     if (ctx == nullptr) {
         return DLP_PARSE_ERROR_VALUE_INVALID;
@@ -341,7 +341,7 @@ static int32_t OpensslAesCipherDecryptUpdate(void* cryptoCtx, const struct DlpBl
         DlpLogOpensslError();
         return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
-    plainText->size = (uint32_t)outLen;
+    plainText->size = static_cast<uint32_t>(outLen);
 
     return DLP_OK;
 }
@@ -350,7 +350,7 @@ static int32_t OpensslAesCipherDecryptFinalThree(
     void** cryptoCtx, const struct DlpBlob* message, struct DlpBlob* plainText)
 {
     struct DlpOpensslAesCtx* aesCtx = (struct DlpOpensslAesCtx*)*cryptoCtx;
-    EVP_CIPHER_CTX* ctx = (EVP_CIPHER_CTX*)aesCtx->append;
+    EVP_CIPHER_CTX* ctx = reinterpret_cast<EVP_CIPHER_CTX*>(aesCtx->append);
     if (ctx == nullptr) {
         DLP_FREE_PTR(*cryptoCtx);
         return DLP_PARSE_ERROR_VALUE_INVALID;
@@ -365,7 +365,7 @@ static int32_t OpensslAesCipherDecryptFinalThree(
                 ret = DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
                 break;
             }
-            plainText->size = (uint32_t)outLen;
+            plainText->size = static_cast<uint32_t>(outLen);
         }
 
         if (EVP_DecryptFinal_ex(ctx, plainText->data + outLen, &outLen) != DLP_OPENSSL_SUCCESS) {
@@ -373,7 +373,7 @@ static int32_t OpensslAesCipherDecryptFinalThree(
             ret = DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
             break;
         }
-        plainText->size += (uint32_t)outLen;
+        plainText->size += static_cast<uint32_t>(outLen);
     } while (0);
 
     EVP_CIPHER_CTX_free(ctx);
@@ -392,14 +392,14 @@ static int32_t OpensslAesCipherDecryptFinal(
         EVP_CIPHER_CTX_free(ctx);
         return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
-    plainText->size = (uint32_t)outLen;
+    plainText->size = static_cast<uint32_t>(outLen);
 
     if (EVP_DecryptFinal_ex(ctx, plainText->data + outLen, &outLen) != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
         EVP_CIPHER_CTX_free(ctx);
         return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
-    plainText->size += (uint32_t)outLen;
+    plainText->size += static_cast<uint32_t>(outLen);
 
     EVP_CIPHER_CTX_free(ctx);
     return DLP_OK;
@@ -620,8 +620,8 @@ void DlpOpensslAesHalFreeCtx(void** cryptoCtx)
     struct DlpOpensslAesCtx* opensslAesCtx = (struct DlpOpensslAesCtx*)*cryptoCtx;
     switch (opensslAesCtx->mode) {
         case DLP_MODE_CTR:
-            if ((EVP_CIPHER_CTX*)opensslAesCtx->append != nullptr) {
-                EVP_CIPHER_CTX_free((EVP_CIPHER_CTX*)opensslAesCtx->append);
+            if (reinterpret_cast<EVP_CIPHER_CTX*>(opensslAesCtx->append) != nullptr) {
+                EVP_CIPHER_CTX_free(reinterpret_cast<EVP_CIPHER_CTX*>(opensslAesCtx->append));
                 opensslAesCtx->append = nullptr;
             }
             break;
@@ -857,7 +857,7 @@ int32_t DlpOpensslHashUpdate(void* cryptoCtx, const struct DlpBlob* msg)
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    int32_t ret = EVP_DigestUpdate((EVP_MD_CTX*)cryptoCtx, (void*)msg->data, msg->size);
+    int32_t ret = EVP_DigestUpdate(reinterpret_cast<EVP_MD_CTX*>(cryptoCtx), (void*)msg->data, msg->size);
     if (ret != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
         return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;

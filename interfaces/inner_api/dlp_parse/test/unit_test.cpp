@@ -167,7 +167,7 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptAndDecrypt001, TestSize.Level1)
     dumpptr(enc, 16);
     cout << "output hexdump:";
     dumpptr(dec, 16);
-    ret = strcmp((char *)input, (char *)dec);
+    ret = strcmp(reinterpret_cast<char *>(input), reinterpret_cast<char *>(dec));
     ASSERT_EQ(0, ret);
 }
 
@@ -248,7 +248,7 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptAndDecrypt002, TestSize.Level1)
     DlpOpensslAesHalFreeCtx(&ctx);
     cout << "output hexdump:";
     dumpptr(dec, 16);
-    ret = strcmp((char *)input, (char *)dec);
+    ret = strcmp(reinterpret_cast<char *>(input), reinterpret_cast<char *>(dec));
     ASSERT_EQ(0, ret);
 }
 

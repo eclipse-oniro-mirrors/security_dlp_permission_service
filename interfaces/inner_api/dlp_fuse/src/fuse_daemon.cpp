@@ -188,7 +188,7 @@ static void FuseDaemonRead(fuse_req_t req, fuse_ino_t ino, size_t size, off_t of
         return;
     }
 
-    char* buf = (char*)malloc(size);
+    char* buf = reinterpret_cast<char*>(malloc(size));
     if (buf == nullptr) {
         DLP_LOG_ERROR(LABEL, "Read link file fail, malloc %{public}zu buff fail", size);
         fuse_reply_err(req, EINVAL);
@@ -319,7 +319,7 @@ static void FuseDaemonReadDir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t
         return;
     }
 
-    char *readBuf = (char *)malloc(size);
+    char* readBuf = reinterpret_cast<char*>(malloc(size));
     if (readBuf == nullptr) {
         fuse_reply_err(req, EFAULT);
         return;
