@@ -28,39 +28,39 @@ bool DlpPolicyParcel::Marshalling(Parcel& out) const
     const std::vector<AuthUserInfo>& userList = this->policyParams_.authUsers_;
     uint32_t listSize = userList.size();
     if (!(out.WriteUint32(listSize))) {
-        DLP_LOG_ERROR(LABEL, "Write uint32 fail");
+        DLP_LOG_ERROR(LABEL, "Write auth user num fail");
         return false;
     }
 
     for (uint32_t i = 0; i < listSize; i++) {
         sptr<AuthUserInfoParcel> authUserInfoParcel = new (std::nothrow) AuthUserInfoParcel();
         if (authUserInfoParcel == nullptr) {
-            DLP_LOG_ERROR(LABEL, "New memory fail");
+            DLP_LOG_ERROR(LABEL, "Alloc auth user info parcel fail");
             return false;
         }
         authUserInfoParcel->authUserInfo_ = userList[i];
         if (!(out.WriteParcelable(authUserInfoParcel))) {
-            DLP_LOG_ERROR(LABEL, "Write parcel fail");
+            DLP_LOG_ERROR(LABEL, "Write auth user info parcel fail");
             return false;
         }
     }
     if (!(out.WriteString(this->policyParams_.ownerAccount_))) {
-        DLP_LOG_ERROR(LABEL, "Write string fail");
+        DLP_LOG_ERROR(LABEL, "Write owner account fail");
     }
     if (!(out.WriteUint8(this->policyParams_.ownerAccountType_))) {
-        DLP_LOG_ERROR(LABEL, "Write uint8 fail");
+        DLP_LOG_ERROR(LABEL, "Write owner account type fail");
     }
     if (!(out.WriteUint32(this->policyParams_.GetAeskeyLen()))) {
-        DLP_LOG_ERROR(LABEL, "Write uint32 fail");
+        DLP_LOG_ERROR(LABEL, "Write aes key len fail");
     }
     if (!(out.WriteBuffer(this->policyParams_.GetAeskey(), this->policyParams_.GetAeskeyLen()))) {
-        DLP_LOG_ERROR(LABEL, "Write buffer fail");
+        DLP_LOG_ERROR(LABEL, "Write aes key fail");
     }
     if (!(out.WriteUint32(this->policyParams_.GetIvLen()))) {
-        DLP_LOG_ERROR(LABEL, "Write uint32 fail");
+        DLP_LOG_ERROR(LABEL, "Write iv len fail");
     }
     if (!(out.WriteBuffer(this->policyParams_.GetIv(), this->policyParams_.GetIvLen()))) {
-        DLP_LOG_ERROR(LABEL, "Write buffer fail");
+        DLP_LOG_ERROR(LABEL, "Write iv fail");
     }
 
     return true;
@@ -70,31 +70,31 @@ static bool ReadAesParam(PermissionPolicy& policy, Parcel& in)
 {
     uint32_t len;
     if (!in.ReadUint32(len)) {
-        DLP_LOG_ERROR(LABEL, "Read uint32 fail");
+        DLP_LOG_ERROR(LABEL, "Read aes key len fail");
         return false;
     }
     if (!CheckAesParamLen(len)) {
-        DLP_LOG_ERROR(LABEL, "key param invalid");
+        DLP_LOG_ERROR(LABEL, "Aes key len is invalid, len=%{public}d", len);
         return false;
     }
     const uint8_t* key = in.ReadUnpadBuffer(len);
     if (key == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Read buffer fail");
+        DLP_LOG_ERROR(LABEL, "Read aes key fail");
         return false;
     }
     policy.SetAeskey(key, len);
 
     if (!in.ReadUint32(len)) {
-        DLP_LOG_ERROR(LABEL, "Read uint32 fail");
+        DLP_LOG_ERROR(LABEL, "Read iv len fail");
         return false;
     }
     if (!CheckAesParamLen(len)) {
-        DLP_LOG_ERROR(LABEL, "iv param invalid");
+        DLP_LOG_ERROR(LABEL, "Iv len is invalid, len=%{public}d", len);
         return false;
     }
     const uint8_t* iv = in.ReadUnpadBuffer(len);
     if (iv == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Read buffer fail");
+        DLP_LOG_ERROR(LABEL, "Read iv fail");
         return false;
     }
     policy.SetIv(iv, len);
@@ -105,36 +105,35 @@ static bool ReadParcel(Parcel& in, DlpPolicyParcel* policyParcel)
 {
     uint32_t listSize;
     if (!in.ReadUint32(listSize)) {
-        DLP_LOG_ERROR(LABEL, "Read uint32 fail");
+        DLP_LOG_ERROR(LABEL, "Read auth user num fail");
         return false;
     }
     for (uint32_t i = 0; i < listSize; i++) {
         sptr<AuthUserInfoParcel> authUserInfoParcel = in.ReadParcelable<AuthUserInfoParcel>();
         if (authUserInfoParcel == nullptr) {
-            DLP_LOG_ERROR(LABEL, "Read parcel fail");
+            DLP_LOG_ERROR(LABEL, "Read auth user info parcel fail");
             return false;
         }
         policyParcel->policyParams_.authUsers_.emplace_back(authUserInfoParcel->authUserInfo_);
     }
     if (!(in.ReadString(policyParcel->policyParams_.ownerAccount_))) {
-        DLP_LOG_ERROR(LABEL, "Read string fail");
+        DLP_LOG_ERROR(LABEL, "Read owner account fail");
         return false;
     }
     uint8_t res = 0;
     if (!(in.ReadUint8(res))) {
-        DLP_LOG_ERROR(LABEL, "Read uint8 fail");
+        DLP_LOG_ERROR(LABEL, "Read owner account type fail");
         return false;
     }
     policyParcel->policyParams_.ownerAccountType_ = static_cast<DlpAccountType>(res);
-    ReadAesParam(policyParcel->policyParams_, in);
-    return true;
+    return ReadAesParam(policyParcel->policyParams_, in);
 }
 
 DlpPolicyParcel* DlpPolicyParcel::Unmarshalling(Parcel& in)
 {
     DlpPolicyParcel* policyParcel = new (std::nothrow) DlpPolicyParcel();
     if (policyParcel == nullptr) {
-        DLP_LOG_ERROR(LABEL, "New memory fail");
+        DLP_LOG_ERROR(LABEL, "Alloc policy parcel fail");
         return nullptr;
     }
 
