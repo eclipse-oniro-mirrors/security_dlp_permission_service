@@ -33,7 +33,7 @@ int32_t DlpFileManager::AddDlpFileNode(const std::shared_ptr<DlpFile>& filePtr)
 {
     Utils::UniqueWriteGuard<Utils::RWLock> infoGuard(this->g_DlpMapLock_);
     if (g_DlpFileMap_.count(filePtr->dlpFd_) > 0) {
-        DLP_LOG_ERROR(LABEL, "fd %{public}d is exist", filePtr->dlpFd_);
+        DLP_LOG_ERROR(LABEL, "Add dlp file node fail, fd %{public}d already exist", filePtr->dlpFd_);
         return DLP_PARSE_ERROR_FILE_ALREADY_OPENED;
     }
     g_DlpFileMap_[filePtr->dlpFd_] = filePtr;
@@ -44,7 +44,7 @@ int32_t DlpFileManager::RemoveDlpFileNode(const std::shared_ptr<DlpFile>& filePt
 {
     Utils::UniqueWriteGuard<Utils::RWLock> infoGuard(this->g_DlpMapLock_);
     if (g_DlpFileMap_.count(filePtr->dlpFd_) == 0) {
-        DLP_LOG_ERROR(LABEL, "fd %{public}d is not exist", filePtr->dlpFd_);
+        DLP_LOG_ERROR(LABEL, "Remove dlp file node fail, fd %{public}d not exist", filePtr->dlpFd_);
         return DLP_PARSE_ERROR_FILE_NOT_OPENED;
     }
     g_DlpFileMap_.erase(filePtr->dlpFd_);
@@ -67,24 +67,24 @@ int32_t DlpFileManager::GenerateCertData(const PermissionPolicy& policy, struct 
     int32_t result = DlpPermissionKit::GenerateDlpCertificate(policy, cert);
     FinishTrace(HITRACE_TAG_ACCESS_CONTROL);
     if (result != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "generate dlp cert failed.");
+        DLP_LOG_ERROR(LABEL, "Generate dlp cert fail, errno=%{public}d", result);
         return result;
     }
 
     uint32_t certSize = cert.size();
     if (certSize > DLP_MAX_CERT_SIZE) {
-        DLP_LOG_ERROR(LABEL, "generate dlp cert too large.");
+        DLP_LOG_ERROR(LABEL, "Check dlp cert fail, cert is too large, size=%{public}u", certSize);
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
     uint8_t* certBuffer = new (std::nothrow) uint8_t[certSize];
     if (certBuffer == nullptr) {
-        DLP_LOG_ERROR(LABEL, "alloc cert data failed.");
+        DLP_LOG_ERROR(LABEL, "Copy dlp cert fail, alloc buff fail");
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
     if (memcpy_s(certBuffer, certSize, &cert[0], certSize) != EOK) {
-        DLP_LOG_ERROR(LABEL, "memcpy failed.");
+        DLP_LOG_ERROR(LABEL, "Copy dlp cert fail, memcpy_s fail");
         delete[] certBuffer;
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
@@ -97,27 +97,27 @@ int32_t DlpFileManager::GenerateCertData(const PermissionPolicy& policy, struct 
 int32_t DlpFileManager::PrepareDlpEncryptParms(
     PermissionPolicy& policy, struct DlpBlob& key, struct DlpUsageSpec& usage, struct DlpBlob& certData) const
 {
-    DLP_LOG_INFO(LABEL, "begin generate key");
+    DLP_LOG_INFO(LABEL, "Generate key");
     int32_t res = DlpOpensslGenerateRandomKey(DLP_AES_KEY_SIZE_256, &key);
     if (res != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "alloc crypt key failed.");
+        DLP_LOG_ERROR(LABEL, "Generate key fail, errno=%{public}d", res);
         return res;
     }
 
     struct DlpCipherParam* tagIv = new (std::nothrow) struct DlpCipherParam;
     if (tagIv == nullptr) {
-        DLP_LOG_ERROR(LABEL, "alloc cipher param failed.");
+        DLP_LOG_ERROR(LABEL, "Alloc iv buff fail");
         delete[] key.data;
         key.data = nullptr;
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
-    DLP_LOG_INFO(LABEL, "begin generate iv");
+    DLP_LOG_INFO(LABEL, "Generate iv");
     res = DlpOpensslGenerateRandomKey(IV_SIZE * BIT_NUM_OF_UINT8, &tagIv->iv);
     if (res != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "alloc crypt iv failed.");
+        DLP_LOG_ERROR(LABEL, "Generate iv fail, errno=%{public}d", res);
         delete[] key.data;
-        delete tagIv;
         key.data = nullptr;
+        delete tagIv;
         tagIv = nullptr;
         return res;
     }
@@ -127,16 +127,15 @@ int32_t DlpFileManager::PrepareDlpEncryptParms(
     policy.SetAeskey(key.data, key.size);
     policy.SetIv(tagIv->iv.data, tagIv->iv.size);
 
+    DLP_LOG_INFO(LABEL, "Generate cert");
     res = GenerateCertData(policy, certData);
     if (res != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "generate cert data failed.");
+        DLP_LOG_ERROR(LABEL, "Generate cert fail, errno=%{public}d", res);
         delete[] key.data;
+        key.data = nullptr;
         delete[] tagIv->iv.data;
         tagIv->iv.data = nullptr;
-
         delete tagIv;
-        key.data = nullptr;
-
         tagIv = nullptr;
         return res;
     }
@@ -148,31 +147,32 @@ int32_t DlpFileManager::ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr) co
 {
     int32_t result = filePtr->ParseDlpHeader();
     if (result != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "dlp file format error.");
+        DLP_LOG_ERROR(LABEL, "Parse file header fail, not dlp file");
         return result;
     }
 
     struct DlpBlob cert;
     result = filePtr->GetEncryptCert(cert);
     if (result != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "dlp file get cert data failed.");
+        DLP_LOG_ERROR(LABEL, "Parse file header fail, get cert fail");
         return result;
     }
 
     std::vector<uint8_t> certBuf = std::vector<uint8_t>(cert.data, cert.data + cert.size);
     PermissionPolicy policy;
-    DLP_LOG_DEBUG(LABEL, "certBuf size %{public}zu.", certBuf.size());
+
+    DLP_LOG_INFO(LABEL, "Parse cert");
     StartTrace(HITRACE_TAG_ACCESS_CONTROL, "DlpParseCertificate");
     result = DlpPermissionKit::ParseDlpCertificate(certBuf, policy);
     FinishTrace(HITRACE_TAG_ACCESS_CONTROL);
     if (result != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "parse dlp cert failed.");
+        DLP_LOG_ERROR(LABEL, "Parse cert fail, errno=%{public}d", result);
         return result;
     }
 
     result = filePtr->SetPolicy(policy);
     if (result != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "set policy failed.");
+        DLP_LOG_ERROR(LABEL, "Parse file header fail, set policy error, errno=%{public}d", result);
         return result;
     }
 
@@ -186,7 +186,7 @@ int32_t DlpFileManager::ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr) co
     };
     result = filePtr->SetCipher(key, usage);
     if (result != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "set cipher failed.");
+        DLP_LOG_ERROR(LABEL, "Parse file header fail, set cipher error, errno=%{public}d", result);
     }
 
     return result;
@@ -222,33 +222,33 @@ int32_t DlpFileManager::SetDlpFileParams(std::shared_ptr<DlpFile>& filePtr, cons
 
     int32_t result = PrepareDlpEncryptParms(policy, key, usage, certData);
     if (result != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Prepare dlp encrypt params failed, error: %{public}d", result);
+        DLP_LOG_ERROR(LABEL, "Set dlp obj params fail, prepare encrypt params error, errno=%{public}d", result);
         return result;
     }
     result = filePtr->SetCipher(key, usage);
     if (result != DLP_OK) {
         FreeChiperBlob(key, certData, usage);
-        DLP_LOG_ERROR(LABEL, "set dlp cipher failed, error: %{public}d", result);
+        DLP_LOG_ERROR(LABEL, "Set dlp obj params fail, set cipher error, errno=%{public}d", result);
         return result;
     }
 
     result = filePtr->SetPolicy(policy);
     if (result != DLP_OK) {
         FreeChiperBlob(key, certData, usage);
-        DLP_LOG_ERROR(LABEL, "set policy failed, error: %{public}d", result);
+        DLP_LOG_ERROR(LABEL, "Set dlp obj params fail, set policy error, errno=%{public}d", result);
         return result;
     }
 
     result = filePtr->SetEncryptCert(certData);
     if (result != DLP_OK) {
         FreeChiperBlob(key, certData, usage);
-        DLP_LOG_ERROR(LABEL, "set encrypt cert failed, error: %{public}d", result);
+        DLP_LOG_ERROR(LABEL, "Set dlp obj params fail, set cert error, errno=%{public}d", result);
         return result;
     }
 
     result = filePtr->SetContactAccount(property.contractAccount);
     if (result != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "set contactAccount failed, error: %{public}d", result);
+        DLP_LOG_WARN(LABEL, "Set dlp obj params fail, set contact account error, errno=%{public}d", result);
     }
     FreeChiperBlob(key, certData, usage);
     return result;
@@ -258,30 +258,30 @@ int32_t DlpFileManager::GenerateDlpFile(
     int32_t plainFileFd, int32_t dlpFileFd, const DlpProperty& property, std::shared_ptr<DlpFile>& filePtr)
 {
     if (plainFileFd < 0 || dlpFileFd < 0) {
-        DLP_LOG_ERROR(LABEL, "plainFileFd or dlpFileFd is invalid.");
+        DLP_LOG_ERROR(LABEL, "Generate dlp file fail, plain file fd or dlp file fd invalid");
         return DLP_PARSE_ERROR_FD_ERROR;
     }
 
     if (GetDlpFile(dlpFileFd) != nullptr) {
-        DLP_LOG_ERROR(LABEL, "dlpFile has generated, If you want to rebuild, close it first.");
+        DLP_LOG_ERROR(LABEL, "Generate dlp file fail, dlp file has generated, if you want to rebuild, close it first");
         return DLP_PARSE_ERROR_FILE_ALREADY_OPENED;
     }
 
     filePtr = std::make_shared<DlpFile>(dlpFileFd);
     if (filePtr == nullptr) {
-        DLP_LOG_ERROR(LABEL, "alloc dlp file failed.");
+        DLP_LOG_ERROR(LABEL, "Generate dlp file fail, alloc dlp obj fail");
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
     int32_t result = SetDlpFileParams(filePtr, property);
     if (result != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "set flp file param failed, error: %{public}d", result);
+        DLP_LOG_ERROR(LABEL, "Generate dlp file fail, set dlp obj params error, errno=%{public}d", result);
         return result;
     }
 
     result = filePtr->GenFile(plainFileFd);
     if (result != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "gen dlp file failed, error: %{public}d", result);
+        DLP_LOG_ERROR(LABEL, "Generate dlp file fail, errno=%{public}d", result);
         return result;
     }
 
@@ -291,25 +291,25 @@ int32_t DlpFileManager::GenerateDlpFile(
 int32_t DlpFileManager::OpenDlpFile(int32_t dlpFileFd, std::shared_ptr<DlpFile>& filePtr)
 {
     if (dlpFileFd < 0) {
-        DLP_LOG_ERROR(LABEL, "fd is invalid.");
+        DLP_LOG_ERROR(LABEL, "Open dlp file fail, fd %{public}d is invalid", dlpFileFd);
         return DLP_PARSE_ERROR_FD_ERROR;
     }
 
     filePtr = GetDlpFile(dlpFileFd);
     if (filePtr != nullptr) {
-        DLP_LOG_INFO(LABEL, "dlp file has open.");
+        DLP_LOG_INFO(LABEL, "Open dlp file fail, fd %{public}d has opened", dlpFileFd);
         return DLP_OK;
     }
 
     filePtr = std::make_shared<DlpFile>(dlpFileFd);
     if (filePtr == nullptr) {
-        DLP_LOG_ERROR(LABEL, "alloc dlp file failed.");
+        DLP_LOG_ERROR(LABEL, "Open dlp file fail, alloc dlp obj fail");
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
     int32_t result = ParseDlpFileFormat(filePtr);
     if (result != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "parse dlp file failed.");
+        DLP_LOG_ERROR(LABEL, "Open dlp file fail, parse dlp file error, errno=%{public}d", result);
         return result;
     }
 
@@ -319,28 +319,28 @@ int32_t DlpFileManager::OpenDlpFile(int32_t dlpFileFd, std::shared_ptr<DlpFile>&
 int32_t DlpFileManager::IsDlpFile(int32_t dlpFileFd, bool& isDlpFile)
 {
     if (dlpFileFd < 0) {
-        DLP_LOG_ERROR(LABEL, "fd is invalid.");
+        DLP_LOG_ERROR(LABEL, "File type check fail, fd %{public}d is invalid", dlpFileFd);
         isDlpFile = false;
         return DLP_PARSE_ERROR_FD_ERROR;
     }
 
     std::shared_ptr<DlpFile> filePtr = GetDlpFile(dlpFileFd);
     if (filePtr != nullptr) {
-        DLP_LOG_INFO(LABEL, "dlp file has opened.");
+        DLP_LOG_INFO(LABEL, "File type check fail, fd %{public}d has opened", dlpFileFd);
         isDlpFile = true;
         return DLP_OK;
     }
 
     filePtr = std::make_shared<DlpFile>(dlpFileFd);
     if (filePtr == nullptr) {
-        DLP_LOG_ERROR(LABEL, "alloc dlp file failed.");
+        DLP_LOG_ERROR(LABEL, "File type check fail, alloc dlp obj fail");
         isDlpFile = false;
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
     int32_t result = filePtr->ParseDlpHeader();
     if (result != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "parse dlp file failed, res: %{public}d", result);
+        DLP_LOG_ERROR(LABEL, "File type check fail, parse dlp file error, errno=%{public}d", result);
         isDlpFile = false;
         return result;
     }
@@ -351,7 +351,7 @@ int32_t DlpFileManager::IsDlpFile(int32_t dlpFileFd, bool& isDlpFile)
 int32_t DlpFileManager::CloseDlpFile(const std::shared_ptr<DlpFile>& dlpFile)
 {
     if (dlpFile == nullptr) {
-        DLP_LOG_ERROR(LABEL, "dlp file is null.");
+        DLP_LOG_ERROR(LABEL, "Close dlp file fail, dlp obj is null");
         return DLP_PARSE_ERROR_PTR_NULL;
     }
     return RemoveDlpFileNode(dlpFile);
@@ -360,11 +360,11 @@ int32_t DlpFileManager::CloseDlpFile(const std::shared_ptr<DlpFile>& dlpFile)
 int32_t DlpFileManager::RecoverDlpFile(std::shared_ptr<DlpFile>& filePtr, int32_t plainFd) const
 {
     if (filePtr == nullptr) {
-        DLP_LOG_ERROR(LABEL, "dlp file is null.");
+        DLP_LOG_ERROR(LABEL, "Recover dlp file fail, dlp obj is null");
         return DLP_PARSE_ERROR_PTR_NULL;
     }
     if (plainFd < 0) {
-        DLP_LOG_ERROR(LABEL, "fd is invalid.");
+        DLP_LOG_ERROR(LABEL, "Recover dlp file fail, fd %{public}d is invalid", plainFd);
         return DLP_PARSE_ERROR_FD_ERROR;
     }
 
