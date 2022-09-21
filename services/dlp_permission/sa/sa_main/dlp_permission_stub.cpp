@@ -35,7 +35,7 @@ static bool CheckPermission(const std::string& permission)
     Security::AccessToken::AccessTokenID callingToken = IPCSkeleton::GetCallingTokenID();
     int res = Security::AccessToken::AccessTokenKit::VerifyAccessToken(callingToken, permission);
     if (res == Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
-        DLP_LOG_INFO(LABEL, "check permission %{public}s pass", permission.c_str());
+        DLP_LOG_INFO(LABEL, "Check permission %{public}s pass", permission.c_str());
         return true;
     }
 
@@ -43,7 +43,7 @@ static bool CheckPermission(const std::string& permission)
         HiviewDFX::HiSysEvent::EventType::SECURITY, "CODE", DLP_PERMISSION_VERIFY_ERROR,
         "CALLER_TOKENID", callingToken);
 
-    DLP_LOG_ERROR(LABEL, "check permission %{public}s fail", permission.c_str());
+    DLP_LOG_ERROR(LABEL, "Check permission %{public}s fail", permission.c_str());
     return false;
 }
 
@@ -63,7 +63,7 @@ int32_t DlpPermissionStub::OnRemoteRequest(
     std::u16string descripter = DlpPermissionStub::GetDescriptor();
     std::u16string remoteDescripter = data.ReadInterfaceToken();
     if (descripter != remoteDescripter) {
-        DLP_LOG_ERROR(LABEL, "OnRemoteRequest failed, descriptor is not matched");
+        DLP_LOG_ERROR(LABEL, "Deal remote request fail, descriptor is not matched");
         return DLP_SERVICE_ERROR_IPC_REQUEST_FAIL;
     }
 
@@ -87,25 +87,25 @@ int32_t DlpPermissionStub::GenerateDlpCertificateInner(MessageParcel& data, Mess
 
     sptr<DlpPolicyParcel> policyParcel = data.ReadParcelable<DlpPolicyParcel>();
     if (policyParcel == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Read parcel fail");
+        DLP_LOG_ERROR(LABEL, "Read dlp policy parcel fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
     sptr<IRemoteObject> obj = data.ReadRemoteObject();
     if (obj == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Read object fail");
+        DLP_LOG_ERROR(LABEL, "Read generate cert callback object fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
     sptr<IDlpPermissionCallback> callback = iface_cast<IDlpPermissionCallback>(obj);
     if (callback == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Callback is null");
+        DLP_LOG_ERROR(LABEL, "Iface cast generate cert callback fail");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
     int32_t res = this->GenerateDlpCertificate(policyParcel, callback);
     if (!reply.WriteInt32(res)) {
-        DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        DLP_LOG_ERROR(LABEL, "Write generate cert result fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     return DLP_OK;
@@ -119,24 +119,24 @@ int32_t DlpPermissionStub::ParseDlpCertificateInner(MessageParcel& data, Message
 
     std::vector<uint8_t> cert;
     if (!data.ReadUInt8Vector(&cert)) {
-        DLP_LOG_ERROR(LABEL, "Read uint8 vector fail");
+        DLP_LOG_ERROR(LABEL, "Read cert fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
     sptr<IRemoteObject> obj = data.ReadRemoteObject();
     if (obj == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Read object fail");
+        DLP_LOG_ERROR(LABEL, "Read parse cert callback object fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     sptr<IDlpPermissionCallback> callback = iface_cast<IDlpPermissionCallback>(obj);
     if (callback == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Callback is null");
+        DLP_LOG_ERROR(LABEL, "Iface cast parse cert callback fail");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
     int32_t res = this->ParseDlpCertificate(cert, callback);
     if (!reply.WriteInt32(res)) {
-        DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        DLP_LOG_ERROR(LABEL, "Write parse cert result fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     return DLP_OK;
@@ -150,31 +150,31 @@ int32_t DlpPermissionStub::InstallDlpSandboxInner(MessageParcel& data, MessagePa
 
     std::string bundleName;
     if (!data.ReadString(bundleName)) {
-        DLP_LOG_ERROR(LABEL, "Read string fail");
+        DLP_LOG_ERROR(LABEL, "Read bundle name fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
     uint32_t type;
     if (!data.ReadUint32(type)) {
-        DLP_LOG_ERROR(LABEL, "Read uint32 fail");
+        DLP_LOG_ERROR(LABEL, "Read auth perm type fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     AuthPermType permType = static_cast<AuthPermType>(type);
 
     int32_t userId;
     if (!data.ReadInt32(userId)) {
-        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        DLP_LOG_ERROR(LABEL, "Read user id fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
     int32_t appIndex;
     int32_t res = this->InstallDlpSandbox(bundleName, permType, userId, appIndex);
     if (!reply.WriteInt32(res)) {
-        DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        DLP_LOG_ERROR(LABEL, "Write install sandbox result fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     if (!reply.WriteInt32(appIndex)) {
-        DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        DLP_LOG_ERROR(LABEL, "Write sandbox index fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     return DLP_OK;
@@ -188,25 +188,25 @@ int32_t DlpPermissionStub::UninstallDlpSandboxInner(MessageParcel& data, Message
 
     std::string bundleName;
     if (!data.ReadString(bundleName)) {
-        DLP_LOG_ERROR(LABEL, "Read string fail");
+        DLP_LOG_ERROR(LABEL, "Read bundle name fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
     int32_t appIndex;
     if (!data.ReadInt32(appIndex)) {
-        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        DLP_LOG_ERROR(LABEL, "Read sandbox index fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
     int32_t userId;
     if (!data.ReadInt32(userId)) {
-        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        DLP_LOG_ERROR(LABEL, "Read user id fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
     int32_t res = this->UninstallDlpSandbox(bundleName, appIndex, userId);
     if (!reply.WriteInt32(res)) {
-        DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        DLP_LOG_ERROR(LABEL, "Write uninstall sandbox result fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     return DLP_OK;
@@ -220,7 +220,7 @@ int32_t DlpPermissionStub::GetSandboxExternalAuthorizationInner(MessageParcel& d
     }
     int32_t sandboxUid;
     if (!data.ReadInt32(sandboxUid)) {
-        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        DLP_LOG_ERROR(LABEL, "Read sandbox uid fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
@@ -237,7 +237,7 @@ int32_t DlpPermissionStub::GetSandboxExternalAuthorizationInner(MessageParcel& d
     }
 
     if (!reply.WriteInt32(authType)) {
-        DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        DLP_LOG_ERROR(LABEL, "Write sandbox external auth type fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     return DLP_OK;
@@ -247,17 +247,17 @@ int32_t DlpPermissionStub::QueryDlpFileCopyableByTokenIdInner(MessageParcel& dat
 {
     uint32_t tokenId;
     if (!data.ReadUint32(tokenId)) {
-        DLP_LOG_ERROR(LABEL, "Read uint32 fail");
+        DLP_LOG_ERROR(LABEL, "Read token id fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     bool copyable = false;
     int32_t res = this->QueryDlpFileCopyableByTokenId(copyable, tokenId);
     if (!reply.WriteInt32(res)) {
-        DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        DLP_LOG_ERROR(LABEL, "Write copyalbe query result fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     if (!reply.WriteBool(copyable)) {
-        DLP_LOG_ERROR(LABEL, "Write bool fail");
+        DLP_LOG_ERROR(LABEL, "Write copyalbe fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     return DLP_OK;
@@ -268,11 +268,11 @@ int32_t DlpPermissionStub::QueryDlpFileAccessInner(MessageParcel& data, MessageP
     AuthPermType permType = DEFAULT_PERM;
     int32_t res = this->QueryDlpFileAccess(permType);
     if (!reply.WriteInt32(res)) {
-        DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        DLP_LOG_ERROR(LABEL, "Write dlp file access query result fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     if (!reply.WriteUint32(permType)) {
-        DLP_LOG_ERROR(LABEL, "Write uint32 fail");
+        DLP_LOG_ERROR(LABEL, "Write file access fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     return DLP_OK;
@@ -283,11 +283,11 @@ int32_t DlpPermissionStub::IsInDlpSandboxInner(MessageParcel& data, MessageParce
     bool inSandbox = false;
     int32_t res = this->IsInDlpSandbox(inSandbox);
     if (!reply.WriteInt32(res)) {
-        DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        DLP_LOG_ERROR(LABEL, "Write sandbox query result fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     if (!reply.WriteBool(inSandbox)) {
-        DLP_LOG_ERROR(LABEL, "Write bool fail");
+        DLP_LOG_ERROR(LABEL, "Write sandbox flag fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     return DLP_OK;
@@ -298,17 +298,17 @@ int32_t DlpPermissionStub::GetDlpSupportFileTypeInner(MessageParcel& data, Messa
     std::vector<std::string> supportFileType;
     int32_t res = this->GetDlpSupportFileType(supportFileType);
     if (!reply.WriteInt32(res)) {
-        DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        DLP_LOG_ERROR(LABEL, "Write support dlp file type query result fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     size_t listNum = supportFileType.size();
     if (!reply.WriteUint32(listNum)) {
-        DLP_LOG_ERROR(LABEL, "Write uint32 fail");
+        DLP_LOG_ERROR(LABEL, "Write support dlp file type list num fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     for (const auto& iter : supportFileType) {
         if (!reply.WriteString(iter)) {
-            DLP_LOG_ERROR(LABEL, "Write string fail");
+            DLP_LOG_ERROR(LABEL, "Write support dlp file type string fail");
             return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
         }
     }
