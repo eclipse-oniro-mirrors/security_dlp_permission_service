@@ -37,9 +37,11 @@ void DlpPermissionAsyncProxy::onGenerateDlpCertificate(int32_t result, const std
         DLP_LOG_ERROR(LABEL, "Write int32 fail");
         return;
     }
-    if (!data.WriteUInt8Vector(cert)) {
-        DLP_LOG_ERROR(LABEL, "Write uint8 vector fail");
-        return;
+    if (result == DLP_OK) {
+        if (!data.WriteUInt8Vector(cert)) {
+            DLP_LOG_ERROR(LABEL, "Write uint8 vector fail");
+            return;
+        }
     }
 
     MessageParcel reply;
@@ -70,12 +72,13 @@ void DlpPermissionAsyncProxy::onParseDlpCertificate(int32_t result, const Permis
         return;
     }
 
-    DlpPolicyParcel policyParcel;
-    policyParcel.policyParams_.CopyPermissionPolicy(policy);
-
-    if (!data.WriteParcelable(&policyParcel)) {
-        DLP_LOG_ERROR(LABEL, "Write parcel fail");
-        return;
+    if (result == DLP_OK) {
+        DlpPolicyParcel policyParcel;
+        policyParcel.policyParams_.CopyPermissionPolicy(policy);
+        if (!data.WriteParcelable(&policyParcel)) {
+            DLP_LOG_ERROR(LABEL, "Write parcel fail");
+            return;
+        }
     }
 
     MessageParcel reply;

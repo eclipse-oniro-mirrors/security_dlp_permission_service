@@ -34,7 +34,9 @@ void ClientGenerateDlpCertificateCallback::onGenerateDlpCertificate(int32_t resu
 {
     DLP_LOG_INFO(LABEL, "Callback");
     this->result_ = result;
-    this->cert_ = cert;
+    if (result == DLP_OK) {
+        this->cert_ = cert;
+    }
     std::unique_lock<std::mutex> lck(generateMtx_);
     this->isCallBack_ = true;
     generateCv_.notify_all();
@@ -44,7 +46,9 @@ void ClientParseDlpCertificateCallback::onParseDlpCertificate(int32_t result, co
 {
     DLP_LOG_INFO(LABEL, "Callback");
     this->result_ = result;
-    this->policy_.CopyPermissionPolicy(policy);
+    if (result == DLP_OK) {
+        this->policy_.CopyPermissionPolicy(policy);
+    }
     std::unique_lock<std::mutex> lck(parseMtx_);
     this->isCallBack_ = true;
     parseCv_.notify_all();
@@ -76,7 +80,9 @@ int32_t DlpPermissionKit::GenerateDlpCertificate(const PermissionPolicy& policy,
         return DLP_SERVICE_ERROR_CREDENTIAL_TASK_TIMEOUT;
     }
     DLP_LOG_INFO(LABEL, "get callback succeed!");
-    cert = callback->cert_;
+    if (callback->result_ == DLP_OK) {
+        cert = callback->cert_;
+    }
     return callback->result_;
 }
 
@@ -105,7 +111,9 @@ int32_t DlpPermissionKit::ParseDlpCertificate(const std::vector<uint8_t>& cert, 
         return DLP_SERVICE_ERROR_CREDENTIAL_TASK_TIMEOUT;
     }
     DLP_LOG_INFO(LABEL, "get callback succeed!");
-    policy.CopyPermissionPolicy(callback->policy_);
+    if (callback->result_ == DLP_OK) {
+        policy.CopyPermissionPolicy(callback->policy_);
+    }
     return callback->result_;
 }
 

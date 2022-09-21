@@ -65,15 +65,19 @@ int32_t DlpPermissionAsyncStub::onGenerateDlpCertificateStub(MessageParcel& data
 
     if (!data.ReadInt32(result)) {
         DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        this->onGenerateDlpCertificate(DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL, {});
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (result != DLP_OK) {
+        this->onGenerateDlpCertificate(result, {});
+        return DLP_OK;
     }
     if (!data.ReadUInt8Vector(&cert)) {
         DLP_LOG_ERROR(LABEL, "Read int8 vector fail");
+        this->onGenerateDlpCertificate(DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL, {});
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
-
     this->onGenerateDlpCertificate(result, cert);
-
     return DLP_OK;
 }
 
@@ -92,17 +96,23 @@ int32_t DlpPermissionAsyncStub::onParseDlpCertificateStub(MessageParcel& data, M
     int32_t result;
     if (!data.ReadInt32(result)) {
         DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        PermissionPolicy policyNull;
+        this->onParseDlpCertificate(DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL, policyNull);
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
-
+    if (result != DLP_OK) {
+        PermissionPolicy policyNull;
+        this->onParseDlpCertificate(result, policyNull);
+        return DLP_OK;
+    }
     sptr<DlpPolicyParcel> policyParcel = data.ReadParcelable<DlpPolicyParcel>();
     if (policyParcel == nullptr) {
         DLP_LOG_ERROR(LABEL, "Read parcel fail");
+        PermissionPolicy policyNull;
+        this->onParseDlpCertificate(DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL, policyNull);
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
-
     this->onParseDlpCertificate(result, policyParcel->policyParams_);
-
     return DLP_OK;
 }
 
