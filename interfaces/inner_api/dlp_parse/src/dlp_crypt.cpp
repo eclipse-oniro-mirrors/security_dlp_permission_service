@@ -857,7 +857,7 @@ int32_t DlpOpensslHashUpdate(void* cryptoCtx, const struct DlpBlob* msg)
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    int32_t ret = EVP_DigestUpdate(reinterpret_cast<EVP_MD_CTX*>(cryptoCtx), (void*)msg->data, msg->size);
+    int32_t ret = EVP_DigestUpdate(reinterpret_cast<EVP_MD_CTX*>(cryptoCtx), reinterpret_cast<void*>(msg->data), msg->size);
     if (ret != DLP_OPENSSL_SUCCESS) {
         DlpLogOpensslError();
         return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
