@@ -34,7 +34,8 @@ static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_
 static void IncIvCounterLitteEndian(struct DlpBlob& iv, uint32_t count)
 {
     uint8_t* data = iv.data;
-    for (uint32_t i = iv.size - 1; i >= 0; i--) {
+    int size = static_cast<int>(iv.size - 1);
+    for (int i = size; i >= 0; i--) {
         count += data[i];
         data[i] = (uint8_t)count;
         count >>= BYTE_LEN;
@@ -46,9 +47,9 @@ static void IncIvCounterLitteEndian(struct DlpBlob& iv, uint32_t count)
 
 static void IncIvCounterBigEndian(struct DlpBlob& iv, uint32_t count)
 {
-    uint32_t size = iv.size;
     uint8_t* data = iv.data;
-    for (uint32_t i = 0; i < size; i++) {
+    int size = static_cast<int>(iv.size);
+    for (int i = 0; i < size; i++) {
         count += data[i];
         data[i] = (uint8_t)count;
         count >>= BYTE_LEN;

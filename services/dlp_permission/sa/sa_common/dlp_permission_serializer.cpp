@@ -47,7 +47,7 @@ DlpPermissionSerializer& DlpPermissionSerializer::GetInstance()
 }
 
 static int32_t ReadUint8ArrayFromJson(const nlohmann::json& permJson, uint8_t** buff, uint32_t& buffLen,
-    const std::string keyName, const std::string lenName)
+    const std::string& keyName, const std::string& lenName)
 {
     if (permJson.find(lenName) != permJson.end() && permJson.at(lenName).is_number()) {
         permJson.at(lenName).get_to(buffLen);
@@ -121,9 +121,10 @@ int32_t DlpPermissionSerializer::DeserializeAuthUserInfo(const nlohmann::json& u
 nlohmann::json DlpPermissionSerializer::SerializeAuthUserList(const std::vector<AuthUserInfo>& authUsers)
 {
     nlohmann::json authUsersJson;
-    for (auto info : authUsers) {
-        authUsersJson.emplace_back(SerializeAuthUserInfo(info));
-    }
+    std::transform(authUsers.begin(), authUsers.end(),
+        std::back_inserter(authUsersJson),
+        [this](auto info) { return SerializeAuthUserInfo(info); });
+
     return authUsersJson;
 }
 

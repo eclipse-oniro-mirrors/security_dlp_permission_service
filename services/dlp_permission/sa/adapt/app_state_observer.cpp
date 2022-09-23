@@ -155,7 +155,7 @@ void AppStateObserver::EraseDlpSandboxInfo(int uid)
     if (!GetSandboxInfo(uid, appInfo)) {
         return;
     }
-    auto sandboxBundleName = appInfo.bundleName + std::to_string(appInfo.appIndex);
+
     EraseSandboxInfo(appInfo.uid);
     EraseUidTokenIdMap(appInfo.tokenId);
 }

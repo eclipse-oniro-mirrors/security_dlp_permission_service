@@ -29,7 +29,7 @@ public:
     DlpPermissionStub();
     virtual ~DlpPermissionStub();
 
-    int OnRemoteRequest(uint32_t code, MessageParcel& data, MessageParcel& reply, MessageOption& options) override;
+    int OnRemoteRequest(uint32_t code, MessageParcel& data, MessageParcel& reply, MessageOption& option) override;
 
 private:
     int32_t GenerateDlpCertificateInner(MessageParcel& data, MessageParcel& reply);

@@ -55,7 +55,7 @@ static bool CheckAccount(const std::string& account)
 
 static bool CheckPerm(uint32_t perm)
 {
-    if (perm <= 0 || perm >= DEFAULT_PERM) {
+    if (perm == 0 || perm >= DEFAULT_PERM) {
         DLP_LOG_ERROR(LABEL, "Auth Perm invalid, perm=%{public}d", perm);
         return false;
     }
@@ -88,12 +88,8 @@ static bool CheckAuthUserInfoList(const std::vector<AuthUserInfo>& authUsers_)
         DLP_LOG_ERROR(LABEL, "Auth users number exceeds %{public}d, total=%{public}d", MAX_ACCOUNT_NUM, userNum);
         return false;
     }
-    for (auto iter : authUsers_) {
-        if (!CheckAuthUserInfo(iter)) {
-            return false;
-        }
-    }
-    return true;
+    return (std::none_of(authUsers_.begin(), authUsers_.end(),
+        [](const auto& iter) { return !CheckAuthUserInfo(iter); }));
 }
 
 static void FreeUint8Buffer(uint8_t** buff, uint32_t& buffLen)

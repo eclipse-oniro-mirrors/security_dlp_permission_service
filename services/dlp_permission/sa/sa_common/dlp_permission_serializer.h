@@ -31,7 +31,7 @@ public:
     virtual ~DlpPermissionSerializer() = default;
 
     nlohmann::json SerializeAuthUserInfo(const AuthUserInfo& userInfo);
-    int32_t DeserializeAuthUserInfo(const nlohmann::json& userInfoJson, AuthUserInfo& info);
+    int32_t DeserializeAuthUserInfo(const nlohmann::json& userInfoJson, AuthUserInfo& userInfo);
 
     nlohmann::json SerializeAuthUserList(const std::vector<AuthUserInfo>& authUsers);
     int32_t DeserializeAuthUserList(

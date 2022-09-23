@@ -253,7 +253,7 @@ int32_t DlpPermissionService::GetSandboxExternalAuthorization(
 
 int32_t DlpPermissionService::QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t tokenId)
 {
-    if (tokenId <= 0) {
+    if (tokenId == 0) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
     if (appStateObserver_ == nullptr) {

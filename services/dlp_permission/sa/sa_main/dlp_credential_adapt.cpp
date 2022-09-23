@@ -51,7 +51,7 @@ static sptr<IDlpPermissionCallback> GetCallbackFromRequestMap(uint64_t requestId
     return nullptr;
 }
 
-static int32_t InsertCallbackToRequestMap(uint64_t requestId, sptr<IDlpPermissionCallback>& callback)
+static int32_t InsertCallbackToRequestMap(uint64_t requestId, const sptr<IDlpPermissionCallback>& callback)
 {
     DLP_LOG_DEBUG(LABEL, "insert request, requestId: %{public}llu", static_cast<unsigned long long>(requestId));
     if (g_requestMap.count(requestId) > 0) {
