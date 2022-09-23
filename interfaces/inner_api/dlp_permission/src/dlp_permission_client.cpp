@@ -29,7 +29,7 @@ namespace Security {
 namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionClient"};
-static const int DLP_PERMISSION_LOAD_SA_TIMEOUT_MS = 60000;
+static const int32_t DLP_PERMISSION_LOAD_SA_TIMEOUT_MS = 1000;
 }  // namespace
 
 DlpPermissionClient& DlpPermissionClient::GetInstance()
@@ -42,7 +42,18 @@ DlpPermissionClient::DlpPermissionClient()
 {}
 
 DlpPermissionClient::~DlpPermissionClient()
-{}
+{
+    if (proxy_ == nullptr) {
+        return;
+    }
+    auto remoteObj = proxy_->AsObject();
+    if (remoteObj == nullptr) {
+        return;
+    }
+    if (serviceDeathObserver_ != nullptr) {
+        remoteObj->RemoveDeathRecipient(serviceDeathObserver_);
+    }
+}
 
 static int32_t CheckSandboxFlag(AccessToken::AccessTokenID tokenId, bool& sandboxFlag)
 {
@@ -229,7 +240,7 @@ int32_t DlpPermissionClient::GetDlpSupportFileType(std::vector<std::string>& sup
     return proxy->GetDlpSupportFileType(supportFileType);
 }
 
-void DlpPermissionClient::LoadDlpPermissionSa()
+bool DlpPermissionClient::StartLoadDlpPermissionSa()
 {
     {
         std::unique_lock<std::mutex> lock(cvLock_);
@@ -238,21 +249,35 @@ void DlpPermissionClient::LoadDlpPermissionSa()
     auto sam = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
     if (sam == nullptr) {
         DLP_LOG_ERROR(LABEL, "GetSystemAbilityManager return null");
-        return;
+        return false;
     }
 
     sptr<DlpPermissionLoadCallback> ptrDlpPermissionLoadCallback = new (std::nothrow) DlpPermissionLoadCallback();
     if (ptrDlpPermissionLoadCallback == nullptr) {
         DLP_LOG_ERROR(LABEL, "New ptrDlpPermissionLoadCallback fail.");
-        return;
+        return false;
     }
 
     int32_t result = sam->LoadSystemAbility(SA_ID_DLP_PERMISSION_SERVICE, ptrDlpPermissionLoadCallback);
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "LoadSystemAbility %{public}d failed", SA_ID_DLP_PERMISSION_SERVICE);
+        return false;
+    }
+    DLP_LOG_INFO(LABEL, "Notify samgr load sa %{public}d success", SA_ID_DLP_PERMISSION_SERVICE);
+    return true;
+}
+
+void DlpPermissionClient::WaitForDlpPermissionSa()
+{
+    // wait_for release lock and block until time out(1s) or match the condition with notice
+    std::unique_lock<std::mutex> lock(cvLock_);
+    auto waitStatus = dlpPermissionCon_.wait_for(
+        lock, std::chrono::milliseconds(DLP_PERMISSION_LOAD_SA_TIMEOUT_MS), [this]() { return readyFlag_; });
+    if (!waitStatus) {
+        // time out or loadcallback fail
+        DLP_LOG_ERROR(LABEL, "Dlp Permission load sa timeout");
         return;
     }
-    DLP_LOG_INFO(LABEL, "LoadSystemAbility %{public}d success", SA_ID_DLP_PERMISSION_SERVICE);
 }
 
 void DlpPermissionClient::GetDlpPermissionSa()
@@ -269,22 +294,18 @@ void DlpPermissionClient::GetDlpPermissionSa()
         return;
     }
 
-    SetRemoteObject(dlpPermissionSa);
-
-    DLP_LOG_INFO(LABEL, "GetSystemAbility %{public}d success", SA_ID_DLP_PERMISSION_SERVICE);
+    GetProxyFromRemoteObject(dlpPermissionSa);
 }
 
 void DlpPermissionClient::FinishStartSASuccess(const sptr<IRemoteObject>& remoteObject)
 {
     DLP_LOG_INFO(LABEL, "Get dlp_permission sa success.");
 
-    SetRemoteObject(remoteObject);
+    GetProxyFromRemoteObject(remoteObject);
 
     // get lock which wait_for release and send a notice so that wait_for can out of block
-    {
-        std::unique_lock<std::mutex> lock(cvLock_);
-        readyFlag_ = true;
-    }
+    std::unique_lock<std::mutex> lock(cvLock_);
+    readyFlag_ = true;
     dlpPermissionCon_.notify_one();
 }
 
@@ -292,77 +313,72 @@ void DlpPermissionClient::FinishStartSAFail()
 {
     DLP_LOG_ERROR(LABEL, "get dlp_permission sa failed.");
 
-    SetRemoteObject(nullptr);
-
     // get lock which wait_for release and send a notice
-    {
-        std::unique_lock<std::mutex> lock(cvLock_);
-        readyFlag_ = true;
-    }
+    std::unique_lock<std::mutex> lock(cvLock_);
+    readyFlag_ = true;
     dlpPermissionCon_.notify_one();
 }
 
-void DlpPermissionClient::InitProxy(bool doLoadSa)
+void DlpPermissionClient::LoadDlpPermissionSa()
 {
-    if (doLoadSa) {
-        LoadDlpPermissionSa();
-        // wait_for release lock and block until time out(60s) or match the condition with notice
-        {
-            std::unique_lock<std::mutex> lock(cvLock_);
-            auto waitStatus = dlpPermissionCon_.wait_for(
-                lock, std::chrono::milliseconds(DLP_PERMISSION_LOAD_SA_TIMEOUT_MS), [this]() { return readyFlag_; });
-            if (!waitStatus) {
-                // time out or loadcallback fail
-                DLP_LOG_ERROR(LABEL, "Dlp Permission load sa timeout");
-                return;
-            }
-        }
-        if (GetRemoteObject() == nullptr) {
-            DLP_LOG_ERROR(LABEL, "RemoteObject is null");
-            return;
-        }
-        serviceDeathObserver_ = new (std::nothrow) DlpPermissionDeathRecipient();
-        if (serviceDeathObserver_ != nullptr) {
-            GetRemoteObject()->AddDeathRecipient(serviceDeathObserver_);
-        }
-    } else {
-        GetDlpPermissionSa();
+    if (!StartLoadDlpPermissionSa()) {
+        return;
     }
+    WaitForDlpPermissionSa();
 }
 
 void DlpPermissionClient::OnRemoteDiedHandle()
 {
     DLP_LOG_ERROR(LABEL, "Remote service died");
-    SetRemoteObject(nullptr);
-    std::unique_lock<std::mutex> lock(cvLock_);
-    readyFlag_ = false;
+    std::unique_lock<std::mutex> lock(proxyMutex_);
+    proxy_ = nullptr;
+    serviceDeathObserver_ = nullptr;
+    {
+        std::unique_lock<std::mutex> lock(cvLock_);
+        readyFlag_ = false;
+    }
 }
 
-void DlpPermissionClient::SetRemoteObject(const sptr<IRemoteObject>& remoteObject)
+void DlpPermissionClient::GetProxyFromRemoteObject(const sptr<IRemoteObject>& remoteObject)
 {
-    std::unique_lock<std::mutex> lock(remoteMutex_);
-    remoteObject_ = remoteObject;
-}
+    if (remoteObject == nullptr) {
+        return;
+    }
 
-sptr<IRemoteObject> DlpPermissionClient::GetRemoteObject()
-{
-    std::unique_lock<std::mutex> lock(remoteMutex_);
-    return remoteObject_;
+    sptr<DlpPermissionDeathRecipient> serviceDeathObserver = new (std::nothrow) DlpPermissionDeathRecipient();
+    if (serviceDeathObserver == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Alloc service death observer fail");
+        return;
+    }
+
+    if (!remoteObject->AddDeathRecipient(serviceDeathObserver)) {
+        DLP_LOG_ERROR(LABEL, "Add service death observer fail");
+        return;
+    }
+
+    auto proxy = iface_cast<IDlpPermissionService>(remoteObject);
+    if (proxy == nullptr) {
+        DLP_LOG_ERROR(LABEL, "iface_cast get null");
+        return;
+    }
+    proxy_ = proxy;
+    serviceDeathObserver_ = serviceDeathObserver;
+    DLP_LOG_INFO(LABEL, "GetSystemAbility %{public}d success", SA_ID_DLP_PERMISSION_SERVICE);
+    return;
 }
 
 sptr<IDlpPermissionService> DlpPermissionClient::GetProxy(bool doLoadSa)
 {
-    {
-        std::unique_lock<std::mutex> lock(proxyMutex_);
-        if (GetRemoteObject() == nullptr) {
-            InitProxy(doLoadSa);
-        }
+    std::unique_lock<std::mutex> lock(proxyMutex_);
+    if (proxy_ != nullptr) {
+        return proxy_;
     }
-    sptr<IDlpPermissionService> proxy = iface_cast<IDlpPermissionService>(GetRemoteObject());
-    if (proxy == nullptr) {
-        DLP_LOG_ERROR(LABEL, "iface_cast get null");
+    if (doLoadSa) {
+        LoadDlpPermissionSa();
+    } else {
+        GetDlpPermissionSa();
     }
-    return proxy;
+    return proxy_;
 }
 }  // namespace DlpPermission
 }  // namespace Security

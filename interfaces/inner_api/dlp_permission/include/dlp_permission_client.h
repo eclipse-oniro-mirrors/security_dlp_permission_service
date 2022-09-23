@@ -34,8 +34,6 @@ class DlpPermissionClient final {
 public:
     static DlpPermissionClient& GetInstance();
 
-    virtual ~DlpPermissionClient();
-
     int32_t GenerateDlpCertificate(
         const PermissionPolicy& policy, std::shared_ptr<GenerateDlpCertificateCallback> callback);
     int32_t ParseDlpCertificate(
@@ -49,28 +47,29 @@ public:
     int32_t IsInDlpSandbox(bool& inSandbox);
     int32_t GetDlpSupportFileType(std::vector<std::string>& supportFileType);
 
-    void GetDlpPermissionSa();
-    void LoadDlpPermissionSa();
     void FinishStartSASuccess(const sptr<IRemoteObject>& remoteObject);
     void FinishStartSAFail();
-
     void OnRemoteDiedHandle();
 
 private:
     DlpPermissionClient();
-    sptr<IRemoteObject> GetRemoteObject();
-    void SetRemoteObject(const sptr<IRemoteObject>& remoteObject);
-
+    virtual ~DlpPermissionClient();
     DISALLOW_COPY_AND_MOVE(DlpPermissionClient);
-    std::mutex remoteMutex_;
-    std::mutex proxyMutex_;
+
+    bool StartLoadDlpPermissionSa();
+    void WaitForDlpPermissionSa();
+    void GetDlpPermissionSa();
+    void LoadDlpPermissionSa();
+
+    sptr<IDlpPermissionService> GetProxy(bool doLoadSa);
+    void GetProxyFromRemoteObject(const sptr<IRemoteObject>& remoteObject);
+
     std::mutex cvLock_;
     bool readyFlag_ = false;
     std::condition_variable dlpPermissionCon_;
-    sptr<IRemoteObject> remoteObject_ = nullptr;
+    std::mutex proxyMutex_;
+    sptr<IDlpPermissionService> proxy_ = nullptr;
     sptr<DlpPermissionDeathRecipient> serviceDeathObserver_ = nullptr;
-    void InitProxy(bool doLoadSa);
-    sptr<IDlpPermissionService> GetProxy(bool doLoadSa);
 };
 }  // namespace DlpPermission
 }  // namespace Security
