@@ -21,6 +21,7 @@ namespace OHOS {
 namespace Security {
 namespace DlpPermission {
 namespace {
+const uint32_t MAX_ACCOUNT_NUM = 100;
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionParcel"};
 }
 bool DlpPolicyParcel::Marshalling(Parcel& out) const
@@ -106,6 +107,10 @@ static bool ReadParcel(Parcel& in, DlpPolicyParcel* policyParcel)
     uint32_t listSize;
     if (!in.ReadUint32(listSize)) {
         DLP_LOG_ERROR(LABEL, "Read auth user num fail");
+        return false;
+    }
+    if (listSize > MAX_ACCOUNT_NUM) {
+        DLP_LOG_ERROR(LABEL, "Auth users number exceeds %{public}d, total=%{public}d", MAX_ACCOUNT_NUM, listSize);
         return false;
     }
     for (uint32_t i = 0; i < listSize; i++) {
