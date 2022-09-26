@@ -22,6 +22,9 @@
 #include <thread>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <openssl/err.h>
+#include <openssl/evp.h>
+#include <openssl/rand.h>
 #include "accesstoken_kit.h"
 #include "base_object.h"
 #include "dlp_crypt.h"
@@ -120,6 +123,616 @@ static void dumpptr(uint8_t *ptr, uint32_t len)
     printf("\n");
 }
 
+/**
+ * @tc.name: DlpOpensslAesEncrypt001
+ * @tc.desc: Dlp encrypt test with invalid key.
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncrypt001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesEncrypt001");
+    struct DlpCipherParam tagIv = {{16, g_iv}};
+    struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
+
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    uint8_t enc[16] = {0};
+    struct DlpBlob message = {15, input};
+    struct DlpBlob cipherText = {15, enc};
+
+    // key = nullptr
+    int32_t ret = DlpOpensslAesEncrypt(nullptr, &usageSpec, &message, &cipherText);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslAesEncrypt002
+ * @tc.desc: Dlp encrypt test with invalid usageSpec.
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncrypt002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesEncrypt002");
+
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    uint8_t enc[16] = {0};
+    struct DlpBlob key = {32, g_key};
+    struct DlpBlob message = {15, input};
+    struct DlpBlob cipherText = {15, enc};
+
+    // usageSpec = nullptr
+    int32_t ret = DlpOpensslAesEncrypt(&key, nullptr, &message, &cipherText);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslAesEncrypt003
+ * @tc.desc: Dlp encrypt test with invalid message.
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncrypt003, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesEncrypt003");
+    struct DlpCipherParam tagIv = {{16, g_iv}};
+    struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
+
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    uint8_t enc[16] = {0};
+    struct DlpBlob key = {32, g_key};
+    struct DlpBlob cipherText = {15, enc};
+
+    // message = nullptr
+    int32_t ret = DlpOpensslAesEncrypt(&key, &usageSpec, nullptr, &cipherText);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslAesEncrypt004
+ * @tc.desc: Dlp encrypt test with invalid cipherText.
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncrypt004, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesEncrypt004");
+    struct DlpCipherParam tagIv = {{16, g_iv}};
+    struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
+
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    uint8_t enc[16] = {0};
+    struct DlpBlob message = {15, input};
+    struct DlpBlob key = {32, g_key};
+
+    // cipherText = nullptr
+    int32_t ret = DlpOpensslAesEncrypt(&key, &usageSpec, &message, nullptr);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslAesDecrypt001
+ * @tc.desc: Dlp encrypt test with invalid key.
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesDecrypt001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesDecrypt001");
+    struct DlpCipherParam tagIv = {{16, g_iv}};
+    struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
+
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    uint8_t dec[16] = {0};
+    struct DlpBlob message = {15, input};
+    struct DlpBlob plainText = {15, dec};
+
+    // key = nullptr
+    int32_t ret = DlpOpensslAesDecrypt(nullptr, &usageSpec, &message, &plainText);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslAesDecrypt002
+ * @tc.desc: Dlp encrypt test with invalid usageSpec.
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesDecrypt002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesDecrypt002");
+
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    uint8_t dec[16] = {0};
+    struct DlpBlob key = {32, g_key};
+    struct DlpBlob message = {15, input};
+    struct DlpBlob plainText = {15, dec};
+
+    // usageSpec = nullptr
+    int32_t ret = DlpOpensslAesDecrypt(&key, nullptr, &message, &plainText);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslAesDecrypt003
+ * @tc.desc: Dlp encrypt test with invalid message.
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesDecrypt003, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesDecrypt003");
+    struct DlpCipherParam tagIv = {{16, g_iv}};
+    struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
+
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    uint8_t enc[16] = {0};
+    struct DlpBlob key = {32, g_key};
+    struct DlpBlob plainText = {15, enc};
+
+    // message = nullptr
+    int32_t ret = DlpOpensslAesDecrypt(&key, &usageSpec, nullptr, &plainText);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslAesDecrypt004
+ * @tc.desc: Dlp encrypt test with invalid plainText.
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesDecrypt004, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesDecrypt004");
+    struct DlpCipherParam tagIv = {{16, g_iv}};
+    struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
+
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    struct DlpBlob message = {15, input};
+    struct DlpBlob key = {32, g_key};
+
+    // plainText = nullptr
+    int32_t ret = DlpOpensslAesDecrypt(&key, &usageSpec, &message, nullptr);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslAesEncryptInit001
+ * @tc.desc: Dlp aes init test with invalid cryptoCtx
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptInit001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesEncryptInit001");
+    struct DlpBlob key = {32, g_key};
+    struct DlpCipherParam tagIv = {{16, g_iv}};
+    struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
+
+    // *cryptoCtx = nullptr
+    int32_t ret = DlpOpensslAesEncryptInit(nullptr, &key, &usageSpec);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslAesEncryptInit002
+ * @tc.desc: Dlp aes init test with invalid key
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptInit002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesEncryptInit002");
+    struct DlpCipherParam tagIv = {{16, g_iv}};
+    struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
+    void* ctx = nullptr;
+
+    // key = nullptr
+    int32_t ret = DlpOpensslAesEncryptInit(&ctx, nullptr, &usageSpec);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslAesEncryptInit003
+ * @tc.desc: Dlp aes init test with invalid usageSpec
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptInit003, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesEncryptInit003");
+    void* ctx = nullptr;
+    struct DlpBlob key = {32, g_key};
+
+    // usageSpec = nullptr
+    int32_t ret = DlpOpensslAesEncryptInit(&ctx, &key, nullptr);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslAesEncryptUpdate001
+ * @tc.desc: DlpOpensslAesEncryptUpdate with invalid cryptoCtx
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptUpdate001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesEncryptUpdate001");
+    struct DlpBlob message = {32, g_key};
+    struct DlpBlob cipherText = {32, g_key};
+
+    // cryptoCtx = nullptr
+    int32_t ret = DlpOpensslAesEncryptUpdate(nullptr, &message, &cipherText);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslAesEncryptUpdate002
+ * @tc.desc: DlpOpensslAesEncryptUpdate with invalid message
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptUpdate002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesEncryptUpdate002");
+    struct DlpBlob key = {32, g_key};
+    struct DlpCipherParam tagIv = {{16, g_iv}};
+    struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
+
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    uint8_t enc[16] = {0};
+    struct DlpBlob message = {15, input};
+    struct DlpBlob cipherText = {15, enc};
+
+    void* ctx;
+    int32_t ret = DlpOpensslAesEncryptInit(&ctx, &key, &usageSpec);
+    ASSERT_EQ(0, ret);
+
+    // message = nullptr
+    ret = DlpOpensslAesEncryptUpdate(ctx, nullptr, &cipherText);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslAesEncryptUpdate003
+ * @tc.desc: DlpOpensslAesEncryptUpdate with invalid cipherText
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptUpdate003, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesEncryptUpdate003");
+    struct DlpBlob key = {32, g_key};
+    struct DlpCipherParam tagIv = {{16, g_iv}};
+    struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
+
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    struct DlpBlob message = {15, input};
+
+    void* ctx;
+    int32_t ret = DlpOpensslAesEncryptInit(&ctx, &key, &usageSpec);
+    ASSERT_EQ(0, ret);
+
+    // cipherText = nullptr
+    ret = DlpOpensslAesEncryptUpdate(ctx, &message, nullptr);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslAesEncryptFinal001
+ * @tc.desc: DlpOpensslAesEncryptFinal with invalid cryptoCtx
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptFinal001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesEncryptFinal001");
+    struct DlpBlob message = {32, g_key};
+    struct DlpBlob cipherText = {32, g_key};
+
+    // cryptoCtx = nullptr
+    int32_t ret = DlpOpensslAesEncryptFinal(nullptr, &message, &cipherText);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+
+    // cryptoCtx.append = nullptr
+    DlpOpensslAesCtx* cryptoCtx = reinterpret_cast<DlpOpensslAesCtx*>(calloc(1, sizeof(DlpOpensslAesCtx)));
+    ASSERT_NE(nullptr, cryptoCtx);
+    cryptoCtx->mode = DLP_MODE_CTR;
+    cryptoCtx->padding = OPENSSL_CTX_PADDING_ENABLE;
+    cryptoCtx->append = nullptr;
+    ret = DlpOpensslAesEncryptFinal(reinterpret_cast<void**>(&cryptoCtx), &message, &cipherText);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+    free(cryptoCtx);
+}
+
+/**
+ * @tc.name: DlpOpensslAesEncryptFinal002
+ * @tc.desc: DlpOpensslAesEncryptFinal with invalid message
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptFinal002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesEncryptFinal002");
+    struct DlpBlob key = {32, g_key};
+    struct DlpCipherParam tagIv = {{16, g_iv}};
+    struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
+
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    uint8_t enc[16] = {0};
+    struct DlpBlob message = {15, input};
+    struct DlpBlob cipherText = {15, enc};
+
+    void* ctx;
+    int32_t ret = DlpOpensslAesEncryptInit(&ctx, &key, &usageSpec);
+    ASSERT_EQ(0, ret);
+    message.size = 1;
+    cipherText.size = 1;
+    int i = 0;
+    while (i < 15) {
+        ret = DlpOpensslAesEncryptUpdate(ctx, &message, &cipherText);
+        ASSERT_EQ(0, ret);
+        message.data = message.data + 1;
+        cipherText.data = cipherText.data + 1;
+        i++;
+    }
+
+    // message = nullptr
+    ret = DlpOpensslAesEncryptFinal(&ctx, nullptr, &cipherText);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+    DlpOpensslAesHalFreeCtx(&ctx);
+}
+
+/**
+ * @tc.name: DlpOpensslAesEncryptFinal003
+ * @tc.desc: DlpOpensslAesEncryptFinal with invalid cipherText
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptFinal003, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesEncryptFinal003");
+    struct DlpBlob key = {32, g_key};
+    struct DlpCipherParam tagIv = {{16, g_iv}};
+    struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
+
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    uint8_t enc[16] = {0};
+    struct DlpBlob message = {15, input};
+    struct DlpBlob cipherText = {15, enc};
+
+    void* ctx;
+    int32_t ret = DlpOpensslAesEncryptInit(&ctx, &key, &usageSpec);
+    ASSERT_EQ(0, ret);
+    message.size = 1;
+    cipherText.size = 1;
+    int i = 0;
+    while (i < 15) {
+        ret = DlpOpensslAesEncryptUpdate(ctx, &message, &cipherText);
+        ASSERT_EQ(0, ret);
+        message.data = message.data + 1;
+        cipherText.data = cipherText.data + 1;
+        i++;
+    }
+
+    // cipherText = nullptr
+    ret = DlpOpensslAesEncryptFinal(&ctx, &message, nullptr);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+    DlpOpensslAesHalFreeCtx(&ctx);
+}
+
+/**
+ * @tc.name: DlpOpensslAesDecryptInit001
+ * @tc.desc: Dlp aes init test with invalid cryptoCtx
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesDecryptInit001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesDecryptInit001");
+    struct DlpBlob key = {32, g_key};
+    struct DlpCipherParam tagIv = {{16, g_iv}};
+    struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
+
+    // *cryptoCtx = nullptr
+    int32_t ret = DlpOpensslAesDecryptInit(nullptr, &key, &usageSpec);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslAesDecryptInit002
+ * @tc.desc: Dlp aes init test with invalid key
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesDecryptInit002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesDecryptInit002");
+    struct DlpCipherParam tagIv = {{16, g_iv}};
+    struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
+    void* ctx = nullptr;
+
+    // key = nullptr
+    int32_t ret = DlpOpensslAesDecryptInit(&ctx, nullptr, &usageSpec);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslAesDecryptInit003
+ * @tc.desc: Dlp aes init test with invalid usageSpec
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesDecryptInit003, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesDecryptInit003");
+    void* ctx = nullptr;
+    struct DlpBlob key = {32, g_key};
+
+    // usageSpec = nullptr
+    int32_t ret = DlpOpensslAesDecryptInit(&ctx, &key, nullptr);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslAesDecryptUpdate001
+ * @tc.desc: DlpOpensslAesDecryptUpdate with invalid cryptoCtx
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesDecryptUpdate001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesDecryptUpdate001");
+    struct DlpBlob message = {32, g_key};
+    struct DlpBlob plainText = {32, g_key};
+
+    // cryptoCtx = nullptr
+    int32_t ret = DlpOpensslAesDecryptUpdate(nullptr, &message, &plainText);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslAesDecryptUpdate002
+ * @tc.desc: DlpOpensslAesDecryptUpdate with invalid message
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesDecryptUpdate002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesDecryptUpdate002");
+    struct DlpBlob key = {32, g_key};
+    struct DlpCipherParam tagIv = {{16, g_iv}};
+    struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    uint8_t dec[16] = {0};
+    struct DlpBlob message = {15, input};
+    struct DlpBlob plainText = {15, dec};
+    void* ctx = nullptr;
+    int32_t ret = DlpOpensslAesDecryptInit(&ctx, &key, &usageSpec);
+    ASSERT_EQ(0, ret);
+
+    // message = nullptr
+    ret = DlpOpensslAesDecryptUpdate(ctx, nullptr, &plainText);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+    DlpOpensslAesHalFreeCtx(&ctx);
+}
+
+/**
+ * @tc.name: DlpOpensslAesDecryptUpdate003
+ * @tc.desc: DlpOpensslAesDecryptUpdate with invalid plainText
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesDecryptUpdate003, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesDecryptUpdate003");
+    struct DlpBlob key = {32, g_key};
+    struct DlpCipherParam tagIv = {{16, g_iv}};
+    struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    struct DlpBlob message = {15, input};
+    void* ctx = nullptr;
+    int32_t ret = DlpOpensslAesDecryptInit(&ctx, &key, &usageSpec);
+    ASSERT_EQ(0, ret);
+
+    // plainText = nullptr
+    ret = DlpOpensslAesDecryptUpdate(ctx, &message, nullptr);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+    DlpOpensslAesHalFreeCtx(&ctx);
+}
+
+/**
+ * @tc.name: DlpOpensslAesDecryptFinal001
+ * @tc.desc: DlpOpensslAesDecryptFinal with invalid cryptoCtx
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesDecryptFinal001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesDecryptFinal001");
+    struct DlpBlob message = {32, g_key};
+    struct DlpBlob cipherText = {32, g_key};
+
+    // cryptoCtx = nullptr
+    int32_t ret = DlpOpensslAesDecryptFinal(nullptr, &message, &cipherText);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslAesDecryptFinal002
+ * @tc.desc: DlpOpensslAesDecryptFinal with invalid message
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesDecryptFinal002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesDecryptFinal002");
+    struct DlpBlob key = {32, g_key};
+    struct DlpCipherParam tagIv = {{16, g_iv}};
+    struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
+
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    uint8_t enc[16] = {0};
+    struct DlpBlob message = {15, input};
+    struct DlpBlob cipherText = {15, enc};
+
+    void* ctx;
+    int32_t ret = DlpOpensslAesDecryptInit(&ctx, &key, &usageSpec);
+    ASSERT_EQ(0, ret);
+    message.size = 1;
+    cipherText.size = 1;
+    int i = 0;
+    while (i < 15) {
+        ret = DlpOpensslAesDecryptUpdate(ctx, &message, &cipherText);
+        ASSERT_EQ(0, ret);
+        message.data = message.data + 1;
+        cipherText.data = cipherText.data + 1;
+        i++;
+    }
+
+    // message = nullptr
+    ret = DlpOpensslAesDecryptFinal(&ctx, nullptr, &cipherText);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+    DlpOpensslAesHalFreeCtx(&ctx);
+}
+
+/**
+ * @tc.name: DlpOpensslAesDecryptFinal003
+ * @tc.desc: DlpOpensslAesDecryptFinal with invalid cipherText
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslAesDecryptFinal003, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesDecryptFinal003");
+    struct DlpBlob key = {32, g_key};
+    struct DlpCipherParam tagIv = {{16, g_iv}};
+    struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
+
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    uint8_t enc[16] = {0};
+    struct DlpBlob message = {15, input};
+    struct DlpBlob cipherText = {15, enc};
+
+    void* ctx;
+    int32_t ret = DlpOpensslAesDecryptInit(&ctx, &key, &usageSpec);
+    ASSERT_EQ(0, ret);
+    message.size = 1;
+    cipherText.size = 1;
+    int i = 0;
+    while (i < 15) {
+        ret = DlpOpensslAesDecryptUpdate(ctx, &message, &cipherText);
+        ASSERT_EQ(0, ret);
+        message.data = message.data + 1;
+        cipherText.data = cipherText.data + 1;
+        i++;
+    }
+
+    // cipherText = nullptr
+    ret = DlpOpensslAesDecryptFinal(&ctx, &message, nullptr);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+    DlpOpensslAesHalFreeCtx(&ctx);
+}
 
 /**
  * @tc.name: DlpOpensslAesEncryptAndDecrypt001
@@ -372,13 +985,234 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslHash001, TestSize.Level1)
 
 /**
  * @tc.name: DlpOpensslHash002
- * @tc.desc: split hash test
+ * @tc.desc: DlpOpensslHash with invalid alg
  * @tc.type: FUNC
  * @tc.require:AR000GJSDQ
  */
 HWTEST_F(DlpParseUnitTest, DlpOpensslHash002, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "DlpOpensslHash002");
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    uint8_t out[32] = {0};
+    struct DlpBlob message = {15, input};
+    struct DlpBlob hash = {32, out};
+
+    // alg = 0
+    int32_t ret = DlpOpensslHash(DLP_DIGEST_NONE, &message, &hash);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+
+    // alg != DLP_DIGEST_SHA256 | DLP_DIGEST_SHA384 | DLP_DIGEST_SHA512
+    ret = DlpOpensslHash(100, &message, &hash);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslHash003
+ * @tc.desc: DlpOpensslHash with invalid message
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslHash003, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslHash003");
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    uint8_t out[64] = {0};
+    struct DlpBlob message = {15, input};
+    struct DlpBlob hash = {64, out};
+
+    // message = nullptr
+    int32_t ret = DlpOpensslHash(DLP_DIGEST_SHA512, nullptr, &hash);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslHash004
+ * @tc.desc: DlpOpensslHash with invalid hash
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslHash004, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslHash004");
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    uint8_t out[64] = {0};
+    struct DlpBlob message = {15, input};
+    struct DlpBlob hash = {64, out};
+
+    // hash = nullptr
+    int32_t ret = DlpOpensslHash(DLP_DIGEST_SHA512, &message, nullptr);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslHashInit001
+ * @tc.desc: DlpOpensslHashInit with invalid cryptoCtx
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslHashInit001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslHashInit001");
+
+    // cryptoCtx = nullptr
+    int32_t ret = DlpOpensslHashInit(nullptr, DLP_DIGEST_SHA256);
+    EXPECT_EQ(DLP_PARSE_ERROR_DIGEST_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslHashInit002
+ * @tc.desc: DlpOpensslHashInit with invalid alg
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslHashInit002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslHashInit002");
+
+    // alg = DLP_DIGEST_NONE
+    void* ctx = nullptr;
+    int32_t ret = DlpOpensslHashInit(&ctx, DLP_DIGEST_NONE);
+    EXPECT_EQ(DLP_PARSE_ERROR_DIGEST_INVALID, ret);
+
+    // alg = 100
+    ctx = nullptr;
+    ret = DlpOpensslHashInit(&ctx, 100);
+    EXPECT_EQ(DLP_PARSE_ERROR_DIGEST_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslHashUpdate001
+ * @tc.desc: DlpOpensslHashUpdate with invalid cryptoCtx
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslHashUpdate001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslHashUpdate001");
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    struct DlpBlob message = {15, input};
+
+    // cryptoCtx = nullptr
+    int32_t ret = DlpOpensslHashUpdate(nullptr, &message);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslHashUpdate002
+ * @tc.desc: DlpOpensslHashUpdate with invalid message
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslHashUpdate002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslHashUpdate002");
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    struct DlpBlob message = {15, input};
+    void* ctx = nullptr;
+    int32_t ret = DlpOpensslHashInit(&ctx, DLP_DIGEST_SHA256);
+    ASSERT_EQ(0, ret);
+
+    // message = nullptr
+    ret = DlpOpensslHashUpdate(ctx, nullptr);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+    EVP_MD_CTX_free(reinterpret_cast<EVP_MD_CTX*>(ctx));
+}
+
+/**
+ * @tc.name: DlpOpensslHashFinal001
+ * @tc.desc: DlpOpensslHashFinal with invalid cryptoCtx
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslHashFinal001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslHashFinal001");
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    uint8_t out[64] = {0};
+    struct DlpBlob message = {15, input};
+    struct DlpBlob hash = {64, out};
+
+    // cryptoCtx = nullptr
+    int32_t ret = DlpOpensslHashFinal(nullptr, &message, &hash);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslHashFinal002
+ * @tc.desc: DlpOpensslHashFinal with invalid message
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslHashFinal002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslHashFinal002");
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    uint8_t out[64] = {0};
+    struct DlpBlob hash = {64, out};
+    struct DlpBlob msg1 = {15, input};
+    void* ctx = nullptr;
+
+    int32_t ret = DlpOpensslHashInit(&ctx, DLP_DIGEST_SHA256);
+    EXPECT_EQ(0, ret);
+
+    msg1.size = 1;
+    int i = 0;
+    while (i < 15) {
+        ret = DlpOpensslHashUpdate(ctx, &msg1);
+        EXPECT_EQ(0, ret);
+        msg1.data = msg1.data + 1;
+        i++;
+    }
+
+    // message = nullptr
+    ret = DlpOpensslHashFinal(&ctx, nullptr, &hash);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+    EVP_MD_CTX_free(reinterpret_cast<EVP_MD_CTX*>(ctx));
+}
+
+/**
+ * @tc.name: DlpOpensslHashFinal004
+ * @tc.desc: DlpOpensslHashFinal with invalid hash
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslHashFinal004, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslHashFinal004");
+    uint8_t input[16] = "aaaaaaaaaaaaaaa";
+    uint8_t out[64] = {0};
+    struct DlpBlob message = {15, input};
+    struct DlpBlob hash = {64, out};
+    struct DlpBlob msg1 = {15, input};
+    void* ctx = nullptr;
+
+    int32_t ret = DlpOpensslHashInit(&ctx, DLP_DIGEST_SHA256);
+    EXPECT_EQ(0, ret);
+
+    msg1.size = 1;
+    int i = 0;
+    while (i < 15) {
+        ret = DlpOpensslHashUpdate(ctx, &msg1);
+        EXPECT_EQ(0, ret);
+        msg1.data = msg1.data + 1;
+        i++;
+    }
+
+    // hash = nullptr
+    ret = DlpOpensslHashFinal(&ctx, &message, nullptr);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+    EVP_MD_CTX_free(reinterpret_cast<EVP_MD_CTX*>(ctx));
+}
+
+/**
+ * @tc.name: DlpOpensslHashTest001
+ * @tc.desc: split hash test
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslHashTest001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslHashTest001");
     uint8_t input[16] = "aaaaaaaaaaaaaaa";
     uint8_t out[64] = {0};
     struct DlpBlob mIn = {
@@ -448,6 +1282,35 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslGenerateRandomKey001, TestSize.Level1)
     cout << "random key:";
     dumpptr(mIn.data, 16);
     free(mIn.data);
+}
+
+/**
+ * @tc.name: DlpOpensslGenerateRandomKey002
+ * @tc.desc: random generate test with invalid keySize
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslGenerateRandomKey002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslGenerateRandomKey002");
+    struct DlpBlob key = {32, nullptr};
+    int32_t ret = DlpOpensslGenerateRandomKey(1, &key);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
+}
+
+/**
+ * @tc.name: DlpOpensslGenerateRandomKey003
+ * @tc.desc: random generate test with invalid key
+ * @tc.type: FUNC
+ * @tc.require:AR000GJSDQ
+ */
+HWTEST_F(DlpParseUnitTest, DlpOpensslGenerateRandomKey003, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslGenerateRandomKey003");
+
+    // key = nullptr
+    int32_t ret = DlpOpensslGenerateRandomKey(DLP_AES_KEY_SIZE_256, nullptr);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, ret);
 }
 
 /**

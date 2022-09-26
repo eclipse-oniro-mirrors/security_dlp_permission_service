@@ -102,15 +102,6 @@ static const EVP_CIPHER* GetCtrCipherType(uint32_t keySize)
     }
 }
 
-static const EVP_CIPHER* GetCipherType(uint32_t keySize, uint32_t mode)
-{
-    if (mode == DLP_MODE_CTR) {
-        return GetCtrCipherType(keySize);
-    }
-
-    return nullptr;
-}
-
 inline void DlpLogOpensslError(void)
 {
     char szErr[DLP_OPENSSL_ERROR_LEN] = {0};
@@ -131,7 +122,7 @@ static int32_t OpensslAesCipherInit(
         return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
 
-    const EVP_CIPHER* cipher = GetCipherType(key->size, usageSpec->mode);
+    const EVP_CIPHER* cipher = GetCtrCipherType(key->size);
     if (cipher == nullptr) {
         DLP_LOG_ERROR(LABEL, "Aes cipher init fail, get cipher type error");
         EVP_CIPHER_CTX_free(*ctx);
@@ -230,7 +221,7 @@ static int32_t OpensslAesCipherCryptInit(
         return DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR;
     }
 
-    const EVP_CIPHER* cipher = GetCipherType(key->size, usageSpec->mode);
+    const EVP_CIPHER* cipher = GetCtrCipherType(key->size);
     if (cipher == nullptr) {
         DLP_LOG_ERROR(LABEL, "Aes cipher crypt init fail, get cipher type error");
         EVP_CIPHER_CTX_free(ctx);
