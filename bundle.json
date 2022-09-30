@@ -38,7 +38,7 @@
         "samgr",
         "c_utils",
         "samgr_proxy",
-        "samgr_standard",
+        "samgr",
         "system_ability_fwk",
         "utils_base"
       ],
