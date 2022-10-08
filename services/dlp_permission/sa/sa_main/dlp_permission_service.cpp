@@ -134,10 +134,8 @@ int32_t DlpPermissionService::GenerateDlpCertificate(
         return res;
     }
 
-    DlpCredential::GetInstance().GenerateDlpCertificate(
+    return DlpCredential::GetInstance().GenerateDlpCertificate(
         jsonObj.dump(), policyParcel->policyParams_.ownerAccountType_, callback);
-
-    return DLP_OK;
 }
 
 int32_t DlpPermissionService::ParseDlpCertificate(
@@ -148,9 +146,7 @@ int32_t DlpPermissionService::ParseDlpCertificate(
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
-    DlpCredential::GetInstance().ParseDlpCertificate(cert, callback);
-
-    return DLP_OK;
+    return DlpCredential::GetInstance().ParseDlpCertificate(cert, callback);
 }
 
 void DlpPermissionService::InsertDlpSandboxInfo(

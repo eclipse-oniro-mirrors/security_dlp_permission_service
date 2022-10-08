@@ -35,6 +35,11 @@ const std::string AESKEY = "aeskey";
 const std::string AESKEY_LEN = "aeskeyLen";
 const std::string IV = "iv";
 const std::string IV_LEN = "ivLen";
+const std::string ENC_DATA_LEN = "encDataLen";
+const std::string ENC_DATA = "encData";
+const std::string EXTRA_INFO_LEN = "extraInfoLen";
+const std::string EXTRA_INFO = "extraInfo";
+const std::string ENC_ACCOUNT_TYPE = "encAccountType";
 
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {
     LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionSerializer"};
@@ -85,7 +90,7 @@ static int32_t ReadUint8ArrayFromJson(const nlohmann::json& permJson, uint8_t** 
         memset_s(value, strlen(value), 0, strlen(value));
         free(value);
         value = nullptr;
-        return res == DLP_OK ? DLP_OK : res;
+        return res;
     }
     return DLP_OK;
 }
@@ -232,6 +237,78 @@ int32_t DlpPermissionSerializer::DeserializeDlpPermission(const nlohmann::json& 
         delete[] iv;
         iv = nullptr;
     }
+    DLP_LOG_INFO(LABEL, "Deserialize successfully!");
+    return DLP_OK;
+}
+
+int32_t DlpPermissionSerializer::SerializeEncPolicyData(const DLP_EncPolicyData& encData, nlohmann::json& encDataJson)
+{
+    if (encData.dataLen == 0 || encData.dataLen > DLP_MAX_CERT_SIZE) {
+        DLP_LOG_ERROR(LABEL, "Cert lenth %{public}d is invalid", encData.dataLen);
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    if (encData.options.extraInfoLen == 0 || encData.options.extraInfoLen > DLP_MAX_EXTRA_INFO_LEN) {
+        DLP_LOG_ERROR(LABEL, "Cert extra info lenth %{public}d is invalid", encData.options.extraInfoLen);
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    uint32_t encDataHexLen = encData.dataLen * BYTE_TO_HEX_OPER_LENGTH + 1;
+    char* encDataHex = new (std::nothrow) char[encDataHexLen];
+    if (encDataHex == nullptr) {
+        DLP_LOG_ERROR(LABEL, "New memory fail");
+        return DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL;
+    }
+    int32_t res = ByteToHexString(encData.data, encData.dataLen, encDataHex, encDataHexLen);
+    if (res != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Byte to hexstring fail");
+        FreeCharBuffer(encDataHex, encDataHexLen);
+        return res;
+    }
+
+    uint32_t extraInfoHexLen = encData.options.extraInfoLen * BYTE_TO_HEX_OPER_LENGTH + 1;
+    char* extraInfoHex = new (std::nothrow) char[extraInfoHexLen];
+    if (extraInfoHex == nullptr) {
+        DLP_LOG_ERROR(LABEL, "New memory fail");
+        FreeCharBuffer(encDataHex, encDataHexLen);
+        return DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL;
+    }
+    res = ByteToHexString(encData.options.extraInfo, encData.options.extraInfoLen, extraInfoHex, extraInfoHexLen);
+    if (res != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Byte to hexstring fail");
+        FreeCharBuffer(encDataHex, encDataHexLen);
+        FreeCharBuffer(extraInfoHex, extraInfoHexLen);
+        return res;
+    }
+
+    encDataJson = {
+        {ENC_DATA_LEN, encData.dataLen},
+        {ENC_DATA, encDataHex},
+        {EXTRA_INFO_LEN, encData.options.extraInfoLen},
+        {EXTRA_INFO, extraInfoHex},
+        {ENC_ACCOUNT_TYPE, encData.accountType},
+    };
+    DLP_LOG_INFO(LABEL, "Serialize successfully!");
+    FreeCharBuffer(encDataHex, encDataHexLen);
+    FreeCharBuffer(extraInfoHex, extraInfoHexLen);
+    return DLP_OK;
+}
+
+int32_t DlpPermissionSerializer::DeserializeEncPolicyData(const nlohmann::json &encDataJson, DLP_EncPolicyData &encData)
+{
+    if (encDataJson.find(ENC_ACCOUNT_TYPE) != encDataJson.end() && encDataJson.at(ENC_ACCOUNT_TYPE).is_number()) {
+        encDataJson.at(ENC_ACCOUNT_TYPE).get_to(encData.accountType);
+    }
+
+    int32_t res = ReadUint8ArrayFromJson(encDataJson, &encData.data, encData.dataLen, ENC_DATA, ENC_DATA_LEN);
+    if (res != DLP_OK) {
+        return res;
+    }
+
+    res = ReadUint8ArrayFromJson(
+        encDataJson, &encData.options.extraInfo, encData.options.extraInfoLen, EXTRA_INFO, EXTRA_INFO_LEN);
+    if (res != DLP_OK) {
+        return res;
+    }
+
     DLP_LOG_INFO(LABEL, "Deserialize successfully!");
     return DLP_OK;
 }

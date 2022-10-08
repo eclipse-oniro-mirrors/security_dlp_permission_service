@@ -53,14 +53,14 @@ void DlpPermissionServiceTest::TearDown()
 }
 
 /**
- * @tc.name: Dump001
+ * @tc.name: DumpTest001
  * @tc.desc: dlp permission service dump test
  * @tc.type: FUNC
  * @tc.require:AR000HGIH9
  */
-HWTEST_F(DlpPermissionServiceTest, GenerateDlpFile001, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, DumpTest001, TestSize.Level1)
 {
-    DLP_LOG_INFO(LABEL, "GenerateDlpFile001");
+    DLP_LOG_INFO(LABEL, "DumpTest001");
     int fd = -1;
     std::vector<std::u16string> args;
 

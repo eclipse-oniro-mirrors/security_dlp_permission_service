@@ -38,8 +38,6 @@ ohos_fuzztest("ParseCertFuzzTest") {
 
   cflags_cc = [ "-DHILOG_ENABLE" ]
   sources = [
-    "${dlp_root_dir}/frameworks/common/src/hex_string.cpp",
-    "${dlp_root_dir}/services/dlp_permission/sa/sa_common/dlp_permission_serializer.cpp",
     "parsecert_fuzzer.cpp",
   ]
 

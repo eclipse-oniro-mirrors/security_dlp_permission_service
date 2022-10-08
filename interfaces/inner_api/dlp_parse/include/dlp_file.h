@@ -27,7 +27,6 @@ static const uint32_t INVALID_FILE_SIZE = 0xffffffff;
 static const uint32_t DLP_BUFF_LEN = 4096;
 static const uint32_t IV_SIZE = 16;
 static const uint32_t DLP_FILE_MAGIC = 0x87f4922;
-static const uint32_t DLP_MAX_CERT_SIZE = 1024 * 1024; // 1M
 static const uint32_t DLP_FUSE_MAX_BUFFLEN = (10 * 1024 * 1024); // 10M
 static const uint32_t DLP_BLOCK_SIZE = 16;
 static const uint32_t BYTE_LEN = 8;

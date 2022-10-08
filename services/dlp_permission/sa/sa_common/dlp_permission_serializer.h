@@ -18,6 +18,7 @@
 
 #include <string>
 #include <vector>
+#include "dlp_credential_service.h"
 #include "dlp_policy.h"
 #include "nlohmann/json.hpp"
 
@@ -40,6 +41,8 @@ public:
     int32_t SerializeDlpPermission(const PermissionPolicy& policy, nlohmann::json& permInfoJson);
     int32_t DeserializeDlpPermission(const nlohmann::json& permJson, PermissionPolicy& policy);
 
+    int32_t SerializeEncPolicyData(const DLP_EncPolicyData& encData, nlohmann::json& encDataJson);
+    int32_t DeserializeEncPolicyData(const nlohmann::json& encDataJson, DLP_EncPolicyData& encData);
 private:
 };
 }  // namespace DlpPermission

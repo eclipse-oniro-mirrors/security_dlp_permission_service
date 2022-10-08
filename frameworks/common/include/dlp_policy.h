@@ -22,6 +22,9 @@
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
+static const uint32_t DLP_MAX_CERT_SIZE = 1024 * 1024; // 1M
+static const uint32_t DLP_MAX_EXTRA_INFO_LEN = 100 * 1024; // 100K
+
 enum DlpAccountType : uint32_t {
     INVALID_ACCOUNT = 0,
     CLOUD_ACCOUNT = 1,

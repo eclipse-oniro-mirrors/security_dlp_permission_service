@@ -119,41 +119,41 @@ static int CheckAccountInList(const uint8_t* data, uint32_t len, uint32_t userId
     char owner[STRING_LEN];
     char user[STRING_LEN];
     if (data == NULL || len == 0) {
-        return INVALID_VALUE;
+        return DLP_ERROR;
     }
     char* account = NULL;
     if (GetLocalAccountName(&account, userId) != 0) {
         DLP_LOG_ERROR("Get local account fail");
-        return GET_ACCOUNT_ERROR;
+        return DLP_ERROR;
     }
     DLP_LOG_DEBUG("Get local account: %{public}s", account);
 
     char* policy = (char*)malloc(len + 1);
     if (policy == NULL) {
         free(account);
-        return MEM_OPERATE_FAIL;
+        return DLP_ERROR;
     }
     int res;
     if (memcpy_s(policy, len + 1, data, len) != EOK) {
-        res = MEM_OPERATE_FAIL;
+        res = DLP_ERROR;
         goto end;
     }
     policy[len] = '\0';
     if (sprintf_s(owner, STRING_LEN, "\"ownerAccount\":\"%s\"", account) <= 0) {
-        res = MEM_OPERATE_FAIL;
+        res = DLP_ERROR;
         goto end;
     }
 
     if (sprintf_s(user, STRING_LEN, "\"authAccount\":\"%s\"", account) <= 0) {
-        res = MEM_OPERATE_FAIL;
+        res = DLP_ERROR;
         goto end;
     }
 
     if (strstr(policy, owner) != NULL || strstr(policy, user) != NULL) {
-        res = CREDENTIAL_OK;
+        res = DLP_SUCCESS;
     } else {
         DLP_LOG_ERROR("No permission to parse policy");
-        res = PERMISSION_DENY;
+        res = DLP_ERROR;
     }
 end:
     free(policy);
@@ -177,7 +177,7 @@ static void* RestorePolicyCallbackTask(void* inputTaskParams)
     DLP_RestorePolicyData outParams;
     taskParams->errorCode =
         CheckAccountInList(taskParams->encData->data, taskParams->encData->dataLen, taskParams->userId);
-    if (taskParams->errorCode != CREDENTIAL_OK) {
+    if (taskParams->errorCode != DLP_ERROR) {
         outParams.data = NULL;
         outParams.dataLen = 0;
     } else {
@@ -232,7 +232,7 @@ int DLP_PackPolicy(
     if (packParams == NULL || packParams->data == NULL || packParams->featureName == NULL || callback == NULL ||
         requestId == NULL || packParams->dataLen == 0 || packParams->dataLen > MAX_CERT_LEN) {
         DLP_LOG_ERROR("Callback or params is null");
-        return -1;
+        return DLP_ERROR;
     }
 
     pthread_mutex_lock(&g_mutex);
@@ -242,7 +242,7 @@ int DLP_PackPolicy(
 
     PackPolicyCallbackTaskPara* taskParams = TransPackPolicyParams(packParams, callback, *requestId);
     if (taskParams == NULL) {
-        return -1;
+        return DLP_ERROR;
     }
 
     pthread_t t;
@@ -250,16 +250,16 @@ int DLP_PackPolicy(
     if (ret != 0) {
         DLP_LOG_ERROR("pthread_create failed %d\n", ret);
         FreePackPolicyCallbackTaskPara(taskParams);
-        return -1;
+        return DLP_ERROR;
     }
     ret = pthread_detach(t);
     if (ret != 0) {
         DLP_LOG_ERROR("pthread_detach failed %d\n", ret);
         FreePackPolicyCallbackTaskPara(taskParams);
-        return -1;
+        return DLP_ERROR;
     }
     DLP_LOG_INFO("Start new thread, requestId: %{public}llu", (unsigned long long)*requestId);
-    return 0;
+    return DLP_SUCCESS;
 }
 
 static RestorePolicyCallbackTaskPara* TransEncPolicyData(
@@ -303,7 +303,7 @@ int DLP_RestorePolicy(
     if (encData == NULL || encData->data == NULL || encData->featureName == NULL || callback == NULL ||
         requestId == NULL || encData->dataLen == 0 || encData->dataLen > MAX_CERT_LEN) {
         DLP_LOG_ERROR("Callback or params is null");
-        return -1;
+        return DLP_ERROR;
     }
 
     pthread_mutex_lock(&g_mutex);
@@ -313,7 +313,7 @@ int DLP_RestorePolicy(
 
     RestorePolicyCallbackTaskPara* taskParams = TransEncPolicyData(encData, callback, *requestId, userId);
     if (taskParams == NULL) {
-        return -1;
+        return DLP_ERROR;
     }
 
     pthread_t t;
@@ -321,14 +321,14 @@ int DLP_RestorePolicy(
     if (ret != 0) {
         DLP_LOG_ERROR("pthread_create failed %d\n", ret);
         FreeRestorePolicyCallbackTaskPara(taskParams);
-        return -1;
+        return DLP_ERROR;
     }
     ret = pthread_detach(t);
     if (ret != 0) {
         DLP_LOG_ERROR("pthread_detach failed %d\n", ret);
         FreeRestorePolicyCallbackTaskPara(taskParams);
-        return -1;
+        return DLP_ERROR;
     }
     DLP_LOG_INFO("Start new thread, requestId: %{public}llu", (unsigned long long)*requestId);
-    return 0;
+    return DLP_SUCCESS;
 }

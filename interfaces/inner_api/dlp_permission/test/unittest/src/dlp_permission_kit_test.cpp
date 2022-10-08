@@ -48,7 +48,6 @@ const uint32_t INVALID_AESKEY_LEN_LOWER = 0;
 const uint32_t INVALID_IV_LEN_UPPER = 256;
 const uint32_t INVALID_IV_LEN_LOWER = 0;
 const uint32_t INVALID_USER_NUM_UPPER = 200;
-const uint32_t INVALID_USER_NUM_LOWER = 0;
 const uint32_t INVALID_AUTH_PERM_UPPER = 5;
 const uint32_t INVALID_AUTH_PERM_LOWER = 0;
 const int64_t INVALID_DELTA_EXPIRY_TIME = -100;
@@ -312,42 +311,40 @@ static int32_t TestGenerateDlpCertWithInvalidParam(uint32_t ownerAccountLen, uin
  */
 HWTEST_F(DlpPermissionKitTest, GenerateDlpCertificate001, TestSize.Level1)
 {
-    ASSERT_EQ(
+    EXPECT_EQ(
         DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(INVALID_ACCOUNT_LENGTH_UPPER, AESKEY_LEN,
                                              IV_LEN, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME));
-    ASSERT_EQ(
+    EXPECT_EQ(
         DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(INVALID_ACCOUNT_LENGTH_LOWER, AESKEY_LEN,
                                              IV_LEN, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME));
-    ASSERT_EQ(
+    EXPECT_EQ(
         DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, INVALID_AESKEY_LEN_UPPER,
                                              IV_LEN, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME));
-    ASSERT_EQ(
+    EXPECT_EQ(
         DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, INVALID_AESKEY_LEN_LOWER,
                                              IV_LEN, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME));
-    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID,
+    EXPECT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID,
         TestGenerateDlpCertWithInvalidParam(
             ACCOUNT_LENGTH, AESKEY_LEN, INVALID_IV_LEN_UPPER, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME));
-    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID,
+    EXPECT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID,
         TestGenerateDlpCertWithInvalidParam(
             ACCOUNT_LENGTH, AESKEY_LEN, INVALID_IV_LEN_LOWER, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME));
-    ASSERT_EQ(
+    EXPECT_EQ(
         DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN,
                                              INVALID_USER_NUM_UPPER, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME));
-    ASSERT_EQ(DLP_OK, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN, INVALID_USER_NUM_LOWER,
-                          ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME));
-    ASSERT_EQ(
+    EXPECT_EQ(
         DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN,
                                              USER_NUM, INVALID_ACCOUNT_LENGTH_UPPER, AUTH_PERM, DELTA_EXPIRY_TIME));
-    ASSERT_EQ(
+    EXPECT_EQ(
         DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN,
                                              USER_NUM, INVALID_ACCOUNT_LENGTH_LOWER, AUTH_PERM, DELTA_EXPIRY_TIME));
-    ASSERT_EQ(
+    EXPECT_EQ(
         DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN,
                                              USER_NUM, ACCOUNT_LENGTH, INVALID_AUTH_PERM_UPPER, DELTA_EXPIRY_TIME));
-    ASSERT_EQ(
+    EXPECT_EQ(
         DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN,
                                              USER_NUM, ACCOUNT_LENGTH, INVALID_AUTH_PERM_LOWER, DELTA_EXPIRY_TIME));
-    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN,
+    EXPECT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN,
                                                    USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, INVALID_DELTA_EXPIRY_TIME));
 }
 
@@ -384,7 +381,7 @@ HWTEST_F(DlpPermissionKitTest, ParseDlpCertificate001, TestSize.Level1)
     PermissionPolicy policy;
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, DlpPermissionKit::ParseDlpCertificate(cert, policy));
     cert = {1, 2, 3};
-    ASSERT_EQ(1, DlpPermissionKit::ParseDlpCertificate(cert, policy));  // credential error code 1
+    ASSERT_EQ(DLP_SERVICE_ERROR_JSON_OPERATE_FAIL, DlpPermissionKit::ParseDlpCertificate(cert, policy));
 }
 
 /**

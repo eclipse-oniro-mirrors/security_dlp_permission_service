@@ -93,8 +93,14 @@ static void DlpPackPolicyCallback(uint64_t requestId, int errorCode, DLP_EncPoli
         callback->onGenerateDlpCertificate(DLP_SERVICE_ERROR_VALUE_INVALID, std::vector<uint8_t>());
         return;
     }
-
-    std::vector<uint8_t> cert(outParams->data, outParams->data + outParams->dataLen);
+    nlohmann::json encDataJson;
+    int32_t res = DlpPermissionSerializer::GetInstance().SerializeEncPolicyData(*outParams, encDataJson);
+    if (res != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Serialize fail");
+        return;
+    }
+    std::string encData = encDataJson.dump();
+    std::vector<uint8_t> cert(encData.begin(), encData.end());
     callback->onGenerateDlpCertificate(errorCode, cert);
 }
 
@@ -183,6 +189,9 @@ int32_t DlpCredential::GenerateDlpCertificate(
         .featureName = strdup("dlp_permission_service"),
         .data = (uint8_t*)strdup(policy.c_str()),
         .dataLen = policy.size(),
+        .options.opt = RECIEVER_DECRYPT_MUST_USE_CLOUD,
+        .options.extraInfo = nullptr,
+        .options.extraInfoLen = 0,
         .accountType = static_cast<AccountType>(accountType),
     };
 
@@ -224,26 +233,32 @@ static void FreeDLPEncPolicyData(DLP_EncPolicyData& encPolicy)
         delete[] encPolicy.data;
         encPolicy.data = nullptr;
     }
+    if (encPolicy.options.extraInfo != nullptr) {
+        delete[] encPolicy.options.extraInfo;
+        encPolicy.options.extraInfo = nullptr;
+    }
 }
 
 int32_t DlpCredential::ParseDlpCertificate(const std::vector<uint8_t>& cert, sptr<IDlpPermissionCallback>& callback)
 {
-    auto data = new (std::nothrow) uint8_t[cert.size()];
-    if (data == nullptr) {
-        DLP_LOG_ERROR(LABEL, "New memory fail");
-        return DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL;
+    std::string encDataJsonStr(cert.begin(), cert.end());
+    auto jsonObj = nlohmann::json::parse(encDataJsonStr, nullptr, false);
+    if (jsonObj.is_discarded() || (!jsonObj.is_object())) {
+        DLP_LOG_ERROR(LABEL, "JsonObj is discarded");
+        return DLP_SERVICE_ERROR_JSON_OPERATE_FAIL;
     }
-    if (memcpy_s(data, cert.size(), &cert[0], cert.size()) != EOK) {
-        DLP_LOG_ERROR(LABEL, "Memcpy_s fail");
-        delete[] data;
-        data = nullptr;
-        return DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL;
-    }
+
     DLP_EncPolicyData encPolicy = {
         .featureName = strdup("dlp_permission_service"),
-        .data = data,
-        .dataLen = cert.size(),
+        .options.opt = RECIEVER_DECRYPT_MUST_USE_CLOUD,
     };
+    int32_t result = DlpPermissionSerializer::GetInstance().DeserializeEncPolicyData(jsonObj, encPolicy);
+    if (result != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Serialize fail");
+        FreeDLPEncPolicyData(encPolicy);
+        return DLP_SERVICE_ERROR_JSON_OPERATE_FAIL;
+    }
+
     int res = 0;
     {
         std::lock_guard<std::mutex> lock(g_lockRequest);
