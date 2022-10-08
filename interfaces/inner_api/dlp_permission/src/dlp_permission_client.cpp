@@ -30,6 +30,7 @@ namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionClient"};
 static const int32_t DLP_PERMISSION_LOAD_SA_TIMEOUT_MS = 1000;
+static const std::string ALLOW_ABILITY[] = {"com.ohos.permissionmanager"};
 }  // namespace
 
 DlpPermissionClient& DlpPermissionClient::GetInstance()
@@ -144,9 +145,23 @@ int32_t DlpPermissionClient::UninstallDlpSandbox(const std::string& bundleName, 
     return proxy->UninstallDlpSandbox(bundleName, appIndex, userId);
 }
 
+static bool CheckAllowAbilityList(const std::string& bundleName)
+{
+    for (const auto& iter : ALLOW_ABILITY) {
+        if (iter == bundleName) {
+            return true;
+        }
+    }
+    return false;
+}
+
 int32_t DlpPermissionClient::GetSandboxExternalAuthorization(
     int sandboxUid, const AAFwk::Want& want, SandBoxExternalAuthorType& auth)
 {
+    if (CheckAllowAbilityList(want.GetBundle())) {
+        auth = ALLOW_START_ABILITY;
+        return DLP_OK;
+    }
     auto proxy = GetProxy(false);
     if (proxy == nullptr) {
         DLP_LOG_ERROR(LABEL, "Proxy is null, dlpmanager service no start.");
