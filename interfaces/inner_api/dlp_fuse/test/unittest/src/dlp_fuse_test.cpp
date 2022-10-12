@@ -17,7 +17,6 @@
 
 #include <cstring>
 #include <dirent.h>
-#include <error.h>
 #include <fcntl.h>
 #include <securec.h>
 #include <sys/mount.h>
