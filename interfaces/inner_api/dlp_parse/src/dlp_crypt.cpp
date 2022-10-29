@@ -246,7 +246,7 @@ static int32_t OpensslAesCipherCryptInit(
         return ret;
     }
 
-    struct DlpOpensslAesCtx* outCtx = (struct DlpOpensslAesCtx*)malloc(sizeof(DlpOpensslAesCtx));
+    struct DlpOpensslAesCtx* outCtx = static_cast<struct DlpOpensslAesCtx*>(malloc(sizeof(DlpOpensslAesCtx)));
     if (outCtx == nullptr) {
         DLP_LOG_ERROR(LABEL, "Aes cipher crypt init fail, alloc aes ctx fail");
         EVP_CIPHER_CTX_free(ctx);
@@ -263,7 +263,7 @@ static int32_t OpensslAesCipherCryptInit(
 
 static int32_t OpensslAesCipherEncryptUpdate(void* cryptoCtx, const struct DlpBlob* message, struct DlpBlob* cipherText)
 {
-    struct DlpOpensslAesCtx* aesCtx = (struct DlpOpensslAesCtx*)cryptoCtx;
+    struct DlpOpensslAesCtx* aesCtx = static_cast<struct DlpOpensslAesCtx*>(cryptoCtx);
     EVP_CIPHER_CTX* ctx = reinterpret_cast<EVP_CIPHER_CTX*>(aesCtx->append);
     if (ctx == nullptr) {
         return DLP_PARSE_ERROR_VALUE_INVALID;
@@ -320,7 +320,7 @@ static int32_t OpensslAesCipherEncryptFinalThree(
 
 static int32_t OpensslAesCipherDecryptUpdate(void* cryptoCtx, const struct DlpBlob* message, struct DlpBlob* plainText)
 {
-    struct DlpOpensslAesCtx* aesCtx = (struct DlpOpensslAesCtx*)cryptoCtx;
+    struct DlpOpensslAesCtx* aesCtx = static_cast<struct DlpOpensslAesCtx*>(cryptoCtx);
     EVP_CIPHER_CTX* ctx = reinterpret_cast<EVP_CIPHER_CTX*>(aesCtx->append);
 
     if (ctx == nullptr) {
@@ -444,7 +444,7 @@ int32_t DlpOpensslAesEncryptUpdate(void* cryptoCtx, const struct DlpBlob* messag
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    struct DlpOpensslAesCtx* contex = (struct DlpOpensslAesCtx*)cryptoCtx;
+    struct DlpOpensslAesCtx* contex = static_cast<struct DlpOpensslAesCtx*>(cryptoCtx);
     uint32_t mode = contex->mode;
 
     int32_t ret;
@@ -546,7 +546,7 @@ int32_t DlpOpensslAesDecryptUpdate(void* cryptoCtx, const struct DlpBlob* messag
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
-    struct DlpOpensslAesCtx* contex = (struct DlpOpensslAesCtx*)cryptoCtx;
+    struct DlpOpensslAesCtx* contex = static_cast<struct DlpOpensslAesCtx*>(cryptoCtx);
     uint32_t mode = contex->mode;
 
     int32_t ret;

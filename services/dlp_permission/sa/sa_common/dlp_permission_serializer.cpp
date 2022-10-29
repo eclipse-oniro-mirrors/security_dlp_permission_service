@@ -59,7 +59,7 @@ static int32_t ReadUint8ArrayFromJson(const nlohmann::json& permJson, uint8_t** 
     }
 
     if (permJson.find(keyName) != permJson.end() && permJson.at(keyName).is_string()) {
-        char* value = (char*)strdup((permJson.at(keyName).get<std::string>()).c_str());
+        char* value = static_cast<char*>(strdup((permJson.at(keyName).get<std::string>()).c_str()));
         if (value == nullptr) {
             DLP_LOG_ERROR(LABEL, "New memory fail");
             return DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL;

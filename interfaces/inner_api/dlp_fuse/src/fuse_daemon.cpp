@@ -196,11 +196,11 @@ static void FuseDaemonRead(fuse_req_t req, fuse_ino_t ino, size_t size, off_t of
     }
     (void)memset_s(buf, size, 0, size);
 
-    int32_t res = dlp->Read((uint32_t)offset, buf, (uint32_t)size);
+    int32_t res = dlp->Read(static_cast<uint32_t>(offset), buf, static_cast<uint32_t>(size));
     if (res < 0) {
         fuse_reply_err(req, EIO);
     } else {
-        fuse_reply_buf(req, buf, (size_t)res);
+        fuse_reply_buf(req, buf, static_cast<size_t>(res));
     }
     DLP_LOG_DEBUG(LABEL, "Read file name %{private}s offset %{public}u size %{public}u res %{public}d",
         dlp->GetLinkName().c_str(), static_cast<uint32_t>(offset), static_cast<uint32_t>(size), res);
@@ -220,14 +220,15 @@ static void FuseDaemonWrite(
         DLP_LOG_ERROR(LABEL, "Write link file fail, wrong ino");
         return;
     }
-    int32_t res = dlp->Write((uint32_t)off, (void*)buf, (uint32_t)size);
+    int32_t res = dlp->Write(static_cast<uint32_t>(off),
+        const_cast<void *>(static_cast<const void *>(buf)), static_cast<uint32_t>(size));
     if (res < 0) {
         fuse_reply_err(req, EIO);
     } else {
-        fuse_reply_write(req, (size_t)res);
+        fuse_reply_write(req, static_cast<size_t>(res));
     }
     DLP_LOG_DEBUG(LABEL, "Write file name %{private}s offset %{public}u size %{public}u res %{public}d",
-        dlp->GetLinkName().c_str(), (uint32_t)off, (uint32_t)size, res);
+        dlp->GetLinkName().c_str(), static_cast<uint32_t>(off), static_cast<uint32_t>(size), res);
 }
 
 static void FuseDaemonForget(fuse_req_t req, fuse_ino_t ino, uint64_t nlookup)
@@ -245,7 +246,7 @@ static void FuseDaemonForget(fuse_req_t req, fuse_ino_t ino, uint64_t nlookup)
         return;
     }
     DLP_LOG_DEBUG(LABEL, "Forget link file name %{private}s nlookup %{public}d",
-        dlp->GetLinkName().c_str(), (uint32_t)nlookup);
+        dlp->GetLinkName().c_str(), static_cast<uint32_t>(nlookup));
     if (dlp->SubAndCheckZeroRef(nlookup)) {
         DLP_LOG_INFO(LABEL, "Link file reference is less than 0, delete link file ok");
         delete dlp;

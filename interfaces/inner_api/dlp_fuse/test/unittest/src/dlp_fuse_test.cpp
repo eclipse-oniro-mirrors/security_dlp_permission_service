@@ -841,7 +841,7 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile008, TestSize.Level1)
     // get txtSize
     ASSERT_EQ(read(g_dlpFileFd, readBuf, 16), 16);
     uint32_t* hdr = reinterpret_cast<uint32_t*>(readBuf);
-    ASSERT_EQ(hdr[3], 4);
+    ASSERT_EQ(static_cast<int>(hdr[3]), 4);
 }
 
 /**

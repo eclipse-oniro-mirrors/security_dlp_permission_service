@@ -147,12 +147,8 @@ int32_t DlpPermissionClient::UninstallDlpSandbox(const std::string& bundleName, 
 
 static bool CheckAllowAbilityList(const std::string& bundleName)
 {
-    for (const auto& iter : ALLOW_ABILITY) {
-        if (iter == bundleName) {
-            return true;
-        }
-    }
-    return false;
+    return std::any_of(std::begin(ALLOW_ABILITY), std::end(ALLOW_ABILITY),
+        [bundleName](const std::string& bundle) { return bundle == bundleName; });
 }
 
 int32_t DlpPermissionClient::GetSandboxExternalAuthorization(
@@ -349,7 +345,7 @@ void DlpPermissionClient::OnRemoteDiedHandle()
     proxy_ = nullptr;
     serviceDeathObserver_ = nullptr;
     {
-        std::unique_lock<std::mutex> lock(cvLock_);
+        std::unique_lock<std::mutex> lock1(cvLock_);
         readyFlag_ = false;
     }
 }

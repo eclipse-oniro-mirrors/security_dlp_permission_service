@@ -178,7 +178,6 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncrypt003, TestSize.Level1)
     struct DlpCipherParam tagIv = {{16, g_iv}};
     struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
 
-    uint8_t input[16] = "aaaaaaaaaaaaaaa";
     uint8_t enc[16] = {0};
     struct DlpBlob key = {32, g_key};
     struct DlpBlob cipherText = {15, enc};
@@ -201,7 +200,6 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncrypt004, TestSize.Level1)
     struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
 
     uint8_t input[16] = "aaaaaaaaaaaaaaa";
-    uint8_t enc[16] = {0};
     struct DlpBlob message = {15, input};
     struct DlpBlob key = {32, g_key};
 
@@ -265,7 +263,6 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslAesDecrypt003, TestSize.Level1)
     struct DlpCipherParam tagIv = {{16, g_iv}};
     struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
 
-    uint8_t input[16] = "aaaaaaaaaaaaaaa";
     uint8_t enc[16] = {0};
     struct DlpBlob key = {32, g_key};
     struct DlpBlob plainText = {15, enc};
@@ -381,7 +378,6 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptUpdate002, TestSize.Level1)
 
     uint8_t input[16] = "aaaaaaaaaaaaaaa";
     uint8_t enc[16] = {0};
-    struct DlpBlob message = {15, input};
     struct DlpBlob cipherText = {15, enc};
 
     void* ctx;
@@ -605,7 +601,6 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslAesDecryptUpdate002, TestSize.Level1)
     struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
     uint8_t input[16] = "aaaaaaaaaaaaaaa";
     uint8_t dec[16] = {0};
-    struct DlpBlob message = {15, input};
     struct DlpBlob plainText = {15, dec};
     void* ctx = nullptr;
     int32_t ret = DlpOpensslAesDecryptInit(&ctx, &key, &usageSpec);
@@ -745,7 +740,6 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptAndDecrypt001, TestSize.Level1)
     DLP_LOG_INFO(LABEL, "DlpOpensslAesEncryptAndDecrypt001");
     struct DlpBlob key = { 32, nullptr };
     key.data = g_key;
-    int32_t ret;
 
     struct DlpCipherParam tagIv = { .iv = { .data = nullptr, .size = 16}};
     tagIv.iv.data = g_iv;
@@ -772,15 +766,15 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptAndDecrypt001, TestSize.Level1)
         .size = 15
     };
     mDec.data = dec;
-    ret = DlpOpensslAesEncrypt(&key, &usage, &mIn, &mEnc);
-    ret = DlpOpensslAesDecrypt(&key, &usage, &mEnc, &mDec);
+    DlpOpensslAesEncrypt(&key, &usage, &mIn, &mEnc);
+    DlpOpensslAesDecrypt(&key, &usage, &mEnc, &mDec);
     cout << "input hexdump:";
     dumpptr(input, 16);
     cout << "enc hexdump:";
     dumpptr(enc, 16);
     cout << "output hexdump:";
     dumpptr(dec, 16);
-    ret = strcmp(reinterpret_cast<char *>(input), reinterpret_cast<char *>(dec));
+    int32_t ret = strcmp(reinterpret_cast<char *>(input), reinterpret_cast<char *>(dec));
     ASSERT_EQ(0, ret);
 }
 
@@ -795,7 +789,6 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptAndDecrypt002, TestSize.Level1)
     DLP_LOG_INFO(LABEL, "DlpOpensslAesEncryptAndDecrypt002");
     struct DlpBlob key = { 32, nullptr };
     key.data = g_key;
-    int32_t ret;
 
     struct DlpCipherParam tagIv = { .iv = { .data = nullptr, .size = 16}};
     tagIv.iv.data = g_iv;
@@ -832,36 +825,36 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptAndDecrypt002, TestSize.Level1)
 
     cout << "input hexdump:";
     dumpptr(input, 16);
-    ret = DlpOpensslAesEncryptInit(&ctx, &key, &usage);
+    DlpOpensslAesEncryptInit(&ctx, &key, &usage);
     mIn.size = 1;
     mEnc.size = 1;
     while (i < 15) {
-        ret = DlpOpensslAesEncryptUpdate(ctx, &mIn, &mEnc);
+        DlpOpensslAesEncryptUpdate(ctx, &mIn, &mEnc);
         mIn.data = mIn.data + 1;
         mEnc.data = mEnc.data + 1;
         i++;
     }
-    ret = DlpOpensslAesEncryptFinal(&ctx, &mNull, &mEnc);
+    DlpOpensslAesEncryptFinal(&ctx, &mNull, &mEnc);
     DlpOpensslAesHalFreeCtx(&ctx);
 
     cout << "enc hexdump:";
     dumpptr(enc, 16);
-    ret = DlpOpensslAesDecryptInit(&ctx, &key, &usage);
+    DlpOpensslAesDecryptInit(&ctx, &key, &usage);
     i = 0;
     mEnc.data = enc;
     mEnc.size = 1;
     mDec.size = 1;
     while (i < 15) {
-        ret = DlpOpensslAesDecryptUpdate(ctx, &mEnc, &mDec);
+        DlpOpensslAesDecryptUpdate(ctx, &mEnc, &mDec);
         mEnc.data = mEnc.data + 1;
         mDec.data = mDec.data + 1;
         i++;
     }
-    ret = DlpOpensslAesDecryptFinal(&ctx, &mNull, &mDec);
+    DlpOpensslAesDecryptFinal(&ctx, &mNull, &mDec);
     DlpOpensslAesHalFreeCtx(&ctx);
     cout << "output hexdump:";
     dumpptr(dec, 16);
-    ret = strcmp(reinterpret_cast<char *>(input), reinterpret_cast<char *>(dec));
+    int32_t ret = strcmp(reinterpret_cast<char *>(input), reinterpret_cast<char *>(dec));
     ASSERT_EQ(0, ret);
 }
 
@@ -876,7 +869,6 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptAndDecrypt003, TestSize.Level1)
     DLP_LOG_INFO(LABEL, "DlpOpensslAesEncryptAndDecrypt003");
     struct DlpBlob key = { 32, nullptr };
     key.data = g_key;
-    int32_t ret;
 
     struct DlpCipherParam tagIv = { .iv = { .data = nullptr, .size = 16}};
     tagIv.iv.data = g_iv;
@@ -885,9 +877,9 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptAndDecrypt003, TestSize.Level1)
         .algParam = &tagIv
     };
 
-    uint8_t *input = (uint8_t *)malloc(ENC_BUF_LEN);
-    uint8_t *enc = (uint8_t *)malloc(ENC_BUF_LEN);
-    uint8_t *dec = (uint8_t *)malloc(ENC_BUF_LEN);
+    uint8_t *input = static_cast<uint8_t *>(malloc(ENC_BUF_LEN));
+    uint8_t *enc = static_cast<uint8_t *>(malloc(ENC_BUF_LEN));
+    uint8_t *dec = static_cast<uint8_t *>(malloc(ENC_BUF_LEN));
 
     struct DlpBlob mIn = {
         .data = nullptr,
@@ -909,14 +901,14 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptAndDecrypt003, TestSize.Level1)
     struct timeval start, end, diff;
     gettimeofday(&start, nullptr);
 
-    ret = DlpOpensslAesEncrypt(&key, &usage, &mIn, &mEnc);
+    DlpOpensslAesEncrypt(&key, &usage, &mIn, &mEnc);
     gettimeofday(&end, nullptr);
     timersub(&end, &start, &diff);
     int runtimeUs = diff.tv_sec * USEC_PER_SEC + diff.tv_usec;
     std::cout << "10M date encrypt time use: " << runtimeUs << "(us) " << std::endl;
 
     gettimeofday(&start, nullptr);
-    ret = DlpOpensslAesDecrypt(&key, &usage, &mEnc, &mDec);
+    int32_t ret = DlpOpensslAesDecrypt(&key, &usage, &mEnc, &mDec);
     gettimeofday(&end, nullptr);
     timersub(&end, &start, &diff);
     runtimeUs = diff.tv_sec * USEC_PER_SEC + diff.tv_usec;
@@ -1017,7 +1009,6 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslHash003, TestSize.Level1)
     DLP_LOG_INFO(LABEL, "DlpOpensslHash003");
     uint8_t input[16] = "aaaaaaaaaaaaaaa";
     uint8_t out[64] = {0};
-    struct DlpBlob message = {15, input};
     struct DlpBlob hash = {64, out};
 
     // message = nullptr
@@ -1037,7 +1028,6 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslHash004, TestSize.Level1)
     uint8_t input[16] = "aaaaaaaaaaaaaaa";
     uint8_t out[64] = {0};
     struct DlpBlob message = {15, input};
-    struct DlpBlob hash = {64, out};
 
     // hash = nullptr
     int32_t ret = DlpOpensslHash(DLP_DIGEST_SHA512, &message, nullptr);
@@ -1107,7 +1097,6 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslHashUpdate002, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "DlpOpensslHashUpdate002");
     uint8_t input[16] = "aaaaaaaaaaaaaaa";
-    struct DlpBlob message = {15, input};
     void* ctx = nullptr;
     int32_t ret = DlpOpensslHashInit(&ctx, DLP_DIGEST_SHA256);
     ASSERT_EQ(0, ret);
@@ -1182,7 +1171,6 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslHashFinal004, TestSize.Level1)
     uint8_t input[16] = "aaaaaaaaaaaaaaa";
     uint8_t out[64] = {0};
     struct DlpBlob message = {15, input};
-    struct DlpBlob hash = {64, out};
     struct DlpBlob msg1 = {15, input};
     void* ctx = nullptr;
 

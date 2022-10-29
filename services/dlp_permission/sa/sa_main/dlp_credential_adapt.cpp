@@ -187,7 +187,7 @@ int32_t DlpCredential::GenerateDlpCertificate(
 {
     DLP_PackPolicyParams packPolicy = {
         .featureName = strdup("dlp_permission_service"),
-        .data = (uint8_t*)strdup(policy.c_str()),
+        .data = reinterpret_cast<uint8_t*>(strdup(policy.c_str())),
         .dataLen = policy.size(),
         .options.opt = RECIEVER_DECRYPT_MUST_USE_CLOUD,
         .options.extraInfo = nullptr,

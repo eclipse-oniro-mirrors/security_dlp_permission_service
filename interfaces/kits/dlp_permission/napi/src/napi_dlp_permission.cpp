@@ -72,7 +72,7 @@ napi_value NapiDlpPermission::GenerateDlpFile(napi_env env, napi_callback_info c
     napi_value resource = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "GenerateDlpFile", NAPI_AUTO_LENGTH, &resource));
     NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, GenerateDlpFileExcute, GenerateDlpFileComplete,
-                       (void*)asyncContext, &(asyncContext->work)));
+        static_cast<void*>(asyncContext), &(asyncContext->work)));
     NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
     asyncContextPtr.release();
     return result;
@@ -146,7 +146,7 @@ napi_value NapiDlpPermission::OpenDlpFile(napi_env env, napi_callback_info cbInf
     napi_value resource = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "OpenDlpFile", NAPI_AUTO_LENGTH, &resource));
     NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, OpenDlpFileExcute, OpenDlpFileComplete,
-                       (void*)asyncContext, &(asyncContext->work)));
+        static_cast<void*>(asyncContext), &(asyncContext->work)));
     NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
     asyncContextPtr.release();
     return result;
@@ -239,7 +239,7 @@ napi_value NapiDlpPermission::IsDlpFile(napi_env env, napi_callback_info cbInfo)
     napi_value resource = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "IsDlpFile", NAPI_AUTO_LENGTH, &resource));
     NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, IsDlpFileExcute, IsDlpFileComplete,
-                       (void*)asyncContext, &(asyncContext->work)));
+        static_cast<void*>(asyncContext), &(asyncContext->work)));
     NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
     asyncContextPtr.release();
     return result;
@@ -302,7 +302,7 @@ napi_value NapiDlpPermission::AddDlpLinkFile(napi_env env, napi_callback_info cb
     napi_value resource = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "AddDlpLinkFile", NAPI_AUTO_LENGTH, &resource));
     NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, AddDlpLinkFileExcute, AddDlpLinkFileComplete,
-                       (void*)asyncContext, &(asyncContext->work)));
+        static_cast<void*>(asyncContext), &(asyncContext->work)));
     NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
     asyncContextPtr.release();
     return result;
@@ -361,7 +361,7 @@ napi_value NapiDlpPermission::DeleteDlpLinkFile(napi_env env, napi_callback_info
     napi_value resource = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "DeleteDlpLinkFile", NAPI_AUTO_LENGTH, &resource));
     NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, DeleteDlpLinkFileExcute, DeleteDlpLinkFileComplete,
-                       (void*)asyncContext, &(asyncContext->work)));
+        static_cast<void*>(asyncContext), &(asyncContext->work)));
     NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
     asyncContextPtr.release();
     return result;
@@ -419,7 +419,7 @@ napi_value NapiDlpPermission::RecoverDlpFile(napi_env env, napi_callback_info cb
     napi_value resource = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "RecoverDlpFile", NAPI_AUTO_LENGTH, &resource));
     NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, RecoverDlpFileExcute, RecoverDlpFileComplete,
-                       (void*)asyncContext, &(asyncContext->work)));
+        static_cast<void*>(asyncContext), &(asyncContext->work)));
     NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
     asyncContextPtr.release();
     return result;
@@ -478,7 +478,7 @@ napi_value NapiDlpPermission::CloseDlpFile(napi_env env, napi_callback_info cbIn
     napi_value resource = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "CloseDlpFile", NAPI_AUTO_LENGTH, &resource));
     NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, CloseDlpFileExcute, CloseDlpFileComplete,
-                       (void*)asyncContext, &(asyncContext->work)));
+        static_cast<void*>(asyncContext), &(asyncContext->work)));
     NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
     asyncContextPtr.release();
     return result;
@@ -536,7 +536,7 @@ napi_value NapiDlpPermission::InstallDlpSandbox(napi_env env, napi_callback_info
     napi_value resource = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "InstallDlpSandbox", NAPI_AUTO_LENGTH, &resource));
     NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, InstallDlpSandboxExcute, InstallDlpSandboxComplete,
-                       (void*)asyncContext, &(asyncContext->work)));
+        static_cast<void*>(asyncContext), &(asyncContext->work)));
     NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
     asyncContextPtr.release();
     return result;
@@ -597,7 +597,7 @@ napi_value NapiDlpPermission::UninstallDlpSandbox(napi_env env, napi_callback_in
     napi_value resource = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "UninstallDlpSandbox", NAPI_AUTO_LENGTH, &resource));
     NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, UninstallDlpSandboxExcute,
-                       UninstallDlpSandboxComplete, (void*)asyncContext, &(asyncContext->work)));
+        UninstallDlpSandboxComplete, static_cast<void*>(asyncContext), &(asyncContext->work)));
     NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
     asyncContextPtr.release();
     return result;
@@ -656,7 +656,7 @@ napi_value NapiDlpPermission::QueryFileAccess(napi_env env, napi_callback_info c
     napi_value resource = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "QueryFileAccess", NAPI_AUTO_LENGTH, &resource));
     NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, QueryFileAccessExcute, QueryFileAccessComplete,
-                       (void*)asyncContext, &(asyncContext->work)));
+        static_cast<void*>(asyncContext), &(asyncContext->work)));
     NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
     asyncContextPtr.release();
     return result;
@@ -716,7 +716,7 @@ napi_value NapiDlpPermission::IsInSandbox(napi_env env, napi_callback_info cbInf
     napi_value resource = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "IsInSandbox", NAPI_AUTO_LENGTH, &resource));
     NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, IsInSandboxExcute, IsInSandboxComplete,
-                       (void*)asyncContext, &(asyncContext->work)));
+        static_cast<void*>(asyncContext), &(asyncContext->work)));
     NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
     asyncContextPtr.release();
     return result;
@@ -776,7 +776,7 @@ napi_value NapiDlpPermission::GetDlpSupportFileType(napi_env env, napi_callback_
     napi_value resource = nullptr;
     NAPI_CALL(env, napi_create_string_utf8(env, "GetDlpSupportFileType", NAPI_AUTO_LENGTH, &resource));
     NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, GetDlpSupportFileTypeExcute,
-                       GetDlpSupportFileTypeComplete, (void*)asyncContext, &(asyncContext->work)));
+        GetDlpSupportFileTypeComplete, static_cast<void*>(asyncContext), &(asyncContext->work)));
     NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
     asyncContextPtr.release();
     return result;

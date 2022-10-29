@@ -714,7 +714,7 @@ int32_t DlpFile::DoDlpFileWrite(uint32_t offset, void* buf, uint32_t size)
     }
 
     /* write first block data, if it may be not aligned */
-    int32_t writenSize = WriteFirstBlockData(offset, (uint8_t *)buf, size);
+    int32_t writenSize = WriteFirstBlockData(offset, static_cast<uint8_t *>(buf), size);
     if (writenSize < 0) {
         DLP_LOG_ERROR(LABEL, "encrypt prefix data failed");
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
@@ -723,7 +723,7 @@ int32_t DlpFile::DoDlpFileWrite(uint32_t offset, void* buf, uint32_t size)
         return writenSize;
     }
 
-    uint8_t *restBlocksPtr = (uint8_t *)buf + writenSize;
+    uint8_t *restBlocksPtr = static_cast<uint8_t *>(buf) + writenSize;
     uint32_t restBlocksSize = size - static_cast<uint32_t>(writenSize);
     uint8_t* writeBuff = new (std::nothrow) uint8_t[restBlocksSize]();
     if (writeBuff == nullptr) {
