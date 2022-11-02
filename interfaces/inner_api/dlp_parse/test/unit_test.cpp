@@ -376,7 +376,6 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslAesEncryptUpdate002, TestSize.Level1)
     struct DlpCipherParam tagIv = {{16, g_iv}};
     struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
 
-    uint8_t input[16] = "aaaaaaaaaaaaaaa";
     uint8_t enc[16] = {0};
     struct DlpBlob cipherText = {15, enc};
 
@@ -599,7 +598,6 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslAesDecryptUpdate002, TestSize.Level1)
     struct DlpBlob key = {32, g_key};
     struct DlpCipherParam tagIv = {{16, g_iv}};
     struct DlpUsageSpec usageSpec = {DLP_MODE_CTR, &tagIv};
-    uint8_t input[16] = "aaaaaaaaaaaaaaa";
     uint8_t dec[16] = {0};
     struct DlpBlob plainText = {15, dec};
     void* ctx = nullptr;
@@ -1007,7 +1005,6 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslHash002, TestSize.Level1)
 HWTEST_F(DlpParseUnitTest, DlpOpensslHash003, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "DlpOpensslHash003");
-    uint8_t input[16] = "aaaaaaaaaaaaaaa";
     uint8_t out[64] = {0};
     struct DlpBlob hash = {64, out};
 
@@ -1026,7 +1023,6 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslHash004, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "DlpOpensslHash004");
     uint8_t input[16] = "aaaaaaaaaaaaaaa";
-    uint8_t out[64] = {0};
     struct DlpBlob message = {15, input};
 
     // hash = nullptr
@@ -1096,7 +1092,6 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslHashUpdate001, TestSize.Level1)
 HWTEST_F(DlpParseUnitTest, DlpOpensslHashUpdate002, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "DlpOpensslHashUpdate002");
-    uint8_t input[16] = "aaaaaaaaaaaaaaa";
     void* ctx = nullptr;
     int32_t ret = DlpOpensslHashInit(&ctx, DLP_DIGEST_SHA256);
     ASSERT_EQ(0, ret);
@@ -1169,7 +1164,6 @@ HWTEST_F(DlpParseUnitTest, DlpOpensslHashFinal004, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "DlpOpensslHashFinal004");
     uint8_t input[16] = "aaaaaaaaaaaaaaa";
-    uint8_t out[64] = {0};
     struct DlpBlob message = {15, input};
     struct DlpBlob msg1 = {15, input};
     void* ctx = nullptr;

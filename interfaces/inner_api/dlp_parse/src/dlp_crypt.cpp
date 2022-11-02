@@ -902,11 +902,8 @@ void DlpOpensslHashFreeCtx(void** cryptoCtx)
         DLP_LOG_ERROR(LABEL, "Openssl hash free ctx fail, param is invalid");
         return;
     }
-
-    if (*cryptoCtx != nullptr) {
-        EVP_MD_CTX_free((EVP_MD_CTX*)*cryptoCtx);
-        *cryptoCtx = nullptr;
-    }
+    EVP_MD_CTX_free((EVP_MD_CTX*)*cryptoCtx);
+    *cryptoCtx = nullptr;
 }
 
 #ifdef __cplusplus
