@@ -94,6 +94,10 @@ static const std::unordered_map<int32_t, std::string> g_dlpErrMsg = {
         DLP_SERVICE_ERROR_CREDENTIAL_TASK_TIMEOUT,
         "service error, credential task timeout",
     },
+    {
+        DLP_SERVICE_ERROR_GET_ACCOUNT_FAIL,
+        "service error, get account info fail",
+    },
 
     {
         DLP_PARSE_ERROR_VALUE_INVALID,

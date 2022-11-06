@@ -15,6 +15,7 @@
 
 #include "dlp_permission_service.h"
 #include "accesstoken_kit.h"
+#include "account_adapt.h"
 #include "bundle_mgr_client.h"
 #include "dlp_credential_service.h"
 #include "dlp_credential_adapt.h"
@@ -133,6 +134,15 @@ int32_t DlpPermissionService::GenerateDlpCertificate(
     if (res != DLP_OK) {
         return res;
     }
+
+    std::string ownerAccountUid;
+    res = GetLocalAccountUid(ownerAccountUid);
+    if (res != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Get account uid failed, errcode=%{public}d", res);
+        return DLP_SERVICE_ERROR_GET_ACCOUNT_FAIL;
+    }
+
+    jsonObj["ownerAccountUid"] = ownerAccountUid;
 
     return DlpCredential::GetInstance().GenerateDlpCertificate(
         jsonObj.dump(), policyParcel->policyParams_.ownerAccountType_, callback);

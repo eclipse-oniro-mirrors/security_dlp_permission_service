@@ -17,6 +17,7 @@
 #include <thread>
 #include <unistd.h>
 #include <unordered_map>
+#include "account_adapt.h"
 #include "dlp_credential_service.h"
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
@@ -30,7 +31,6 @@ namespace Security {
 namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpCredential"};
-constexpr static int UID_TRANSFORM_DIVISOR = 200000;
 static const size_t MAX_REQUEST_NUM = 100;
 static std::unordered_map<uint64_t, sptr<IDlpPermissionCallback>> g_requestMap;
 std::mutex g_lockRequest;
@@ -177,11 +177,6 @@ static void FreeDlpPackPolicyParams(DLP_PackPolicyParams& packPolicy)
 DlpCredential::DlpCredential()
 {}
 
-static int GetOsAccountIdFromUid(int uid)
-{
-    return uid / UID_TRANSFORM_DIVISOR;
-}
-
 int32_t DlpCredential::GenerateDlpCertificate(
     const std::string& policy, DlpAccountType accountType, sptr<IDlpPermissionCallback>& callback)
 {
@@ -205,8 +200,7 @@ int32_t DlpCredential::GenerateDlpCertificate(
         }
 
         uint64_t requestId;
-        res = DLP_PackPolicy(
-            GetOsAccountIdFromUid(IPCSkeleton::GetCallingUid()), &packPolicy, DlpPackPolicyCallback, &requestId);
+        res = DLP_PackPolicy(GetCallingUserId(), &packPolicy, DlpPackPolicyCallback, &requestId);
         if (res == 0) {
             DLP_LOG_INFO(
                 LABEL, "Start request success, requestId: %{public}llu", static_cast<unsigned long long>(requestId));
@@ -269,8 +263,7 @@ int32_t DlpCredential::ParseDlpCertificate(const std::vector<uint8_t>& cert, spt
         }
 
         uint64_t requestId;
-        res = DLP_RestorePolicy(
-            GetOsAccountIdFromUid(IPCSkeleton::GetCallingUid()), &encPolicy, DlpRestorePolicyCallback, &requestId);
+        res = DLP_RestorePolicy(GetCallingUserId(), &encPolicy, DlpRestorePolicyCallback, &requestId);
         if (res == 0) {
             DLP_LOG_INFO(
                 LABEL, "Start request success, requestId: %{public}llu", static_cast<unsigned long long>(requestId));

@@ -15,11 +15,19 @@
 
 #include "account_adapt.h"
 #include "dlp_permission_log.h"
+#include "ipc_skeleton.h"
 #include "ohos_account_kits.h"
 #include "os_account_manager.h"
 
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "AccountAdapt"};
+constexpr static int UID_TRANSFORM_DIVISOR = 200000;
+}
+
+int32_t GetCallingUserId()
+{
+    std::int32_t callingUid = OHOS::IPCSkeleton::GetCallingUid();
+    return (callingUid / UID_TRANSFORM_DIVISOR);
 }
 
 int8_t GetLocalAccountName(char** account, uint32_t userId)
@@ -34,6 +42,18 @@ int8_t GetLocalAccountName(char** account, uint32_t userId)
         return 0;
     }
     return -1;
+}
+
+int32_t GetLocalAccountUid(std::string& accountUid)
+{
+    OHOS::AccountSA::OhosAccountInfo accountInfo;
+    int32_t ret = OHOS::AccountSA::OhosAccountKits::GetInstance().GetOhosAccountInfoByUserId(GetCallingUserId(),
+        accountInfo);
+    if (ret != 0) {
+        return ret;
+    }
+    accountUid = accountInfo.GetRawUid();
+    return 0;
 }
 
 int8_t GetUserIdFromUid(int32_t uid, int32_t* userId)
