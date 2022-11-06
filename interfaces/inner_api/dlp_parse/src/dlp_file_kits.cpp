@@ -130,7 +130,13 @@ bool DlpFileKits::GetSandboxFlag(Want& want)
     std::string realSuffix = GetDlpFileRealSuffix(fileName);
     if (realSuffix != DEFAULT_STRING) {
         DLP_LOG_DEBUG(LABEL, "Real suffix is %{public}s", realSuffix.c_str());
-        want.SetType(GetMimeTypeBySuffix(realSuffix));
+        std::string realType = GetMimeTypeBySuffix(realSuffix);
+        if (realType != DEFAULT_STRING) {
+            want.SetType(realType);
+        } else {
+            DLP_LOG_INFO(LABEL, "Real suffix %{public}s not match known type, using origin type %{public}s",
+                realSuffix.c_str(), want.GetType().c_str());
+        }
     }
     DLP_LOG_INFO(LABEL, "Sanbox flag is true");
     return true;
