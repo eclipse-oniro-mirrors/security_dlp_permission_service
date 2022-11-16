@@ -75,13 +75,8 @@ static std::string GetDlpFileRealSuffix(const std::string& dlpFileName)
 {
     uint32_t dlpSuffixLen = DLP_FILE_SUFFIX.size();
     std::string realFileName = dlpFileName.substr(0, dlpFileName.size() - dlpSuffixLen);
-    if (realFileName.empty()) {
-        DLP_LOG_ERROR(LABEL, "Get file suffix fail, file name is empty");
-        return DEFAULT_STRING;
-    }
-
     char escape = '.';
-    uint32_t escapeLocate = realFileName.find_last_of(escape);
+    std::size_t escapeLocate = realFileName.find_last_of(escape);
     if (escapeLocate >= realFileName.size()) {
         DLP_LOG_ERROR(LABEL, "Get file suffix fail, no '.' in file name");
         return DEFAULT_STRING;

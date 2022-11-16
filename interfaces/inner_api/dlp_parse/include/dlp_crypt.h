@@ -126,8 +126,9 @@ int32_t DlpOpensslHashUpdate(void* cryptoCtx, const struct DlpBlob* msg);
 
 int32_t DlpOpensslHashFinal(void** cryptoCtx, const struct DlpBlob* msg, struct DlpBlob* hash);
 
-void DlpOpensslHashFreeCtx(void** cryptoCtx);
+int32_t DlpOpensslHashFreeCtx(void** cryptoCtx);
 
+int32_t DlpCtrModeIncreaeIvCounter(struct DlpBlob& iv, uint32_t count);
 #ifdef __cplusplus
 }
 #endif

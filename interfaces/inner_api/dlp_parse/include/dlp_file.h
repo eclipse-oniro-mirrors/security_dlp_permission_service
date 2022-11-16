@@ -29,7 +29,6 @@ static const uint32_t IV_SIZE = 16;
 static const uint32_t DLP_FILE_MAGIC = 0x87f4922;
 static const uint32_t DLP_FUSE_MAX_BUFFLEN = (10 * 1024 * 1024); // 10M
 static const uint32_t DLP_BLOCK_SIZE = 16;
-static const uint32_t BYTE_LEN = 8;
 
 static const uint32_t HOLE_BUFF_SIZE = 16 * 1024;
 static const uint32_t HOLE_BUFF_SMALL_SIZE = 1 * 1024;
@@ -70,7 +69,7 @@ public:
 
     int32_t SetCipher(const struct DlpBlob& key, const struct DlpUsageSpec& spec);
     int32_t ParseDlpHeader();
-    int32_t GetEncryptCert(struct DlpBlob& cert) const;
+    void GetEncryptCert(struct DlpBlob& cert) const;
     int32_t SetEncryptCert(const struct DlpBlob& cert);
     int32_t GenFile(int32_t inPlainFileFd);
     int32_t RemoveDlpPermission(int outPlainFileFd);
@@ -114,7 +113,7 @@ private:
     bool IsValidPadding(uint32_t padding);
     bool IsValidCipher(const struct DlpBlob& key, const struct DlpUsageSpec& spec) const;
     int32_t CopyBlobParam(const struct DlpBlob& src, struct DlpBlob& dst) const;
-    void CleanBlobParam(struct DlpBlob& blob) const;
+    int32_t CleanBlobParam(struct DlpBlob& blob) const;
     int32_t UpdateFileCertData();
     int32_t PrepareBuff(struct DlpBlob& message1, struct DlpBlob& message2) const;
     int32_t GetLocalAccountName(std::string& account) const;
@@ -127,7 +126,7 @@ private:
     int32_t WriteFirstBlockData(uint32_t offset, void* buf, uint32_t size);
     int32_t FillHoleData(uint32_t holeStart, uint32_t holeSize);
     int32_t DoDlpFileWrite(uint32_t offset, void* buf, uint32_t size);
-    void UpdateDlpFileContentSize();
+    int32_t UpdateDlpFileContentSize();
 
     bool isFuseLink_;
     bool isReadOnly_;

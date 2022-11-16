@@ -22,9 +22,10 @@
 #include <securec.h>
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
-using namespace OHOS::Security::DlpPermission;
 
+using namespace OHOS::Security::DlpPermission;
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpParse"};
+static const uint32_t BYTE_LEN = 8;
 
 #ifdef __cplusplus
 extern "C" {
@@ -896,16 +897,41 @@ int32_t DlpOpensslHashFinal(void** cryptoCtx, const struct DlpBlob* msg, struct 
     return DLP_OK;
 }
 
-void DlpOpensslHashFreeCtx(void** cryptoCtx)
+int32_t DlpOpensslHashFreeCtx(void** cryptoCtx)
 {
     if (cryptoCtx == nullptr || *cryptoCtx == nullptr) {
         DLP_LOG_ERROR(LABEL, "Openssl hash free ctx fail, param is invalid");
-        return;
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
     EVP_MD_CTX_free((EVP_MD_CTX*)*cryptoCtx);
     *cryptoCtx = nullptr;
+    return DLP_OK;
 }
 
+static void IncIvCounterLitteEndian(struct DlpBlob& iv, uint32_t count)
+{
+    uint8_t* data = iv.data;
+    int size = static_cast<int>(iv.size - 1);
+    for (int i = size; i >= 0; i--) {
+        count += data[i];
+        data[i] = (uint8_t)count;
+        count >>= BYTE_LEN;
+        if (count == 0) {
+            break;
+        }
+    }
+}
+
+int32_t DlpCtrModeIncreaeIvCounter(struct DlpBlob& iv, uint32_t count)
+{
+    if (iv.data == nullptr || iv.size == 0) {
+        DLP_LOG_ERROR(LABEL, "param error");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
+
+    IncIvCounterLitteEndian(iv, count);
+    return DLP_OK;
+}
 #ifdef __cplusplus
 }
 #endif

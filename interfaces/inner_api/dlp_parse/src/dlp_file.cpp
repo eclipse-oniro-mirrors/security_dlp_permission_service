@@ -31,50 +31,6 @@ namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpFile"};
 } // namespace
 
-static void IncIvCounterLitteEndian(struct DlpBlob& iv, uint32_t count)
-{
-    uint8_t* data = iv.data;
-    int size = static_cast<int>(iv.size - 1);
-    for (int i = size; i >= 0; i--) {
-        count += data[i];
-        data[i] = (uint8_t)count;
-        count >>= BYTE_LEN;
-        if (count == 0) {
-            break;
-        }
-    }
-}
-
-static void IncIvCounterBigEndian(struct DlpBlob& iv, uint32_t count)
-{
-    uint8_t* data = iv.data;
-    int size = static_cast<int>(iv.size);
-    for (int i = 0; i < size; i++) {
-        count += data[i];
-        data[i] = (uint8_t)count;
-        count >>= BYTE_LEN;
-        if (count == 0) {
-            break;
-        }
-    }
-}
-
-static void IncreaeIvCounter(struct DlpBlob& iv, uint32_t count)
-{
-    if (iv.data == nullptr || iv.size == 0) {
-        DLP_LOG_ERROR(LABEL, "param error");
-        return;
-    }
-
-    unsigned long bsCheck = 1;
-    bool isLitteEndian = ((*(uint8_t *)&bsCheck) == 1);
-    if (isLitteEndian) {
-        IncIvCounterLitteEndian(iv, count);
-    } else {
-        IncIvCounterBigEndian(iv, count);
-    }
-}
-
 DlpFile::DlpFile(int32_t dlpFd) : dlpFd_(dlpFd), isFuseLink_(false), isReadOnly_(true)
 {
     head_.magic = DLP_FILE_MAGIC;
@@ -166,16 +122,17 @@ int32_t DlpFile::CopyBlobParam(const struct DlpBlob& src, struct DlpBlob& dst) c
     return DLP_OK;
 }
 
-void DlpFile::CleanBlobParam(struct DlpBlob& blob) const
+int32_t DlpFile::CleanBlobParam(struct DlpBlob& blob) const
 {
     if (blob.data == nullptr || blob.size == 0) {
-        return;
+        return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
     (void)memset_s(blob.data, blob.size, 0, blob.size);
     delete[] blob.data;
     blob.data = nullptr;
     blob.size = 0;
+    return DLP_OK;
 }
 
 int32_t DlpFile::GetLocalAccountName(std::string& account) const
@@ -311,7 +268,7 @@ int32_t DlpFile::ParseDlpHeader()
     if (read(dlpFd_, buf, head_.certSize) != head_.certSize) {
         delete[] buf;
         DLP_LOG_ERROR(LABEL, "can not read dlp file cert, %{public}s", strerror(errno));
-        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
+        return DLP_PARSE_ERROR_FILE_FORMAT_ERROR;
     }
     cert_.data = buf;
     cert_.size = head_.certSize;
@@ -325,7 +282,7 @@ int32_t DlpFile::ParseDlpHeader()
     if (read(dlpFd_, tmpBuf, head_.contactAccountSize) != head_.contactAccountSize) {
         delete[] tmpBuf;
         DLP_LOG_ERROR(LABEL, "can not read dlp contact account, %{public}s", strerror(errno));
-        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
+        return DLP_PARSE_ERROR_FILE_FORMAT_ERROR;
     }
 
     contactAccount_ = std::string(tmpBuf, tmpBuf + head_.contactAccountSize);
@@ -333,11 +290,10 @@ int32_t DlpFile::ParseDlpHeader()
     return DLP_OK;
 }
 
-int32_t DlpFile::GetEncryptCert(struct DlpBlob& cert) const
+void DlpFile::GetEncryptCert(struct DlpBlob& cert) const
 {
     cert.data = cert_.data;
     cert.size = cert_.size;
-    return DLP_OK;
 }
 
 int32_t DlpFile::SetEncryptCert(const struct DlpBlob& cert)
@@ -385,6 +341,12 @@ int32_t DlpFile::PrepareBuff(struct DlpBlob& message1, struct DlpBlob& message2)
 
 int32_t DlpFile::DupUsageSpec(struct DlpUsageSpec& spec)
 {
+    if (cipher_.usageSpec.algParam == nullptr ||
+        cipher_.usageSpec.algParam->iv.data == nullptr ||
+        cipher_.usageSpec.algParam->iv.size != IV_SIZE) {
+        DLP_LOG_ERROR(LABEL, "chipher_ is invalid");
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
     spec.mode = cipher_.usageSpec.mode;
     spec.algParam = new (std::nothrow) struct DlpCipherParam;
     if (spec.algParam == nullptr) {
@@ -423,7 +385,8 @@ int32_t DlpFile::DoDlpBlockCryptOperation(struct DlpBlob& message1, struct DlpBl
         DLP_LOG_ERROR(LABEL, "spec dup failed");
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
-    IncreaeIvCounter(spec.algParam->iv, counterIndex);
+
+    DlpCtrModeIncreaeIvCounter(spec.algParam->iv, counterIndex);
     int32_t ret = isEncrypt ? DlpOpensslAesEncrypt(&cipher_.encKey, &spec, &message1, &message2) :
         DlpOpensslAesDecrypt(&cipher_.encKey, &spec, &message1, &message2);
     delete[] spec.algParam->iv.data;
@@ -676,7 +639,7 @@ int32_t DlpFile::WriteFirstBlockData(uint32_t offset, void* buf, uint32_t size)
         struct DlpBlob message2 = {.size = prefixingSize, .data = deBuf};
         if (DoDlpBlockCryptOperation(message1, message2, alignOffset, false) != DLP_OK) {
             DLP_LOG_ERROR(LABEL, "decrypt appending bytes fail, %{public}s", strerror(errno));
-            return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+            return DLP_PARSE_ERROR_CRYPT_FAIL;
         }
     } while (false);
 
@@ -739,7 +702,7 @@ int32_t DlpFile::DoDlpFileWrite(uint32_t offset, void* buf, uint32_t size)
     if (ret != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "encrypt write buffer fail");
         delete[] writeBuff;
-        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
+        return ret;
     }
 
     ret = write(dlpFd_, writeBuff, restBlocksSize);
@@ -765,25 +728,26 @@ uint32_t DlpFile::GetFsContentSize() const
     return (uint32_t)fileStat.st_size - head_.txtOffset;
 }
 
-void DlpFile::UpdateDlpFileContentSize()
+int32_t DlpFile::UpdateDlpFileContentSize()
 {
     uint32_t contentSize = GetFsContentSize();
     if (contentSize == INVALID_FILE_SIZE) {
         DLP_LOG_ERROR(LABEL, "get fs content size failed");
-        return;
+        return DLP_PARSE_ERROR_FILE_FORMAT_ERROR;
     }
     head_.txtSize = contentSize;
     DLP_LOG_DEBUG(LABEL, "Update dlp file content size");
 
     if (lseek(dlpFd_, 0, SEEK_SET) == static_cast<off_t>(-1)) {
         DLP_LOG_ERROR(LABEL, "Lseek failed, %{public}s", strerror(errno));
-        return;
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
 
     if (write(dlpFd_, &head_, sizeof(head_)) != sizeof(head_)) {
         DLP_LOG_ERROR(LABEL, "Write failed, %{public}s", strerror(errno));
-        return;
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
+    return DLP_OK;
 }
 
 int32_t DlpFile::FillHoleData(uint32_t holeStart, uint32_t holeSize)
@@ -803,7 +767,7 @@ int32_t DlpFile::FillHoleData(uint32_t holeStart, uint32_t holeSize)
         int32_t res = DoDlpFileWrite(holeStart + fillLen, holeBuff.get(), writeSize);
         if (res < 0) {
             DLP_LOG_ERROR(LABEL, "Write failed, error %{public}d.", res);
-            break;
+            return res;
         }
         fillLen += writeSize;
     }

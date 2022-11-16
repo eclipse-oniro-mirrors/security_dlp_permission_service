@@ -152,11 +152,7 @@ int32_t DlpFileManager::ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr) co
     }
 
     struct DlpBlob cert;
-    result = filePtr->GetEncryptCert(cert);
-    if (result != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Parse file header fail, get cert fail");
-        return result;
-    }
+    filePtr->GetEncryptCert(cert);
 
     std::vector<uint8_t> certBuf = std::vector<uint8_t>(cert.data, cert.data + cert.size);
     PermissionPolicy policy;

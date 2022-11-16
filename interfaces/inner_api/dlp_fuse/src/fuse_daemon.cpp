@@ -50,13 +50,10 @@ bool FuseDaemon::init_ = false;
 static const uint32_t MAX_FUSE_READ_BUFF_SIZE = 10 * 1024 * 1024; // 10M
 static const int32_t INVALID_DLP_FD = -1;
 
+// caller need to check ino == ROOT_INODE
 static DlpLinkFile* GetFileNode(fuse_ino_t ino)
 {
-    if (ino == ROOT_INODE) {
-        return nullptr;
-    } else {
-        return reinterpret_cast<DlpLinkFile*>(static_cast<uintptr_t>(ino));
-    }
+    return reinterpret_cast<DlpLinkFile*>(static_cast<uintptr_t>(ino));
 }
 
 fuse_ino_t GetFileInode(DlpLinkFile* node)

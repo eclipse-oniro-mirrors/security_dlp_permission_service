@@ -13,15 +13,15 @@
  * limitations under the License.
  */
 
-#ifndef DLP_FILE_PARSE_UNIT_TEST_H
-#define DLP_FILE_PARSE_UNIT_TEST_H
+#ifndef DLP_FILE_KITS_TEST_H
+#define DLP_FILE_KITS_TEST_H
 
 #include <gtest/gtest.h>
 
 namespace OHOS {
 namespace Security {
-namespace DlpParseUnitTest {
-class DlpParseUnitTest : public testing::Test {
+namespace DlpPermission {
+class DlpFileKitsTest : public testing::Test {
 public:
     static void SetUpTestCase();
 
@@ -30,10 +30,8 @@ public:
     void SetUp();
 
     void TearDown();
-
-    void CreateDataFile() const;
 };
-} // namespace DlpParseUnitTest
+} // namespace DlpPermission
 } // namespace Security
 } // namespace OHOS
-#endif // DLP_FILE_PARSE_UNIT_TEST_H
+#endif // DLP_FILE_KITS_TEST_H
