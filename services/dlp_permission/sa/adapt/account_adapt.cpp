@@ -24,7 +24,7 @@ constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PER
 constexpr static int UID_TRANSFORM_DIVISOR = 200000;
 }
 
-int32_t GetCallingUserId()
+int32_t GetCallingUserId(void)
 {
     std::int32_t callingUid = OHOS::IPCSkeleton::GetCallingUid();
     return (callingUid / UID_TRANSFORM_DIVISOR);

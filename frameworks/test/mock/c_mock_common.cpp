@@ -43,7 +43,7 @@ void SetMockConditions(const std::string& funcName, DlpCMockCondition& condition
     g_conditionList[funcName] = condition;
 }
 
-void CleanMockConditions()
+void CleanMockConditions(void)
 {
     g_conditionList.clear();
 }

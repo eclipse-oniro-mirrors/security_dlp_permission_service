@@ -30,7 +30,7 @@ struct DlpCMockCondition {
 
 void SetMockConditions(const std::string& funcName, DlpCMockCondition& condition);
 
-void CleanMockConditions();
+void CleanMockConditions(void);
 
 bool IsFuncNeedMock(const std::string& funcName);
 

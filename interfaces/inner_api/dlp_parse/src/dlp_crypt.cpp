@@ -914,7 +914,7 @@ static void IncIvCounterLitteEndian(struct DlpBlob& iv, uint32_t count)
     int size = static_cast<int>(iv.size - 1);
     for (int i = size; i >= 0; i--) {
         count += data[i];
-        data[i] = (uint8_t)count;
+        data[i] = static_cast<uint8_t>(count);
         count >>= BYTE_LEN;
         if (count == 0) {
             break;

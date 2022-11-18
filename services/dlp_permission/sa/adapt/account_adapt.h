@@ -25,7 +25,7 @@ int32_t GetLocalAccountUid(std::string& accountUid);
 
 extern "C" {
 #endif
-int32_t GetCallingUserId();
+int32_t GetCallingUserId(void);
 int8_t GetLocalAccountName(char** account, uint32_t userId);
 int8_t GetUserIdFromUid(int32_t uid, int32_t* userId);
 #ifdef __cplusplus
