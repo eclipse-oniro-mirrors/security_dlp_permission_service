@@ -19,6 +19,5 @@
 #define FUZZ_PROJECT_NAME "generatecert_fuzzer"
 
 #include "dlp_permission_kit.h"
-namespace OHOS {}  // namespace OHOS
 
 #endif  // TEST_FUZZTEST_GENERATE_CERT_FUZZER_H

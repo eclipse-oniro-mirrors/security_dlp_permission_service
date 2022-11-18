@@ -13,11 +13,11 @@
  * limitations under the License.
  */
 
-#ifndef TEST_FUZZTEST_PARSE_CERT_FUZZER_H
-#define TEST_FUZZTEST_PARSE_CERT_FUZZER_H
+#ifndef TEST_FUZZTEST_INSTALL_DLP_SANDBOX_FUZZER_H
+#define TEST_FUZZTEST_INSTALL_DLP_SANDBOX_FUZZER_H
 
-#define FUZZ_PROJECT_NAME "parsecert_fuzzer"
+#define FUZZ_PROJECT_NAME "installdlpsandbox_fuzzer"
 
 #include "dlp_permission_kit.h"
 
-#endif  // TEST_FUZZTEST_PARSE_CERT_FUZZER_H
+#endif  // TEST_FUZZTEST_INSTALL_DLP_SANDBOX_FUZZER_H

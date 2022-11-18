@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "parsecert_fuzzer.h"
+#include "getsandboxexternalauthorization_fuzzer.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -29,12 +29,15 @@ using namespace OHOS::Security::AccessToken;
 namespace OHOS {
 static void FuzzTest(const uint8_t* data, size_t size)
 {
-    std::vector<uint8_t> cert(data, data + size);
-    PermissionPolicy policy;
-    DlpPermissionKit::ParseDlpCertificate(cert, policy);
+    int sandboxUid = static_cast<int>(size);
+    std::string bundleName(reinterpret_cast<const char*>(data), size);
+    AAFwk::Want want;
+    want.SetBundle(bundleName);
+    SandBoxExternalAuthorType authType = static_cast<SandBoxExternalAuthorType>(size);
+    DlpPermissionKit::GetSandboxExternalAuthorization(sandboxUid, want, authType);
 }
 
-bool ParseCertFuzzTest(const uint8_t* data, size_t size)
+bool GetSandboxExternalAuthorizationFuzzTest(const uint8_t* data, size_t size)
 {
     int selfTokenId = GetSelfTokenID();
     AccessTokenID tokenId = AccessTokenKit::GetHapTokenID(100, "com.ohos.dlpmanager", 0);  // user_id = 100
@@ -49,6 +52,6 @@ bool ParseCertFuzzTest(const uint8_t* data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
     /* Run your code on data */
-    OHOS::ParseCertFuzzTest(data, size);
+    OHOS::GetSandboxExternalAuthorizationFuzzTest(data, size);
     return 0;
 }

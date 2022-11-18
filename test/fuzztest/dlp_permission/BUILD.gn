@@ -17,6 +17,13 @@ group("fuzztest") {
 
   deps += [
     "generatecert_fuzzer:GenerateCertFuzzTest",
+    "getdlpsupportfiletype_fuzzer:GetDlpSupportFileTypeFuzzTest",
+    "getsandboxexternalauthorization_fuzzer:GetSandboxExternalAuthorizationFuzzTest",
+    "installdlpsandbox_fuzzer:InstallDlpSandboxFuzzTest",
+    "isindlpsandbox_fuzzer:IsInDlpSandboxFuzzTest",
     "parsecert_fuzzer:ParseCertFuzzTest",
+    "querydlpfileaccess_fuzzer:QueryDlpFileAccessFuzzTest",
+    "querydlpfilecopyablebytokenid_fuzzer:QueryDlpFileCopyableByTokenIdFuzzTest",
+    "uninstalldlpsandbox_fuzzer:UninstallDlpSandboxFuzzTest",
   ]
 }

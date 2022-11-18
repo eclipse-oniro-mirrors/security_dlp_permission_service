@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "parsecert_fuzzer.h"
+#include "getdlpsupportfiletype_fuzzer.h"
 #include <iostream>
 #include <string>
 #include <vector>
@@ -29,12 +29,11 @@ using namespace OHOS::Security::AccessToken;
 namespace OHOS {
 static void FuzzTest(const uint8_t* data, size_t size)
 {
-    std::vector<uint8_t> cert(data, data + size);
-    PermissionPolicy policy;
-    DlpPermissionKit::ParseDlpCertificate(cert, policy);
+    std::vector<std::string> supportFileType;
+    DlpPermissionKit::GetDlpSupportFileType(supportFileType);
 }
 
-bool ParseCertFuzzTest(const uint8_t* data, size_t size)
+bool GetDlpSupportFileTypeFuzzTest(const uint8_t* data, size_t size)
 {
     int selfTokenId = GetSelfTokenID();
     AccessTokenID tokenId = AccessTokenKit::GetHapTokenID(100, "com.ohos.dlpmanager", 0);  // user_id = 100
@@ -49,6 +48,6 @@ bool ParseCertFuzzTest(const uint8_t* data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
     /* Run your code on data */
-    OHOS::ParseCertFuzzTest(data, size);
+    OHOS::GetDlpSupportFileTypeFuzzTest(data, size);
     return 0;
 }

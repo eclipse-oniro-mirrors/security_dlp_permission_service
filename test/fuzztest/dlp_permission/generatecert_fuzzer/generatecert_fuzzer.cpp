@@ -23,7 +23,6 @@
 #include "dlp_permission_log.h"
 #include "securec.h"
 #include "token_setproc.h"
-#undef private
 
 using namespace OHOS::Security::DlpPermission;
 using namespace OHOS::Security::AccessToken;
