@@ -1256,10 +1256,6 @@ HWTEST_F(DlpCryptTest, DlpOpensslAesEncryptAndDecrypt005, TestSize.Level1)
         .data = enc,
         .size = 15
     };
-    struct DlpBlob mDec = {
-        .data = dec,
-        .size = 15
-    };
 
     // cipher ctx new failed when OpensslAesCipherInit
     DlpCMockCondition condition;
@@ -1310,10 +1306,6 @@ HWTEST_F(DlpCryptTest, DlpOpensslAesEncryptAndDecrypt006, TestSize.Level1)
     };
     struct DlpBlob mEnc = {
         .data = enc,
-        .size = 15
-    };
-    struct DlpBlob mDec = {
-        .data = dec,
         .size = 15
     };
 
@@ -1449,7 +1441,6 @@ HWTEST_F(DlpCryptTest, DlpOpensslAesHalFreeCtx001, TestSize.Level1)
     opensslAesCtx->mode = DLP_MODE_CTR;
 
     // append nullptr
-    void *backup = opensslAesCtx->append;
     opensslAesCtx->append = nullptr;
     DlpOpensslAesHalFreeCtx(&ctx);
     ASSERT_EQ(ctx, nullptr);

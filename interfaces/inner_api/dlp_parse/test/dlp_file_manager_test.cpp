@@ -73,7 +73,6 @@ HWTEST_F(DlpFileManagerTest, GenerateCertData001, TestSize.Level1)
     struct DlpBlob certData;
     EXPECT_EQ(DlpFileManager::GetInstance().GenerateCertData(policy, certData), DLP_SERVICE_ERROR_VALUE_INVALID);
 
-    uint8_t data[16] = {0};
     policy.aeskey_ = new (std::nothrow) uint8_t[16];
     policy.aeskeyLen_ = 16;
     policy.iv_ = new (std::nothrow) uint8_t[16];

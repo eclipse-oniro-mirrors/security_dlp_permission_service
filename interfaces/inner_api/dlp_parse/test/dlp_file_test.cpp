@@ -906,16 +906,6 @@ HWTEST_F(DlpFileTest, DoDlpContentCryptyOperation001, TestSize.Level1)
 
     uint8_t data1[16] = {};
     uint8_t data2[16] = {};
-    struct DlpBlob message1 = {
-        .data = data1,
-        .size = 16
-    };
-
-    struct DlpBlob message2 = {
-        .data = data2,
-        .size = 16
-    };
-
     uint8_t ivData[16] = {};
 
     struct DlpCipherParam param = {
@@ -945,16 +935,6 @@ HWTEST_F(DlpFileTest, DoDlpContentCryptyOperation002, TestSize.Level1)
     DlpFile testFile(1000);
     uint8_t data1[16] = {};
     uint8_t data2[16] = {};
-    struct DlpBlob message1 = {
-        .data = data1,
-        .size = 16
-    };
-
-    struct DlpBlob message2 = {
-        .data = data2,
-        .size = 16
-    };
-
     uint8_t ivData[16] = {};
 
     struct DlpCipherParam param = {
@@ -992,15 +972,6 @@ HWTEST_F(DlpFileTest, DoDlpContentCryptyOperation003, TestSize.Level1)
 
     uint8_t data1[16] = {};
     uint8_t data2[16] = {};
-    struct DlpBlob message1 = {
-        .data = data1,
-        .size = 16
-    };
-
-    struct DlpBlob message2 = {
-        .data = data2,
-        .size = 16
-    };
 
     initDlpFileCiper(testFile);
 
@@ -1473,7 +1444,6 @@ HWTEST_F(DlpFileTest, Truncate001, TestSize.Level1)
     ASSERT_NE(fdDlp, -1);
     DlpFile testFile(fdDlp);
     initDlpFileCiper(testFile);
-    uint8_t writeBuffer[16] = {0x1};
 
     testFile.head_.txtOffset = 0;
 
