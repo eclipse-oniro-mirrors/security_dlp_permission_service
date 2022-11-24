@@ -26,8 +26,11 @@
 #include "accesstoken_kit.h"
 #include "dlp_file.h"
 #include "dlp_file_manager.h"
+#define private public
 #include "dlp_link_file.h"
 #include "dlp_link_manager.h"
+#undef private
+#include "dlp_permission.h"
 #include "dlp_permission_log.h"
 #include "fuse_daemon.h"
 #include "token_setproc.h"
@@ -845,6 +848,97 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile008, TestSize.Level1)
 }
 
 /**
+ * @tc.name: AddDlpLinkFile009
+ * @tc.desc: test add link abnoral branch
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIGC
+ */
+HWTEST_F(DlpFuseTest, AddDlpLinkFile009, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "AddDlpLinkFile009");
+    std::shared_ptr<DlpFile> filePtr = nullptr;
+    EXPECT_EQ(DlpLinkManager::GetInstance().AddDlpLinkFile(filePtr, ""), DLP_FUSE_ERROR_DLP_FILE_NULL);
+
+    filePtr = std::make_shared<DlpFile>(1000);
+    EXPECT_EQ(DlpLinkManager::GetInstance().AddDlpLinkFile(filePtr, ""), DLP_FUSE_ERROR_VALUE_INVALID);
+
+    EXPECT_EQ(DlpLinkManager::GetInstance().AddDlpLinkFile(filePtr, "linkfile"), DLP_OK);
+    EXPECT_EQ(DlpLinkManager::GetInstance().AddDlpLinkFile(filePtr, "linkfile"), DLP_FUSE_ERROR_LINKFILE_EXIST);
+
+    DlpLinkManager::GetInstance().DeleteDlpLinkFile(filePtr);
+}
+
+/**
+ * @tc.name: DeleteDlpLinkFile001
+ * @tc.desc: test delete link abnoral branch
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIGC
+ */
+HWTEST_F(DlpFuseTest, DeleteDlpLinkFile001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DeleteDlpLinkFile001");
+    std::shared_ptr<DlpFile> filePtr = nullptr;
+    EXPECT_EQ(DlpLinkManager::GetInstance().DeleteDlpLinkFile(filePtr), DLP_FUSE_ERROR_DLP_FILE_NULL);
+
+    filePtr = std::make_shared<DlpFile>(1000);
+    ASSERT_NE(filePtr, nullptr);
+    EXPECT_EQ(DlpLinkManager::GetInstance().DeleteDlpLinkFile(filePtr), DLP_FUSE_ERROR_LINKFILE_NOT_EXIST);
+
+    DlpLinkFile *node = new (std::nothrow) DlpLinkFile("linkfile", nullptr);
+    ASSERT_NE(node, nullptr);
+    DlpLinkManager::GetInstance().g_DlpLinkFileNameMap_["null"] = nullptr;
+    DlpLinkManager::GetInstance().g_DlpLinkFileNameMap_["linkfile"] = node;
+
+    EXPECT_EQ(DlpLinkManager::GetInstance().DeleteDlpLinkFile(filePtr), DLP_FUSE_ERROR_LINKFILE_NOT_EXIST);
+    DlpLinkManager::GetInstance().g_DlpLinkFileNameMap_.erase("null");
+    DlpLinkManager::GetInstance().g_DlpLinkFileNameMap_.erase("linkfile");
+    delete(node);
+}
+
+/**
+ * @tc.name: LookUpDlpLinkFile001
+ * @tc.desc: test lookup link abnoral branch
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIGC
+ */
+HWTEST_F(DlpFuseTest, LookUpDlpLinkFile001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "LookUpDlpLinkFile001");
+    EXPECT_EQ(DlpLinkManager::GetInstance().LookUpDlpLinkFile(""), nullptr);
+    EXPECT_EQ(DlpLinkManager::GetInstance().LookUpDlpLinkFile("linkfile"), nullptr);
+    DlpLinkManager::GetInstance().g_DlpLinkFileNameMap_["linkfile"] = nullptr;
+    EXPECT_EQ(DlpLinkManager::GetInstance().LookUpDlpLinkFile("linkfile"), nullptr);
+    DlpLinkManager::GetInstance().g_DlpLinkFileNameMap_.erase("linkfile");
+}
+
+/**
+ * @tc.name: DumpDlpLinkFile001
+ * @tc.desc: test dump link file abnoral branch
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIGC
+ */
+HWTEST_F(DlpFuseTest, DumpDlpLinkFile001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DumpDlpLinkFile001");
+    std::shared_ptr<DlpFile> filePtr = std::make_shared<DlpFile>(1000);
+    ASSERT_NE(filePtr, nullptr);
+    DlpLinkFile *node = new (std::nothrow) DlpLinkFile("linkfile1", filePtr);
+    ASSERT_NE(node, nullptr);
+    DlpLinkManager::GetInstance().g_DlpLinkFileNameMap_["linkfile"] = nullptr;
+    DlpLinkManager::GetInstance().g_DlpLinkFileNameMap_["linkfile1"] = node;
+    std::vector<DlpLinkFileInfo> linkList;
+    DlpLinkManager::GetInstance().DumpDlpLinkFile(linkList);
+    EXPECT_NE(static_cast<int>(linkList.size()), 0);
+    if (linkList.size() > 0) {
+        EXPECT_EQ(linkList[0].dlpLinkName, "linkfile1");
+    }
+
+    DlpLinkManager::GetInstance().g_DlpLinkFileNameMap_.erase("linkfile");
+    DlpLinkManager::GetInstance().g_DlpLinkFileNameMap_.erase("linkfile1");
+    delete(node);
+}
+
+/**
  * @tc.name: ReadFuseDir001
  * @tc.desc: test fuse readdir
  * @tc.type: FUNC
@@ -882,3 +976,130 @@ HWTEST_F(DlpFuseTest, ReadFuseDir001, TestSize.Level1)
     ASSERT_EQ(DlpFileManager::GetInstance().CloseDlpFile(g_Dlpfile), 0);
     g_Dlpfile = nullptr;
 }
+
+/**
+ * @tc.name: DlpLinkFile001
+ * @tc.desc: test DlpLinkFile construction
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIGC
+ */
+HWTEST_F(DlpFuseTest, DlpLinkFile001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpLinkFile001");
+    std::shared_ptr<DlpFile> filePtr = nullptr;
+    DlpLinkFile linkFile("linkfile", filePtr);
+    ASSERT_EQ(static_cast<int>(linkFile.fileStat_.st_mode), 0);
+}
+
+/**
+ * @tc.name: SubAndCheckZeroRef001
+ * @tc.desc: test link file subtract reference abnormal branch
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIGC
+ */
+HWTEST_F(DlpFuseTest, SubAndCheckZeroRef001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "SubAndCheckZeroRef001");
+    std::shared_ptr<DlpFile> filePtr = nullptr;
+    DlpLinkFile linkFile("linkfile", filePtr);
+    EXPECT_FALSE(linkFile.SubAndCheckZeroRef(-1));
+    EXPECT_TRUE(linkFile.SubAndCheckZeroRef(5));
+}
+
+/**
+ * @tc.name: IncreaseRef001
+ * @tc.desc: test link file increase reference abnormal branch
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIGC
+ */
+HWTEST_F(DlpFuseTest, IncreaseRef001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "IncreaseRef001");
+    std::shared_ptr<DlpFile> filePtr = nullptr;
+    DlpLinkFile linkFile("linkfile", filePtr);
+    linkFile.refcount_ = 0;
+    linkFile.IncreaseRef();
+    ASSERT_NE(linkFile.refcount_, 1);
+}
+
+/**
+ * @tc.name: GetLinkStat001
+ * @tc.desc: test get link file state abnormal branch
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIGC
+ */
+HWTEST_F(DlpFuseTest, GetLinkStat001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "GetLinkStat001");
+    std::shared_ptr<DlpFile> filePtr = nullptr;
+    DlpLinkFile linkFile("linkfile", filePtr);
+    struct stat fs = linkFile.GetLinkStat();
+    ASSERT_EQ(fs.st_size, 0);
+}
+
+/**
+ * @tc.name: LinkFileTruncate001
+ * @tc.desc: test link file truncate abnormal branch
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIGC
+ */
+HWTEST_F(DlpFuseTest, LinkFileTruncate001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "LinkFileTruncate001");
+    std::shared_ptr<DlpFile> filePtr = nullptr;
+    DlpLinkFile linkFile("linkfile", filePtr);
+
+    EXPECT_EQ(linkFile.Truncate(-1), DLP_FUSE_ERROR_VALUE_INVALID);
+    EXPECT_EQ(linkFile.Truncate(0x100000000L), DLP_FUSE_ERROR_VALUE_INVALID);
+    EXPECT_EQ(linkFile.Truncate(0), DLP_FUSE_ERROR_DLP_FILE_NULL);
+    filePtr = std::make_shared<DlpFile>(-1);
+    ASSERT_NE(filePtr, nullptr);
+
+    DlpLinkFile linkFile1("linkfile1", filePtr);
+    EXPECT_EQ(linkFile1.Truncate(0), DLP_PARSE_ERROR_FILE_READ_ONLY);
+}
+
+/**
+ * @tc.name: LinkFileWrite001
+ * @tc.desc: test link file write abnormal branch
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIGC
+ */
+HWTEST_F(DlpFuseTest, LinkFileWrite001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "LinkFileWrite001");
+    std::shared_ptr<DlpFile> filePtr = nullptr;
+    DlpLinkFile linkFile("linkfile", filePtr);
+
+    uint8_t buffer[16] = {0};
+    EXPECT_EQ(linkFile.Write(0, buffer, 15), DLP_FUSE_ERROR_DLP_FILE_NULL);
+
+    filePtr = std::make_shared<DlpFile>(-1);
+    ASSERT_NE(filePtr, nullptr);
+
+    DlpLinkFile linkFile1("linkfile1", filePtr);
+    EXPECT_EQ(linkFile1.Write(0, buffer, 15), DLP_PARSE_ERROR_FILE_READ_ONLY);
+}
+
+/**
+ * @tc.name: LinkFileRead001
+ * @tc.desc: test link file read abnormal branch
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIGC
+ */
+HWTEST_F(DlpFuseTest, LinkFileRead001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "LinkFileRead001");
+    std::shared_ptr<DlpFile> filePtr = nullptr;
+    DlpLinkFile linkFile("linkfile", filePtr);
+
+    uint8_t buffer[16] = {0};
+    EXPECT_EQ(linkFile.Read(0, buffer, 15), DLP_FUSE_ERROR_DLP_FILE_NULL);
+
+    filePtr = std::make_shared<DlpFile>(-1);
+    ASSERT_NE(filePtr, nullptr);
+
+    DlpLinkFile linkFile1("linkfile1", filePtr);
+    EXPECT_EQ(linkFile1.Read(0, buffer, 15), DLP_PARSE_ERROR_VALUE_INVALID);
+}
+

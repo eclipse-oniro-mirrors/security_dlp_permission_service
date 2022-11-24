@@ -23,9 +23,13 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef void (*CommonMockFuncT)(void);
+
 struct DlpCMockCondition {
     std::vector<bool> mockSequence;
-    int currentTimes;
+    uint32_t currentTimes;
+    CommonMockFuncT mockCallback;
 };
 
 void SetMockConditions(const std::string& funcName, DlpCMockCondition& condition);
@@ -34,7 +38,10 @@ void CleanMockConditions(void);
 
 bool IsFuncNeedMock(const std::string& funcName);
 
-int GetMockConditionCounts(const std::string& funcName);
+CommonMockFuncT GetMockFunc(const std::string& funcName);
+void SetMockCallback(const std::string& funcName, CommonMockFuncT func);
+
+uint32_t GetMockConditionCounts(const std::string& funcName);
 #ifdef __cplusplus
 }
 #endif

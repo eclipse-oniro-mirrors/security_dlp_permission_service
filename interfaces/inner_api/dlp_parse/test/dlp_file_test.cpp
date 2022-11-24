@@ -283,6 +283,13 @@ HWTEST_F(DlpFileTest, UpdateDlpFilePermission004, TestSize.Level1)
     DLP_LOG_INFO(LABEL, "UpdateDlpFilePermission004");
 
     DlpFile testFile(1000);
+    AuthUserInfo user = {
+        .authAccount = "noExistUser",
+        .authPerm = FULL_CONTROL
+    };
+
+    testFile.policy_.authUsers_.emplace_back(user);
+    testFile.isReadOnly_ = true;
     testFile.UpdateDlpFilePermission();
     ASSERT_TRUE(testFile.isReadOnly_);
 }
@@ -404,6 +411,10 @@ HWTEST_F(DlpFileTest, SetContactAccount001, TestSize.Level1)
 
     std::string invalidAccount(DLP_MAX_CERT_SIZE + 1, 'a');
     ASSERT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, testFile.SetContactAccount(invalidAccount));
+
+    // head_.certSize = 0
+    testFile.head_.certSize = 0;
+    ASSERT_EQ(DLP_OK, testFile.SetContactAccount("testAccount"));
 }
 
 /**
@@ -903,9 +914,6 @@ HWTEST_F(DlpFileTest, DoDlpContentCryptyOperation001, TestSize.Level1)
     DLP_LOG_INFO(LABEL, "DoDlpContentCryptyOperation001");
 
     DlpFile testFile(1000);
-
-    uint8_t data1[16] = {};
-    uint8_t data2[16] = {};
     uint8_t ivData[16] = {};
 
     struct DlpCipherParam param = {
@@ -933,8 +941,6 @@ HWTEST_F(DlpFileTest, DoDlpContentCryptyOperation002, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "DoDlpContentCryptyOperation002");
     DlpFile testFile(1000);
-    uint8_t data1[16] = {};
-    uint8_t data2[16] = {};
     uint8_t ivData[16] = {};
 
     struct DlpCipherParam param = {
@@ -969,9 +975,6 @@ HWTEST_F(DlpFileTest, DoDlpContentCryptyOperation003, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "DoDlpContentCryptyOperation003");
     DlpFile testFile(1000);
-
-    uint8_t data1[16] = {};
-    uint8_t data2[16] = {};
 
     initDlpFileCiper(testFile);
 
@@ -1180,9 +1183,9 @@ HWTEST_F(DlpFileTest, DlpFileRead001, TestSize.Level1)
     EXPECT_EQ(DLP_PARSE_ERROR_FILE_OPERATE_FAIL, testFile.DlpFileRead(0, buffer, 16));
     CleanMockConditions();
 
-    condition.mockSequence = { true };
+    condition.mockSequence = { false, true };
     SetMockConditions("memcpy_s", condition);
-    EXPECT_EQ(DLP_PARSE_ERROR_FILE_OPERATE_FAIL, testFile.DlpFileRead(0, buffer, 16));
+    EXPECT_EQ(DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL, testFile.DlpFileRead(0, buffer, 16));
     CleanMockConditions();
 
     close(fdPlain);

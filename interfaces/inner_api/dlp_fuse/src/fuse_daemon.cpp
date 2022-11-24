@@ -399,7 +399,7 @@ static void FuseDaemonInit(void *userdata, struct fuse_conn_info *conn)
     conn->want |= FUSE_CAP_WRITEBACK_CACHE;
 }
 
-static const struct fuse_lowlevel_ops g_fuseDaemonOper = {
+struct fuse_lowlevel_ops FuseDaemon::fuseDaemonOper_ = {
     .init = FuseDaemonInit,
     .lookup = FuseDaemonLookup,
     .getattr = FuseDaemonGetattr,
@@ -480,7 +480,7 @@ void FuseDaemon::FuseFsDaemonThread(int fuseFd)
     struct fuse_args args = FUSE_ARGS_INIT(0, NULL);
     fuse_opt_add_arg(&args, mountPoint);
 
-    struct fuse_session* se = fuse_session_new(&args, &g_fuseDaemonOper, sizeof(g_fuseDaemonOper), NULL);
+    struct fuse_session* se = fuse_session_new(&args, &fuseDaemonOper_, sizeof(fuseDaemonOper_), NULL);
     if (se == NULL) {
         DLP_LOG_ERROR(LABEL, "Fuse fs daemon exit, create fuse session fail");
         NotifyDaemonDisable();
@@ -507,25 +507,26 @@ void FuseDaemon::FuseFsDaemonThread(int fuseFd)
     fuse_opt_free_args(&args);
 }
 
-void FuseDaemon::NotifyKernelNoFlush(void)
+int FuseDaemon::NotifyKernelNoFlush(void)
 {
     std::shared_ptr<DlpFile> defaultfilePtr = std::make_shared<DlpFile>(INVALID_DLP_FD);
     if (DlpLinkManager::GetInstance().AddDlpLinkFile(defaultfilePtr, DEFAULT_DLP_LINK_FILE) != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Add default dlp file fail");
-        return;
+        return -1;
     }
 
     int defaultFd = open(DEFAULT_DLP_LINK_FILE_PATH, O_RDWR);
     if (defaultFd == -1) {
         DLP_LOG_ERROR(LABEL, "Open default dlp file fail");
         DlpLinkManager::GetInstance().DeleteDlpLinkFile(defaultfilePtr);
-        return;
+        return -1;
     }
 
     // we need kernel to know that fs has no flush interface, close will trigger kernel flush
     close(defaultFd);
     DlpLinkManager::GetInstance().DeleteDlpLinkFile(defaultfilePtr);
     DLP_LOG_INFO(LABEL, "Notify kernel no flush succ");
+    return 0;
 }
 
 int FuseDaemon::InitFuseFs(int fuseDevFd)

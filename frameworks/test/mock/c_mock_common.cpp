@@ -37,10 +37,27 @@ bool IsFuncNeedMock(const std::string& funcName)
     return currentFail;
 }
 
+CommonMockFuncT GetMockFunc(const std::string& funcName)
+{
+    if (g_conditionList.count(funcName) == 0) {
+        return nullptr;
+    }
+    return g_conditionList[funcName].mockCallback;
+}
+
 void SetMockConditions(const std::string& funcName, DlpCMockCondition& condition)
 {
     condition.currentTimes = 0;
     g_conditionList[funcName] = condition;
+}
+
+void SetMockCallback(const std::string& funcName, CommonMockFuncT func)
+{
+    if (g_conditionList.count(funcName) == 0) {
+        return;
+    }
+
+    g_conditionList[funcName].mockCallback = func;
 }
 
 void CleanMockConditions(void)
@@ -48,7 +65,7 @@ void CleanMockConditions(void)
     g_conditionList.clear();
 }
 
-int GetMockConditionCounts(const std::string& funcName)
+uint32_t GetMockConditionCounts(const std::string& funcName)
 {
     if (g_conditionList.count(funcName) == 0) {
         return 0;

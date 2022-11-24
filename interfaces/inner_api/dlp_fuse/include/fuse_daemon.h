@@ -53,7 +53,7 @@ public:
     static int WaitDaemonEnable(void);
     static void NotifyDaemonEnable(void);
     static void NotifyDaemonDisable(void);
-    static void NotifyKernelNoFlush(void);
+    static int NotifyKernelNoFlush(void);
     static void InitRootFileStat(void);
     static void FuseFsDaemonThread(int fuseFd);
 
@@ -62,6 +62,7 @@ public:
     static std::mutex daemonEnableMtx_;
     static struct stat rootFileStat_;
     static bool init_;
+    static struct fuse_lowlevel_ops fuseDaemonOper_;
 };
 }  // namespace DlpPermission
 }  // namespace Security

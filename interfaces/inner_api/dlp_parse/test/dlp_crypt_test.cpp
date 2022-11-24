@@ -1247,7 +1247,6 @@ HWTEST_F(DlpCryptTest, DlpOpensslAesEncryptAndDecrypt005, TestSize.Level1)
 
     uint8_t input[16] = "aaaaaaaaaaaaaaa";
     uint8_t enc[16] = {0};
-    uint8_t dec[16] = {0};
     struct DlpBlob mIn = {
         .data = input,
         .size = 15
@@ -1299,7 +1298,6 @@ HWTEST_F(DlpCryptTest, DlpOpensslAesEncryptAndDecrypt006, TestSize.Level1)
 
     uint8_t input[16] = "aaaaaaaaaaaaaaa";
     uint8_t enc[16] = {0};
-    uint8_t dec[16] = {0};
     struct DlpBlob mIn = {
         .data = input,
         .size = 15
@@ -1439,8 +1437,30 @@ HWTEST_F(DlpCryptTest, DlpOpensslAesHalFreeCtx001, TestSize.Level1)
     DlpOpensslAesHalFreeCtx(&ctx);
     ASSERT_NE(opensslAesCtx->append, nullptr);
     opensslAesCtx->mode = DLP_MODE_CTR;
+}
+
+/**
+ * @tc.name: DlpOpensslAesHalFreeCtx002
+ * @tc.desc: free crypt ctx test append null
+ * @tc.type: FUNC
+ * @tc.require:SR000GVIG3
+ */
+HWTEST_F(DlpCryptTest, DlpOpensslAesHalFreeCtx002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DlpOpensslAesHalFreeCtx002");
+    void *ctx;
+    struct DlpBlob key = { 32, nullptr };
+    key.data = g_key;
+    struct DlpCipherParam tagIv = { .iv = { .data = nullptr, .size = 16}};
+    tagIv.iv.data = g_iv;
+    struct DlpUsageSpec usage = {
+        .mode = DLP_MODE_CTR,
+        .algParam = &tagIv
+    };
+    ASSERT_EQ(DLP_OK, DlpOpensslAesEncryptInit(&ctx, &key, &usage));
 
     // append nullptr
+    struct DlpOpensslAesCtx* opensslAesCtx = static_cast<struct DlpOpensslAesCtx*>(ctx);
     opensslAesCtx->append = nullptr;
     DlpOpensslAesHalFreeCtx(&ctx);
     ASSERT_EQ(ctx, nullptr);
