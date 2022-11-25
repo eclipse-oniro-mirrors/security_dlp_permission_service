@@ -39,7 +39,7 @@ static bool CheckPermission(const std::string& permission)
         return true;
     }
 
-    HiviewDFX::HiSysEvent::Write(HiviewDFX::HiSysEvent::Domain::DLP, "DLP_PERMISSION_REPORT",
+    HiSysEventWrite(HiviewDFX::HiSysEvent::Domain::DLP, "DLP_PERMISSION_REPORT",
         HiviewDFX::HiSysEvent::EventType::SECURITY, "CODE", DLP_PERMISSION_VERIFY_ERROR,
         "CALLER_TOKENID", callingToken);
 
