@@ -37,8 +37,8 @@ public:
     void onParseDlpCertificate(int32_t result, const PermissionPolicy& policy) override;
 
 private:
-    int32_t onGenerateDlpCertificateStub(MessageParcel& data, MessageParcel& reply);
-    int32_t onParseDlpCertificateStub(MessageParcel& data, MessageParcel& reply);
+    int32_t OnGenerateDlpCertificateStub(MessageParcel& data, MessageParcel& reply);
+    int32_t OnParseDlpCertificateStub(MessageParcel& data, MessageParcel& reply);
 
     std::shared_ptr<GenerateDlpCertificateCallback> generateDlpCertificateCallback_{nullptr};
     std::shared_ptr<ParseDlpCertificateCallback> parseDlpCertificateCallback_{nullptr};

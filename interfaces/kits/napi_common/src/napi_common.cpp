@@ -61,8 +61,8 @@ napi_value CreateEnumAuthPermType(napi_env env, napi_value exports)
     napi_value readOnly = nullptr;
     napi_value fullControl = nullptr;
 
-    NAPI_CALL(env, napi_create_int32(env, (int32_t)READ_ONLY, &readOnly));
-    NAPI_CALL(env, napi_create_int32(env, (int32_t)FULL_CONTROL, &fullControl));
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(READ_ONLY), &readOnly));
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(FULL_CONTROL), &fullControl));
 
     napi_property_descriptor desc[] = {
         DECLARE_NAPI_STATIC_PROPERTY("READ_ONLY", readOnly),
@@ -92,9 +92,9 @@ napi_value CreateEnumAccountType(napi_env env, napi_value exports)
     napi_value domainAccount = nullptr;
     napi_value appAccount = nullptr;
 
-    NAPI_CALL(env, napi_create_int32(env, (int32_t)CLOUD_ACCOUNT, &cloudAccount));
-    NAPI_CALL(env, napi_create_int32(env, (int32_t)DOMAIN_ACCOUNT, &domainAccount));
-    NAPI_CALL(env, napi_create_int32(env, (int32_t)APPLICATION_ACCOUNT, &appAccount));
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(CLOUD_ACCOUNT), &cloudAccount));
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(DOMAIN_ACCOUNT), &domainAccount));
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(APPLICATION_ACCOUNT), &appAccount));
 
     napi_property_descriptor desc[] = {
         DECLARE_NAPI_STATIC_PROPERTY("CLOUD_ACCOUNT", cloudAccount),

@@ -444,8 +444,12 @@ HWTEST_F(DlpFileTest, IsValidDlpHeader001, TestSize.Level1)
     PermissionPolicy policy;
     struct DlpHeader header = {
         .magic = DLP_FILE_MAGIC,
+        .certOffset = 32,
         .certSize = 20,
+        .contactAccountOffset = 52,
         .contactAccountSize = 20,
+        .txtOffset  = 72,
+        .txtSize = 100
     };
 
     // valid header
@@ -463,7 +467,12 @@ HWTEST_F(DlpFileTest, IsValidDlpHeader001, TestSize.Level1)
     // certSize too large
     header.certSize = DLP_MAX_CERT_SIZE + 1;
     ASSERT_FALSE(testFile.IsValidDlpHeader(header));
-    header.certSize = 100;
+    header.certSize = 20;
+
+    // certOffset invalid
+    header.certOffset = 100;
+    ASSERT_FALSE(testFile.IsValidDlpHeader(header));
+    header.certOffset = 20;
 
     // contactAccountSize 0
     header.contactAccountSize = 0;
@@ -471,6 +480,20 @@ HWTEST_F(DlpFileTest, IsValidDlpHeader001, TestSize.Level1)
 
     // contactAccountSize too large
     header.contactAccountSize = DLP_MAX_CERT_SIZE + 1;
+    ASSERT_FALSE(testFile.IsValidDlpHeader(header));
+
+    // contactAccountOffset invalid
+    header.contactAccountOffset = 100;
+    ASSERT_FALSE(testFile.IsValidDlpHeader(header));
+    header.contactAccountOffset = 52;
+
+    // txtOffset invalid
+    header.txtOffset = 100;
+    ASSERT_FALSE(testFile.IsValidDlpHeader(header));
+    header.txtOffset = 72;
+
+    // txtOffset invalid
+    header.txtSize = DLP_MAX_CONTENT_SIZE + 1;
     ASSERT_FALSE(testFile.IsValidDlpHeader(header));
 }
 
@@ -568,8 +591,12 @@ HWTEST_F(DlpFileTest, ParseDlpHeader004, TestSize.Level1)
 
     struct DlpHeader header = {
         .magic = DLP_FILE_MAGIC,
+        .certOffset = 32,
         .certSize = 20,
+        .contactAccountOffset = 52,
         .contactAccountSize = 20,
+        .txtOffset  = 72,
+        .txtSize = 100
     };
     write(fd, &header, sizeof(header));
 
@@ -594,8 +621,12 @@ HWTEST_F(DlpFileTest, ParseDlpHeader005, TestSize.Level1)
 
     struct DlpHeader header = {
         .magic = DLP_FILE_MAGIC,
+        .certOffset = 32,
         .certSize = 20,
+        .contactAccountOffset = 52,
         .contactAccountSize = 20,
+        .txtOffset  = 72,
+        .txtSize = 100
     };
     write(fd, &header, sizeof(header));
     uint8_t buffer[20] = {0};
@@ -622,8 +653,12 @@ HWTEST_F(DlpFileTest, ParseDlpHeader006, TestSize.Level1)
 
     struct DlpHeader header = {
         .magic = DLP_FILE_MAGIC,
+        .certOffset = 32,
         .certSize = 20,
+        .contactAccountOffset = 52,
         .contactAccountSize = 20,
+        .txtOffset  = 72,
+        .txtSize = 100
     };
     write(fd, &header, sizeof(header));
     uint8_t buffer[40] = {0};
@@ -1004,7 +1039,7 @@ HWTEST_F(DlpFileTest, GenFile001, TestSize.Level1)
     testFile.dlpFd_ = -1;
     EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, testFile.GenFile(1));
 
-    testFile.dlpFd_ = 1;
+    testFile.dlpFd_ = 1000;
     EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, testFile.GenFile(1));
 }
 
@@ -1156,6 +1191,7 @@ HWTEST_F(DlpFileTest, DlpFileRead001, TestSize.Level1)
 
     uint8_t buffer[16] = {};
     EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, testFile.DlpFileRead(0, buffer, 0));
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, testFile.DlpFileRead(DLP_MAX_CONTENT_SIZE, buffer, 1));
     EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, testFile.DlpFileRead(0, buffer, DLP_FUSE_MAX_BUFFLEN + 1));
 
     testFile.dlpFd_ = -1;
@@ -1409,6 +1445,7 @@ HWTEST_F(DlpFileTest, DlpFileWrite001, TestSize.Level1)
 
     EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, testFile.DlpFileWrite(4, nullptr, 16));
     EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, testFile.DlpFileWrite(4, writeBuffer, 0));
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, testFile.DlpFileWrite(DLP_MAX_CONTENT_SIZE, writeBuffer, 1));
     EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, testFile.DlpFileWrite(4, writeBuffer, DLP_FUSE_MAX_BUFFLEN + 1));
 
     testFile.dlpFd_ = -1;

@@ -302,6 +302,15 @@ HWTEST_F(FuseDaemonTest, FuseDaemonRead001, TestSize.Level1)
     EXPECT_EQ(EINVAL, g_fuseReplyErr);
     CleanMockConditions();
 
+    // offset > DLP_MAX_CONTENT_SIZE
+    condition.mockSequence = { true };
+    SetMockConditions("fuse_reply_err", condition);
+    SetMockCallback("fuse_reply_err", reinterpret_cast<CommonMockFuncT>(FuseReplyErrMock));
+    g_fuseReplyErr = 0;
+    FuseDaemon::fuseDaemonOper_.read(req, ROOT_INODE, 1, DLP_MAX_CONTENT_SIZE + 1, nullptr);
+    EXPECT_EQ(EINVAL, g_fuseReplyErr);
+    CleanMockConditions();
+
     // size > MAX_FUSE_READ_BUFF_SIZE
     condition.mockSequence = { true };
     SetMockConditions("fuse_reply_err", condition);
@@ -310,8 +319,21 @@ HWTEST_F(FuseDaemonTest, FuseDaemonRead001, TestSize.Level1)
     FuseDaemon::fuseDaemonOper_.read(req, ROOT_INODE, MAX_FUSE_READ_BUFF_SIZE + 1, 0, nullptr);
     EXPECT_EQ(EINVAL, g_fuseReplyErr);
     CleanMockConditions();
+}
+
+/**
+ * @tc.name: FuseDaemonRead002
+ * @tc.desc: test fuse read callback abnormal branch2
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIGC
+ */
+HWTEST_F(FuseDaemonTest, FuseDaemonRead002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "FuseDaemonRead002");
+    fuse_req_t req = nullptr;
 
     // ino ROOT_INODE
+    DlpCMockCondition condition;
     condition.mockSequence = { true };
     SetMockConditions("fuse_reply_err", condition);
     SetMockCallback("fuse_reply_err", reinterpret_cast<CommonMockFuncT>(FuseReplyErrMock));
@@ -362,6 +384,24 @@ HWTEST_F(FuseDaemonTest, FuseDaemonWrite001, TestSize.Level1)
     SetMockCallback("fuse_reply_err", reinterpret_cast<CommonMockFuncT>(FuseReplyErrMock));
     g_fuseReplyErr = 0;
     FuseDaemon::fuseDaemonOper_.write(req, ROOT_INODE, nullptr, 1, -1, nullptr);
+    EXPECT_EQ(EINVAL, g_fuseReplyErr);
+    CleanMockConditions();
+
+    // offset > DLP_MAX_CONTENT_SIZE
+    condition.mockSequence = { true };
+    SetMockConditions("fuse_reply_err", condition);
+    SetMockCallback("fuse_reply_err", reinterpret_cast<CommonMockFuncT>(FuseReplyErrMock));
+    g_fuseReplyErr = 0;
+    FuseDaemon::fuseDaemonOper_.write(req, ROOT_INODE, nullptr, 1, DLP_MAX_CONTENT_SIZE + 1, nullptr);
+    EXPECT_EQ(EINVAL, g_fuseReplyErr);
+    CleanMockConditions();
+
+    // size > DLP_FUSE_MAX_BUFFLEN
+    condition.mockSequence = { true };
+    SetMockConditions("fuse_reply_err", condition);
+    SetMockCallback("fuse_reply_err", reinterpret_cast<CommonMockFuncT>(FuseReplyErrMock));
+    g_fuseReplyErr = 0;
+    FuseDaemon::fuseDaemonOper_.write(req, ROOT_INODE, nullptr, DLP_FUSE_MAX_BUFFLEN + 1, 100, nullptr);
     EXPECT_EQ(EINVAL, g_fuseReplyErr);
     CleanMockConditions();
 

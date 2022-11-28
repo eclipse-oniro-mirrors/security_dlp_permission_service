@@ -31,11 +31,11 @@ namespace Security {
 namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "FuseDaemon"};
-static const int ROOT_INODE = 1;
-static const int DEFAULT_ATTR_TIMEOUT = 10000;
-static const int MAX_FILE_NAME_LEN = 256;
-static const int ROOT_INODE_ACCESS = 0711;
-static const uint32_t MAX_READ_DIR_BUF_SIZE = 100 * 1024;  // 100K
+static constexpr int ROOT_INODE = 1;
+static constexpr int DEFAULT_ATTR_TIMEOUT = 10000;
+static constexpr int MAX_FILE_NAME_LEN = 256;
+static constexpr int ROOT_INODE_ACCESS = 0711;
+static constexpr uint32_t MAX_READ_DIR_BUF_SIZE = 100 * 1024;  // 100K
 static constexpr const char* CUR_DIR = ".";
 static constexpr const char* UPPER_DIR = "..";
 static constexpr const char* DEFAULT_DLP_LINK_FILE = "default.dlp";
@@ -47,7 +47,6 @@ enum DaemonStatus FuseDaemon::daemonStatus_;
 std::mutex FuseDaemon::daemonEnableMtx_;
 struct stat FuseDaemon::rootFileStat_;
 bool FuseDaemon::init_ = false;
-static const uint32_t MAX_FUSE_READ_BUFF_SIZE = 10 * 1024 * 1024; // 10M
 static const int32_t INVALID_DLP_FD = -1;
 
 // caller need to check ino == ROOT_INODE
@@ -139,7 +138,7 @@ static void FuseDaemonOpen(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info
         fuse_reply_err(req, ENOENT);
         return;
     }
-    if ((static_cast<uint32_t>(fi->flags) & O_TRUNC) != 0) {
+    if ((fi != nullptr) && (static_cast<uint32_t>(fi->flags) & O_TRUNC) != 0) {
         int32_t ret = dlp->Truncate(0);
         if (ret != DLP_OK) {
             DLP_LOG_ERROR(LABEL, "Open link file with truncate fail, ret=%{public}d", ret);
@@ -170,11 +169,11 @@ static DlpLinkFile* GetValidFileNode(fuse_req_t req, fuse_ino_t ino)
 static void FuseDaemonRead(fuse_req_t req, fuse_ino_t ino, size_t size, off_t offset, struct fuse_file_info* fi)
 {
     (void)fi;
-    if (offset < 0) {
+    if (offset < 0 || offset > DLP_MAX_CONTENT_SIZE) {
         fuse_reply_err(req, EINVAL);
         return;
     }
-    if (size > MAX_FUSE_READ_BUFF_SIZE) {
+    if (size > DLP_FUSE_MAX_BUFFLEN) {
         DLP_LOG_ERROR(LABEL, "Read link file fail, read size %{public}zu too large", size);
         fuse_reply_err(req, EINVAL);
         return;
@@ -208,7 +207,12 @@ static void FuseDaemonWrite(
     fuse_req_t req, fuse_ino_t ino, const char* buf, size_t size, off_t off, struct fuse_file_info* fi)
 {
     (void)fi;
-    if (off < 0) {
+    if (off < 0 || off > DLP_MAX_CONTENT_SIZE) {
+        fuse_reply_err(req, EINVAL);
+        return;
+    }
+    if (size > DLP_FUSE_MAX_BUFFLEN) {
+        DLP_LOG_ERROR(LABEL, "Write link file fail, write size %{public}zu too large", size);
         fuse_reply_err(req, EINVAL);
         return;
     }
@@ -261,7 +265,7 @@ static int AddDirentry(DirAddParams& param)
         param.entryName.c_str(), param.entryStat, param.curOff);
     param.directBuf += addSize;
     param.bufLen -= addSize;
-    param.nextOff += (int)addSize;
+    param.nextOff += static_cast<int>(addSize);
     return 0;
 }
 
@@ -288,7 +292,7 @@ static int AddLinkFilesDirentry(DirAddParams& params)
 {
     std::vector<DlpLinkFileInfo> linkList;
     DlpLinkManager::GetInstance().DumpDlpLinkFile(linkList);
-    int listSize = (int)linkList.size();
+    int listSize = static_cast<int>(linkList.size());
     for (int i = 0; i < listSize; i++) {
         params.entryName = linkList[i].dlpLinkName;
         params.entryStat = &linkList[i].fileStat;
@@ -303,7 +307,7 @@ static int AddLinkFilesDirentry(DirAddParams& params)
 static void FuseDaemonReadDir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t off, struct fuse_file_info *fi)
 {
     (void)fi;
-    if (off < 0) {
+    if (off < 0 || off > DLP_MAX_CONTENT_SIZE) {
         fuse_reply_err(req, ENOTDIR);
         return;
     }
@@ -376,10 +380,14 @@ void FuseDaemonSetAttr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to
         return;
     }
 
-    off_t modifySize = attr->st_size;
-    int32_t ret = dlpLink->Truncate(modifySize);
+    if (attr->st_size < 0 || attr->st_size > DLP_MAX_CONTENT_SIZE) {
+        DLP_LOG_ERROR(LABEL, "Set link file attr fail, file size too large");
+        fuse_reply_err(req, EINVAL);
+        return;
+    }
+    int32_t ret = dlpLink->Truncate(static_cast<uint32_t>(attr->st_size));
     if (ret != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Set link file attr fail, truncate error=%{public}d", ret);
+        DLP_LOG_ERROR(LABEL, "Set link file attr fail, errno is %{public}d", ret);
         fuse_reply_err(req, EINVAL);
         return;
     }

@@ -25,6 +25,7 @@ namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpLinkManager"};
 static const int MAX_FILE_NAME_LEN = 256;
+static constexpr uint32_t MAX_DLP_LINK_SIZE = 1000; // max open link file
 }
 
 DlpLinkManager::DlpLinkManager()
@@ -34,7 +35,7 @@ DlpLinkManager::DlpLinkManager()
 
 static bool IsLinkNameValid(const std::string& linkName)
 {
-    uint32_t size = linkName.size();
+    size_t size = linkName.size();
     return !(size == 0 || size > MAX_FILE_NAME_LEN);
 }
 
@@ -50,6 +51,11 @@ int32_t DlpLinkManager::AddDlpLinkFile(std::shared_ptr<DlpFile>& filePtr, const 
     }
 
     Utils::UniqueWriteGuard<Utils::RWLock> infoGuard(g_DlpLinkMapLock_);
+    if (g_DlpLinkFileNameMap_.size() >= MAX_DLP_LINK_SIZE) {
+        DLP_LOG_ERROR(LABEL, "Add link file fail, too many links");
+        return DLP_FUSE_ERROR_TOO_MANY_LINK_FILE;
+    }
+
     if (g_DlpLinkFileNameMap_.count(dlpLinkName) > 0) {
         DLP_LOG_ERROR(LABEL, "Add link file fail, link file %{public}s exist", dlpLinkName.c_str());
         return DLP_FUSE_ERROR_LINKFILE_EXIST;
@@ -96,18 +102,20 @@ int32_t DlpLinkManager::DeleteDlpLinkFile(std::shared_ptr<DlpFile>& filePtr)
 DlpLinkFile* DlpLinkManager::LookUpDlpLinkFile(const std::string& dlpLinkName)
 {
     Utils::UniqueReadGuard<Utils::RWLock> infoGuard(g_DlpLinkMapLock_);
-    if (g_DlpLinkFileNameMap_.count(dlpLinkName) <= 0) {
-        DLP_LOG_ERROR(LABEL, "Look up link file fail, file %{public}s not exist", dlpLinkName.c_str());
-        return nullptr;
+    for (auto iter = g_DlpLinkFileNameMap_.begin(); iter != g_DlpLinkFileNameMap_.end(); iter++) {
+        if (dlpLinkName == iter->first) {
+            DlpLinkFile* node = iter->second;
+            if (node == nullptr) {
+                DLP_LOG_ERROR(LABEL, "Look up link file fail, file %{public}s found but file ptr is null",
+                    dlpLinkName.c_str());
+                return nullptr;
+            }
+            node->IncreaseRef();
+            return node;
+        }
     }
-    DlpLinkFile* node = g_DlpLinkFileNameMap_[dlpLinkName];
-    if (node == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Look up link file fail, file %{public}s found but file ptr is null",
-            dlpLinkName.c_str());
-        return nullptr;
-    }
-    node->IncreaseRef();
-    return node;
+    DLP_LOG_ERROR(LABEL, "Look up link file fail, file %{public}s not exist", dlpLinkName.c_str());
+    return nullptr;
 }
 
 void DlpLinkManager::DumpDlpLinkFile(std::vector<DlpLinkFileInfo>& linkList)

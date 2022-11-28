@@ -93,10 +93,10 @@ struct stat DlpLinkFile::GetLinkStat()
     return fileStat_;
 }
 
-int32_t DlpLinkFile::Truncate(off_t modifySize)
+int32_t DlpLinkFile::Truncate(uint32_t modifySize)
 {
-    if (modifySize > INVALID_FILE_SIZE || modifySize < 0) {
-        DLP_LOG_ERROR(LABEL, "Truncate link file fail, modify size %{public}ld is invalid", modifySize);
+    if (modifySize >= DLP_MAX_CONTENT_SIZE) {
+        DLP_LOG_ERROR(LABEL, "Truncate link file fail, modify size %{public}u is invalid", modifySize);
         return DLP_FUSE_ERROR_VALUE_INVALID;
     }
 
@@ -104,11 +104,11 @@ int32_t DlpLinkFile::Truncate(off_t modifySize)
         DLP_LOG_ERROR(LABEL, "Truncate link file fail, dlp file is null");
         return DLP_FUSE_ERROR_DLP_FILE_NULL;
     }
-    int32_t res = dlpFile_->Truncate(static_cast<uint32_t>(modifySize));
+    int32_t res = dlpFile_->Truncate(modifySize);
     if (res < 0) {
-        DLP_LOG_ERROR(LABEL, "Truncate %{public}ld in link file fail, res=%{public}d", modifySize, res);
+        DLP_LOG_ERROR(LABEL, "Truncate %{public}u in link file fail, res=%{public}d", modifySize, res);
     } else {
-        DLP_LOG_INFO(LABEL, "Truncate %{public}ld in link file succ", modifySize);
+        DLP_LOG_INFO(LABEL, "Truncate %{public}u in link file succ", modifySize);
     }
     UpdateMtimeStat();
     return res;

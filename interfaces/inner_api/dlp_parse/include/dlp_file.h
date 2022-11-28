@@ -23,16 +23,17 @@
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
-static const uint32_t INVALID_FILE_SIZE = 0xffffffff;
-static const uint32_t DLP_BUFF_LEN = 4096;
-static const uint32_t IV_SIZE = 16;
-static const uint32_t DLP_FILE_MAGIC = 0x87f4922;
-static const uint32_t DLP_FUSE_MAX_BUFFLEN = (10 * 1024 * 1024); // 10M
-static const uint32_t DLP_BLOCK_SIZE = 16;
-
-static const uint32_t HOLE_BUFF_SIZE = 16 * 1024;
-static const uint32_t HOLE_BUFF_SMALL_SIZE = 1 * 1024;
-static const uint32_t MAX_HOLE_SIZE = 50 * 1024 * 1024; // 50M
+static constexpr uint32_t INVALID_FILE_SIZE = 0xffffffff;
+static constexpr uint32_t DLP_BUFF_LEN = 4096;
+static constexpr uint32_t IV_SIZE = 16;
+static constexpr uint32_t DLP_FILE_MAGIC = 0x87f4922;
+static constexpr uint32_t DLP_FUSE_MAX_BUFFLEN = (10 * 1024 * 1024); // 10M
+static constexpr uint32_t DLP_BLOCK_SIZE = 16;
+// dlp file only support 32bits size, apart from 10M max head size
+static constexpr uint32_t DLP_MAX_CONTENT_SIZE = 0xffffffff - 0xA00000;
+static constexpr uint32_t HOLE_BUFF_SIZE = 16 * 1024;
+static constexpr uint32_t HOLE_BUFF_SMALL_SIZE = 1 * 1024;
+static constexpr uint32_t MAX_HOLE_SIZE = 50 * 1024 * 1024; // 50M
 
 enum DlpOperation {
     DLP_ENCRYPTION = 1,

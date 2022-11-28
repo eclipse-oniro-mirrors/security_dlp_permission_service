@@ -27,11 +27,16 @@ namespace Security {
 namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpFileManager"};
+static constexpr uint32_t MAX_DLP_FILE_SIZE = 1000; // max open dlp file
 }
 
 int32_t DlpFileManager::AddDlpFileNode(const std::shared_ptr<DlpFile>& filePtr)
 {
     Utils::UniqueWriteGuard<Utils::RWLock> infoGuard(this->g_DlpMapLock_);
+    if (g_DlpFileMap_.size() >= MAX_DLP_FILE_SIZE) {
+        DLP_LOG_ERROR(LABEL, "Add dlp file node failed, too many files");
+        return DLP_PARSE_ERROR_TOO_MANY_OPEN_DLP_FILE;
+    }
     if (g_DlpFileMap_.count(filePtr->dlpFd_) > 0) {
         DLP_LOG_ERROR(LABEL, "Add dlp file node fail, fd %{public}d already exist", filePtr->dlpFd_);
         return DLP_PARSE_ERROR_FILE_ALREADY_OPENED;
@@ -43,20 +48,26 @@ int32_t DlpFileManager::AddDlpFileNode(const std::shared_ptr<DlpFile>& filePtr)
 int32_t DlpFileManager::RemoveDlpFileNode(const std::shared_ptr<DlpFile>& filePtr)
 {
     Utils::UniqueWriteGuard<Utils::RWLock> infoGuard(this->g_DlpMapLock_);
-    if (g_DlpFileMap_.count(filePtr->dlpFd_) == 0) {
-        DLP_LOG_ERROR(LABEL, "Remove dlp file node fail, fd %{public}d not exist", filePtr->dlpFd_);
-        return DLP_PARSE_ERROR_FILE_NOT_OPENED;
+    for (auto iter = g_DlpFileMap_.begin(); iter != g_DlpFileMap_.end(); iter++) {
+        if (filePtr->dlpFd_ == iter->first) {
+            g_DlpFileMap_.erase(iter);
+            return DLP_OK;
+        }
     }
-    g_DlpFileMap_.erase(filePtr->dlpFd_);
-    return DLP_OK;
+
+    DLP_LOG_ERROR(LABEL, "Remove dlp file node fail, fd %{public}d not exist", filePtr->dlpFd_);
+    return DLP_PARSE_ERROR_FILE_NOT_OPENED;
 }
 
 std::shared_ptr<DlpFile> DlpFileManager::GetDlpFile(int32_t dlpFd)
 {
     Utils::UniqueReadGuard<Utils::RWLock> infoGuard(this->g_DlpMapLock_);
-    if (g_DlpFileMap_.count(dlpFd) != 0) {
-        return g_DlpFileMap_[dlpFd];
+    for (auto iter = g_DlpFileMap_.begin(); iter != g_DlpFileMap_.end(); iter++) {
+        if (dlpFd == iter->first) {
+            return iter->second;
+        }
     }
+
     return nullptr;
 }
 
@@ -71,9 +82,9 @@ int32_t DlpFileManager::GenerateCertData(const PermissionPolicy& policy, struct 
         return result;
     }
 
-    uint32_t certSize = cert.size();
+    size_t certSize = cert.size();
     if (certSize > DLP_MAX_CERT_SIZE) {
-        DLP_LOG_ERROR(LABEL, "Check dlp cert fail, cert is too large, size=%{public}u", certSize);
+        DLP_LOG_ERROR(LABEL, "Check dlp cert fail, cert is too large, size=%{public}zu", certSize);
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
@@ -90,7 +101,7 @@ int32_t DlpFileManager::GenerateCertData(const PermissionPolicy& policy, struct 
     }
 
     certData.data = certBuffer;
-    certData.size = certSize;
+    certData.size = static_cast<uint32_t>(certSize);
     return DLP_OK;
 }
 

@@ -161,7 +161,7 @@ void DlpFile::UpdateDlpFilePermission()
         return;
     }
 
-    for (int32_t i = 0; i < (int32_t)policy_.authUsers_.size(); i++) {
+    for (int32_t i = 0; i < static_cast<int32_t>(policy_.authUsers_.size()); i++) {
         if (accountName == policy_.authUsers_[i].authAccount) {
             isReadOnly_ = (policy_.authUsers_[i].authPerm == READ_ONLY);
             DLP_LOG_DEBUG(LABEL, "current account match authUsers list, isReadOnly_ %{public}s",
@@ -204,7 +204,7 @@ int32_t DlpFile::SetContactAccount(const std::string& contactAccount)
     }
     contactAccount_ = contactAccount;
     if (head_.certSize != 0) {
-        head_.contactAccountSize = contactAccount.size();
+        head_.contactAccountSize = static_cast<uint32_t>(contactAccount.size());
         head_.contactAccountOffset = head_.certOffset + head_.certSize;
         head_.txtOffset = head_.contactAccountOffset + head_.contactAccountSize;
     }
@@ -224,8 +224,12 @@ int32_t DlpFile::SetPolicy(const PermissionPolicy& policy)
 
 bool DlpFile::IsValidDlpHeader(const struct DlpHeader& head) const
 {
-    if (head.magic != DLP_FILE_MAGIC || head.certSize == 0 || head.certSize > DLP_MAX_CERT_SIZE
-        || head.contactAccountSize == 0 || head.contactAccountSize > DLP_MAX_CERT_SIZE) {
+    if (head.magic != DLP_FILE_MAGIC || head.certSize == 0 || head.certSize > DLP_MAX_CERT_SIZE ||
+        head.contactAccountSize == 0 || head.contactAccountSize > DLP_MAX_CERT_SIZE ||
+        head.certOffset != sizeof(struct DlpHeader) ||
+        head.contactAccountOffset != (sizeof(struct DlpHeader) + head.certSize) ||
+        head.txtOffset != (sizeof(struct DlpHeader) + head.certSize + head.contactAccountSize) ||
+        head.txtSize > DLP_MAX_CONTENT_SIZE) {
         return false;
     }
     return true;
@@ -243,7 +247,7 @@ int32_t DlpFile::ParseDlpHeader()
         return DLP_PARSE_ERROR_FILE_LINKING;
     }
 
-    if (lseek(dlpFd_, 0, SEEK_SET) == (off_t)-1) {
+    if (lseek(dlpFd_, 0, SEEK_SET) == static_cast<off_t>(-1)) {
         DLP_LOG_ERROR(LABEL, "seek dlp file start failed, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
@@ -449,11 +453,11 @@ int32_t DlpFile::GenFile(int32_t inPlainFileFd)
     }
 
     off_t fileLen = lseek(inPlainFileFd, 0, SEEK_END);
-    if (fileLen == (off_t)-1) {
-        DLP_LOG_ERROR(LABEL, "can not get inFd len, %{public}s", strerror(errno));
+    if (fileLen == static_cast<off_t>(-1) || fileLen > static_cast<off_t>(DLP_MAX_CONTENT_SIZE)) {
+        DLP_LOG_ERROR(LABEL, "inFd len is invalid, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
-    head_.txtSize = (uint32_t)fileLen;
+    head_.txtSize = static_cast<uint32_t>(fileLen);
     DLP_LOG_DEBUG(LABEL, "fileLen %{private}ld", fileLen);
 
     // clean dlpFile
@@ -462,12 +466,12 @@ int32_t DlpFile::GenFile(int32_t inPlainFileFd)
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
 
-    if (lseek(inPlainFileFd, 0, SEEK_SET) == (off_t)-1) {
+    if (lseek(inPlainFileFd, 0, SEEK_SET) == static_cast<off_t>(-1)) {
         DLP_LOG_ERROR(LABEL, "seek plain file start failed, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
 
-    if (lseek(dlpFd_, 0, SEEK_SET) == (off_t)-1) {
+    if (lseek(dlpFd_, 0, SEEK_SET) == static_cast<off_t>(-1)) {
         DLP_LOG_ERROR(LABEL, "seek dlp file start failed, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
@@ -482,7 +486,8 @@ int32_t DlpFile::GenFile(int32_t inPlainFileFd)
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
 
-    if (write(dlpFd_, contactAccount_.c_str(), contactAccount_.size()) != (int32_t)contactAccount_.size()) {
+    if (write(dlpFd_, contactAccount_.c_str(), contactAccount_.size()) !=
+        static_cast<int32_t>(contactAccount_.size())) {
         DLP_LOG_ERROR(LABEL, "write dlp contact data failed, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
@@ -517,7 +522,7 @@ int32_t DlpFile::RemoveDlpPermission(int32_t outPlainFileFd)
     }
 
     off_t fileLen = lseek(dlpFd_, 0, SEEK_END);
-    if (fileLen == (off_t)-1) {
+    if (fileLen == static_cast<off_t>(-1) || fileLen > static_cast<off_t>(DLP_MAX_CONTENT_SIZE)) {
         DLP_LOG_ERROR(LABEL, "can not get dlp file len, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
@@ -528,12 +533,12 @@ int32_t DlpFile::RemoveDlpPermission(int32_t outPlainFileFd)
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
 
-    if (lseek(outPlainFileFd, 0, SEEK_SET) == (off_t)-1) {
+    if (lseek(outPlainFileFd, 0, SEEK_SET) == static_cast<off_t>(-1)) {
         DLP_LOG_ERROR(LABEL, "seek plain file start failed, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
 
-    if (lseek(dlpFd_, head_.txtOffset, SEEK_SET) == (off_t)-1) {
+    if (lseek(dlpFd_, head_.txtOffset, SEEK_SET) == static_cast<off_t>(-1)) {
         DLP_LOG_ERROR(LABEL, "seek dlp file start failed, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
@@ -559,6 +564,7 @@ static void DeleteBufs(uint8_t* buff1, uint8_t* buff2)
 int32_t DlpFile::DlpFileRead(uint32_t offset, void* buf, uint32_t size)
 {
     if (buf == nullptr || size == 0 || size > DLP_FUSE_MAX_BUFFLEN ||
+        (offset >= DLP_MAX_CONTENT_SIZE - size) ||
         dlpFd_ < 0 || !IsValidCipher(cipher_.encKey, cipher_.usageSpec)) {
         DLP_LOG_ERROR(LABEL, "params is error");
         return DLP_PARSE_ERROR_VALUE_INVALID;
@@ -591,7 +597,7 @@ int32_t DlpFile::DlpFileRead(uint32_t offset, void* buf, uint32_t size)
         DLP_LOG_ERROR(LABEL, "read buff fail, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
-    if (readLen <= (int32_t)prefixingSize) {
+    if (readLen <= static_cast<int32_t>(prefixingSize)) {
         DeleteBufs(encBuff, outBuff);
         return 0;
     }
@@ -655,7 +661,7 @@ int32_t DlpFile::WriteFirstBlockData(uint32_t offset, void* buf, uint32_t size)
         return DLP_PARSE_ERROR_CRYPT_FAIL;
     }
 
-    if (lseek(dlpFd_, head_.txtOffset + alignOffset, SEEK_SET) == (off_t)-1) {
+    if (lseek(dlpFd_, head_.txtOffset + alignOffset, SEEK_SET) == static_cast<off_t>(-1)) {
         DLP_LOG_ERROR(LABEL, "lseek failed, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
@@ -670,7 +676,7 @@ int32_t DlpFile::WriteFirstBlockData(uint32_t offset, void* buf, uint32_t size)
 int32_t DlpFile::DoDlpFileWrite(uint32_t offset, void* buf, uint32_t size)
 {
     uint32_t alignOffset = (offset / DLP_BLOCK_SIZE * DLP_BLOCK_SIZE);
-    if (lseek(dlpFd_, head_.txtOffset + alignOffset, SEEK_SET) == (off_t)-1) {
+    if (lseek(dlpFd_, head_.txtOffset + alignOffset, SEEK_SET) == static_cast<off_t>(-1)) {
         DLP_LOG_ERROR(LABEL, "lseek dlp file offset %{public}d failed, %{public}s",
             head_.txtOffset + offset, strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
@@ -712,7 +718,7 @@ int32_t DlpFile::DoDlpFileWrite(uint32_t offset, void* buf, uint32_t size)
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
 
-    return ret + (int32_t)writenSize;
+    return ret + static_cast<int32_t>(writenSize);
 }
 
 uint32_t DlpFile::GetFsContentSize() const
@@ -722,10 +728,10 @@ uint32_t DlpFile::GetFsContentSize() const
     if (ret != 0) {
         return INVALID_FILE_SIZE;
     }
-    if (head_.txtOffset > fileStat.st_size) {
+    if (head_.txtOffset > fileStat.st_size || fileStat.st_size >= static_cast<off_t>(INVALID_FILE_SIZE)) {
         return INVALID_FILE_SIZE;
     }
-    return (uint32_t)fileStat.st_size - head_.txtOffset;
+    return static_cast<uint32_t>(fileStat.st_size) - head_.txtOffset;
 }
 
 int32_t DlpFile::UpdateDlpFileContentSize()
@@ -782,6 +788,7 @@ int32_t DlpFile::DlpFileWrite(uint32_t offset, void* buf, uint32_t size)
     }
 
     if (buf == nullptr || size == 0 || size > DLP_FUSE_MAX_BUFFLEN ||
+        (offset >= DLP_MAX_CONTENT_SIZE - size) ||
         dlpFd_ < 0 || !IsValidCipher(cipher_.encKey, cipher_.usageSpec)) {
         DLP_LOG_ERROR(LABEL, "Dlp file param invalid");
         return DLP_PARSE_ERROR_VALUE_INVALID;
@@ -807,7 +814,7 @@ int32_t DlpFile::Truncate(uint32_t size)
         return DLP_PARSE_ERROR_FILE_READ_ONLY;
     }
 
-    if (dlpFd_ < 0 || size >= INVALID_FILE_SIZE - head_.txtOffset) {
+    if (dlpFd_ < 0 || size >= DLP_MAX_CONTENT_SIZE) {
         DLP_LOG_ERROR(LABEL, "Param invalid");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }

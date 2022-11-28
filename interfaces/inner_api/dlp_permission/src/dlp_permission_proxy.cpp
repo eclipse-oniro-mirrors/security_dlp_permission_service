@@ -212,17 +212,17 @@ int32_t DlpPermissionProxy::GetSandboxExternalAuthorization(int sandboxUid,
     MessageParcel data;
     if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
         DLP_LOG_ERROR(LABEL, "Write descriptor fail");
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
     if (!data.WriteInt32(sandboxUid)) {
         DLP_LOG_ERROR(LABEL, "Write int32 fail");
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
     if (!data.WriteParcelable(&want)) {
         DLP_LOG_ERROR(LABEL, "Write want fail");
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
     MessageParcel reply;
@@ -236,16 +236,16 @@ int32_t DlpPermissionProxy::GetSandboxExternalAuthorization(int sandboxUid,
         static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_SANDBOX_EXTERNAL_AUTH), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
+        return requestResult;
     }
     int32_t res;
     if (!reply.ReadInt32(res)) {
         DLP_LOG_ERROR(LABEL, "Read int32 fail");
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     if (res < DENY_START_ABILITY || res > ALLOW_START_ABILITY) {
         DLP_LOG_ERROR(LABEL, "Read authType result value error");
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     authType = static_cast<SandBoxExternalAuthorType>(res);
     return DLP_OK;

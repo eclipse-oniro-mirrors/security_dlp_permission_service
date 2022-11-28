@@ -68,6 +68,32 @@ HWTEST_F(DlpFileManagerTest, OperDlpFileNode001, TestSize.Level1)
 }
 
 /**
+ * @tc.name: OperDlpFileNode002
+ * @tc.desc: test add too many dlp file nodes.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileManagerTest, OperDlpFileNode002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "OperDlpFileNode002");
+
+    std::shared_ptr<DlpFile> openDlpFiles[1000];
+
+    for (int i = 0; i < 1000; i++) {
+        std::shared_ptr<DlpFile> filePtr = std::make_shared<DlpFile>(i);
+        openDlpFiles[i] = filePtr;
+        EXPECT_EQ(DlpFileManager::GetInstance().AddDlpFileNode(filePtr), DLP_OK);
+    }
+
+    std::shared_ptr<DlpFile> filePtr1 = std::make_shared<DlpFile>(1001);
+    EXPECT_EQ(DlpFileManager::GetInstance().AddDlpFileNode(filePtr1), DLP_PARSE_ERROR_TOO_MANY_OPEN_DLP_FILE);
+
+    for (int i = 0; i < 1000; i++) {
+        EXPECT_EQ(DlpFileManager::GetInstance().RemoveDlpFileNode(openDlpFiles[i]), DLP_OK);
+    }
+}
+
+/**
  * @tc.name: GenerateCertData001
  * @tc.desc: Generate cert data
  * @tc.type: FUNC

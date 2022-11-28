@@ -271,7 +271,7 @@ HWTEST_F(DlpFuseTest, OpenDlpFile001, TestSize.Level1)
     std::vector<AuthUserInfo>& authUsers = policy.authUsers_;
     ASSERT_EQ(authUsers.size(), prop.authUsers.size());
 
-    for (int32_t i = 0; i < (int32_t)authUsers.size(); i++) {
+    for (int32_t i = 0; i < static_cast<int32_t>(authUsers.size()); i++) {
         ASSERT_EQ(authUsers[i].authAccount, prop.authUsers[i].authAccount);
         ASSERT_EQ(authUsers[i].authPerm, prop.authUsers[i].authPerm);
         ASSERT_EQ(authUsers[i].permExpiryTime, prop.authUsers[i].permExpiryTime);
@@ -869,6 +869,28 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile009, TestSize.Level1)
 }
 
 /**
+ * @tc.name: AddDlpLinkFile010
+ * @tc.desc: test add too many links
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIGC
+ */
+HWTEST_F(DlpFuseTest, AddDlpLinkFile010, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "AddDlpLinkFile010");
+    std::shared_ptr<DlpFile> filePtr = std::make_shared<DlpFile>(-1);
+    ASSERT_NE(filePtr, nullptr);
+    for (int i = 0; i < 1000; i++) {
+        std::string linkName = "AddDlpLinkFile010-" + std::to_string(i);
+        DlpLinkManager::GetInstance().AddDlpLinkFile(filePtr, linkName);
+    }
+    EXPECT_EQ(DlpLinkManager::GetInstance().AddDlpLinkFile(filePtr, "linkfile"), DLP_FUSE_ERROR_TOO_MANY_LINK_FILE);
+    for (int i = 0; i < 1000; i++) {
+        std::string linkName = "AddDlpLinkFile010" + std::to_string(i);
+        DlpLinkManager::GetInstance().DeleteDlpLinkFile(filePtr);
+    }
+}
+
+/**
  * @tc.name: DeleteDlpLinkFile001
  * @tc.desc: test delete link abnoral branch
  * @tc.type: FUNC
@@ -1050,7 +1072,7 @@ HWTEST_F(DlpFuseTest, LinkFileTruncate001, TestSize.Level1)
     DlpLinkFile linkFile("linkfile", filePtr);
 
     EXPECT_EQ(linkFile.Truncate(-1), DLP_FUSE_ERROR_VALUE_INVALID);
-    EXPECT_EQ(linkFile.Truncate(0x100000000L), DLP_FUSE_ERROR_VALUE_INVALID);
+    EXPECT_EQ(linkFile.Truncate(0xffffffff), DLP_FUSE_ERROR_VALUE_INVALID);
     EXPECT_EQ(linkFile.Truncate(0), DLP_FUSE_ERROR_DLP_FILE_NULL);
     filePtr = std::make_shared<DlpFile>(-1);
     ASSERT_NE(filePtr, nullptr);

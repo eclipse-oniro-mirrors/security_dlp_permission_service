@@ -56,9 +56,7 @@ napi_value NapiDlpPermission::GenerateDlpFile(napi_env env, napi_callback_info c
     }
     std::unique_ptr<GenerateDlpFileAsyncContext> asyncContextPtr{asyncContext};
     asyncContext->callbackRef = nullptr;
-    if (asyncContext->errCode == DLP_OK) {
-        GetGenerateDlpFileParams(env, cbInfo, *asyncContext);
-    }
+    GetGenerateDlpFileParams(env, cbInfo, *asyncContext);
 
     napi_value result = nullptr;
     if (asyncContext->callbackRef == nullptr) {
@@ -129,10 +127,7 @@ napi_value NapiDlpPermission::OpenDlpFile(napi_env env, napi_callback_info cbInf
         return nullptr;
     }
     std::unique_ptr<DlpFileAsyncContext> asyncContextPtr{asyncContext};
-    asyncContext->callbackRef = nullptr;
-    if (asyncContext->errCode == DLP_OK) {
-        GetOpenDlpFileParams(env, cbInfo, *asyncContext);
-    }
+    GetOpenDlpFileParams(env, cbInfo, *asyncContext);
 
     napi_value result = nullptr;
     if (asyncContext->callbackRef == nullptr) {
@@ -222,10 +217,7 @@ napi_value NapiDlpPermission::IsDlpFile(napi_env env, napi_callback_info cbInfo)
         return nullptr;
     }
     std::unique_ptr<DlpFileAsyncContext> asyncContextPtr{asyncContext};
-    asyncContext->callbackRef = nullptr;
-    if (asyncContext->errCode == DLP_OK) {
-        GetIsDlpFileParams(env, cbInfo, *asyncContext);
-    }
+    GetIsDlpFileParams(env, cbInfo, *asyncContext);
 
     napi_value result = nullptr;
     if (asyncContext->callbackRef == nullptr) {
@@ -402,10 +394,7 @@ napi_value NapiDlpPermission::RecoverDlpFile(napi_env env, napi_callback_info cb
         return nullptr;
     }
     std::unique_ptr<RecoverDlpFileAsyncContext> asyncContextPtr{asyncContext};
-    asyncContext->callbackRef = nullptr;
-    if (asyncContext->errCode == DLP_OK) {
-        GetRecoverDlpFileParams(env, cbInfo, *asyncContext);
-    }
+    GetRecoverDlpFileParams(env, cbInfo, *asyncContext);
 
     napi_value result = nullptr;
     if (asyncContext->callbackRef == nullptr) {
@@ -461,10 +450,7 @@ napi_value NapiDlpPermission::CloseDlpFile(napi_env env, napi_callback_info cbIn
         return nullptr;
     }
     std::unique_ptr<CloseDlpFileAsyncContext> asyncContextPtr{asyncContext};
-    asyncContext->callbackRef = nullptr;
-    if (asyncContext->errCode == DLP_OK) {
-        GetCloseDlpFileParams(env, cbInfo, *asyncContext);
-    }
+    GetCloseDlpFileParams(env, cbInfo, *asyncContext);
 
     napi_value result = nullptr;
     if (asyncContext->callbackRef == nullptr) {
@@ -519,10 +505,7 @@ napi_value NapiDlpPermission::InstallDlpSandbox(napi_env env, napi_callback_info
         return nullptr;
     }
     std::unique_ptr<DlpSandboxAsyncContext> asyncContextPtr{asyncContext};
-    asyncContext->callbackRef = nullptr;
-    if (asyncContext->errCode == DLP_OK) {
-        GetInstallDlpSandboxParams(env, cbInfo, *asyncContext);
-    }
+    GetInstallDlpSandboxParams(env, cbInfo, *asyncContext);
 
     napi_value result = nullptr;
     if (asyncContext->callbackRef == nullptr) {
@@ -580,10 +563,7 @@ napi_value NapiDlpPermission::UninstallDlpSandbox(napi_env env, napi_callback_in
         return nullptr;
     }
     std::unique_ptr<DlpSandboxAsyncContext> asyncContextPtr{asyncContext};
-    asyncContext->callbackRef = nullptr;
-    if (asyncContext->errCode == DLP_OK) {
-        GetUninstallDlpSandboxParams(env, cbInfo, *asyncContext);
-    }
+    GetUninstallDlpSandboxParams(env, cbInfo, *asyncContext);
 
     napi_value result = nullptr;
     if (asyncContext->callbackRef == nullptr) {
@@ -639,10 +619,7 @@ napi_value NapiDlpPermission::QueryFileAccess(napi_env env, napi_callback_info c
         return nullptr;
     }
     std::unique_ptr<QueryFileAccessAsyncContext> asyncContextPtr{asyncContext};
-    asyncContext->callbackRef = nullptr;
-    if (asyncContext->errCode == DLP_OK) {
-        GetThirdInterfaceParams(env, cbInfo, *asyncContext);
-    }
+    GetThirdInterfaceParams(env, cbInfo, *asyncContext);
 
     napi_value result = nullptr;
     if (asyncContext->callbackRef == nullptr) {
@@ -699,10 +676,7 @@ napi_value NapiDlpPermission::IsInSandbox(napi_env env, napi_callback_info cbInf
         return nullptr;
     }
     std::unique_ptr<IsInSandboxAsyncContext> asyncContextPtr{asyncContext};
-    asyncContext->callbackRef = nullptr;
-    if (asyncContext->errCode == DLP_OK) {
-        GetThirdInterfaceParams(env, cbInfo, *asyncContext);
-    }
+    GetThirdInterfaceParams(env, cbInfo, *asyncContext);
 
     napi_value result = nullptr;
     if (asyncContext->callbackRef == nullptr) {
@@ -759,10 +733,7 @@ napi_value NapiDlpPermission::GetDlpSupportFileType(napi_env env, napi_callback_
         return nullptr;
     }
     std::unique_ptr<GetDlpSupportFileTypeAsyncContext> asyncContextPtr{asyncContext};
-    asyncContext->callbackRef = nullptr;
-    if (asyncContext->errCode == DLP_OK) {
-        GetThirdInterfaceParams(env, cbInfo, *asyncContext);
-    }
+    GetThirdInterfaceParams(env, cbInfo, *asyncContext);
 
     napi_value result = nullptr;
     if (asyncContext->callbackRef == nullptr) {

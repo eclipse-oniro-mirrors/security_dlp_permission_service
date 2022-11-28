@@ -171,6 +171,10 @@ static const std::unordered_map<int32_t, std::string> g_dlpErrMsg = {
         DLP_PARSE_ERROR_OPERATION_UNSUPPORTED,
         "parse error, operation unsupported",
     },
+    {
+        DLP_PARSE_ERROR_TOO_MANY_OPEN_DLP_FILE,
+        "parse error, open dlp files are too many",
+    },
 
     {
         DLP_FUSE_ERROR_VALUE_INVALID,
@@ -191,6 +195,10 @@ static const std::unordered_map<int32_t, std::string> g_dlpErrMsg = {
     {
         DLP_FUSE_ERROR_MEMORY_OPERATE_FAIL,
         "link fuse error, memory operate fail",
+    },
+    {
+        DLP_FUSE_ERROR_TOO_MANY_LINK_FILE,
+        "link fuse error, link files are too many",
     },
 };
 

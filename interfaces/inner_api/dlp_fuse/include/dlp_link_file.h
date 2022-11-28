@@ -54,7 +54,7 @@ public:
         return dlpLinkName_;
     }
 
-    int32_t Truncate(off_t modifySize);
+    int32_t Truncate(uint32_t modifySize);
 
 private:
     std::string dlpLinkName_;

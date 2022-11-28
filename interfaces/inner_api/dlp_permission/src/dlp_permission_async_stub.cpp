@@ -50,15 +50,15 @@ int32_t DlpPermissionAsyncStub::OnRemoteRequest(
 
     switch (code) {
         case static_cast<int32_t>(IDlpPermissionCallback::InterfaceCode::ON_GENERATE_DLP_CERTIFICATE):
-            return onGenerateDlpCertificateStub(data, reply);
+            return OnGenerateDlpCertificateStub(data, reply);
         case static_cast<int32_t>(IDlpPermissionCallback::InterfaceCode::ON_PARSE_DLP_CERTIFICATE):
-            return onParseDlpCertificateStub(data, reply);
+            return OnParseDlpCertificateStub(data, reply);
         default:
             return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
     }
 }
 
-int32_t DlpPermissionAsyncStub::onGenerateDlpCertificateStub(MessageParcel& data, MessageParcel& reply)
+int32_t DlpPermissionAsyncStub::OnGenerateDlpCertificateStub(MessageParcel& data, MessageParcel& reply)
 {
     std::vector<uint8_t> cert;
     int32_t result;
@@ -91,7 +91,7 @@ void DlpPermissionAsyncStub::onGenerateDlpCertificate(int32_t result, const std:
     generateDlpCertificateCallback_->onGenerateDlpCertificate(result, cert);
 }
 
-int32_t DlpPermissionAsyncStub::onParseDlpCertificateStub(MessageParcel& data, MessageParcel& reply)
+int32_t DlpPermissionAsyncStub::OnParseDlpCertificateStub(MessageParcel& data, MessageParcel& reply)
 {
     int32_t result;
     if (!data.ReadInt32(result)) {
