@@ -885,7 +885,6 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile010, TestSize.Level1)
     }
     EXPECT_EQ(DlpLinkManager::GetInstance().AddDlpLinkFile(filePtr, "linkfile"), DLP_FUSE_ERROR_TOO_MANY_LINK_FILE);
     for (int i = 0; i < 1000; i++) {
-        std::string linkName = "AddDlpLinkFile010" + std::to_string(i);
         DlpLinkManager::GetInstance().DeleteDlpLinkFile(filePtr);
     }
 }
