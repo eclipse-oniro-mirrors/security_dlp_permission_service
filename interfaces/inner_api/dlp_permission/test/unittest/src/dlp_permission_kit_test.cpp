@@ -258,41 +258,6 @@ static void GeneratePolicy(PermissionPolicy& encPolicy, uint32_t ownerAccountLen
     }
 }
 
-static void FuzzTest()
-{
-    uint64_t curTime = static_cast<uint64_t>(
-        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    auto seed = std::time(nullptr);
-    std::srand(seed);
-    PermissionPolicy encPolicy;
-    encPolicy.ownerAccount_ = GenerateRandStr(ACCOUNT_LENGTH);
-    encPolicy.ownerAccountType_ = DOMAIN_ACCOUNT;
-    uint8_t* key = GenerateRandArray(AESKEY_LEN);
-    encPolicy.SetAeskey(key, AESKEY_LEN);
-    if (key != nullptr) {
-        delete[] key;
-        key = nullptr;
-    }
-    uint8_t* iv = GenerateRandArray(IV_LEN);
-    encPolicy.SetIv(iv, IV_LEN);
-    if (iv != nullptr) {
-        delete[] iv;
-        iv = nullptr;
-    }
-    int userNum = rand() % USER_NUM;
-    for (int user = 0; user < userNum; ++user) {
-        AuthUserInfo perminfo = {.authAccount = GenerateRandStr(ACCOUNT_LENGTH),
-            .authPerm = AuthPermType(1 + rand() % 2),        // perm type 1 to 2
-            .permExpiryTime = curTime + 100 + rand() % 200,  // time range 100 to 300
-            .authAccountType = DOMAIN_ACCOUNT};
-        encPolicy.authUsers_.emplace_back(perminfo);
-    }
-    std::vector<uint8_t> cert;
-    DlpPermissionKit::GenerateDlpCertificate(encPolicy, cert);
-    PermissionPolicy policy;
-    DlpPermissionKit::ParseDlpCertificate(cert, policy);
-}
-
 static int32_t TestGenerateDlpCertWithInvalidParam(uint32_t ownerAccountLen, uint32_t aeskeyLen, uint32_t ivLen,
     uint32_t userNum, uint32_t authAccountLen, uint32_t authPerm, int64_t deltaTime)
 {
@@ -346,27 +311,6 @@ HWTEST_F(DlpPermissionKitTest, GenerateDlpCertificate001, TestSize.Level1)
                                              USER_NUM, ACCOUNT_LENGTH, INVALID_AUTH_PERM_LOWER, DELTA_EXPIRY_TIME));
     EXPECT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN,
                                                    USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, INVALID_DELTA_EXPIRY_TIME));
-}
-
-/**
- * @tc.name: GenerateDlpCertificate002
- * @tc.desc: GenerateDlpCertificate test.
- * @tc.type: FUNC
- * @tc.require:AR000GVIG0
- */
-HWTEST_F(DlpPermissionKitTest, GenerateDlpCertificate002, TestSize.Level1)
-{
-    uint32_t threadsNum = 1000;
-    std::vector<std::thread> threads;
-    for (uint32_t i = 0; i < threadsNum; ++i) {
-        threads.emplace_back(std::thread(FuzzTest));
-    }
-
-    for (auto& thread : threads) {
-        thread.join();
-    }
-    uint32_t waitEndTime = 10;
-    sleep(waitEndTime);
 }
 
 /**
