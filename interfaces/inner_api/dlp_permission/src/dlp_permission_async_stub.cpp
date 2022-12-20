@@ -65,30 +65,30 @@ int32_t DlpPermissionAsyncStub::OnGenerateDlpCertificateStub(MessageParcel& data
 
     if (!data.ReadInt32(result)) {
         DLP_LOG_ERROR(LABEL, "Read int32 fail");
-        this->onGenerateDlpCertificate(DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL, {});
+        this->OnGenerateDlpCertificate(DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL, {});
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     if (result != DLP_OK) {
-        this->onGenerateDlpCertificate(result, {});
+        this->OnGenerateDlpCertificate(result, {});
         return DLP_OK;
     }
     if (!data.ReadUInt8Vector(&cert)) {
         DLP_LOG_ERROR(LABEL, "Read int8 vector fail");
-        this->onGenerateDlpCertificate(DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL, {});
+        this->OnGenerateDlpCertificate(DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL, {});
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
-    this->onGenerateDlpCertificate(result, cert);
+    this->OnGenerateDlpCertificate(result, cert);
     return DLP_OK;
 }
 
-void DlpPermissionAsyncStub::onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert)
+void DlpPermissionAsyncStub::OnGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert)
 {
     if (generateDlpCertificateCallback_ == nullptr) {
         DLP_LOG_ERROR(LABEL, "Callback is null");
         return;
     }
 
-    generateDlpCertificateCallback_->onGenerateDlpCertificate(result, cert);
+    generateDlpCertificateCallback_->OnGenerateDlpCertificate(result, cert);
 }
 
 int32_t DlpPermissionAsyncStub::OnParseDlpCertificateStub(MessageParcel& data, MessageParcel& reply)
@@ -97,33 +97,33 @@ int32_t DlpPermissionAsyncStub::OnParseDlpCertificateStub(MessageParcel& data, M
     if (!data.ReadInt32(result)) {
         DLP_LOG_ERROR(LABEL, "Read int32 fail");
         PermissionPolicy policyNull;
-        this->onParseDlpCertificate(DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL, policyNull);
+        this->OnParseDlpCertificate(DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL, policyNull);
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     if (result != DLP_OK) {
         PermissionPolicy policyNull;
-        this->onParseDlpCertificate(result, policyNull);
+        this->OnParseDlpCertificate(result, policyNull);
         return DLP_OK;
     }
     sptr<DlpPolicyParcel> policyParcel = data.ReadParcelable<DlpPolicyParcel>();
     if (policyParcel == nullptr) {
         DLP_LOG_ERROR(LABEL, "Read parcel fail");
         PermissionPolicy policyNull;
-        this->onParseDlpCertificate(DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL, policyNull);
+        this->OnParseDlpCertificate(DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL, policyNull);
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
-    this->onParseDlpCertificate(result, policyParcel->policyParams_);
+    this->OnParseDlpCertificate(result, policyParcel->policyParams_);
     return DLP_OK;
 }
 
-void DlpPermissionAsyncStub::onParseDlpCertificate(int32_t result, const PermissionPolicy& policy)
+void DlpPermissionAsyncStub::OnParseDlpCertificate(int32_t result, const PermissionPolicy& policy)
 {
     if (parseDlpCertificateCallback_ == nullptr) {
         DLP_LOG_ERROR(LABEL, "Callback is null");
         return;
     }
 
-    parseDlpCertificateCallback_->onParseDlpCertificate(result, policy);
+    parseDlpCertificateCallback_->OnParseDlpCertificate(result, policy);
 }
 }  // namespace DlpPermission
 }  // namespace Security

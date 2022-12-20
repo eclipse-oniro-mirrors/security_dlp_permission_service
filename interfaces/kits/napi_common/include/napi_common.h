@@ -100,29 +100,32 @@ struct GetDlpSupportFileTypeAsyncContext : public CommonAsyncContext {
     std::vector<std::string> supportFileType;
 };
 
+void DlpNapiThrow(napi_env env, int32_t jsErrCode, const std::string &jsErrMsg);
+napi_value GenerateBusinessError(napi_env env, int32_t jsErrCode, const std::string &jsErrMsg);
+
 napi_value CreateEnumAuthPermType(napi_env env, napi_value exports);
 napi_value CreateEnumAccountType(napi_env env, napi_value exports);
-void CreateNapiRetMsg(napi_env env, int32_t errorCode, napi_value* result, napi_value data);
+
 void ProcessCallbackOrPromise(napi_env env, const CommonAsyncContext* asyncContext, napi_value data);
 
-void GetGenerateDlpFileParams(
+bool GetGenerateDlpFileParams(
     const napi_env env, const napi_callback_info info, GenerateDlpFileAsyncContext& asyncContext);
-void GetOpenDlpFileParams(const napi_env env, const napi_callback_info info, DlpFileAsyncContext& asyncContext);
-void GetIsDlpFileParams(const napi_env env, const napi_callback_info info, DlpFileAsyncContext& asyncContext);
+bool GetOpenDlpFileParams(const napi_env env, const napi_callback_info info, DlpFileAsyncContext& asyncContext);
+bool GetIsDlpFileParams(const napi_env env, const napi_callback_info info, DlpFileAsyncContext& asyncContext);
 
-void GetDlpLinkFileParams(const napi_env env, const napi_callback_info info, DlpLinkFileAsyncContext& asyncContext);
-void GetRecoverDlpFileParams(
+bool GetDlpLinkFileParams(const napi_env env, const napi_callback_info info, DlpLinkFileAsyncContext& asyncContext);
+bool GetRecoverDlpFileParams(
     const napi_env env, const napi_callback_info info, RecoverDlpFileAsyncContext& asyncContext);
-void GetCloseDlpFileParams(const napi_env env, const napi_callback_info info, CloseDlpFileAsyncContext& asyncContext);
-void GetInstallDlpSandboxParams(
+bool GetCloseDlpFileParams(const napi_env env, const napi_callback_info info, CloseDlpFileAsyncContext& asyncContext);
+bool GetInstallDlpSandboxParams(
     const napi_env env, const napi_callback_info info, DlpSandboxAsyncContext& asyncContext);
-void GetUninstallDlpSandboxParams(
+bool GetUninstallDlpSandboxParams(
     const napi_env env, const napi_callback_info info, DlpSandboxAsyncContext& asyncContext);
-void GetThirdInterfaceParams(
+bool GetThirdInterfaceParams(
     const napi_env env, const napi_callback_info info, CommonAsyncContext& asyncContext);
 
 bool GetDlpProperty(napi_env env, napi_value object, DlpProperty& property);
-void GetCallback(const napi_env env, napi_value jsObject, CommonAsyncContext& asyncContext);
+bool GetCallback(const napi_env env, napi_value jsObject, CommonAsyncContext& asyncContext);
 
 napi_value GetNapiValue(napi_env env, napi_value jsObject, const std::string& key);
 bool GetStringValue(napi_env env, napi_value jsObject, std::string& result);

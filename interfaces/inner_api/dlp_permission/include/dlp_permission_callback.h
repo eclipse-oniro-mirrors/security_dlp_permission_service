@@ -26,13 +26,13 @@ class GenerateDlpCertificateCallback {
 public:
     GenerateDlpCertificateCallback(){};
     virtual ~GenerateDlpCertificateCallback(){};
-    virtual void onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert) = 0;
+    virtual void OnGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert) = 0;
 };
 class ParseDlpCertificateCallback {
 public:
     ParseDlpCertificateCallback(){};
     virtual ~ParseDlpCertificateCallback(){};
-    virtual void onParseDlpCertificate(int32_t result, const PermissionPolicy& policy) = 0;
+    virtual void OnParseDlpCertificate(int32_t result, const PermissionPolicy& policy) = 0;
 };
 }  // namespace DlpPermission
 }  // namespace Security

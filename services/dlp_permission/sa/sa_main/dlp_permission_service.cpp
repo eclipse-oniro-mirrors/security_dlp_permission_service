@@ -197,7 +197,8 @@ int32_t DlpPermissionService::InstallDlpSandbox(
     AppExecFwk::BundleMgrClient bundleMgrClient;
     int32_t res = bundleMgrClient.InstallSandboxApp(bundleName, permType, userId, appIndex);
     if (res != DLP_OK) {
-        return res;
+        DLP_LOG_ERROR(LABEL, "install sandbox %{public}s fail, error=%{public}d", bundleName.c_str(), res);
+        return DLP_SERVICE_ERROR_INSTALL_SANDBOX_FAIL;
     }
     InsertDlpSandboxInfo(bundleName, permType, userId, appIndex);
     return DLP_OK;
@@ -231,7 +232,13 @@ int32_t DlpPermissionService::UninstallDlpSandbox(const std::string& bundleName,
 
     DeleteDlpSandboxInfo(bundleName, appIndex, userId);
     AppExecFwk::BundleMgrClient bundleMgrClient;
-    return bundleMgrClient.UninstallSandboxApp(bundleName, appIndex, userId);
+    int32_t res = bundleMgrClient.UninstallSandboxApp(bundleName, appIndex, userId);
+    if (res != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "uninstall sandbox %{public}s fail, index=%{public}d, error=%{public}d",
+            bundleName.c_str(), appIndex, res);
+        return DLP_SERVICE_ERROR_UNINSTALL_SANDBOX_FAIL;
+    }
+    return DLP_OK;
 }
 
 int32_t DlpPermissionService::GetSandboxExternalAuthorization(

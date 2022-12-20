@@ -20,196 +20,112 @@
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
-static const std::unordered_map<int32_t, std::string> g_dlpErrMsg = {
+static const std::unordered_map<int32_t, std::string> JS_ERROR_MSG_MAP = {
     //  error + message
-    {
-        DLP_OK,
-        "success",
-    },
-    {
-        DLP_NAPI_ERROR_PERMISSION_DENY,
-        "napi error, no permission to invoke this api",
-    },
-    {
-        DLP_NAPI_ERROR_PARSE_JS_PARAM,
-        "napi error, parse js param fail",
-    },
-    {
-        DLP_NAPI_ERROR_THIS_VALUE_NULL,
-        "napi error, receive js this arg fail",
-    },
-    {
-        DLP_NAPI_ERROR_UNWRAP_FAIL,
-        "napi error, unwarp native instance fail",
-    },
-    {
-        DLP_NAPI_ERROR_NATIVE_BINDING_FAIL,
-        "napi error, binding js instance and native instance fail",
-    },
-    {
-        DLP_SERVICE_ERROR_VALUE_INVALID,
-        "service error, input param invalid",
-    },
-    {
-        DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL,
-        "service error, parcel operate fail",
-    },
-    {
-        DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL,
-        "service error, memory operate fail",
-    },
-    {
-        DLP_SERVICE_ERROR_JSON_OPERATE_FAIL,
-        "service error, json operate fail",
-    },
-    {
-        DLP_SERVICE_ERROR_IPC_REQUEST_FAIL,
-        "service error, ipc request fail",
-    },
-    {
-        DLP_SERVICE_ERROR_PERMISSION_DENY,
-        "service error, permission denied",
-    },
-    {
-        DLP_SERVICE_ERROR_APPOBSERVER_NULL,
-        "service error, app observer is null",
-    },
-    {
-        DLP_SERVICE_ERROR_APPOBSERVER_ERROR,
-        "service error, app observer error",
-    },
-    {
-        DLP_SERVICE_ERROR_CREDENTIAL_OPERATE_FAIL,
-        "service error, credential operate fail",
-    },
-    {
-        DLP_SERVICE_ERROR_CREDENTIAL_BUSY,
-        "service error, credential busy",
-    },
-    {
-        DLP_SERVICE_ERROR_CREDENTIAL_TASK_DUPLICATE,
-        "service error, credential task duplicate",
-    },
-    {
-        DLP_SERVICE_ERROR_CREDENTIAL_TASK_TIMEOUT,
-        "service error, credential task timeout",
-    },
-    {
-        DLP_SERVICE_ERROR_GET_ACCOUNT_FAIL,
-        "service error, get account info fail",
-    },
-
-    {
-        DLP_PARSE_ERROR_VALUE_INVALID,
-        "parse error, input param invalid",
-    },
-    {
-        DLP_PARSE_ERROR_DIGEST_INVALID,
-        "parse error, input digest invalid",
-    },
-    {
-        DLP_PARSE_ERROR_FD_ERROR,
-        "parse error, input fd invalid",
-    },
-    {
-        DLP_PARSE_ERROR_PTR_NULL,
-        "parse error, input ptr is null",
-    },
-    {
-        DLP_PARSE_ERROR_FILE_NOT_DLP,
-        "parse error, file is not dlp",
-    },
-    {
-        DLP_PARSE_ERROR_FILE_FORMAT_ERROR,
-        "parse error, file format error",
-    },
-    {
-        DLP_PARSE_ERROR_FILE_UNPARSED,
-        "parse error, file unparsed",
-    },
-    {
-        DLP_PARSE_ERROR_FILE_OPERATE_FAIL,
-        "parse error, file openrate fail",
-    },
-    {
-        DLP_PARSE_ERROR_FILE_LINKING,
-        "parse error, file is linking",
-    },
-    {
-        DLP_PARSE_ERROR_FILE_READ_ONLY,
-        "parse error, file is read only",
-    },
-    {
-        DLP_PARSE_ERROR_FILE_ALREADY_OPENED,
-        "parse error, file is already opened",
-    },
-    {
-        DLP_PARSE_ERROR_FILE_NOT_OPENED,
-        "parse error, request file is not opened",
-    },
-    {
-        DLP_PARSE_ERROR_CRYPT_FAIL,
-        "parse error, crypt fail",
-    },
-    {
-        DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR,
-        "parse error, crypto engine error",
-    },
-    {
-        DLP_PARSE_ERROR_CIPHER_PARAMS_INVALID,
-        "parse error, cipher params invalid",
-    },
-    {
-        DLP_PARSE_ERROR_ACCOUNT_INVALID,
-        "parse error, account is invalid",
-    },
-    {
-        DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL,
-        "parse error, memory operate fail",
-    },
-    {
-        DLP_PARSE_ERROR_OPERATION_UNSUPPORTED,
-        "parse error, operation unsupported",
-    },
-    {
-        DLP_PARSE_ERROR_TOO_MANY_OPEN_DLP_FILE,
-        "parse error, open dlp files are too many",
-    },
-
-    {
-        DLP_FUSE_ERROR_VALUE_INVALID,
-        "link fuse error, input param invalid",
-    },
-    {
-        DLP_FUSE_ERROR_DLP_FILE_NULL,
-        "link fuse error, dlp file is null",
-    },
-    {
-        DLP_FUSE_ERROR_LINKFILE_EXIST,
-        "link fuse error, link file is exist",
-    },
-    {
-        DLP_FUSE_ERROR_LINKFILE_NOT_EXIST,
-        "link fuse error, link file is not exist",
-    },
-    {
-        DLP_FUSE_ERROR_MEMORY_OPERATE_FAIL,
-        "link fuse error, memory operate fail",
-    },
-    {
-        DLP_FUSE_ERROR_TOO_MANY_LINK_FILE,
-        "link fuse error, link files are too many",
-    },
+    {ERR_JS_SUCCESS, "success"},
+    {ERR_JS_PERMISSION_DENIED, "Permission denied"},
+    {ERR_JS_NOT_SYSTEM_APP, "No permission to invoke this api, it is for system app"},
+    {ERR_JS_PARAMETER_ERROR, "Parameter type error, please check parameter type"},
+    {ERR_JS_CAPABILITY_NOT_SUPPORTED, "Capability is not supported"},
+    {ERR_JS_INVALID_PARAMETER, "Parameter invalid, please check parameter range"},
+    {ERR_JS_BEGIN_CREDENTIAL_FAIL, "Credential encryption or decryption busy, please wait for a moment and try again"},
+    {ERR_JS_CREDENTIAL_TIMEOUT, "Credential encryption or decryption timeout, please wait for a moment and try again"},
+    {ERR_JS_CREDENTIAL_SERVICE_ERROR, "Credential service error, please check the service and try again"},
+    {ERR_JS_CREDENTIAL_SERVER_ERROR, "Credential server error, please check the server and try again"},
+    {ERR_JS_NOT_DLP_FILE, "Operate invalid DLP file, please use DLP file"},
+    {ERR_JS_OPERATE_DLP_FILE_FAIL, "Open DLP file fail, please check your permission and try again"},
+    {ERR_JS_DLP_FILE_READ_ONLY, "DLP file is read only, please check your permission"},
+    {ERR_JS_SYSTEM_SERVICE_EXCEPTION, "System service exception, please try again or reboot your device"},
+    {ERR_JS_OUT_OF_MEMORY, "System out of memory, please try again or reboot your device"},
 };
 
-std::string GetErrStr(int32_t errNo)
+static const std::unordered_map<int32_t, int32_t> NATIVE_CODE_TO_JS_CODE_MAP = {
+    {DLP_OK, ERR_JS_SUCCESS},
+
+    // ERR_JS_PERMISSION_DENIED
+    {DLP_SERVICE_ERROR_PERMISSION_DENY, ERR_JS_PERMISSION_DENIED},
+
+    // ERR_JS_INVALID_PARAMETER
+    {DLP_SERVICE_ERROR_VALUE_INVALID, ERR_JS_INVALID_PARAMETER},
+    {DLP_PARSE_ERROR_VALUE_INVALID, ERR_JS_INVALID_PARAMETER},
+    {DLP_PARSE_ERROR_DIGEST_INVALID, ERR_JS_INVALID_PARAMETER},
+    {DLP_PARSE_ERROR_FD_ERROR, ERR_JS_INVALID_PARAMETER},
+    {DLP_PARSE_ERROR_PTR_NULL, ERR_JS_INVALID_PARAMETER},
+    {DLP_PARSE_ERROR_CIPHER_PARAMS_INVALID, ERR_JS_INVALID_PARAMETER},
+    {DLP_PARSE_ERROR_ACCOUNT_INVALID, ERR_JS_INVALID_PARAMETER},
+    {DLP_FUSE_ERROR_VALUE_INVALID, ERR_JS_INVALID_PARAMETER},
+    {DLP_FUSE_ERROR_DLP_FILE_NULL, ERR_JS_INVALID_PARAMETER},
+
+    // ERR_JS_BEGIN_CREDENTIAL_FAIL
+    {DLP_SERVICE_ERROR_CREDENTIAL_BUSY, ERR_JS_BEGIN_CREDENTIAL_FAIL},
+    {DLP_SERVICE_ERROR_CREDENTIAL_TASK_DUPLICATE, ERR_JS_BEGIN_CREDENTIAL_FAIL},
+
+    // ERR_JS_CREDENTIAL_TIMEOUT
+    {DLP_SERVICE_ERROR_CREDENTIAL_TASK_TIMEOUT, ERR_JS_CREDENTIAL_TIMEOUT},
+
+    // ERR_JS_CREDENTIAL_SERVICE_ERROR
+    {DLP_CREDENTIAL_ERROR_COMMON_ERROR, ERR_JS_CREDENTIAL_SERVICE_ERROR},
+    {DLP_CREDENTIAL_ERROR_HUKS_ERROR, ERR_JS_CREDENTIAL_SERVICE_ERROR},
+    {DLP_CREDENTIAL_ERROR_IPC_ERROR, ERR_JS_CREDENTIAL_SERVICE_ERROR},
+
+    // ERR_JS_CREDENTIAL_SERVER_ERROR
+    {DLP_CREDENTIAL_ERROR_SERVER_ERROR, ERR_JS_CREDENTIAL_SERVER_ERROR},
+
+    // ERR_JS_NOT_DLP_FILE
+    {DLP_PARSE_ERROR_FILE_NOT_DLP, ERR_JS_NOT_DLP_FILE},
+    {DLP_PARSE_ERROR_FILE_FORMAT_ERROR, ERR_JS_NOT_DLP_FILE},
+
+    // ERR_JS_OPERATE_DLP_FILE_FAIL
+    {DLP_SERVICE_ERROR_INSTALL_SANDBOX_FAIL, ERR_JS_OPERATE_DLP_FILE_FAIL},
+    {DLP_PARSE_ERROR_TOO_MANY_OPEN_DLP_FILE, ERR_JS_OPERATE_DLP_FILE_FAIL},
+    {DLP_FUSE_ERROR_LINKFILE_EXIST, ERR_JS_OPERATE_DLP_FILE_FAIL},
+    {DLP_SERVICE_ERROR_UNINSTALL_SANDBOX_FAIL, ERR_JS_OPERATE_DLP_FILE_FAIL},
+    {DLP_PARSE_ERROR_FILE_OPERATE_FAIL, ERR_JS_OPERATE_DLP_FILE_FAIL},
+    {DLP_PARSE_ERROR_FILE_LINKING, ERR_JS_OPERATE_DLP_FILE_FAIL},
+    {DLP_PARSE_ERROR_FILE_ALREADY_OPENED, ERR_JS_OPERATE_DLP_FILE_FAIL},
+    {DLP_PARSE_ERROR_FILE_NOT_OPENED, ERR_JS_OPERATE_DLP_FILE_FAIL},
+    {DLP_FUSE_ERROR_LINKFILE_NOT_EXIST, ERR_JS_OPERATE_DLP_FILE_FAIL},
+    {DLP_FUSE_ERROR_TOO_MANY_LINK_FILE, ERR_JS_OPERATE_DLP_FILE_FAIL},
+
+    // ERR_JS_DLP_FILE_READ_ONLY
+    {DLP_PARSE_ERROR_FILE_READ_ONLY, ERR_JS_DLP_FILE_READ_ONLY},
+
+    // ERR_JS_SYSTEM_SERVICE_EXCEPTION
+    {DLP_NAPI_ERROR_NATIVE_BINDING_FAIL, ERR_JS_SYSTEM_SERVICE_EXCEPTION},
+    {DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL, ERR_JS_SYSTEM_SERVICE_EXCEPTION},
+    {DLP_SERVICE_ERROR_JSON_OPERATE_FAIL, ERR_JS_SYSTEM_SERVICE_EXCEPTION},
+    {DLP_SERVICE_ERROR_IPC_REQUEST_FAIL, ERR_JS_SYSTEM_SERVICE_EXCEPTION},
+    {DLP_SERVICE_ERROR_APPOBSERVER_NULL, ERR_JS_SYSTEM_SERVICE_EXCEPTION},
+    {DLP_SERVICE_ERROR_APPOBSERVER_ERROR, ERR_JS_SYSTEM_SERVICE_EXCEPTION},
+    {DLP_SERVICE_ERROR_SERVICE_NOT_EXIST, ERR_JS_SYSTEM_SERVICE_EXCEPTION},
+    {DLP_SERVICE_ERROR_GET_ACCOUNT_FAIL, ERR_JS_SYSTEM_SERVICE_EXCEPTION},
+    {DLP_PARSE_ERROR_CRYPT_FAIL, ERR_JS_SYSTEM_SERVICE_EXCEPTION},
+    {DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR, ERR_JS_SYSTEM_SERVICE_EXCEPTION},
+    {DLP_PARSE_ERROR_OPERATION_UNSUPPORTED, ERR_JS_SYSTEM_SERVICE_EXCEPTION},
+
+    // ERR_JS_OUT_OF_MEMORY
+    {DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL, ERR_JS_OUT_OF_MEMORY},
+    {DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL, ERR_JS_OUT_OF_MEMORY},
+    {DLP_FUSE_ERROR_MEMORY_OPERATE_FAIL, ERR_JS_OUT_OF_MEMORY},
+};
+
+std::string GetJsErrMsg(int32_t jsErrCode)
 {
-    auto iter = g_dlpErrMsg.find(errNo);
-    if (iter != g_dlpErrMsg.end()) {
+    auto iter = JS_ERROR_MSG_MAP.find(jsErrCode);
+    if (iter != JS_ERROR_MSG_MAP.end()) {
         return iter->second;
     }
-    std::string msg = "unkown error, error num: " + std::to_string(errNo);
+    std::string msg = "unkown error, please reboot your device and try again, error=" + std::to_string(jsErrCode);
     return msg;
+}
+
+int32_t NativeCodeToJsCode(int32_t nativeErrCode)
+{
+    auto iter = NATIVE_CODE_TO_JS_CODE_MAP.find(nativeErrCode);
+    if (iter != NATIVE_CODE_TO_JS_CODE_MAP.end()) {
+        return iter->second;
+    }
+    return ERR_JS_SYSTEM_SERVICE_EXCEPTION;
 }
 }  // namespace DlpPermission
 }  // namespace Security

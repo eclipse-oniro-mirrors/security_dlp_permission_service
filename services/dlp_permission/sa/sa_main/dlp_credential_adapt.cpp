@@ -36,6 +36,38 @@ static std::unordered_map<uint64_t, sptr<IDlpPermissionCallback>> g_requestMap;
 std::mutex g_lockRequest;
 }  // namespace
 
+static bool IsDlpCredentialHuksError(int errorCode)
+{
+    return ((errorCode >= DLP_ERR_INVALID_KEY_ATTESTATION) && (errorCode <= DLP_ERR_IMPORT_KEY_FAILED));
+}
+
+static bool IsDlpCredentialIpcError(int errorCode)
+{
+    return ((errorCode >= DLP_ERR_IPC_INTERNAL_FAILED) && (errorCode <= DLP_ERR_CHECK_PERMISSION));
+}
+
+static bool IsDlpCredentialServerError(int errorCode)
+{
+    return ((errorCode >= DLP_ERR_CONNECTION_TIME_OUT) && (errorCode <= DLP_ERR_CONNECTION_ERROR_TOKEN));
+}
+
+static int32_t ConvertCredentialError(int errorCode)
+{
+    if (errorCode == DLP_SUCCESS) {
+        return DLP_OK;
+    }
+    if (IsDlpCredentialHuksError(errorCode)) {
+        return DLP_CREDENTIAL_ERROR_HUKS_ERROR;
+    }
+    if (IsDlpCredentialIpcError(errorCode)) {
+        return DLP_CREDENTIAL_ERROR_IPC_ERROR;
+    }
+    if (IsDlpCredentialServerError(errorCode)) {
+        return DLP_CREDENTIAL_ERROR_SERVER_ERROR;
+    }
+    return DLP_CREDENTIAL_ERROR_COMMON_ERROR;
+}
+
 static sptr<IDlpPermissionCallback> GetCallbackFromRequestMap(uint64_t requestId)
 {
     DLP_LOG_INFO(LABEL, "Get callback, requestId: %{public}llu", static_cast<unsigned long long>(requestId));
@@ -84,13 +116,13 @@ static void DlpPackPolicyCallback(uint64_t requestId, int errorCode, DLP_EncPoli
 
     if (errorCode != 0) {
         DLP_LOG_ERROR(LABEL, "Pack Policy error, errorCode: %{public}d", errorCode);
-        callback->onGenerateDlpCertificate(errorCode, std::vector<uint8_t>());
+        callback->OnGenerateDlpCertificate(ConvertCredentialError(errorCode), std::vector<uint8_t>());
         return;
     }
 
     if (outParams == nullptr || outParams->data == nullptr || outParams->featureName == nullptr) {
         DLP_LOG_ERROR(LABEL, "Params is null");
-        callback->onGenerateDlpCertificate(DLP_SERVICE_ERROR_VALUE_INVALID, std::vector<uint8_t>());
+        callback->OnGenerateDlpCertificate(DLP_SERVICE_ERROR_VALUE_INVALID, std::vector<uint8_t>());
         return;
     }
     nlohmann::json encDataJson;
@@ -101,7 +133,7 @@ static void DlpPackPolicyCallback(uint64_t requestId, int errorCode, DLP_EncPoli
     }
     std::string encData = encDataJson.dump();
     std::vector<uint8_t> cert(encData.begin(), encData.end());
-    callback->onGenerateDlpCertificate(errorCode, cert);
+    callback->OnGenerateDlpCertificate(errorCode, cert);
 }
 
 static void DlpRestorePolicyCallback(uint64_t requestId, int errorCode, DLP_RestorePolicyData* outParams)
@@ -116,25 +148,25 @@ static void DlpRestorePolicyCallback(uint64_t requestId, int errorCode, DLP_Rest
     PermissionPolicy policyInfo;
     if (errorCode != 0) {
         DLP_LOG_ERROR(LABEL, "Restore Policy error, errorCode: %{public}d", errorCode);
-        callback->onParseDlpCertificate(errorCode, policyInfo);
+        callback->OnParseDlpCertificate(ConvertCredentialError(errorCode), policyInfo);
         return;
     }
     if (outParams == nullptr || outParams->data == nullptr) {
         DLP_LOG_ERROR(LABEL, "Params is null");
-        callback->onParseDlpCertificate(DLP_SERVICE_ERROR_VALUE_INVALID, policyInfo);
+        callback->OnParseDlpCertificate(DLP_SERVICE_ERROR_VALUE_INVALID, policyInfo);
         return;
     }
 
     auto policyStr = new (std::nothrow) char[outParams->dataLen + 1];
     if (policyStr == nullptr) {
         DLP_LOG_ERROR(LABEL, "New memory fail");
-        callback->onParseDlpCertificate(DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL, policyInfo);
+        callback->OnParseDlpCertificate(DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL, policyInfo);
         return;
     }
     if (memcpy_s(policyStr, outParams->dataLen + 1, outParams->data, outParams->dataLen) != EOK) {
         DLP_LOG_ERROR(LABEL, "Memcpy_s fail");
         delete[] policyStr;
-        callback->onParseDlpCertificate(DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL, policyInfo);
+        callback->OnParseDlpCertificate(DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL, policyInfo);
         return;
     }
     policyStr[outParams->dataLen] = '\0';
@@ -143,17 +175,17 @@ static void DlpRestorePolicyCallback(uint64_t requestId, int errorCode, DLP_Rest
     if (jsonObj.is_discarded() || (!jsonObj.is_object())) {
         DLP_LOG_ERROR(LABEL, "JsonObj is discarded");
         delete[] policyStr;
-        callback->onParseDlpCertificate(DLP_SERVICE_ERROR_JSON_OPERATE_FAIL, policyInfo);
+        callback->OnParseDlpCertificate(DLP_SERVICE_ERROR_JSON_OPERATE_FAIL, policyInfo);
         return;
     }
     delete[] policyStr;
     policyStr = nullptr;
     int32_t res = DlpPermissionSerializer::GetInstance().DeserializeDlpPermission(jsonObj, policyInfo);
     if (res != DLP_OK) {
-        callback->onParseDlpCertificate(res, policyInfo);
+        callback->OnParseDlpCertificate(res, policyInfo);
         return;
     }
-    callback->onParseDlpCertificate(errorCode, policyInfo);
+    callback->OnParseDlpCertificate(errorCode, policyInfo);
 }
 
 DlpCredential& DlpCredential::GetInstance()
@@ -214,7 +246,7 @@ int32_t DlpCredential::GenerateDlpCertificate(
         }
     }
     FreeDlpPackPolicyParams(packPolicy);
-    return res == 0 ? DLP_OK : DLP_SERVICE_ERROR_CREDENTIAL_OPERATE_FAIL;
+    return ConvertCredentialError(res);
 }
 
 static void FreeDLPEncPolicyData(DLP_EncPolicyData& encPolicy)
@@ -277,7 +309,7 @@ int32_t DlpCredential::ParseDlpCertificate(const std::vector<uint8_t>& cert, spt
         }
     }
     FreeDLPEncPolicyData(encPolicy);
-    return res == 0 ? DLP_OK : DLP_SERVICE_ERROR_CREDENTIAL_OPERATE_FAIL;
+    return ConvertCredentialError(res);
 }
 }  // namespace DlpPermission
 }  // namespace Security

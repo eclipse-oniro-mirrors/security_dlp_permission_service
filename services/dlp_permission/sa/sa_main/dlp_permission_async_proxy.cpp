@@ -26,7 +26,7 @@ static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {
     LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionAsyncProxy"};
 }
 
-void DlpPermissionAsyncProxy::onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert)
+void DlpPermissionAsyncProxy::OnGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert)
 {
     MessageParcel data;
     if (!data.WriteInterfaceToken(DlpPermissionAsyncProxy::GetDescriptor())) {
@@ -59,7 +59,7 @@ void DlpPermissionAsyncProxy::onGenerateDlpCertificate(int32_t result, const std
     }
 }
 
-void DlpPermissionAsyncProxy::onParseDlpCertificate(int32_t result, const PermissionPolicy& policy)
+void DlpPermissionAsyncProxy::OnParseDlpCertificate(int32_t result, const PermissionPolicy& policy)
 {
     MessageParcel data;
     if (!data.WriteInterfaceToken(DlpPermissionAsyncProxy::GetDescriptor())) {

@@ -56,7 +56,7 @@ int32_t DlpPermissionProxy::GenerateDlpCertificate(
     sptr<IRemoteObject> remote = Remote();
     if (remote == nullptr) {
         DLP_LOG_ERROR(LABEL, "Remote service is null");
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
         static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GENERATE_DLP_CERTIFICATE), data, reply, option);
@@ -96,7 +96,7 @@ int32_t DlpPermissionProxy::ParseDlpCertificate(
     sptr<IRemoteObject> remote = Remote();
     if (remote == nullptr) {
         DLP_LOG_ERROR(LABEL, "Remote service is null");
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
         static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::PARSE_DLP_CERTIFICATE), data, reply, option);
@@ -141,7 +141,7 @@ int32_t DlpPermissionProxy::InstallDlpSandbox(
     sptr<IRemoteObject> remote = Remote();
     if (remote == nullptr) {
         DLP_LOG_ERROR(LABEL, "Remote service is null");
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
         static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::INSTALL_DLP_SANDBOX), data, reply, option);
@@ -190,7 +190,7 @@ int32_t DlpPermissionProxy::UninstallDlpSandbox(const std::string& bundleName, i
     sptr<IRemoteObject> remote = Remote();
     if (remote == nullptr) {
         DLP_LOG_ERROR(LABEL, "Remote service is null");
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
         static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::UNINSTALL_DLP_SANDBOX), data, reply, option);
@@ -269,7 +269,7 @@ int32_t DlpPermissionProxy::QueryDlpFileCopyableByTokenId(bool& copyable, uint32
     sptr<IRemoteObject> remote = Remote();
     if (remote == nullptr) {
         DLP_LOG_ERROR(LABEL, "Remote service is null");
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
         static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::QUERY_DLP_FILE_ACCESS_BY_TOKEN_ID), data, reply,
@@ -303,7 +303,7 @@ int32_t DlpPermissionProxy::QueryDlpFileAccess(AuthPermType& permType)
     sptr<IRemoteObject> remote = Remote();
     if (remote == nullptr) {
         DLP_LOG_ERROR(LABEL, "Remote service is null");
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
         static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::QUERY_DLP_FILE_ACCESS), data, reply, option);
@@ -338,7 +338,7 @@ int32_t DlpPermissionProxy::IsInDlpSandbox(bool& inSandbox)
     sptr<IRemoteObject> remote = Remote();
     if (remote == nullptr) {
         DLP_LOG_ERROR(LABEL, "Remote service is null");
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
         static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::IS_IN_DLP_SANDBOX), data, reply, option);
@@ -371,7 +371,7 @@ int32_t DlpPermissionProxy::GetDlpSupportFileType(std::vector<std::string>& supp
     sptr<IRemoteObject> remote = Remote();
     if (remote == nullptr) {
         DLP_LOG_ERROR(LABEL, "Remote service is null");
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
         static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_DLP_SUPPORT_FILE_TYPE), data, reply, option);

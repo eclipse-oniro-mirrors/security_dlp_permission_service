@@ -33,7 +33,7 @@ public:
     ClientGenerateDlpCertificateCallback() = default;
     virtual ~ClientGenerateDlpCertificateCallback() = default;
 
-    void onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert) override;
+    void OnGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert) override;
 
     int32_t result_ = -1;
     std::vector<uint8_t> cert_;
@@ -47,7 +47,7 @@ public:
     ClientParseDlpCertificateCallback() = default;
     virtual ~ClientParseDlpCertificateCallback() = default;
 
-    void onParseDlpCertificate(int32_t result, const PermissionPolicy& policy) override;
+    void OnParseDlpCertificate(int32_t result, const PermissionPolicy& policy) override;
 
     int32_t result_ = -1;
     PermissionPolicy policy_;

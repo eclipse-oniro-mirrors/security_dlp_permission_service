@@ -21,7 +21,26 @@
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
-std::string GetErrStr(int32_t errNo);
+enum JsErrorCode : int32_t {
+    ERR_JS_SUCCESS = 0,
+    ERR_JS_PERMISSION_DENIED = 201,
+    ERR_JS_NOT_SYSTEM_APP = 202,
+    ERR_JS_PARAMETER_ERROR = 401,
+    ERR_JS_CAPABILITY_NOT_SUPPORTED = 801,
+    ERR_JS_INVALID_PARAMETER = 19100001,
+    ERR_JS_BEGIN_CREDENTIAL_FAIL = 19100002,
+    ERR_JS_CREDENTIAL_TIMEOUT = 19100003,
+    ERR_JS_CREDENTIAL_SERVICE_ERROR = 19100004,
+    ERR_JS_CREDENTIAL_SERVER_ERROR = 19100005,
+    ERR_JS_NOT_DLP_FILE = 19100008,
+    ERR_JS_OPERATE_DLP_FILE_FAIL = 19100009,
+    ERR_JS_DLP_FILE_READ_ONLY = 19100010,
+    ERR_JS_SYSTEM_SERVICE_EXCEPTION = 19100011,
+    ERR_JS_OUT_OF_MEMORY = 19100012,
+};
+
+std::string GetJsErrMsg(int32_t errNo);
+int32_t NativeCodeToJsCode(int32_t nativeErrCode);
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS

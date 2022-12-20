@@ -30,7 +30,7 @@ static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_
 const int64_t TIME_WAIT_TIME_OUT = 10;
 }  // namespace
 
-void ClientGenerateDlpCertificateCallback::onGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert)
+void ClientGenerateDlpCertificateCallback::OnGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert)
 {
     DLP_LOG_INFO(LABEL, "Callback");
     this->result_ = result;
@@ -42,7 +42,7 @@ void ClientGenerateDlpCertificateCallback::onGenerateDlpCertificate(int32_t resu
     generateCv_.notify_all();
 }
 
-void ClientParseDlpCertificateCallback::onParseDlpCertificate(int32_t result, const PermissionPolicy& policy)
+void ClientParseDlpCertificateCallback::OnParseDlpCertificate(int32_t result, const PermissionPolicy& policy)
 {
     DLP_LOG_INFO(LABEL, "Callback");
     this->result_ = result;

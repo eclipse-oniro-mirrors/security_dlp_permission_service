@@ -76,20 +76,20 @@ int32_t DlpPermissionClient::GenerateDlpCertificate(
     auto proxy = GetProxy(true);
     if (proxy == nullptr) {
         DLP_LOG_ERROR(LABEL, "Proxy is null");
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
 
     sptr<DlpPolicyParcel> policyParcel = new (std::nothrow) DlpPolicyParcel();
     if (policyParcel == nullptr) {
         DLP_LOG_ERROR(LABEL, "New memory fail");
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL;
     }
     policyParcel->policyParams_.CopyPermissionPolicy(policy);
 
     sptr<IDlpPermissionCallback> asyncStub = new (std::nothrow) DlpPermissionAsyncStub(callback);
     if (asyncStub == nullptr) {
         DLP_LOG_ERROR(LABEL, "New memory fail");
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
     return proxy->GenerateDlpCertificate(policyParcel, asyncStub);
@@ -104,13 +104,13 @@ int32_t DlpPermissionClient::ParseDlpCertificate(
     auto proxy = GetProxy(true);
     if (proxy == nullptr) {
         DLP_LOG_ERROR(LABEL, "Proxy is null");
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
 
     sptr<IDlpPermissionCallback> asyncStub = new (std::nothrow) DlpPermissionAsyncStub(callback);
     if (asyncStub == nullptr) {
         DLP_LOG_ERROR(LABEL, "New memory fail");
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
     return proxy->ParseDlpCertificate(cert, asyncStub);
@@ -125,7 +125,7 @@ int32_t DlpPermissionClient::InstallDlpSandbox(
     auto proxy = GetProxy(true);
     if (proxy == nullptr) {
         DLP_LOG_ERROR(LABEL, "Proxy is null");
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
 
     return proxy->InstallDlpSandbox(bundleName, permType, userId, appIndex);
@@ -139,7 +139,7 @@ int32_t DlpPermissionClient::UninstallDlpSandbox(const std::string& bundleName, 
     auto proxy = GetProxy(true);
     if (proxy == nullptr) {
         DLP_LOG_ERROR(LABEL, "Proxy is null");
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
 
     return proxy->UninstallDlpSandbox(bundleName, appIndex, userId);
