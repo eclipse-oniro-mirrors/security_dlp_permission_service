@@ -325,7 +325,7 @@ HWTEST_F(DlpPermissionKitTest, ParseDlpCertificate001, TestSize.Level1)
     PermissionPolicy policy;
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, DlpPermissionKit::ParseDlpCertificate(cert, policy));
     cert = {1, 2, 3};
-    ASSERT_EQ(DLP_SERVICE_ERROR_JSON_OPERATE_FAIL, DlpPermissionKit::ParseDlpCertificate(cert, policy));
+    ASSERT_NE(DLP_OK, DlpPermissionKit::ParseDlpCertificate(cert, policy));
 }
 
 /**

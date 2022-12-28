@@ -36,6 +36,7 @@ public:
 private:
     static napi_value JsConstructor(napi_env env, napi_callback_info cbinfo);
     static napi_value DlpFile(napi_env env, napi_callback_info cbInfo);
+    static bool IsSystemApp(napi_env env);
 
     static void GenerateDlpFileExcute(napi_env env, void* data);
     static void GenerateDlpFileComplete(napi_env env, napi_status status, void* data);
