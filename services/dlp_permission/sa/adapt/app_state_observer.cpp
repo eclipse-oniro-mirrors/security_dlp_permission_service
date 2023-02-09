@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,6 +19,8 @@
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
 #include "bundle_mgr_client.h"
+#include "iservice_registry.h"
+#include "i_dlp_permission_service.h"
 
 namespace OHOS {
 namespace Security {
@@ -75,8 +77,18 @@ void AppStateObserver::ExitSaAfterAllDlpManagerDie()
 {
     std::lock_guard<std::mutex> lock(userIdListLock_);
     if (userIdList_.empty()) {
-        DLP_LOG_INFO(LABEL, "all dlp manager app die, service exit");
-        exit(0);
+        DLP_LOG_INFO(LABEL, "all dlp manager app die,start service exit");
+        auto systemAbilityMgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
+        if (systemAbilityMgr == nullptr) {
+            DLP_LOG_ERROR(LABEL, "Failed to get SystemAbilityManager.");
+            return;
+        }
+        int32_t ret = systemAbilityMgr->UnloadSystemAbility(SA_ID_DLP_PERMISSION_SERVICE);
+        if (ret != DLP_OK) {
+            DLP_LOG_ERROR(LABEL, "Failed to UnloadSystemAbility service! errcode=%{public}d", ret);
+            return;
+        }
+        DLP_LOG_INFO(LABEL, "UnloadSystemAbility successfully!");
     }
 }
 
