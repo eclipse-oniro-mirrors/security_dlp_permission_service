@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -338,6 +338,189 @@ void NapiDlpPermission::AddDlpLinkFileExcute(napi_env env, void* data)
 }
 
 void NapiDlpPermission::AddDlpLinkFileComplete(napi_env env, napi_status status, void* data)
+{
+    DLP_LOG_DEBUG(LABEL, "napi_create_async_work complete");
+    auto asyncContext = reinterpret_cast<DlpLinkFileAsyncContext*>(data);
+    if (asyncContext == nullptr) {
+        DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
+        return;
+    }
+    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
+    napi_value resJs = nullptr;
+    NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &resJs));
+    ProcessCallbackOrPromise(env, asyncContext, resJs);
+}
+
+napi_value NapiDlpPermission::StopDlpLinkFile(napi_env env, napi_callback_info cbInfo)
+{
+    if (!IsSystemApp(env)) {
+        return nullptr;
+    }
+    auto* asyncContext = new (std::nothrow) DlpLinkFileAsyncContext(env);
+    if (asyncContext == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
+        return nullptr;
+    }
+    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
+
+    if (!GetDlpLinkFileParams(env, cbInfo, *asyncContext)) {
+        return nullptr;
+    }
+
+    napi_value result = nullptr;
+    if (asyncContext->callbackRef == nullptr) {
+        DLP_LOG_DEBUG(LABEL, "Create promise");
+        NAPI_CALL(env, napi_create_promise(env, &asyncContext->deferred, &result));
+    } else {
+        DLP_LOG_DEBUG(LABEL, "Undefined the result parameter");
+        NAPI_CALL(env, napi_get_undefined(env, &result));
+    }
+
+    napi_value resource = nullptr;
+    NAPI_CALL(env, napi_create_string_utf8(env, "StopDlpLinkFile", NAPI_AUTO_LENGTH, &resource));
+    NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, StopDlpLinkFileExcute, StopDlpLinkFileComplete,
+        static_cast<void*>(asyncContext), &(asyncContext->work)));
+    NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
+    asyncContextPtr.release();
+    return result;
+}
+
+void NapiDlpPermission::StopDlpLinkFileExcute(napi_env env, void* data)
+{
+    DLP_LOG_DEBUG(LABEL, "napi_create_async_work running");
+    auto asyncContext = reinterpret_cast<DlpLinkFileAsyncContext*>(data);
+    if (asyncContext == nullptr) {
+        DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
+        return;
+    }
+
+    asyncContext->errCode =
+        DlpLinkManager::GetInstance().StopDlpLinkFile(asyncContext->dlpFileNative, asyncContext->linkFileName);
+}
+
+void NapiDlpPermission::StopDlpLinkFileComplete(napi_env env, napi_status status, void* data)
+{
+    DLP_LOG_DEBUG(LABEL, "napi_create_async_work complete");
+    auto asyncContext = reinterpret_cast<DlpLinkFileAsyncContext*>(data);
+    if (asyncContext == nullptr) {
+        DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
+        return;
+    }
+    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
+    napi_value resJs = nullptr;
+    NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &resJs));
+    ProcessCallbackOrPromise(env, asyncContext, resJs);
+}
+
+napi_value NapiDlpPermission::RestartDlpLinkFile(napi_env env, napi_callback_info cbInfo)
+{
+    if (!IsSystemApp(env)) {
+        return nullptr;
+    }
+    auto* asyncContext = new (std::nothrow) DlpLinkFileAsyncContext(env);
+    if (asyncContext == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
+        return nullptr;
+    }
+    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
+
+    if (!GetDlpLinkFileParams(env, cbInfo, *asyncContext)) {
+        return nullptr;
+    }
+
+    napi_value result = nullptr;
+    if (asyncContext->callbackRef == nullptr) {
+        DLP_LOG_DEBUG(LABEL, "Create promise");
+        NAPI_CALL(env, napi_create_promise(env, &asyncContext->deferred, &result));
+    } else {
+        DLP_LOG_DEBUG(LABEL, "Undefined the result parameter");
+        NAPI_CALL(env, napi_get_undefined(env, &result));
+    }
+
+    napi_value resource = nullptr;
+    NAPI_CALL(env, napi_create_string_utf8(env, "RestartDlpLinkFile", NAPI_AUTO_LENGTH, &resource));
+    NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, RestartDlpLinkFileExcute, RestartDlpLinkFileComplete,
+        static_cast<void*>(asyncContext), &(asyncContext->work)));
+    NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
+    asyncContextPtr.release();
+    return result;
+}
+
+void NapiDlpPermission::RestartDlpLinkFileExcute(napi_env env, void* data)
+{
+    DLP_LOG_DEBUG(LABEL, "napi_create_async_work running");
+    auto asyncContext = reinterpret_cast<DlpLinkFileAsyncContext*>(data);
+    if (asyncContext == nullptr) {
+        DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
+        return;
+    }
+
+    asyncContext->errCode =
+        DlpLinkManager::GetInstance().RestartDlpLinkFile(asyncContext->dlpFileNative, asyncContext->linkFileName);
+}
+
+void NapiDlpPermission::RestartDlpLinkFileComplete(napi_env env, napi_status status, void* data)
+{
+    DLP_LOG_DEBUG(LABEL, "napi_create_async_work complete");
+    auto asyncContext = reinterpret_cast<DlpLinkFileAsyncContext*>(data);
+    if (asyncContext == nullptr) {
+        DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
+        return;
+    }
+    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
+    napi_value resJs = nullptr;
+    NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &resJs));
+    ProcessCallbackOrPromise(env, asyncContext, resJs);
+}
+
+napi_value NapiDlpPermission::ReplaceDlpLinkFile(napi_env env, napi_callback_info cbInfo)
+{
+    if (!IsSystemApp(env)) {
+        return nullptr;
+    }
+    auto* asyncContext = new (std::nothrow) DlpLinkFileAsyncContext(env);
+    if (asyncContext == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
+        return nullptr;
+    }
+    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
+
+    if (!GetDlpLinkFileParams(env, cbInfo, *asyncContext)) {
+        return nullptr;
+    }
+
+    napi_value result = nullptr;
+    if (asyncContext->callbackRef == nullptr) {
+        DLP_LOG_DEBUG(LABEL, "Create promise");
+        NAPI_CALL(env, napi_create_promise(env, &asyncContext->deferred, &result));
+    } else {
+        DLP_LOG_DEBUG(LABEL, "Undefined the result parameter");
+        NAPI_CALL(env, napi_get_undefined(env, &result));
+    }
+
+    napi_value resource = nullptr;
+    NAPI_CALL(env, napi_create_string_utf8(env, "ReplaceDlpLinkFile", NAPI_AUTO_LENGTH, &resource));
+    NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, ReplaceDlpLinkFileExcute, ReplaceDlpLinkFileComplete,
+        static_cast<void*>(asyncContext), &(asyncContext->work)));
+    NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
+    asyncContextPtr.release();
+    return result;
+}
+
+void NapiDlpPermission::ReplaceDlpLinkFileExcute(napi_env env, void* data)
+{
+    DLP_LOG_DEBUG(LABEL, "napi_create_async_work running");
+    auto asyncContext = reinterpret_cast<DlpLinkFileAsyncContext*>(data);
+    if (asyncContext == nullptr) {
+        DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
+        return;
+    }
+
+    asyncContext->errCode =
+        DlpLinkManager::GetInstance().ReplaceDlpLinkFile(asyncContext->dlpFileNative, asyncContext->linkFileName);
+}
+
+void NapiDlpPermission::ReplaceDlpLinkFileComplete(napi_env env, napi_status status, void* data)
 {
     DLP_LOG_DEBUG(LABEL, "napi_create_async_work complete");
     auto asyncContext = reinterpret_cast<DlpLinkFileAsyncContext*>(data);
@@ -888,6 +1071,9 @@ napi_value NapiDlpPermission::Init(napi_env env, napi_value exports)
 
     napi_property_descriptor properties[] = {
         DECLARE_NAPI_FUNCTION("addDlpLinkFile", AddDlpLinkFile),
+        DECLARE_NAPI_FUNCTION("stopDlpLinkFile", StopDlpLinkFile),
+        DECLARE_NAPI_FUNCTION("restartDlpLinkFile", RestartDlpLinkFile),
+        DECLARE_NAPI_FUNCTION("replaceDlpLinkFile", ReplaceDlpLinkFile),
         DECLARE_NAPI_FUNCTION("deleteDlpLinkFile", DeleteDlpLinkFile),
         DECLARE_NAPI_FUNCTION("recoverDlpFile", RecoverDlpFile),
         DECLARE_NAPI_FUNCTION("closeDlpFile", CloseDlpFile),

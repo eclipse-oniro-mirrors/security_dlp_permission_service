@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -71,6 +71,95 @@ int32_t DlpLinkManager::AddDlpLinkFile(std::shared_ptr<DlpFile>& filePtr, const 
     g_DlpLinkFileNameMap_[dlpLinkName] = node;
     filePtr->SetLinkStatus();
     return DLP_OK;
+}
+
+int32_t DlpLinkManager::StopDlpLinkFile(std::shared_ptr<DlpFile> &filePtr, const std::string &dlpLinkName)
+{
+    if (filePtr == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Stop link file fail, dlp file is null");
+        return DLP_FUSE_ERROR_DLP_FILE_NULL;
+    }
+    if (!IsLinkNameValid(dlpLinkName)) {
+        DLP_LOG_ERROR(LABEL, "Stop link file fail, link file name %{private}s invalid", dlpLinkName.c_str());
+        return DLP_FUSE_ERROR_VALUE_INVALID;
+    }
+
+    Utils::UniqueWriteGuard<Utils::RWLock> infoGuard(g_DlpLinkMapLock_);
+    for (auto iter = g_DlpLinkFileNameMap_.begin(); iter != g_DlpLinkFileNameMap_.end(); iter++) {
+        if (dlpLinkName == iter->first) {
+            DlpLinkFile *node = iter->second;
+            if (node == nullptr) {
+                DLP_LOG_ERROR(
+                    LABEL, "Stop link file fail, file %{public}s found but file ptr is null", dlpLinkName.c_str());
+                return DLP_FUSE_ERROR_DLP_FILE_NULL;
+            }
+            node->stopLink();
+            filePtr->RemoveLinkStatus();
+            DLP_LOG_INFO(LABEL, "Stop link file success, file name %{public}s", dlpLinkName.c_str());
+            return DLP_OK;
+        }
+    }
+    DLP_LOG_ERROR(LABEL, "Stop link file fail, file %{public}s not exist", dlpLinkName.c_str());
+    return DLP_FUSE_ERROR_LINKFILE_NOT_EXIST;
+}
+
+int32_t DlpLinkManager::RestartDlpLinkFile(std::shared_ptr<DlpFile> &filePtr, const std::string &dlpLinkName)
+{
+    if (filePtr == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Restart link file fail, dlp file is null");
+        return DLP_FUSE_ERROR_DLP_FILE_NULL;
+    }
+    if (!IsLinkNameValid(dlpLinkName)) {
+        DLP_LOG_ERROR(LABEL, "Restart link file fail, link file name %{private}s invalid", dlpLinkName.c_str());
+        return DLP_FUSE_ERROR_VALUE_INVALID;
+    }
+
+    Utils::UniqueWriteGuard<Utils::RWLock> infoGuard(g_DlpLinkMapLock_);
+    for (auto iter = g_DlpLinkFileNameMap_.begin(); iter != g_DlpLinkFileNameMap_.end(); iter++) {
+        if (dlpLinkName == iter->first) {
+            DlpLinkFile *node = iter->second;
+            if (node == nullptr) {
+                DLP_LOG_ERROR(
+                    LABEL, "Restart link file fail, file %{public}s found but file ptr is null", dlpLinkName.c_str());
+                return DLP_FUSE_ERROR_DLP_FILE_NULL;
+            }
+            node->restartLink();
+            filePtr->SetLinkStatus();
+            DLP_LOG_INFO(LABEL, "Restart link file success, file name %{public}s", dlpLinkName.c_str());
+            return DLP_OK;
+        }
+    }
+    DLP_LOG_ERROR(LABEL, "Restart link file fail, file %{public}s not exist", dlpLinkName.c_str());
+    return DLP_FUSE_ERROR_LINKFILE_NOT_EXIST;
+}
+
+int32_t DlpLinkManager::ReplaceDlpLinkFile(std::shared_ptr<DlpFile> &filePtr, const std::string &dlpLinkName)
+{
+    if (filePtr == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Replace link file fail, dlp file is null");
+        return DLP_FUSE_ERROR_DLP_FILE_NULL;
+    }
+    if (!IsLinkNameValid(dlpLinkName)) {
+        DLP_LOG_ERROR(LABEL, "Replace link file fail, link file name %{private}s invalid", dlpLinkName.c_str());
+        return DLP_FUSE_ERROR_VALUE_INVALID;
+    }
+
+    Utils::UniqueWriteGuard<Utils::RWLock> infoGuard(g_DlpLinkMapLock_);
+    for (auto iter = g_DlpLinkFileNameMap_.begin(); iter != g_DlpLinkFileNameMap_.end(); iter++) {
+        if (dlpLinkName == iter->first) {
+            DlpLinkFile *node = iter->second;
+            if (node == nullptr) {
+                DLP_LOG_ERROR(
+                    LABEL, "Replace link file fail, file %{public}s found but file ptr is null", dlpLinkName.c_str());
+                return DLP_FUSE_ERROR_DLP_FILE_NULL;
+            }
+            node->setDlpFilePtr(filePtr);
+            DLP_LOG_INFO(LABEL, "Replace link file success, file name %{public}s", dlpLinkName.c_str());
+            return DLP_OK;
+        }
+    }
+    DLP_LOG_ERROR(LABEL, "Replace link file fail, file %{public}s not exist", dlpLinkName.c_str());
+    return DLP_FUSE_ERROR_LINKFILE_NOT_EXIST;
 }
 
 int32_t DlpLinkManager::DeleteDlpLinkFile(std::shared_ptr<DlpFile>& filePtr)

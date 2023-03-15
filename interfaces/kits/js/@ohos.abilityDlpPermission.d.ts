@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -215,6 +215,46 @@ declare namespace DlpPermission {
         */
         addDlpLinkFile(linkFileName: string): Promise<void>;
         addDlpLinkFile(linkFileName: string, callback: AsyncCallback<void>): void;
+
+         /**
+        * stop the link file of origin dlp file, the link file is implemented through the fuse file system.
+        *
+        * @since 9
+        * @systemapi Hide this for inner system use.
+        * @permission ohos.permission.ACCESS_DLP_FILE
+        * @syscap SystemCapability.Security.DlpPermissionService
+        * @param linkFileName Indicates the name of link file.
+        * @return -
+        */
+        stopDlpLinkFile(linkFileName: string): Promise<void>;
+        stopDlpLinkFile(linkFileName: string, callback: AsyncCallback<void>): void;
+
+        /**
+        * stop the link file of origin dlp file, the link file is implemented through the fuse file system.
+        *
+        * @since 9
+        * @systemapi Hide this for inner system use.
+        * @permission ohos.permission.ACCESS_DLP_FILE
+        * @syscap SystemCapability.Security.DlpPermissionService
+        * @param linkFileName Indicates the name of link file.
+        * @return -
+        */
+        restartDlpLinkFile(linkFileName: string): Promise<void>;
+        restartDlpLinkFile(linkFileName: string, callback: AsyncCallback<void>): void;
+
+        /**
+        * stop the link file of origin dlp file, the link file is implemented through the fuse file system.
+        *
+        * @since 9
+        * @systemapi Hide this for inner system use.
+        * @permission ohos.permission.ACCESS_DLP_FILE
+        * @syscap SystemCapability.Security.DlpPermissionService
+        * @param linkFileName Indicates the name of link file.
+        * @return -
+        */
+        replaceDlpLinkFile(linkFileName: string): Promise<void>;
+        replaceDlpLinkFile(linkFileName: string, callback: AsyncCallback<void>): void;
+
 
         /**
         * delete the link file of origin dlp file, the link file is implemented through the fuse file system.

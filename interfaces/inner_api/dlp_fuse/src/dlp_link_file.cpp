@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -30,7 +30,7 @@ static const int DEFAULT_INODE_RW_ACCESS = 0640;
 } // namespace
 
 DlpLinkFile::DlpLinkFile(std::string dlpLinkName, std::shared_ptr<DlpFile> dlpFile)
-    :dlpLinkName_(dlpLinkName), dlpFile_(dlpFile), refcount_(1)
+    : dlpLinkName_(dlpLinkName), dlpFile_(dlpFile), refcount_(1), stopLinkFlag_(false)
 {
     (void)memset_s(&fileStat_, sizeof(fileStat_), 0, sizeof(fileStat_));
     fileStat_.st_ino = GetFileInode(this);
@@ -95,6 +95,11 @@ struct stat DlpLinkFile::GetLinkStat()
 
 int32_t DlpLinkFile::Truncate(uint32_t modifySize)
 {
+    if (stopLinkFlag_) {
+        DLP_LOG_INFO(LABEL, "linkFile is stopping link");
+        return DLP_LINK_FILE_NOT_ALLOW_OPERATE;
+    }
+
     if (modifySize >= DLP_MAX_CONTENT_SIZE) {
         DLP_LOG_ERROR(LABEL, "Truncate link file fail, modify size %{public}u is invalid", modifySize);
         return DLP_FUSE_ERROR_VALUE_INVALID;
@@ -126,6 +131,11 @@ void DlpLinkFile::UpdateMtimeStat()
 
 int32_t DlpLinkFile::Write(uint32_t offset, void* buf, uint32_t size)
 {
+    if (stopLinkFlag_) {
+        DLP_LOG_INFO(LABEL, "linkFile is stopping link");
+        return DLP_LINK_FILE_NOT_ALLOW_OPERATE;
+    }
+
     if (dlpFile_ == nullptr) {
         DLP_LOG_ERROR(LABEL, "Write link file fail, dlp file is null");
         return DLP_FUSE_ERROR_DLP_FILE_NULL;
@@ -140,6 +150,11 @@ int32_t DlpLinkFile::Write(uint32_t offset, void* buf, uint32_t size)
 
 int32_t DlpLinkFile::Read(uint32_t offset, void* buf, uint32_t size)
 {
+    if (stopLinkFlag_) {
+        DLP_LOG_INFO(LABEL, "linkFile is stopping link");
+        return DLP_LINK_FILE_NOT_ALLOW_OPERATE;
+    }
+
     if (dlpFile_ == nullptr) {
         DLP_LOG_ERROR(LABEL, "Read link file fail, dlp file is null");
         return DLP_FUSE_ERROR_DLP_FILE_NULL;

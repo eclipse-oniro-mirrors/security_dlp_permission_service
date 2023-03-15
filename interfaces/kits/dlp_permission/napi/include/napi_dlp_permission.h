@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -53,6 +53,18 @@ private:
     static void AddDlpLinkFileExcute(napi_env env, void* data);
     static void AddDlpLinkFileComplete(napi_env env, napi_status status, void* data);
     static napi_value AddDlpLinkFile(napi_env env, napi_callback_info cbInfo);
+
+    static void StopDlpLinkFileExcute(napi_env env, void* data);
+    static void StopDlpLinkFileComplete(napi_env env, napi_status status, void* data);
+    static napi_value StopDlpLinkFile(napi_env env, napi_callback_info cbInfo);
+
+    static void ReplaceDlpLinkFileExcute(napi_env env, void* data);
+    static void ReplaceDlpLinkFileComplete(napi_env env, napi_status status, void* data);
+    static napi_value ReplaceDlpLinkFile(napi_env env, napi_callback_info cbInfo);
+
+    static void RestartDlpLinkFileExcute(napi_env env, void* data);
+    static void RestartDlpLinkFileComplete(napi_env env, napi_status status, void* data);
+    static napi_value RestartDlpLinkFile(napi_env env, napi_callback_info cbInfo);
 
     static void DeleteDlpLinkFileExcute(napi_env env, void* data);
     static void DeleteDlpLinkFileComplete(napi_env env, napi_status status, void* data);

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -37,6 +37,7 @@ enum JsErrorCode : int32_t {
     ERR_JS_DLP_FILE_READ_ONLY = 19100010,
     ERR_JS_SYSTEM_SERVICE_EXCEPTION = 19100011,
     ERR_JS_OUT_OF_MEMORY = 19100012,
+    ERR_JS_DLP_FILE_OPERATE_FAIL = 19100013,
 };
 
 std::string GetJsErrMsg(int32_t errNo);

@@ -34,6 +34,7 @@ namespace Security {
 namespace DlpPermission {
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionService"};
+static const std::string ALLOW_ABILITY[] = {"com.ohos.dlpmanager"};
 }
 REGISTER_SYSTEM_ABILITY_BY_ID(DlpPermissionService, SA_ID_DLP_PERMISSION_SERVICE, true);
 
@@ -240,6 +241,12 @@ int32_t DlpPermissionService::UninstallDlpSandbox(const std::string& bundleName,
     return DLP_OK;
 }
 
+static bool CheckAllowAbilityList(const std::string& bundleName)
+{
+    return std::any_of(std::begin(ALLOW_ABILITY), std::end(ALLOW_ABILITY),
+        [bundleName](const std::string& bundle) { return bundle == bundleName; });
+}
+
 int32_t DlpPermissionService::GetSandboxExternalAuthorization(
     int sandboxUid, const AAFwk::Want& want, SandBoxExternalAuthorType& authType)
 {
@@ -255,7 +262,7 @@ int32_t DlpPermissionService::GetSandboxExternalAuthorization(
 
     bool isSandbox = false;
     appStateObserver_->IsInDlpSandbox(isSandbox, sandboxUid);
-    if (isSandbox) {
+    if (isSandbox && !CheckAllowAbilityList(want.GetBundle())) {
         authType = DENY_START_ABILITY;
     } else {
         authType = ALLOW_START_ABILITY;

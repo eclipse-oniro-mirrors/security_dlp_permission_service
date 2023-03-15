@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -32,6 +32,9 @@ public:
     ~DlpLinkManager() {};
 
     int32_t AddDlpLinkFile(std::shared_ptr<DlpFile>& filePtr, const std::string& dlpLinkName);
+    int32_t StopDlpLinkFile(std::shared_ptr<DlpFile>& filePtr, const std::string& dlpLinkName);
+    int32_t RestartDlpLinkFile(std::shared_ptr<DlpFile>& filePtr, const std::string& dlpLinkName);
+    int32_t ReplaceDlpLinkFile(std::shared_ptr<DlpFile>& filePtr, const std::string& dlpLinkName);
     int32_t DeleteDlpLinkFile(std::shared_ptr<DlpFile>& filePtr);
     DlpLinkFile* LookUpDlpLinkFile(const std::string& dlpLinkName);
     void DumpDlpLinkFile(std::vector<DlpLinkFileInfo>& linkList);

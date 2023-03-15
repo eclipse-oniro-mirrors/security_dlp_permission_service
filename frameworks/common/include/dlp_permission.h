@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -67,6 +67,7 @@ enum DLPErrCode : int32_t {
     DLP_FUSE_ERROR_LINKFILE_NOT_EXIST = -203,
     DLP_FUSE_ERROR_MEMORY_OPERATE_FAIL = -204,
     DLP_FUSE_ERROR_TOO_MANY_LINK_FILE = -205,
+    DLP_LINK_FILE_NOT_ALLOW_OPERATE = -206,
 
     DLP_CREDENTIAL_ERROR_COMMON_ERROR = -300,
     DLP_CREDENTIAL_ERROR_HUKS_ERROR = -301,

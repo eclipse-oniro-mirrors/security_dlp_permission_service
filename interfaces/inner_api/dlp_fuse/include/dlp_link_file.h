@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -49,6 +49,11 @@ public:
         return dlpFile_;
     };
 
+    void setDlpFilePtr(std::shared_ptr<DlpFile> dlpFile)
+    {
+        dlpFile_ = dlpFile;
+    };
+
     std::string& GetLinkName()
     {
         return dlpLinkName_;
@@ -56,12 +61,23 @@ public:
 
     int32_t Truncate(uint32_t modifySize);
 
+    void stopLink()
+    {
+        stopLinkFlag_ = true;
+    };
+
+    void restartLink()
+    {
+        stopLinkFlag_ = false;
+    };
+
 private:
     std::string dlpLinkName_;
     std::shared_ptr<DlpFile> dlpFile_;
     struct stat fileStat_;
     std::atomic<int> refcount_;
     std::mutex refLock_;
+    bool stopLinkFlag_;
 };
 }  // namespace DlpPermission
 }  // namespace Security
