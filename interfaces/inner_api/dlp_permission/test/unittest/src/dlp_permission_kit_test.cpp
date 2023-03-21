@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -269,6 +269,37 @@ static int32_t TestGenerateDlpCertWithInvalidParam(uint32_t ownerAccountLen, uin
 }
 
 /**
+ * @tc.name: OnGenerateDlpCertificate001
+ * @tc.desc: OnGenerateDlpCertificate abnormal input test.
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIG0
+ */
+HWTEST_F(DlpPermissionKitTest, OnGenerateDlpCertificate001, TestSize.Level1)
+{
+    auto generateDlpCertificateCallback = std::make_shared<ClientGenerateDlpCertificateCallback>();
+    std::vector<uint8_t> cert;
+    cert = { 1, 2, 3 };
+    generateDlpCertificateCallback->OnGenerateDlpCertificate(-1, cert);
+    ASSERT_EQ(-1, generateDlpCertificateCallback->result_);
+    ASSERT_TRUE(generateDlpCertificateCallback->isCallBack_);
+}
+
+/**
+ * @tc.name: OnParseDlpCertificate001
+ * @tc.desc: OnParseDlpCertificate abnormal input test.
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIG0
+ */
+HWTEST_F(DlpPermissionKitTest, OnParseDlpCertificate001, TestSize.Level1)
+{
+    auto parseDlpCertificateCallback = std::make_shared<ClientParseDlpCertificateCallback>();
+    PermissionPolicy policy;
+    parseDlpCertificateCallback->OnParseDlpCertificate(-1, policy);
+    ASSERT_EQ(-1, parseDlpCertificateCallback->result_);
+    ASSERT_TRUE(parseDlpCertificateCallback->isCallBack_);
+}
+
+/* *
  * @tc.name: GenerateDlpCertificate001
  * @tc.desc: GenerateDlpCertificate abnormal input test.
  * @tc.type: FUNC
