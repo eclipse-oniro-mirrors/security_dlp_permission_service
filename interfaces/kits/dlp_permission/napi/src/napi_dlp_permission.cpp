@@ -186,6 +186,10 @@ void NapiDlpPermission::OpenDlpFileComplete(napi_env env, napi_status status, vo
     napi_value resJs = nullptr;
     if (asyncContext->errCode == DLP_OK) {
         napi_value nativeObjJs;
+        if (asyncContext->dlpFileNative == nullptr) {
+            DLP_LOG_ERROR(LABEL, "asyncContext dlpFileNative is nullptr");
+            return;
+        }
         NAPI_CALL_RETURN_VOID(
             env, napi_create_int64(env, reinterpret_cast<int64_t>(asyncContext->dlpFileNative.get()), &nativeObjJs));
         PermissionPolicy policy;

@@ -410,13 +410,13 @@ static void FuseDaemonInit(void *userdata, struct fuse_conn_info *conn)
 struct fuse_lowlevel_ops FuseDaemon::fuseDaemonOper_ = {
     .init = FuseDaemonInit,
     .lookup = FuseDaemonLookup,
+    .forget = FuseDaemonForget,
     .getattr = FuseDaemonGetattr,
+    .setattr = FuseDaemonSetAttr,
     .open = FuseDaemonOpen,
     .read = FuseDaemonRead,
     .write = FuseDaemonWrite,
-    .forget = FuseDaemonForget,
     .readdir = FuseDaemonReadDir,
-    .setattr = FuseDaemonSetAttr,
 };
 
 struct stat* FuseDaemon::GetRootFileStat()

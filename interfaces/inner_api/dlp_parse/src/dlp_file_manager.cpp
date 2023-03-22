@@ -183,9 +183,9 @@ int32_t DlpFileManager::ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr) co
         return result;
     }
 
-    struct DlpBlob key = {.data = policy.GetAeskey(), .size = policy.GetAeskeyLen()};
+    struct DlpBlob key = {.size = policy.GetAeskeyLen(), .data = policy.GetAeskey()};
     struct DlpCipherParam param = {
-        .iv = {.data = policy.GetIv(), .size = policy.GetIvLen()},
+        .iv = {.size = policy.GetIvLen(), .data = policy.GetIv()},
     };
     struct DlpUsageSpec usage = {
         .mode = DLP_MODE_CTR,
