@@ -72,11 +72,10 @@ int32_t DlpPermissionStub::OnRemoteRequest(
         auto requestFunc = itFunc->second;
         if (requestFunc != nullptr) {
             return (this->*requestFunc)(data, reply);
-        } else {
-            return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
         }
     }
-    return DLP_OK;
+
+    return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
 }
 
 int32_t DlpPermissionStub::GenerateDlpCertificateInner(MessageParcel& data, MessageParcel& reply)
