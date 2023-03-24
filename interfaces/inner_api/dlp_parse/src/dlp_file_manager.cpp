@@ -154,7 +154,7 @@ int32_t DlpFileManager::PrepareDlpEncryptParms(
     return DLP_OK;
 }
 
-int32_t DlpFileManager::ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr) const
+int32_t DlpFileManager::ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr, const std::string& workDir) const
 {
     int32_t result = filePtr->ParseDlpHeader();
     if (result != DLP_OK) {
@@ -164,13 +164,21 @@ int32_t DlpFileManager::ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr) co
 
     struct DlpBlob cert;
     filePtr->GetEncryptCert(cert);
-
     std::vector<uint8_t> certBuf = std::vector<uint8_t>(cert.data, cert.data + cert.size);
+
+    std::vector<uint8_t> offlineCertBuf;
+    struct DlpBlob offlineCert = { 0 };
+    bool flag =  filePtr->GetOfflineAccess();
+    if (flag) {
+        filePtr->GetOfflineCert(offlineCert);
+        offlineCertBuf = std::vector<uint8_t>(offlineCert.data, offlineCert.data + offlineCert.size);
+    }
+
     PermissionPolicy policy;
 
     DLP_LOG_INFO(LABEL, "Parse cert");
     StartTrace(HITRACE_TAG_ACCESS_CONTROL, "DlpParseCertificate");
-    result = DlpPermissionKit::ParseDlpCertificate(certBuf, policy);
+    result = DlpPermissionKit::ParseDlpCertificate(certBuf, offlineCertBuf, flag, policy);
     FinishTrace(HITRACE_TAG_ACCESS_CONTROL);
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Parse cert fail, errno=%{public}d", result);
@@ -194,6 +202,15 @@ int32_t DlpFileManager::ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr) co
     result = filePtr->SetCipher(key, usage);
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Parse file header fail, set cipher error, errno=%{public}d", result);
+    }
+
+    // only add offline cert when first time open the file.
+    if (flag && (offlineCert.data == nullptr)) {
+        result = filePtr->AddOfflineCert(offlineCertBuf, workDir);
+        if (result != DLP_OK) {
+            DLP_LOG_ERROR(LABEL, "Add offline cert fail, errno=%{public}d", result);
+            return result;
+        }
     }
 
     return result;
@@ -257,6 +274,9 @@ int32_t DlpFileManager::SetDlpFileParams(std::shared_ptr<DlpFile>& filePtr, cons
     if (result != DLP_OK) {
         DLP_LOG_WARN(LABEL, "Set dlp obj params fail, set contact account error, errno=%{public}d", result);
     }
+
+    filePtr->SetOfflineAccess(property.offlineAccess);
+
     FreeChiperBlob(key, certData, usage);
     return result;
 }
@@ -295,7 +315,7 @@ int32_t DlpFileManager::GenerateDlpFile(
     return AddDlpFileNode(filePtr);
 }
 
-int32_t DlpFileManager::OpenDlpFile(int32_t dlpFileFd, std::shared_ptr<DlpFile>& filePtr)
+int32_t DlpFileManager::OpenDlpFile(int32_t dlpFileFd, std::shared_ptr<DlpFile>& filePtr, const std::string& workDir)
 {
     if (dlpFileFd < 0) {
         DLP_LOG_ERROR(LABEL, "Open dlp file fail, fd %{public}d is invalid", dlpFileFd);
@@ -314,7 +334,7 @@ int32_t DlpFileManager::OpenDlpFile(int32_t dlpFileFd, std::shared_ptr<DlpFile>&
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
-    int32_t result = ParseDlpFileFormat(filePtr);
+    int32_t result = ParseDlpFileFormat(filePtr, workDir);
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Open dlp file fail, parse dlp file error, errno=%{public}d", result);
         return result;

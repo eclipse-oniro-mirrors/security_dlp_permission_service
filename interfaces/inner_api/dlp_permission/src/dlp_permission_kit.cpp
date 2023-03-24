@@ -42,12 +42,14 @@ void ClientGenerateDlpCertificateCallback::OnGenerateDlpCertificate(int32_t resu
     generateCv_.notify_all();
 }
 
-void ClientParseDlpCertificateCallback::OnParseDlpCertificate(int32_t result, const PermissionPolicy& policy)
+void ClientParseDlpCertificateCallback::OnParseDlpCertificate(int32_t result, const PermissionPolicy& policy,
+    const std::vector<uint8_t>& cert)
 {
     DLP_LOG_INFO(LABEL, "Callback");
     this->result_ = result;
     if (result == DLP_OK) {
         this->policy_.CopyPermissionPolicy(policy);
+        this->offlineCert_ = cert;
     }
     std::unique_lock<std::mutex> lck(parseMtx_);
     this->isCallBack_ = true;
@@ -86,15 +88,36 @@ int32_t DlpPermissionKit::GenerateDlpCertificate(const PermissionPolicy& policy,
     return callback->result_;
 }
 
-int32_t DlpPermissionKit::ParseDlpCertificate(const std::vector<uint8_t>& cert, PermissionPolicy& policy)
+int32_t DlpPermissionKit::ParseDlpCertificate(const std::vector<uint8_t>& onlineCert, std::vector<uint8_t>& offlineCert,
+    uint32_t offlineFlag, PermissionPolicy& policy)
 {
     std::shared_ptr<ClientParseDlpCertificateCallback> callback = std::make_shared<ClientParseDlpCertificateCallback>();
     if (callback == nullptr) {
         DLP_LOG_ERROR(LABEL, "Callback is null");
         return DLP_SERVICE_ERROR_CREDENTIAL_TASK_TIMEOUT;
     }
-    int32_t res = DlpPermissionClient::GetInstance().ParseDlpCertificate(cert, callback);
+
+    std::vector<uint8_t> cert;
+    DlpAuthType authFlag = offlineFlag ? DlpAuthType::ONLINE_AUTH_FOR_OFFLINE_CERT:DlpAuthType::ONLINE_AUTH_ONLY;
+
+    if (offlineCert.size() > 0) {
+        authFlag = DlpAuthType::OFFLINE_AUTH_ONLY;
+        cert = offlineCert;
+        DLP_LOG_INFO(LABEL, "try offline auth");
+    } else {
+        cert = onlineCert;
+    }
+
+AUTH_RETRY:
+    int32_t res = DlpPermissionClient::GetInstance().ParseDlpCertificate(cert,
+        static_cast<uint32_t>(authFlag), callback);
     if (res != DLP_OK) {
+        if (authFlag == DlpAuthType::OFFLINE_AUTH_ONLY) {
+            cert = onlineCert;
+            authFlag = DlpAuthType::ONLINE_AUTH_ONLY;
+            DLP_LOG_INFO(LABEL, "return %{public}d, try online auth", res);
+            goto AUTH_RETRY;
+        }
         DLP_LOG_ERROR(LABEL, "begin parse cert fail, error: %{public}d", res);
         return res;
     }
@@ -113,7 +136,18 @@ int32_t DlpPermissionKit::ParseDlpCertificate(const std::vector<uint8_t>& cert, 
     DLP_LOG_INFO(LABEL, "get callback succeed!");
     if (callback->result_ == DLP_OK) {
         policy.CopyPermissionPolicy(callback->policy_);
+        if (authFlag == DlpAuthType::ONLINE_AUTH_FOR_OFFLINE_CERT) {
+            offlineCert = callback->offlineCert_;
+        }
+    } else {
+        if (authFlag == DlpAuthType::OFFLINE_AUTH_ONLY) {
+            cert = onlineCert;
+            authFlag = DlpAuthType::ONLINE_AUTH_ONLY;
+            DLP_LOG_INFO(LABEL, "callback return %{public}d, try online auth", callback->result_);
+            goto AUTH_RETRY;
+        }
     }
+
     return callback->result_;
 }
 

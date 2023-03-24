@@ -15,7 +15,9 @@
 
 #include "dlp_file.h"
 
+#include <cstdlib>
 #include <fcntl.h>
+#include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -35,15 +37,21 @@ DlpFile::DlpFile(int32_t dlpFd) : dlpFd_(dlpFd), isFuseLink_(false), isReadOnly_
 {
     head_.magic = DLP_FILE_MAGIC;
     head_.version = 1;
+    head_.offlineAccess = 0;
     head_.txtOffset = INVALID_FILE_SIZE;
     head_.txtSize = INVALID_FILE_SIZE;
     head_.certOffset = sizeof(struct DlpHeader);
     head_.certSize = 0;
     head_.contactAccountOffset = 0;
     head_.contactAccountSize = 0;
+    head_.offlineCertOffset = 0;
+    head_.offlineCertSize = 0;
 
     cert_.data = nullptr;
     cert_.size = 0;
+
+    offlineCert_.data = nullptr;
+    offlineCert_.size = 0;
 
     cipher_.tagIv.iv.data = nullptr;
     cipher_.tagIv.iv.size = 0;
@@ -73,6 +81,12 @@ DlpFile::~DlpFile()
         (void)memset_s(cert_.data, head_.certSize, 0, head_.certSize);
         delete[] cert_.data;
         cert_.data = nullptr;
+    }
+
+    if (offlineCert_.data != nullptr) {
+        (void)memset_s(offlineCert_.data, head_.offlineCertSize, 0, head_.offlineCertSize);
+        delete[] offlineCert_.data;
+        offlineCert_.data = nullptr;
     }
 }
 
@@ -222,14 +236,24 @@ int32_t DlpFile::SetPolicy(const PermissionPolicy& policy)
     return DLP_OK;
 };
 
+void DlpFile::SetOfflineAccess(bool flag)
+{
+    head_.offlineAccess = static_cast<uint32_t>(flag);
+}
+
+bool DlpFile::GetOfflineAccess()
+{
+    return !!head_.offlineAccess;
+}
+
 bool DlpFile::IsValidDlpHeader(const struct DlpHeader& head) const
 {
     if (head.magic != DLP_FILE_MAGIC || head.certSize == 0 || head.certSize > DLP_MAX_CERT_SIZE ||
         head.contactAccountSize == 0 || head.contactAccountSize > DLP_MAX_CERT_SIZE ||
         head.certOffset != sizeof(struct DlpHeader) ||
         head.contactAccountOffset != (sizeof(struct DlpHeader) + head.certSize) ||
-        head.txtOffset != (sizeof(struct DlpHeader) + head.certSize + head.contactAccountSize) ||
-        head.txtSize > DLP_MAX_CONTENT_SIZE) {
+        head.txtOffset != (sizeof(struct DlpHeader) + head.certSize + head.contactAccountSize + head.offlineCertSize) ||
+        head.txtSize > DLP_MAX_CONTENT_SIZE || head.offlineCertSize > DLP_MAX_CERT_SIZE) {
         return false;
     }
     return true;
@@ -291,6 +315,23 @@ int32_t DlpFile::ParseDlpHeader()
 
     contactAccount_ = std::string(tmpBuf, tmpBuf + head_.contactAccountSize);
     delete[] tmpBuf;
+
+    if(head_.offlineCertSize != 0) {
+        tmpBuf = new (std::nothrow)uint8_t[head_.offlineCertSize];
+        if (tmpBuf == nullptr) {
+            DLP_LOG_WARN(LABEL, "alloc tmpBuf failed.");
+            return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
+        }
+
+        if (read(dlpFd_, tmpBuf, head_.offlineCertSize) != head_.offlineCertSize) {
+            delete[] tmpBuf;
+            DLP_LOG_ERROR(LABEL, "can not read dlp contact account, %{public}s", strerror(errno));
+            return DLP_PARSE_ERROR_FILE_FORMAT_ERROR;
+        }
+        offlineCert_.data = tmpBuf;
+        offlineCert_.size = head_.offlineCertSize;
+    }
+
     return DLP_OK;
 }
 
@@ -298,6 +339,12 @@ void DlpFile::GetEncryptCert(struct DlpBlob& cert) const
 {
     cert.data = cert_.data;
     cert.size = cert_.size;
+}
+
+void DlpFile::GetOfflineCert(struct DlpBlob& cert) const
+{
+    cert.data = offlineCert_.data;
+    cert.size = offlineCert_.size;
 }
 
 int32_t DlpFile::SetEncryptCert(const struct DlpBlob& cert)
@@ -320,6 +367,72 @@ int32_t DlpFile::SetEncryptCert(const struct DlpBlob& cert)
     head_.certOffset = sizeof(struct DlpHeader);
     head_.certSize = cert_.size;
     head_.txtOffset = sizeof(struct DlpHeader) + cert_.size;
+    return DLP_OK;
+}
+
+int32_t DlpFile::AddOfflineCert(std::vector<uint8_t>& offlineCert, const std::string& workDir)
+{
+    static uint32_t count = 0;
+
+    std::string fileName = workDir + "/dlp" + std::to_string(count++) + ".txt";
+
+    DLP_LOG_INFO(LABEL, "tmpdlp file name : %{public}s", fileName.c_str());
+    int tmpFile = open(fileName.c_str(), O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
+    if (tmpFile < 0) {
+        DLP_LOG_ERROR(LABEL, "OPEN FILE FAIL, %{public}s, fd %{public}d", strerror(errno), tmpFile);
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+
+    head_.offlineCertOffset = head_.contactAccountOffset + head_.contactAccountSize;
+    head_.offlineCertSize = offlineCert.size();
+
+    uint32_t oldTxtOffset = head_.txtOffset;
+    head_.txtOffset = head_.offlineCertOffset + head_.offlineCertSize;
+
+    if (write(tmpFile, &head_, sizeof(struct DlpHeader)) != sizeof(struct DlpHeader)) {
+        DLP_LOG_ERROR(LABEL, "write dlp head failed, %{public}s", strerror(errno));
+        close(tmpFile);
+        unlink(fileName.c_str());
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+
+    if (write(tmpFile, cert_.data, head_.certSize) != head_.certSize) {
+        DLP_LOG_ERROR(LABEL, "write dlp cert data failed, %{public}s", strerror(errno));
+        close(tmpFile);
+        unlink(fileName.c_str());
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+
+    if (write(tmpFile, contactAccount_.c_str(), contactAccount_.size()) !=
+        static_cast<int32_t>(contactAccount_.size())) {
+        DLP_LOG_ERROR(LABEL, "write dlp contact data failed, %{public}s", strerror(errno));
+        close(tmpFile);
+        unlink(fileName.c_str());
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+
+    if (write(tmpFile, &offlineCert[0], offlineCert.size()) !=
+        static_cast<int32_t>(offlineCert.size())) {
+        DLP_LOG_ERROR(LABEL, "write offlineCert data failed, %{public}s", strerror(errno));
+        close(tmpFile);
+        unlink(fileName.c_str());
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+
+    (void)lseek(dlpFd_, oldTxtOffset, SEEK_SET);
+    DoDlpContentCopyOperation(dlpFd_, tmpFile, 0, head_.txtSize);
+
+    int fileSize = lseek(tmpFile, 0, SEEK_CUR);
+
+    (void)lseek(tmpFile, 0, SEEK_SET);
+    (void)lseek(dlpFd_, 0, SEEK_SET);
+    DoDlpContentCopyOperation(tmpFile, dlpFd_, 0, fileSize);
+
+    (void)fsync(dlpFd_);
+
+    close(tmpFile);
+    unlink(fileName.c_str());
+
     return DLP_OK;
 }
 
@@ -442,6 +555,37 @@ int32_t DlpFile::DoDlpContentCryptyOperation(int32_t inFd, int32_t outFd, uint32
 
     delete[] message.data;
     delete[] outMessage.data;
+    return ret;
+}
+
+int32_t DlpFile::DoDlpContentCopyOperation(int32_t inFd, int32_t outFd, uint32_t inOffset, uint32_t inFileLen)
+{
+    uint8_t *data = new (std::nothrow) uint8_t[DLP_BUFF_LEN];
+    if (data == nullptr) {
+        DLP_LOG_ERROR(LABEL, "prepare buff failed");
+        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
+    }
+
+    int32_t ret = DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    while (inOffset < inFileLen) {
+        uint32_t readLen = ((inFileLen - inOffset) < DLP_BUFF_LEN) ? (inFileLen - inOffset) : DLP_BUFF_LEN;
+        (void)memset_s(data, DLP_BUFF_LEN, 0, DLP_BUFF_LEN);
+
+        if (read(inFd, data, readLen) != readLen) {
+            DLP_LOG_ERROR(LABEL, "Read size do not equal readLen");
+            ret = DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+            break;
+        }
+
+        if (write(outFd, data, readLen) != readLen) {
+            DLP_LOG_ERROR(LABEL, "write fd failed, %{public}s", strerror(errno));
+            ret = DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+            break;
+        }
+        inOffset += readLen;
+    }
+
+    delete[] data;
     return ret;
 }
 

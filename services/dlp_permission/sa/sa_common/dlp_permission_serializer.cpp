@@ -40,6 +40,9 @@ const std::string ENC_DATA = "encData";
 const std::string EXTRA_INFO_LEN = "extraInfoLen";
 const std::string EXTRA_INFO = "extraInfo";
 const std::string ENC_ACCOUNT_TYPE = "encAccountType";
+const std::string ONLINE_POLICY_CONTENT = "plaintextPolicy";
+const std::string LOCAL_ENCRYPTED_CERT = "encryptedPolicy";
+
 
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {
     LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionSerializer"};

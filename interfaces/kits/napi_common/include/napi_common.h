@@ -130,6 +130,8 @@ bool GetCallback(const napi_env env, napi_value jsObject, CommonAsyncContext& as
 napi_value GetNapiValue(napi_env env, napi_value jsObject, const std::string& key);
 bool GetStringValue(napi_env env, napi_value jsObject, std::string& result);
 bool GetStringValueByKey(napi_env env, napi_value jsObject, const std::string& key, std::string& result);
+bool GetBoolValueByKey(napi_env env, napi_value jsObject, const std::string& key, bool& result);
+bool GetBoolValue(napi_env env, napi_value jsObject, bool& result);
 bool GetInt64Value(napi_env env, napi_value jsObject, int64_t& result);
 bool GetInt64ValueByKey(napi_env env, napi_value jsObject, const std::string& key, int64_t& result);
 bool GetUint32Value(napi_env env, napi_value jsObject, uint32_t& result);

@@ -510,11 +510,16 @@ bool GetDlpProperty(napi_env env, napi_value jsObject, DlpProperty& property)
         DLP_LOG_ERROR(LABEL, "js get contact account fail");
         return false;
     }
+    if(!GetBoolValueByKey(env, jsObject, "offlineAccess", property.offlineAccess)) {
+        DLP_LOG_ERROR(LABEL, "js get offline access flag fail");
+        return false;
+    }
+
     DLP_LOG_DEBUG(LABEL,
         "ownerAccount: %{private}s, authUsers size: %{private}zu, contractAccount: %{private}s, ownerAccountType: "
-        "%{private}d",
+        "%{private}d, offlineAccess: %{private}d",
         property.ownerAccount.c_str(), property.authUsers.size(), property.contractAccount.c_str(),
-        property.ownerAccountType);
+        property.ownerAccountType, property.offlineAccess);
     return true;
 }
 
@@ -522,6 +527,10 @@ napi_value DlpPropertyToJs(napi_env env, const DlpProperty& property)
 {
     napi_value dlpPropertyJs = nullptr;
     NAPI_CALL(env, napi_create_object(env, &dlpPropertyJs));
+
+    napi_value offlineAccessJs;
+    napi_get_boolean(env, property.offlineAccess, &offlineAccessJs);
+    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "offlineAccess", offlineAccessJs));
 
     napi_value ownerAccountJs;
     NAPI_CALL(env, napi_create_string_utf8(env, property.ownerAccount.c_str(), NAPI_AUTO_LENGTH, &ownerAccountJs));
@@ -651,6 +660,29 @@ bool GetStringValueByKey(napi_env env, napi_value jsObject, const std::string& k
 {
     napi_value value = GetNapiValue(env, jsObject, key);
     return GetStringValue(env, value, result);
+}
+
+bool GetBoolValue(napi_env env, napi_value jsObject, bool& result)
+{
+    napi_valuetype valuetype;
+    if (napi_typeof(env, jsObject, &valuetype) != napi_ok) {
+        DLP_LOG_ERROR(LABEL, "Can not get napi type");
+        return false;
+    }
+
+    if (valuetype != napi_boolean) {
+        DLP_LOG_ERROR(LABEL, "Wrong argument type. Boolean expected.");
+        return false;
+    }
+
+    napi_get_value_bool(env, jsObject, &result);
+    return true;
+}
+
+bool GetBoolValueByKey(napi_env env, napi_value jsObject, const std::string& key, bool& result)
+{
+    napi_value value = GetNapiValue(env, jsObject, key);
+    return GetBoolValue(env, value, result);
 }
 
 bool GetInt64Value(napi_env env, napi_value jsObject, int64_t& result)

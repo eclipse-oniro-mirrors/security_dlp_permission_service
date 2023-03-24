@@ -28,7 +28,8 @@ class IDlpPermissionCallback : public IRemoteBroker {
 public:
     virtual void OnGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert) = 0;
 
-    virtual void OnParseDlpCertificate(int32_t result, const PermissionPolicy& policy) = 0;
+    virtual void OnParseDlpCertificate(int32_t result, const PermissionPolicy& policy,
+        const std::vector<uint8_t>& cert) = 0;
 
     DECLARE_INTERFACE_DESCRIPTOR(u"ohos.security.IDlpPermissionCallback");
 

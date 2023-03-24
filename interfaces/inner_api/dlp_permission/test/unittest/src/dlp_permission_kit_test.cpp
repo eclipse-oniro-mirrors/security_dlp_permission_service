@@ -294,7 +294,7 @@ HWTEST_F(DlpPermissionKitTest, OnParseDlpCertificate001, TestSize.Level1)
 {
     auto parseDlpCertificateCallback = std::make_shared<ClientParseDlpCertificateCallback>();
     PermissionPolicy policy;
-    parseDlpCertificateCallback->OnParseDlpCertificate(-1, policy);
+    parseDlpCertificateCallback->OnParseDlpCertificate(-1, policy, {});
     ASSERT_EQ(-1, parseDlpCertificateCallback->result_);
     ASSERT_TRUE(parseDlpCertificateCallback->isCallBack_);
 }
@@ -353,10 +353,11 @@ HWTEST_F(DlpPermissionKitTest, GenerateDlpCertificate001, TestSize.Level1)
 HWTEST_F(DlpPermissionKitTest, ParseDlpCertificate001, TestSize.Level1)
 {
     std::vector<uint8_t> cert;
+    std::vector<uint8_t> offlineCert;
     PermissionPolicy policy;
-    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, DlpPermissionKit::ParseDlpCertificate(cert, policy));
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, DlpPermissionKit::ParseDlpCertificate(cert, offlineCert, 0, policy));
     cert = {1, 2, 3};
-    ASSERT_NE(DLP_OK, DlpPermissionKit::ParseDlpCertificate(cert, policy));
+    ASSERT_NE(DLP_OK, DlpPermissionKit::ParseDlpCertificate(cert, offlineCert, 0, policy));
 }
 
 /**

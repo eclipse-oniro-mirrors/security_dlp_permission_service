@@ -15,6 +15,7 @@
 
 #include "napi_dlp_permission.h"
 #include "accesstoken_kit.h"
+#include "application_context.h"
 #include "dlp_link_manager.h"
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
@@ -170,8 +171,20 @@ void NapiDlpPermission::OpenDlpFileExcute(napi_env env, void* data)
         return;
     }
 
+    auto context = AbilityRuntime::ApplicationContext::GetInstance();
+    if (context == nullptr) {
+        DLP_LOG_ERROR(LABEL, "get applicationContext fail");
+        return;
+    }
+
+    std::string workDir = context->GetFilesDir();
+    if (workDir.empty() || access(workDir.c_str(), 0) != 0) {
+        DLP_LOG_ERROR(LABEL, "path is null or workDir doesn't exist");
+        return;
+    }
+
     asyncContext->errCode =
-        DlpFileManager::GetInstance().OpenDlpFile(asyncContext->cipherTxtFd, asyncContext->dlpFileNative);
+        DlpFileManager::GetInstance().OpenDlpFile(asyncContext->cipherTxtFd, asyncContext->dlpFileNative, workDir);
 }
 
 void NapiDlpPermission::OpenDlpFileComplete(napi_env env, napi_status status, void* data)
@@ -201,6 +214,7 @@ void NapiDlpPermission::OpenDlpFileComplete(napi_env env, napi_status status, vo
             .authUsers = policy.authUsers_,
             .contractAccount = contactAccount,
             .ownerAccountType = policy.ownerAccountType_,
+            .offlineAccess = asyncContext->dlpFileNative->GetOfflineAccess(),
         };
 
         napi_value dlpPropertyJs = DlpPropertyToJs(env, property);

@@ -34,7 +34,8 @@ public:
     virtual int32_t GenerateDlpCertificate(
         const sptr<DlpPolicyParcel>& policyParcel, sptr<IDlpPermissionCallback>& callback) = 0;
 
-    virtual int32_t ParseDlpCertificate(const std::vector<uint8_t>& cert, sptr<IDlpPermissionCallback>& callback) = 0;
+    virtual int32_t ParseDlpCertificate(const std::vector<uint8_t>& cert, uint32_t flag,
+        sptr<IDlpPermissionCallback>& callback) = 0;
 
     virtual int32_t InstallDlpSandbox(
         const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex) = 0;

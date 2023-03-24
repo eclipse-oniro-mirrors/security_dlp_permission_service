@@ -149,14 +149,14 @@ int32_t DlpPermissionService::GenerateDlpCertificate(
 }
 
 int32_t DlpPermissionService::ParseDlpCertificate(
-    const std::vector<uint8_t>& cert, sptr<IDlpPermissionCallback>& callback)
+    const std::vector<uint8_t>& cert, uint32_t flag, sptr<IDlpPermissionCallback>& callback)
 {
     if (callback == nullptr) {
         DLP_LOG_ERROR(LABEL, "Callback is null");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
-    return DlpCredential::GetInstance().ParseDlpCertificate(cert, callback);
+    return DlpCredential::GetInstance().ParseDlpCertificate(cert, flag, callback);
 }
 
 void DlpPermissionService::InsertDlpSandboxInfo(

@@ -47,10 +47,12 @@ public:
     ClientParseDlpCertificateCallback() = default;
     virtual ~ClientParseDlpCertificateCallback() = default;
 
-    void OnParseDlpCertificate(int32_t result, const PermissionPolicy& policy) override;
+    void OnParseDlpCertificate(int32_t result, const PermissionPolicy& policy,
+        const std::vector<uint8_t>& cert) override;
 
     int32_t result_ = -1;
     PermissionPolicy policy_;
+    std::vector<uint8_t> offlineCert_;
     bool isCallBack_ = false;
     std::mutex parseMtx_;
     std::condition_variable parseCv_;
@@ -59,7 +61,8 @@ public:
 class DlpPermissionKit {
 public:
     static int32_t GenerateDlpCertificate(const PermissionPolicy& policy, std::vector<uint8_t>& cert);
-    static int32_t ParseDlpCertificate(const std::vector<uint8_t>& cert, PermissionPolicy& policy);
+    static int32_t ParseDlpCertificate(const std::vector<uint8_t>& onlineCert,  std::vector<uint8_t>& offlineCert,
+        uint32_t offlineFlag, PermissionPolicy& policy);
     static int32_t InstallDlpSandbox(
         const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex);
     static int32_t UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId);

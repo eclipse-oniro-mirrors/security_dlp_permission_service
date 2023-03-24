@@ -12,3 +12,4 @@
 # limitations under the License.
 
 dlp_root_dir = "//base/security/dlp_permission_service"
+ability_runtime_path = "//foundation/ability/ability_runtime"

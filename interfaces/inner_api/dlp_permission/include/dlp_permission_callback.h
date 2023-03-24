@@ -32,7 +32,8 @@ class ParseDlpCertificateCallback {
 public:
     ParseDlpCertificateCallback(){};
     virtual ~ParseDlpCertificateCallback(){};
-    virtual void OnParseDlpCertificate(int32_t result, const PermissionPolicy& policy) = 0;
+    virtual void OnParseDlpCertificate(int32_t result, const PermissionPolicy& policy,
+        const std::vector<uint8_t>& cert) = 0;
 };
 }  // namespace DlpPermission
 }  // namespace Security

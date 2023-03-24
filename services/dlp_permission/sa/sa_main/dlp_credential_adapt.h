@@ -30,7 +30,8 @@ public:
     static DlpCredential& GetInstance();
     int32_t GenerateDlpCertificate(
         const std::string& policy, DlpAccountType accountType, sptr<IDlpPermissionCallback>& callback);
-    int32_t ParseDlpCertificate(const std::vector<uint8_t>& cert, sptr<IDlpPermissionCallback>& callback);
+    int32_t ParseDlpCertificate(const std::vector<uint8_t>& cert, uint32_t flag,
+        sptr<IDlpPermissionCallback>& callback);
 };
 }  // namespace DlpPermission
 }  // namespace Security

@@ -97,33 +97,40 @@ int32_t DlpPermissionAsyncStub::OnParseDlpCertificateStub(MessageParcel& data, M
     if (!data.ReadInt32(result)) {
         DLP_LOG_ERROR(LABEL, "Read int32 fail");
         PermissionPolicy policyNull;
-        this->OnParseDlpCertificate(DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL, policyNull);
+        this->OnParseDlpCertificate(DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL, policyNull, {});
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     if (result != DLP_OK) {
         PermissionPolicy policyNull;
-        this->OnParseDlpCertificate(result, policyNull);
+        this->OnParseDlpCertificate(result, policyNull, {});
         return DLP_OK;
     }
     sptr<DlpPolicyParcel> policyParcel = data.ReadParcelable<DlpPolicyParcel>();
     if (policyParcel == nullptr) {
         DLP_LOG_ERROR(LABEL, "Read parcel fail");
         PermissionPolicy policyNull;
-        this->OnParseDlpCertificate(DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL, policyNull);
+        this->OnParseDlpCertificate(DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL, policyNull, {});
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
-    this->OnParseDlpCertificate(result, policyParcel->policyParams_);
+    std::vector<uint8_t> cert;
+    if (!data.ReadUInt8Vector(&cert)) {
+        DLP_LOG_ERROR(LABEL, "Read int8 vector fail");
+        this->OnGenerateDlpCertificate(DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL, {});
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    this->OnParseDlpCertificate(result, policyParcel->policyParams_, cert);
     return DLP_OK;
 }
 
-void DlpPermissionAsyncStub::OnParseDlpCertificate(int32_t result, const PermissionPolicy& policy)
+void DlpPermissionAsyncStub::OnParseDlpCertificate(int32_t result, const PermissionPolicy& policy,
+    const std::vector<uint8_t>& cert)
 {
     if (parseDlpCertificateCallback_ == nullptr) {
         DLP_LOG_ERROR(LABEL, "Callback is null");
         return;
     }
 
-    parseDlpCertificateCallback_->OnParseDlpCertificate(result, policy);
+    parseDlpCertificateCallback_->OnParseDlpCertificate(result, policy, cert);
 }
 }  // namespace DlpPermission
 }  // namespace Security

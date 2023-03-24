@@ -116,6 +116,12 @@ int32_t DlpPermissionStub::ParseDlpCertificateInner(MessageParcel& data, Message
         return DLP_SERVICE_ERROR_PERMISSION_DENY;
     }
 
+    uint32_t flag;
+    if (!data.ReadUint32(flag)) {
+        DLP_LOG_ERROR(LABEL, "Read flag fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
     std::vector<uint8_t> cert;
     if (!data.ReadUInt8Vector(&cert)) {
         DLP_LOG_ERROR(LABEL, "Read cert fail");
@@ -133,7 +139,7 @@ int32_t DlpPermissionStub::ParseDlpCertificateInner(MessageParcel& data, Message
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
-    int32_t res = this->ParseDlpCertificate(cert, callback);
+    int32_t res = this->ParseDlpCertificate(cert, flag, callback);
     if (!reply.WriteInt32(res)) {
         DLP_LOG_ERROR(LABEL, "Write parse cert result fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;

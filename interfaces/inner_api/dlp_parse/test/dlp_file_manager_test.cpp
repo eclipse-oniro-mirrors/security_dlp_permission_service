@@ -186,7 +186,7 @@ HWTEST_F(DlpFileManagerTest, ParseDlpFileFormat001, TestSize.Level1)
     ASSERT_NE(filePtr, nullptr);
 
     filePtr->dlpFd_ = -1;
-    EXPECT_EQ(DLP_PARSE_ERROR_FD_ERROR, DlpFileManager::GetInstance().ParseDlpFileFormat(filePtr));
+    EXPECT_EQ(DLP_PARSE_ERROR_FD_ERROR, DlpFileManager::GetInstance().ParseDlpFileFormat(filePtr, ""));
     filePtr->dlpFd_ = g_fdDlp;
 
     struct DlpHeader header = {
@@ -204,7 +204,7 @@ HWTEST_F(DlpFileManagerTest, ParseDlpFileFormat001, TestSize.Level1)
     uint8_t buffer[64] = {0};
     write(g_fdDlp, buffer, 64);
     lseek(g_fdDlp, 0, SEEK_SET);
-    EXPECT_EQ(DLP_SERVICE_ERROR_JSON_OPERATE_FAIL, DlpFileManager::GetInstance().ParseDlpFileFormat(filePtr));
+    EXPECT_EQ(DLP_SERVICE_ERROR_JSON_OPERATE_FAIL, DlpFileManager::GetInstance().ParseDlpFileFormat(filePtr, ""));
 
     close(g_fdDlp);
     unlink("/data/fuse_test_dlp.txt");
@@ -246,7 +246,7 @@ HWTEST_F(DlpFileManagerTest, ParseDlpFileFormat002, TestSize.Level1)
     write(g_fdDlp, buffer, 32);
 
     lseek(g_fdDlp, 0, SEEK_SET);
-    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, DlpFileManager::GetInstance().ParseDlpFileFormat(filePtr));
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, DlpFileManager::GetInstance().ParseDlpFileFormat(filePtr, ""));
 
     close(g_fdDlp);
     unlink("/data/fuse_test_dlp.txt");
@@ -293,7 +293,7 @@ HWTEST_F(DlpFileManagerTest, ParseDlpFileFormat003, TestSize.Level1)
     condition.mockSequence = { false, false, false, false, false, false, false, true };
     SetMockConditions("memcpy_s", condition);
     EXPECT_EQ(DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL,
-        DlpFileManager::GetInstance().ParseDlpFileFormat(filePtr));
+        DlpFileManager::GetInstance().ParseDlpFileFormat(filePtr, ""));
     CleanMockConditions();
 
     close(g_fdDlp);
@@ -524,19 +524,19 @@ HWTEST_F(DlpFileManagerTest, OpenDlpFile001, TestSize.Level1)
     property.ownerAccountType = DOMAIN_ACCOUNT;
 
     EXPECT_EQ(DLP_PARSE_ERROR_FD_ERROR,
-        DlpFileManager::GetInstance().OpenDlpFile(-1, filePtr));
+        DlpFileManager::GetInstance().OpenDlpFile(-1, filePtr, ""));
 
     std::shared_ptr<DlpFile> filePtr1 = std::make_shared<DlpFile>(1000);
     ASSERT_NE(filePtr1, nullptr);
     DlpFileManager::GetInstance().AddDlpFileNode(filePtr1);
 
     EXPECT_EQ(DLP_OK,
-        DlpFileManager::GetInstance().OpenDlpFile(1000, filePtr));
+        DlpFileManager::GetInstance().OpenDlpFile(1000, filePtr, ""));
     EXPECT_EQ(filePtr1, filePtr);
     DlpFileManager::GetInstance().RemoveDlpFileNode(filePtr1);
 
     EXPECT_EQ(DLP_PARSE_ERROR_FILE_OPERATE_FAIL,
-        DlpFileManager::GetInstance().OpenDlpFile(1000, filePtr));
+        DlpFileManager::GetInstance().OpenDlpFile(1000, filePtr, ""));
 }
 
 /**

@@ -49,12 +49,15 @@ struct DlpCipher {
 struct DlpHeader {
     uint32_t magic;
     uint32_t version;
+    uint32_t offlineAccess;
     uint32_t txtOffset;
     uint32_t txtSize;
     uint32_t certOffset;
     uint32_t certSize;
     uint32_t contactAccountOffset;
     uint32_t contactAccountSize;
+    uint32_t offlineCertOffset;
+    uint32_t offlineCertSize;
 };
 
 enum VALID_KEY_SIZE {
@@ -71,7 +74,11 @@ public:
     int32_t SetCipher(const struct DlpBlob& key, const struct DlpUsageSpec& spec);
     int32_t ParseDlpHeader();
     void GetEncryptCert(struct DlpBlob& cert) const;
+    void GetOfflineCert(struct DlpBlob& cert) const;
+    int32_t AddOfflineCert(std::vector<uint8_t>& offlineCert, const std::string& workDir);
     int32_t SetEncryptCert(const struct DlpBlob& cert);
+    void SetOfflineAccess(bool flag);
+    bool GetOfflineAccess();
     int32_t GenFile(int32_t inPlainFileFd);
     int32_t RemoveDlpPermission(int outPlainFileFd);
     int32_t DlpFileRead(uint32_t offset, void* buf, uint32_t size);
@@ -120,6 +127,7 @@ private:
     int32_t GetLocalAccountName(std::string& account) const;
     int32_t DoDlpContentCryptyOperation(int32_t inFd, int32_t outFd, uint32_t inOffset,
         uint32_t inFileLen, bool isEncrypt);
+    int32_t DoDlpContentCopyOperation(int32_t inFd, int32_t outFd, uint32_t inOffset, uint32_t inFileLen);
 
     int32_t DupUsageSpec(struct DlpUsageSpec& spec);
     int32_t DoDlpBlockCryptOperation(struct DlpBlob& message1,
@@ -135,6 +143,7 @@ private:
     // dlp parse format
     struct DlpHeader head_;
     struct DlpBlob cert_;
+    struct DlpBlob offlineCert_;
     struct DlpCipher cipher_;
 
     // policy in certificate

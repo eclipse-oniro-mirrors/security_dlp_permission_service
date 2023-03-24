@@ -34,7 +34,8 @@ public:
     int32_t OnRemoteRequest(uint32_t code, MessageParcel& data, MessageParcel& reply, MessageOption& option) override;
 
     void OnGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert) override;
-    void OnParseDlpCertificate(int32_t result, const PermissionPolicy& policy) override;
+    void OnParseDlpCertificate(int32_t result, const PermissionPolicy& policy,
+        const std::vector<uint8_t>& cert) override;
 
 private:
     int32_t OnGenerateDlpCertificateStub(MessageParcel& data, MessageParcel& reply);

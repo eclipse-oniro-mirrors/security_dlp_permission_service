@@ -59,7 +59,8 @@ void DlpPermissionAsyncProxy::OnGenerateDlpCertificate(int32_t result, const std
     }
 }
 
-void DlpPermissionAsyncProxy::OnParseDlpCertificate(int32_t result, const PermissionPolicy& policy)
+void DlpPermissionAsyncProxy::OnParseDlpCertificate(int32_t result, const PermissionPolicy& policy,
+    const std::vector<uint8_t>& cert)
 {
     MessageParcel data;
     if (!data.WriteInterfaceToken(DlpPermissionAsyncProxy::GetDescriptor())) {
@@ -77,6 +78,11 @@ void DlpPermissionAsyncProxy::OnParseDlpCertificate(int32_t result, const Permis
         policyParcel.policyParams_.CopyPermissionPolicy(policy);
         if (!data.WriteParcelable(&policyParcel)) {
             DLP_LOG_ERROR(LABEL, "Write parcel fail");
+            return;
+        }
+
+        if (!data.WriteUInt8Vector(cert)) {
+            DLP_LOG_ERROR(LABEL, "Write uint8 vector fail");
             return;
         }
     }

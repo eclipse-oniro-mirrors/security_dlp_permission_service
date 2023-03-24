@@ -38,6 +38,12 @@ enum AuthPermType : uint32_t {
     DEFAULT_PERM,
 };
 
+enum DlpAuthType : uint32_t {
+    ONLINE_AUTH_ONLY = 0,
+    ONLINE_AUTH_FOR_OFFLINE_CERT = 1,
+    OFFLINE_AUTH_ONLY = 2,
+};
+
 typedef struct AuthUserInfo {
     std::string authAccount;
     AuthPermType authPerm = DEFAULT_PERM;
@@ -50,6 +56,7 @@ struct DlpProperty {
     std::vector<AuthUserInfo> authUsers;
     std::string contractAccount;
     DlpAccountType ownerAccountType = INVALID_ACCOUNT;
+    bool offlineAccess = false;
 };
 
 typedef enum SandBoxExternalAuthorType {

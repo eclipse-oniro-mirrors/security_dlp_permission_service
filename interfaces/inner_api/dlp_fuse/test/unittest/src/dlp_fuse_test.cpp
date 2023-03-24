@@ -260,7 +260,7 @@ HWTEST_F(DlpFuseTest, OpenDlpFile001, TestSize.Level1)
     ASSERT_EQ(result, 0);
     g_Dlpfile = nullptr;
 
-    result = DlpFileManager::GetInstance().OpenDlpFile(g_dlpFileFd, g_Dlpfile);
+    result = DlpFileManager::GetInstance().OpenDlpFile(g_dlpFileFd, g_Dlpfile, "");
     ASSERT_EQ(result, 0);
     ASSERT_NE(g_Dlpfile, nullptr);
 
@@ -842,9 +842,10 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile008, TestSize.Level1)
     ASSERT_NE(lseek(g_dlpFileFd, 0, SEEK_SET), -1);
 
     // get txtSize
-    ASSERT_EQ(read(g_dlpFileFd, readBuf, 16), 16);
+    int off = offsetof(struct DlpHeader, txtSize);
+    ASSERT_EQ(read(g_dlpFileFd, readBuf, off + sizeof(uint32_t)), off + sizeof(uint32_t));
     uint32_t* hdr = reinterpret_cast<uint32_t*>(readBuf);
-    ASSERT_EQ(static_cast<int>(hdr[3]), 4);
+    ASSERT_EQ(static_cast<int>(hdr[off/sizeof(uint32_t)]), 4);
 }
 
 /**

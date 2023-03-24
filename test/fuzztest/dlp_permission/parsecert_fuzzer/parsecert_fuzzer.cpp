@@ -30,8 +30,9 @@ namespace OHOS {
 static void FuzzTest(const uint8_t* data, size_t size)
 {
     std::vector<uint8_t> cert(data, data + size);
+    std::vector<uint8_t> offlineCert;
     PermissionPolicy policy;
-    DlpPermissionKit::ParseDlpCertificate(cert, policy);
+    DlpPermissionKit::ParseDlpCertificate(cert, offlineCert, 0, policy);
 }
 
 bool ParseCertFuzzTest(const uint8_t* data, size_t size)

@@ -42,9 +42,10 @@ int32_t DlpPermissionKit::GenerateDlpCertificate(const PermissionPolicy& policy,
     return DLP_OK;
 }
 
-int32_t DlpPermissionKit::ParseDlpCertificate(const std::vector<uint8_t>& cert, PermissionPolicy& policy)
+int32_t DlpPermissionKit::ParseDlpCertificate(const std::vector<uint8_t>& onlineCert, std::vector<uint8_t>& offlineCert,
+        uint32_t offlineFlag, PermissionPolicy& policy)
 {
-    std::string encJsonStr(cert.begin(), cert.end());
+    std::string encJsonStr(onlineCert.begin(), onlineCert.end());
     auto jsonObj = nlohmann::json::parse(encJsonStr, nullptr, false);
     if (jsonObj.is_discarded() || (!jsonObj.is_object())) {
         DLP_LOG_ERROR(LABEL, "JsonObj is discarded");

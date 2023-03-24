@@ -444,12 +444,15 @@ HWTEST_F(DlpFileTest, IsValidDlpHeader001, TestSize.Level1)
     PermissionPolicy policy;
     struct DlpHeader header = {
         .magic = DLP_FILE_MAGIC,
-        .certOffset = 32,
+        .certOffset = sizeof(struct DlpHeader),
+        .offlineAccess = 0,
         .certSize = 20,
-        .contactAccountOffset = 52,
+        .contactAccountOffset = sizeof(struct DlpHeader) + 20,
         .contactAccountSize = 20,
-        .txtOffset  = 72,
-        .txtSize = 100
+        .txtOffset  = sizeof(struct DlpHeader) + 20 + 20,
+        .txtSize = 100,
+        .offlineCertOffset = 0,
+        .offlineCertSize = 0,
     };
 
     // valid header
@@ -591,12 +594,15 @@ HWTEST_F(DlpFileTest, ParseDlpHeader004, TestSize.Level1)
 
     struct DlpHeader header = {
         .magic = DLP_FILE_MAGIC,
-        .certOffset = 32,
+        .certOffset = sizeof(struct DlpHeader),
+        .offlineAccess = 0,
         .certSize = 20,
-        .contactAccountOffset = 52,
+        .contactAccountOffset = sizeof(struct DlpHeader) + 20,
         .contactAccountSize = 20,
-        .txtOffset  = 72,
-        .txtSize = 100
+        .txtOffset  = sizeof(struct DlpHeader) + 20 + 20,
+        .txtSize = 100,
+        .offlineCertOffset = 0,
+        .offlineCertSize = 0,
     };
     write(fd, &header, sizeof(header));
 
@@ -621,12 +627,15 @@ HWTEST_F(DlpFileTest, ParseDlpHeader005, TestSize.Level1)
 
     struct DlpHeader header = {
         .magic = DLP_FILE_MAGIC,
-        .certOffset = 32,
+        .certOffset = sizeof(struct DlpHeader),
+        .offlineAccess = 0,
         .certSize = 20,
-        .contactAccountOffset = 52,
+        .contactAccountOffset = sizeof(struct DlpHeader) + 20,
         .contactAccountSize = 20,
-        .txtOffset  = 72,
-        .txtSize = 100
+        .txtOffset  = sizeof(struct DlpHeader) + 20 + 20,
+        .txtSize = 100,
+        .offlineCertOffset = 0,
+        .offlineCertSize = 0,
     };
     write(fd, &header, sizeof(header));
     uint8_t buffer[20] = {0};
@@ -653,12 +662,15 @@ HWTEST_F(DlpFileTest, ParseDlpHeader006, TestSize.Level1)
 
     struct DlpHeader header = {
         .magic = DLP_FILE_MAGIC,
-        .certOffset = 32,
+        .certOffset = sizeof(struct DlpHeader),
+        .offlineAccess = 0,
         .certSize = 20,
-        .contactAccountOffset = 52,
+        .contactAccountOffset = sizeof(struct DlpHeader) + 20,
         .contactAccountSize = 20,
-        .txtOffset  = 72,
-        .txtSize = 100
+        .txtOffset  = sizeof(struct DlpHeader) + 20 + 20,
+        .txtSize = 100,
+        .offlineCertOffset = 0,
+        .offlineCertSize = 0,
     };
     write(fd, &header, sizeof(header));
     uint8_t buffer[40] = {0};
