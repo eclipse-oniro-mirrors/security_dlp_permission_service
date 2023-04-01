@@ -63,7 +63,8 @@ void CreateDlpFileFd()
     prop.contractAccount = "test@test.com";
 
     std::shared_ptr<DlpFile> filePtr;
-    int ret = DlpFileManager::GetInstance().GenerateDlpFile(plainFileFd, g_dlpFileFd, prop, filePtr);
+    int32_t ret = DlpFileManager::GetInstance().GenerateDlpFilePrepare(prop, filePtr);
+    ret += DlpFileManager::GetInstance().GenerateDlpFileFinish(plainFileFd, g_dlpFileFd, filePtr);
     close(plainFileFd);
     if (ret != DLP_OK) {
         cout << "create dlpFile object failed" << endl;

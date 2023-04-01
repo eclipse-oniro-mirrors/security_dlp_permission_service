@@ -73,6 +73,8 @@ enum DLPErrCode : int32_t {
     DLP_CREDENTIAL_ERROR_HUKS_ERROR = -301,
     DLP_CREDENTIAL_ERROR_IPC_ERROR = -302,
     DLP_CREDENTIAL_ERROR_SERVER_ERROR = -303,
+
+    DLP_FILEPICK_NO_URI_RETURN = -400,
 };
 }  // namespace DlpPermission
 }  // namespace Security

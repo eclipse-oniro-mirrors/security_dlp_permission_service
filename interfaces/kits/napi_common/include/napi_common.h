@@ -16,6 +16,8 @@
 #ifndef INTERFACES_KITS_NAPI_COMMON_INCLUDE_NAPI_H
 #define INTERFACES_KITS_NAPI_COMMON_INCLUDE_NAPI_H
 
+#include "ability.h"
+#include "ability_manager_client.h"
 #include <vector>
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
@@ -28,10 +30,13 @@ constexpr int32_t PARAM0 = 0;
 constexpr int32_t PARAM1 = 1;
 constexpr int32_t PARAM2 = 2;
 constexpr int32_t PARAM3 = 3;
+constexpr int32_t PARAM4 = 4;
 constexpr int32_t PARAM_SIZE_ONE = 1;
 constexpr int32_t PARAM_SIZE_TWO = 2;
 constexpr int32_t PARAM_SIZE_THREE = 3;
 constexpr int32_t PARAM_SIZE_FOUR = 4;
+constexpr int32_t PARAM_SIZE_FIVE = 5;
+
 
 struct CommonAsyncContext {
     explicit CommonAsyncContext(napi_env napiEnv);
@@ -47,9 +52,11 @@ struct CommonAsyncContext {
 struct GenerateDlpFileAsyncContext : public CommonAsyncContext {
     explicit GenerateDlpFileAsyncContext(napi_env env) : CommonAsyncContext(env){};
     int64_t plainTxtFd = -1;
-    int64_t cipherTxtFd = -1;
+    int64_t cipherTextFd = -1;
+    std::string fileName = "";
     DlpProperty property;
     std::shared_ptr<DlpFile> dlpFileNative = nullptr;
+    std::shared_ptr<AbilityRuntime::AbilityContext> abilityContext = nullptr;
 };
 
 struct DlpFileAsyncContext : public CommonAsyncContext {

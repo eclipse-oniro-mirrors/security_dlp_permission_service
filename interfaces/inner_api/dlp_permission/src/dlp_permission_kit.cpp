@@ -103,7 +103,6 @@ int32_t DlpPermissionKit::ParseDlpCertificate(const std::vector<uint8_t>& online
     if (offlineCert.size() > 0) {
         authFlag = DlpAuthType::OFFLINE_AUTH_ONLY;
         cert = offlineCert;
-        DLP_LOG_INFO(LABEL, "try offline auth");
     } else {
         cert = onlineCert;
     }
@@ -133,7 +132,7 @@ AUTH_RETRY:
         DLP_LOG_ERROR(LABEL, "service did not call back! timeout!");
         return DLP_SERVICE_ERROR_CREDENTIAL_TASK_TIMEOUT;
     }
-    DLP_LOG_INFO(LABEL, "get callback succeed!");
+
     if (callback->result_ == DLP_OK) {
         policy.CopyPermissionPolicy(callback->policy_);
         if (authFlag == DlpAuthType::ONLINE_AUTH_FOR_OFFLINE_CERT) {

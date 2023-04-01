@@ -32,8 +32,8 @@ public:
     static DlpFileManager& GetInstance();
     ~DlpFileManager(){};
 
-    int32_t GenerateDlpFile(
-        int32_t plainFileFd, int32_t dlpFileFd, const DlpProperty& property, std::shared_ptr<DlpFile>& filePtr);
+    int32_t GenerateDlpFilePrepare(const DlpProperty& property, std::shared_ptr<DlpFile>& filePtr);
+    int32_t GenerateDlpFileFinish(int32_t plainFileFd, int32_t dlpFileFd, std::shared_ptr<DlpFile>& filePtr);
     int32_t OpenDlpFile(int32_t dlpFileFd, std::shared_ptr<DlpFile>& filePtr, const std::string& workDir);
     int32_t IsDlpFile(int32_t dlpFileFd, bool& isDlpFile);
     int32_t CloseDlpFile(const std::shared_ptr<DlpFile>& dlpFile);

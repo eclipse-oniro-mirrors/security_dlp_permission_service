@@ -281,20 +281,9 @@ int32_t DlpFileManager::SetDlpFileParams(std::shared_ptr<DlpFile>& filePtr, cons
     return result;
 }
 
-int32_t DlpFileManager::GenerateDlpFile(
-    int32_t plainFileFd, int32_t dlpFileFd, const DlpProperty& property, std::shared_ptr<DlpFile>& filePtr)
+int32_t DlpFileManager::GenerateDlpFilePrepare(const DlpProperty& property, std::shared_ptr<DlpFile>& filePtr)
 {
-    if (plainFileFd < 0 || dlpFileFd < 0) {
-        DLP_LOG_ERROR(LABEL, "Generate dlp file fail, plain file fd or dlp file fd invalid");
-        return DLP_PARSE_ERROR_FD_ERROR;
-    }
-
-    if (GetDlpFile(dlpFileFd) != nullptr) {
-        DLP_LOG_ERROR(LABEL, "Generate dlp file fail, dlp file has generated, if you want to rebuild, close it first");
-        return DLP_PARSE_ERROR_FILE_ALREADY_OPENED;
-    }
-
-    filePtr = std::make_shared<DlpFile>(dlpFileFd);
+    filePtr = std::make_shared<DlpFile>(-1);
     if (filePtr == nullptr) {
         DLP_LOG_ERROR(LABEL, "Generate dlp file fail, alloc dlp obj fail");
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
@@ -306,7 +295,29 @@ int32_t DlpFileManager::GenerateDlpFile(
         return result;
     }
 
-    result = filePtr->GenFile(plainFileFd);
+    return result;
+}
+
+int32_t DlpFileManager::GenerateDlpFileFinish(int32_t plainFileFd, int32_t dlpFileFd, std::shared_ptr<DlpFile>& filePtr)
+{
+    if (plainFileFd < 0 || dlpFileFd < 0) {
+        DLP_LOG_ERROR(LABEL, "Generate dlp file fail, plain file fd or dlp file fd invalid");
+        return DLP_PARSE_ERROR_FD_ERROR;
+    }
+
+    if (GetDlpFile(dlpFileFd) != nullptr) {
+        DLP_LOG_ERROR(LABEL, "Generate dlp file fail, dlp file has generated, if you want to rebuild, close it first");
+        return DLP_PARSE_ERROR_FILE_ALREADY_OPENED;
+    }
+
+    if (filePtr == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Generate dlp file fail, alloc dlp obj fail");
+        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
+    }
+
+    filePtr->SetFileFd(dlpFileFd);
+
+    int32_t result = filePtr->GenFile(plainFileFd);
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Generate dlp file fail, errno=%{public}d", result);
         return result;
