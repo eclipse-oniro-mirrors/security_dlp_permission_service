@@ -1,4 +1,4 @@
-# Copyright (c) 2022 Huawei Device Co., Ltd.
+# Copyright (c) 2022-2023 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -40,12 +40,16 @@ ohos_shared_library("libdlp_permission_sdk") {
     "${dlp_root_dir}/frameworks/common/src/dlp_policy.cpp",
     "${dlp_root_dir}/frameworks/dlp_permission/src/auth_user_info_parcel.cpp",
     "${dlp_root_dir}/frameworks/dlp_permission/src/dlp_policy_parcel.cpp",
+    "${dlp_root_dir}/frameworks/dlp_permission/src/dlp_sandbox_callback_info_parcel.cpp",
     "src/dlp_permission_async_stub.cpp",
     "src/dlp_permission_client.cpp",
     "src/dlp_permission_death_recipient.cpp",
     "src/dlp_permission_kit.cpp",
     "src/dlp_permission_load_callback.cpp",
     "src/dlp_permission_proxy.cpp",
+    "src/dlp_sandbox_change_callback_customize.cpp",
+    "src/dlp_sandbox_change_callback_stub.cpp",
+    "src/dlp_sandbox_change_callback.cpp",
   ]
 
   configs = [ "//base/security/dlp_permission_service/config:coverage_flags" ]

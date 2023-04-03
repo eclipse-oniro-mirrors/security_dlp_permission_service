@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -185,6 +185,17 @@ int32_t DlpPermissionKit::IsInDlpSandbox(bool& inSandbox)
 int32_t DlpPermissionKit::GetDlpSupportFileType(std::vector<std::string>& supportFileType)
 {
     return DlpPermissionClient::GetInstance().GetDlpSupportFileType(supportFileType);
+}
+
+int32_t DlpPermissionKit::RegisterDlpSandboxChangeCallback(
+    const std::shared_ptr<DlpSandboxChangeCallbackCustomize> &callback)
+{
+    return DlpPermissionClient::GetInstance().RegisterDlpSandboxChangeCallback(callback);
+}
+
+int32_t DlpPermissionKit::UnregisterDlpSandboxChangeCallback(bool &result)
+{
+    return DlpPermissionClient::GetInstance().UnregisterDlpSandboxChangeCallback(result);
 }
 }  // namespace DlpPermission
 }  // namespace Security

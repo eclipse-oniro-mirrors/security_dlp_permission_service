@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -249,6 +249,48 @@ int32_t DlpPermissionClient::GetDlpSupportFileType(std::vector<std::string>& sup
     }
 
     return proxy->GetDlpSupportFileType(supportFileType);
+}
+
+int32_t DlpPermissionClient::CreateDlpSandboxChangeCallback(
+    const std::shared_ptr<DlpSandboxChangeCallbackCustomize> &customizedCb, sptr<DlpSandboxChangeCallback> &callback)
+{
+    callback = new (std::nothrow) DlpSandboxChangeCallback(customizedCb);
+    if (callback == nullptr) {
+        DLP_LOG_ERROR(LABEL, "memory allocation for callback failed!");
+        return DLP_CALLBACK_SA_WORK_ABNORMAL;
+    }
+    return DLP_OK;
+}
+
+int32_t DlpPermissionClient::RegisterDlpSandboxChangeCallback(
+    const std::shared_ptr<DlpSandboxChangeCallbackCustomize> &customizedCb)
+{
+    if (customizedCb == nullptr) {
+        DLP_LOG_ERROR(LABEL, "customizedCb is nullptr");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    sptr<DlpSandboxChangeCallback> callback = nullptr;
+    int32_t result = CreateDlpSandboxChangeCallback(customizedCb, callback);
+    if (result != DLP_OK) {
+        return result;
+    }
+    auto proxy = GetProxy(false);
+    if (proxy == nullptr) {
+        DLP_LOG_ERROR(LABEL, "proxy is null");
+        return DLP_CALLBACK_SA_WORK_ABNORMAL;
+    }
+    return proxy->RegisterDlpSandboxChangeCallback(callback->AsObject());
+}
+
+int32_t DlpPermissionClient::UnregisterDlpSandboxChangeCallback(bool &result)
+{
+    auto proxy = GetProxy(false);
+    if (proxy == nullptr) {
+        DLP_LOG_ERROR(LABEL, "proxy is null");
+        return DLP_CALLBACK_SA_WORK_ABNORMAL;
+    }
+
+    return proxy->UnRegisterDlpSandboxChangeCallback(result);
 }
 
 bool DlpPermissionClient::StartLoadDlpPermissionSa()

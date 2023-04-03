@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -403,6 +403,76 @@ int32_t DlpPermissionProxy::GetDlpSupportFileType(std::vector<std::string>& supp
         supportFileType.emplace_back(fileType);
     }
 
+    return res;
+}
+
+int32_t DlpPermissionProxy::RegisterDlpSandboxChangeCallback(const sptr<IRemoteObject> &callback)
+{
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
+        DLP_LOG_ERROR(LABEL, "Failed to write WriteInterfaceToken.");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (!data.WriteRemoteObject(callback)) {
+        DLP_LOG_ERROR(LABEL, "Failed to write remote object.");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
+    sptr<IRemoteObject> remote = Remote();
+    if (remote == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Remote service is null");
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
+    }
+    int32_t requestResult = remote->SendRequest(
+        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::REGISTER_DLP_SANDBOX_CHANGE_CALLBACK), data, reply,
+        option);
+    if (requestResult != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
+        return DLP_CALLBACK_SA_WORK_ABNORMAL;
+    }
+
+    int32_t result;
+    if (!reply.ReadInt32(result)) {
+        DLP_LOG_ERROR(LABEL, "ReadInt32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    return result;
+}
+
+int32_t DlpPermissionProxy::UnRegisterDlpSandboxChangeCallback(bool &result)
+{
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
+        DLP_LOG_ERROR(LABEL, "Failed to write WriteInterfaceToken.");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
+    sptr<IRemoteObject> remote = Remote();
+    if (remote == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Remote service is null");
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
+    }
+    int32_t requestResult = remote->SendRequest(
+        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::UNREGISTER_DLP_SANDBOX_CHANGE_CALLBACK), data,
+        reply, option);
+    if (requestResult != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
+        return DLP_CALLBACK_SA_WORK_ABNORMAL;
+    }
+
+    int32_t res;
+    if (!reply.ReadInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "ReadInt32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (!reply.ReadBool(result)) {
+        DLP_LOG_ERROR(LABEL, "Read bool fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
     return res;
 }
 }  // namespace DlpPermission

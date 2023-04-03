@@ -97,6 +97,9 @@ private:
     static void GetDlpSupportFileTypeExcute(napi_env env, void* data);
     static void GetDlpSupportFileTypeComplete(napi_env env, napi_status status, void* data);
     static napi_value GetDlpSupportFileType(napi_env env, napi_callback_info cbInfo);
+
+    static napi_value RegisterSandboxChangeCallback(napi_env env, napi_callback_info cbInfo);
+    static napi_value UnregisterSandboxChangeCallback(napi_env env, napi_callback_info cbInfo);
 };
 }  // namespace DlpPermission
 }  // namespace Security

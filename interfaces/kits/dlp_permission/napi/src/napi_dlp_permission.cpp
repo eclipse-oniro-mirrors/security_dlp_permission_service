@@ -40,6 +40,7 @@ namespace Security {
 namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionNapi"};
+RegisterDlpSandboxChangeInfo *g_dlpSandboxChangeInfoRegister = nullptr;
 }  // namespace
 
 static napi_value BindingJsWithNative(napi_env env, napi_value* argv, size_t argc)
@@ -1145,6 +1146,60 @@ void NapiDlpPermission::GetDlpSupportFileTypeComplete(napi_env env, napi_status 
     ProcessCallbackOrPromise(env, asyncContext, supportFileTypeJs);
 }
 
+napi_value NapiDlpPermission::RegisterSandboxChangeCallback(napi_env env, napi_callback_info cbInfo)
+{
+    RegisterDlpSandboxChangeInfo *registerDlpSandboxChangeInfo = new (std::nothrow) RegisterDlpSandboxChangeInfo();
+    if (registerDlpSandboxChangeInfo == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for subscribeCBInfo!");
+        return nullptr;
+    }
+    std::unique_ptr<RegisterDlpSandboxChangeInfo> callbackPtr { registerDlpSandboxChangeInfo };
+    if (!ParseInputToRegister(env, cbInfo, *registerDlpSandboxChangeInfo)) {
+        return nullptr;
+    }
+    int32_t result = DlpPermissionKit::RegisterDlpSandboxChangeCallback(registerDlpSandboxChangeInfo->subscriber);
+    if (result != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "RegisterSandboxChangeCallback failed");
+        registerDlpSandboxChangeInfo->errCode = result;
+        napi_throw(env, GenerateBusinessError(env, ERR_JS_ON_OFF_FAIL, GetJsErrMsg(ERR_JS_ON_OFF_FAIL)));
+        return nullptr;
+    }
+    if (g_dlpSandboxChangeInfoRegister != nullptr) {
+        delete g_dlpSandboxChangeInfoRegister;
+        g_dlpSandboxChangeInfoRegister = nullptr;
+    }
+    g_dlpSandboxChangeInfoRegister = callbackPtr.release();
+    return nullptr;
+}
+
+napi_value NapiDlpPermission::UnregisterSandboxChangeCallback(napi_env env, napi_callback_info cbInfo)
+{
+    auto *asyncContext = new (std::nothrow) UnregisterSandboxChangeCallbackAsyncContext(env);
+    if (asyncContext == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
+        return nullptr;
+    }
+    std::unique_ptr<UnregisterSandboxChangeCallbackAsyncContext> asyncContextPtr { asyncContext };
+    if (!GetUnregisterSandboxParams(env, cbInfo, *asyncContext)) {
+        return nullptr;
+    }
+
+    napi_value jsResult = nullptr;
+    int32_t result = DlpPermissionKit::UnregisterDlpSandboxChangeCallback(asyncContext->result);
+    bool isUnregisterSuccess = true;
+    if (result != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "UnregisterSandboxChangeCallback failed");
+        napi_throw(env, GenerateBusinessError(env, ERR_JS_ON_OFF_FAIL, GetJsErrMsg(ERR_JS_ON_OFF_FAIL)));
+        isUnregisterSuccess = false;
+    }
+    if (g_dlpSandboxChangeInfoRegister != nullptr) {
+        delete g_dlpSandboxChangeInfoRegister;
+        g_dlpSandboxChangeInfoRegister = nullptr;
+    }
+    napi_get_boolean(env, isUnregisterSuccess, &jsResult);
+    return jsResult;
+}
+
 napi_value NapiDlpPermission::DlpFile(napi_env env, napi_callback_info cbInfo)
 {
     napi_value instance = nullptr;
@@ -1188,6 +1243,8 @@ napi_value NapiDlpPermission::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("queryFileAccess", QueryFileAccess),
         DECLARE_NAPI_FUNCTION("isInSandbox", IsInSandbox),
         DECLARE_NAPI_FUNCTION("getDlpSupportFileType", GetDlpSupportFileType),
+        DECLARE_NAPI_FUNCTION("on", RegisterSandboxChangeCallback),
+        DECLARE_NAPI_FUNCTION("off", UnregisterSandboxChangeCallback),
     };
     NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[PARAM0]), desc));
 

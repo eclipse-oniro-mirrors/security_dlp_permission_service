@@ -19,6 +19,7 @@
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
 #include "bundle_mgr_client.h"
+#include "callback_manager.h"
 #include "iservice_registry.h"
 #include "i_dlp_permission_service.h"
 
@@ -45,6 +46,7 @@ void AppStateObserver::UninstallDlpSandbox(DlpSandboxInfo& appInfo)
     DLP_LOG_INFO(LABEL, "uninstall dlp sandbox %{public}s, uid: %{public}d", sandboxBundleName.c_str(), appInfo.uid);
     AppExecFwk::BundleMgrClient bundleMgrClient;
     bundleMgrClient.UninstallSandboxApp(appInfo.bundleName, appInfo.appIndex, appInfo.userId);
+    CallbackManager::GetInstance().ExecuteCallbackAsync(appInfo);
 }
 
 void AppStateObserver::UninstallAllDlpSandboxForUser(int32_t userId)

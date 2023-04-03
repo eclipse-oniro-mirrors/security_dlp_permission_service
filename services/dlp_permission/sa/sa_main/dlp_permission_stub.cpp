@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -320,6 +320,34 @@ int32_t DlpPermissionStub::GetDlpSupportFileTypeInner(MessageParcel& data, Messa
     return DLP_OK;
 }
 
+int32_t DlpPermissionStub::RegisterDlpSandboxChangeCallbackInner(MessageParcel &data, MessageParcel &reply)
+{
+    sptr<IRemoteObject> callback = data.ReadRemoteObject();
+    if (callback == nullptr) {
+        DLP_LOG_ERROR(LABEL, "read callback fail");
+        reply.WriteInt32(DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL);
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    int32_t result = this->RegisterDlpSandboxChangeCallback(callback);
+    reply.WriteInt32(result);
+    return DLP_OK;
+}
+
+int32_t DlpPermissionStub::UnRegisterDlpSandboxChangeCallbackInner(MessageParcel &data, MessageParcel &reply)
+{
+    bool res = false;
+    int32_t result = this->UnRegisterDlpSandboxChangeCallback(res);
+    if (!reply.WriteInt32(result)) {
+        DLP_LOG_ERROR(LABEL, "Write sandbox query result fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (!reply.WriteBool(res)) {
+        DLP_LOG_ERROR(LABEL, "Write sandbox flag fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    return DLP_OK;
+}
+
 DlpPermissionStub::DlpPermissionStub()
 {
     requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GENERATE_DLP_CERTIFICATE)] =
@@ -340,6 +368,11 @@ DlpPermissionStub::DlpPermissionStub()
         &DlpPermissionStub::IsInDlpSandboxInner;
     requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_DLP_SUPPORT_FILE_TYPE)] =
         &DlpPermissionStub::GetDlpSupportFileTypeInner;
+    requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::REGISTER_DLP_SANDBOX_CHANGE_CALLBACK)] =
+        &DlpPermissionStub::RegisterDlpSandboxChangeCallbackInner;
+    requestFuncMap_[static_cast<uint32_t>(
+        IDlpPermissionService::InterfaceCode::UNREGISTER_DLP_SANDBOX_CHANGE_CALLBACK)] =
+        &DlpPermissionStub::UnRegisterDlpSandboxChangeCallbackInner;
 }
 
 DlpPermissionStub::~DlpPermissionStub()

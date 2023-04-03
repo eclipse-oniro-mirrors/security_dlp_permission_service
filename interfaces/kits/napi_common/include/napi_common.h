@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -19,10 +19,16 @@
 #include "ability.h"
 #include "ability_manager_client.h"
 #include <vector>
+#include <unistd.h>
+#include <uv.h>
+
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "dlp_file.h"
 #include "dlp_policy.h"
+#include "dlp_sandbox_callback_info.h"
+#include "dlp_sandbox_change_callback_customize.h"
+
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
@@ -36,7 +42,35 @@ constexpr int32_t PARAM_SIZE_TWO = 2;
 constexpr int32_t PARAM_SIZE_THREE = 3;
 constexpr int32_t PARAM_SIZE_FOUR = 4;
 constexpr int32_t PARAM_SIZE_FIVE = 5;
+const std::string ON_OFF_SANDBOX = "uninstallDlpSandbox";
 
+#define NAPI_CALL_BASE_WITH_SCOPE(env, theCall, retVal, scope) \
+    do {                                                       \
+        if ((theCall) != napi_ok) {                            \
+            GET_AND_THROW_LAST_ERROR((env));                   \
+            napi_close_handle_scope(env, scope);               \
+            return retVal;                                     \
+        }                                                      \
+    } while (0)
+
+#define NAPI_CALL_RETURN_VOID_WITH_SCOPE(env, theCall, scope) \
+    NAPI_CALL_BASE_WITH_SCOPE(env, theCall, NAPI_RETVAL_NOTHING, scope)
+
+class RegisterDlpSandboxChangeScopePtr : public DlpSandboxChangeCallbackCustomize {
+public:
+    RegisterDlpSandboxChangeScopePtr();
+    ~RegisterDlpSandboxChangeScopePtr() override;
+    void DlpSandboxChangeCallback(DlpSandboxCallbackInfo &result) override;
+    void SetEnv(const napi_env &env);
+    void SetCallbackRef(const napi_ref &ref);
+    void SetValid(bool valid);
+
+private:
+    napi_env env_ = nullptr;
+    napi_ref ref_ = nullptr;
+    bool valid_ = true;
+    std::mutex validMutex_;
+};
 
 struct CommonAsyncContext {
     explicit CommonAsyncContext(napi_env napiEnv);
@@ -47,6 +81,31 @@ struct CommonAsyncContext {
     napi_deferred deferred = nullptr;  // promise handle
     napi_ref callbackRef = nullptr;    // callback handle
     napi_async_work work = nullptr;    // work handle
+};
+
+struct RegisterDlpSandboxChangeWorker {
+    napi_env env = nullptr;
+    napi_ref ref = nullptr;
+    DlpSandboxCallbackInfo result;
+    RegisterDlpSandboxChangeScopePtr *subscriber = nullptr;
+};
+
+struct DlpSandboxChangeContext {
+    virtual ~DlpSandboxChangeContext();
+    napi_env env = nullptr;
+    napi_ref callbackRef = nullptr;
+    int32_t errCode = 0;
+    std::string changeType;
+    std::shared_ptr<RegisterDlpSandboxChangeScopePtr> subscriber = nullptr;
+    void DeleteNapiRef();
+};
+
+typedef DlpSandboxChangeContext RegisterDlpSandboxChangeInfo;
+
+struct UnregisterSandboxChangeCallbackAsyncContext : public CommonAsyncContext {
+    explicit UnregisterSandboxChangeCallbackAsyncContext(napi_env env) : CommonAsyncContext(env) {};
+    bool result = false;
+    std::string changeType;
 };
 
 struct GenerateDlpFileAsyncContext : public CommonAsyncContext {
@@ -107,6 +166,8 @@ struct GetDlpSupportFileTypeAsyncContext : public CommonAsyncContext {
     std::vector<std::string> supportFileType;
 };
 
+void UvQueueWorkDeleteRef(uv_work_t *work, int32_t status);
+
 void DlpNapiThrow(napi_env env, int32_t jsErrCode, const std::string &jsErrMsg);
 napi_value GenerateBusinessError(napi_env env, int32_t jsErrCode, const std::string &jsErrMsg);
 
@@ -131,8 +192,16 @@ bool GetUninstallDlpSandboxParams(
 bool GetThirdInterfaceParams(
     const napi_env env, const napi_callback_info info, CommonAsyncContext& asyncContext);
 
+bool FillDlpSandboxChangeInfo(const napi_env env, const napi_value* argv, const std::string& type,
+    const napi_value thisVar, RegisterDlpSandboxChangeInfo& registerSandboxChangeInfo);
+bool ParseInputToRegister(const napi_env env, const napi_callback_info cbInfo,
+    RegisterDlpSandboxChangeInfo &registerSandboxChangeInfo);
+bool GetUnregisterSandboxParams(const napi_env env, const napi_callback_info info,
+    UnregisterSandboxChangeCallbackAsyncContext &asyncContext);
+
 bool GetDlpProperty(napi_env env, napi_value object, DlpProperty& property);
 bool GetCallback(const napi_env env, napi_value jsObject, CommonAsyncContext& asyncContext);
+bool ParseCallback(const napi_env& env, const napi_value& value, napi_ref& result);
 
 napi_value GetNapiValue(napi_env env, napi_value jsObject, const std::string& key);
 bool GetStringValue(napi_env env, napi_value jsObject, std::string& result);

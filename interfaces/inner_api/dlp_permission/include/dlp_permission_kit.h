@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -22,6 +22,7 @@
 #include <vector>
 #include "dlp_policy.h"
 #include "dlp_permission_callback.h"
+#include "dlp_sandbox_change_callback_customize.h"
 #include "parcel.h"
 #include "want.h"
 
@@ -72,6 +73,8 @@ public:
     static int32_t QueryDlpFileAccess(AuthPermType& permType);
     static int32_t IsInDlpSandbox(bool& inSandbox);
     static int32_t GetDlpSupportFileType(std::vector<std::string>& supportFileType);
+    static int32_t RegisterDlpSandboxChangeCallback(const std::shared_ptr<DlpSandboxChangeCallbackCustomize> &callback);
+    static int32_t UnregisterDlpSandboxChangeCallback(bool &result);
 };
 }  // namespace DlpPermission
 }  // namespace Security

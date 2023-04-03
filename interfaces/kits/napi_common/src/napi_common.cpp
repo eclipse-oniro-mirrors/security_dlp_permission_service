@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -28,7 +28,180 @@ namespace Security {
 namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionNapi"};
-}  // namespace
+
+static bool ConvertDlpSandboxChangeInfo(napi_env env, napi_value value, const DlpSandboxCallbackInfo &result)
+{
+    napi_value element;
+    NAPI_CALL_BASE(env, napi_create_int32(env, result.appIndex, &element), false);
+    NAPI_CALL_BASE(env, napi_set_named_property(env, value, "appIndex", element), false);
+    element = nullptr;
+    NAPI_CALL_BASE(env, napi_create_string_utf8(env, result.bundleName.c_str(), NAPI_AUTO_LENGTH, &element), false);
+    NAPI_CALL_BASE(env, napi_set_named_property(env, value, "bundleName", element), false);
+    return true;
+};
+
+static void UvQueueWorkDlpSandboxChanged(uv_work_t *work, int status)
+{
+    DLP_LOG_INFO(LABEL, "enter UvQueueWorkDlpSandboxChanged");
+    if ((work == nullptr) || (work->data == nullptr)) {
+        DLP_LOG_ERROR(LABEL, "work == nullptr || work->data == nullptr");
+        return;
+    }
+    std::unique_ptr<uv_work_t> uvWorkPtr { work };
+    RegisterDlpSandboxChangeWorker *registerSandboxChangeData =
+        reinterpret_cast<RegisterDlpSandboxChangeWorker *>(work->data);
+    std::unique_ptr<RegisterDlpSandboxChangeWorker> workPtr { registerSandboxChangeData };
+    napi_handle_scope scope = nullptr;
+    napi_open_handle_scope(registerSandboxChangeData->env, &scope);
+    if (scope == nullptr) {
+        DLP_LOG_ERROR(LABEL, "scope is nullptr");
+        return;
+    }
+    napi_value result = { nullptr };
+    NAPI_CALL_RETURN_VOID_WITH_SCOPE(registerSandboxChangeData->env,
+        napi_create_array(registerSandboxChangeData->env, &result), scope);
+    if (!ConvertDlpSandboxChangeInfo(registerSandboxChangeData->env, result, registerSandboxChangeData->result)) {
+        napi_close_handle_scope(registerSandboxChangeData->env, scope);
+        DLP_LOG_ERROR(LABEL, "ConvertDlpSandboxChangeInfo failed");
+        return;
+    }
+
+    napi_value undefined = nullptr;
+    napi_value callback = nullptr;
+    napi_value resultout = nullptr;
+    NAPI_CALL_RETURN_VOID_WITH_SCOPE(registerSandboxChangeData->env,
+        napi_get_undefined(registerSandboxChangeData->env, &undefined), scope);
+    NAPI_CALL_RETURN_VOID_WITH_SCOPE(registerSandboxChangeData->env,
+        napi_get_reference_value(registerSandboxChangeData->env, registerSandboxChangeData->ref, &callback), scope);
+    NAPI_CALL_RETURN_VOID_WITH_SCOPE(registerSandboxChangeData->env,
+        napi_call_function(registerSandboxChangeData->env, undefined, callback, 1, &result, &resultout), scope);
+    napi_close_handle_scope(registerSandboxChangeData->env, scope);
+    DLP_LOG_DEBUG(LABEL, "UvQueueWorkDlpSandboxChanged end");
+};
+} // namespace
+
+RegisterDlpSandboxChangeScopePtr::RegisterDlpSandboxChangeScopePtr() {}
+
+RegisterDlpSandboxChangeScopePtr::~RegisterDlpSandboxChangeScopePtr() {}
+
+void RegisterDlpSandboxChangeScopePtr::DlpSandboxChangeCallback(DlpSandboxCallbackInfo &result)
+{
+    DLP_LOG_INFO(LABEL, "enter DlpSandboxChangeCallback");
+    std::lock_guard<std::mutex> lock(validMutex_);
+    if (!valid_) {
+        DLP_LOG_ERROR(LABEL, "object is invalid.");
+        return;
+    }
+    uv_loop_s *loop = nullptr;
+    NAPI_CALL_RETURN_VOID(env_, napi_get_uv_event_loop(env_, &loop));
+    if (loop == nullptr) {
+        DLP_LOG_ERROR(LABEL, "loop instance is nullptr");
+        return;
+    }
+    uv_work_t *work = new (std::nothrow) uv_work_t;
+    if (work == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for work!");
+        return;
+    }
+    std::unique_ptr<uv_work_t> uvWorkPtr { work };
+    RegisterDlpSandboxChangeWorker *registerSandboxChangeWorker = new (std::nothrow) RegisterDlpSandboxChangeWorker();
+    if (registerSandboxChangeWorker == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for RegisterDlpSandboxChangeWorker!");
+        return;
+    }
+    std::unique_ptr<RegisterDlpSandboxChangeWorker> workPtr { registerSandboxChangeWorker };
+    registerSandboxChangeWorker->env = env_;
+    registerSandboxChangeWorker->ref = ref_;
+    registerSandboxChangeWorker->result = result;
+    DLP_LOG_DEBUG(LABEL, "result appIndex = %{public}d, bundleName = %{public}s", result.appIndex,
+        result.bundleName.c_str());
+    registerSandboxChangeWorker->subscriber = this;
+    work->data = reinterpret_cast<void *>(registerSandboxChangeWorker);
+    NAPI_CALL_RETURN_VOID(env_, uv_queue_work(
+        loop, work, [](uv_work_t *work) {}, UvQueueWorkDlpSandboxChanged));
+    uvWorkPtr.release();
+    workPtr.release();
+}
+
+void RegisterDlpSandboxChangeScopePtr::SetEnv(const napi_env &env)
+{
+    env_ = env;
+}
+
+void RegisterDlpSandboxChangeScopePtr::SetCallbackRef(const napi_ref &ref)
+{
+    ref_ = ref;
+}
+
+void RegisterDlpSandboxChangeScopePtr::SetValid(bool valid)
+{
+    std::lock_guard<std::mutex> lock(validMutex_);
+    valid_ = valid;
+}
+
+DlpSandboxChangeContext::~DlpSandboxChangeContext()
+{
+    if (callbackRef == nullptr) {
+        return;
+    }
+    DeleteNapiRef();
+}
+
+void DlpSandboxChangeContext::DeleteNapiRef()
+{
+    DLP_LOG_INFO(LABEL, "enter DeleteNapiRef");
+    uv_loop_s *loop = nullptr;
+    NAPI_CALL_RETURN_VOID(env, napi_get_uv_event_loop(env, &loop));
+    if (loop == nullptr) {
+        DLP_LOG_ERROR(LABEL, "loop instance is nullptr");
+        return;
+    }
+    uv_work_t *work = new (std::nothrow) uv_work_t;
+    if (work == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for work!");
+        return;
+    }
+
+    std::unique_ptr<uv_work_t> uvWorkPtr { work };
+    RegisterDlpSandboxChangeWorker *registerSandboxChangeWorker = new (std::nothrow) RegisterDlpSandboxChangeWorker();
+    if (registerSandboxChangeWorker == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for registerSandboxChangeWorker!");
+        return;
+    }
+    std::unique_ptr<RegisterDlpSandboxChangeWorker> workPtr { registerSandboxChangeWorker };
+    registerSandboxChangeWorker->env = env;
+    registerSandboxChangeWorker->ref = callbackRef;
+
+    work->data = reinterpret_cast<void *>(registerSandboxChangeWorker);
+    NAPI_CALL_RETURN_VOID(env, uv_queue_work(
+        loop, work, [](uv_work_t *work) {}, UvQueueWorkDeleteRef));
+    DLP_LOG_DEBUG(LABEL, "DeleteNapiRef");
+    uvWorkPtr.release();
+    workPtr.release();
+}
+
+void UvQueueWorkDeleteRef(uv_work_t *work, int32_t status)
+{
+    DLP_LOG_INFO(LABEL, "enter UvQueueWorkDeleteRef");
+    if (work == nullptr) {
+        DLP_LOG_ERROR(LABEL, "work == nullptr : %{public}d", work == nullptr);
+        return;
+    } else if (work->data == nullptr) {
+        DLP_LOG_ERROR(LABEL, "work->data == nullptr : %{public}d", work->data == nullptr);
+        return;
+    }
+    RegisterDlpSandboxChangeWorker *registerSandboxChangeWorker =
+        reinterpret_cast<RegisterDlpSandboxChangeWorker *>(work->data);
+    if (registerSandboxChangeWorker == nullptr) {
+        delete work;
+        return;
+    }
+    napi_delete_reference(registerSandboxChangeWorker->env, registerSandboxChangeWorker->ref);
+    delete registerSandboxChangeWorker;
+    registerSandboxChangeWorker = nullptr;
+    delete work;
+    DLP_LOG_DEBUG(LABEL, "UvQueueWorkDeleteRef end");
+}
 
 napi_value GenerateBusinessError(napi_env env, int32_t jsErrCode, const std::string &jsErrMsg)
 {
@@ -536,6 +709,112 @@ bool GetUninstallDlpSandboxParams(
     return true;
 }
 
+bool ParseInputToRegister(const napi_env env, const napi_callback_info cbInfo,
+    RegisterDlpSandboxChangeInfo &registerSandboxChangeInfo)
+{
+    size_t argc = PARAM_SIZE_TWO;
+    napi_value argv[PARAM_SIZE_TWO] = {nullptr};
+    napi_value thisVar = nullptr;
+    NAPI_CALL_BASE(env, napi_get_cb_info(env, cbInfo, &argc, argv, &thisVar, nullptr), false);
+    if (argc < PARAM_SIZE_TWO) {
+        ThrowParamError(env, "params", " missing.");
+        return false;
+    }
+    if (thisVar == nullptr) {
+        DLP_LOG_ERROR(LABEL, "thisVar is nullptr");
+        return false;
+    }
+    napi_valuetype valueTypeOfThis = napi_undefined;
+    NAPI_CALL_BASE(env, napi_typeof(env, thisVar, &valueTypeOfThis), false);
+    if (valueTypeOfThis == napi_undefined) {
+        DLP_LOG_ERROR(LABEL, "thisVar is undefined");
+        return false;
+    }
+    // 0: the first parameter of argv
+    std::string type;
+    if (!GetStringValue(env, argv[0], type)) {
+        ThrowParamError(env, "type", "string");
+        return false;
+    }
+
+    if (type.compare(ON_OFF_SANDBOX) != 0) {
+        ThrowParamError(env, "type", "uninstallsandbox");
+        return false;
+    }
+
+    if (!FillDlpSandboxChangeInfo(env, argv, type, thisVar, registerSandboxChangeInfo)) {
+        return false;
+    }
+
+    return true;
+}
+
+bool FillDlpSandboxChangeInfo(const napi_env env, const napi_value *argv, const std::string &type,
+    const napi_value thisVar, RegisterDlpSandboxChangeInfo &registerSandboxChangeInfo)
+{
+    std::string errMsg;
+    napi_ref callback = nullptr;
+
+    // 1: the second parameter of argv
+    if (!ParseCallback(env, argv[1], callback)) {
+        napi_throw(env, GenerateBusinessError(env, ERR_JS_PARAMETER_ERROR, "callback is wrong"));
+        return false;
+    }
+
+    registerSandboxChangeInfo.env = env;
+    registerSandboxChangeInfo.callbackRef = callback;
+    registerSandboxChangeInfo.changeType = type;
+    registerSandboxChangeInfo.subscriber = std::make_shared<RegisterDlpSandboxChangeScopePtr>();
+    registerSandboxChangeInfo.subscriber->SetEnv(env);
+    registerSandboxChangeInfo.subscriber->SetCallbackRef(callback);
+    std::shared_ptr<RegisterDlpSandboxChangeScopePtr> *subscriber =
+        new (std::nothrow) std::shared_ptr<RegisterDlpSandboxChangeScopePtr>(registerSandboxChangeInfo.subscriber);
+    if (subscriber == nullptr) {
+        DLP_LOG_ERROR(LABEL, "failed to create subscriber");
+        return false;
+    }
+    napi_wrap(
+        env, thisVar, reinterpret_cast<void *>(subscriber),
+        [](napi_env nev, void *data, void *hint) {
+            DLP_LOG_DEBUG(LABEL, "RegisterDlpSandboxChangeScopePtr delete");
+            std::shared_ptr<RegisterDlpSandboxChangeScopePtr> *subscriber =
+                static_cast<std::shared_ptr<RegisterDlpSandboxChangeScopePtr> *>(data);
+            if (subscriber != nullptr && *subscriber != nullptr) {
+                (*subscriber)->SetValid(false);
+                delete subscriber;
+            }
+        },
+        nullptr, nullptr);
+    return true;
+}
+
+bool GetUnregisterSandboxParams(const napi_env env, const napi_callback_info info,
+    UnregisterSandboxChangeCallbackAsyncContext &asyncContext)
+{
+    DLP_LOG_INFO(LABEL, "enter GetUnregisterSandboxParams");
+    size_t argc = PARAM_SIZE_TWO;
+    napi_value argv[PARAM_SIZE_TWO] = {nullptr};
+    NAPI_CALL_BASE(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr), false);
+
+    if (!NapiCheckArgc(env, argc, PARAM_SIZE_TWO)) {
+        return false;
+    }
+
+    if (!GetStringValue(env, argv[PARAM0], asyncContext.changeType)) {
+        DLP_LOG_ERROR(LABEL, "js get changeType fail");
+        ThrowParamError(env, "changeType", "string");
+        return false;
+    }
+
+    if (asyncContext.changeType.compare(ON_OFF_SANDBOX) != 0) {
+        ThrowParamError(env, "type", "uninstallsandbox");
+        return false;
+    }
+
+    DLP_LOG_DEBUG(LABEL, "changeType: %{private}s", asyncContext.changeType.c_str());
+    return true;
+}
+
 bool GetThirdInterfaceParams(
     const napi_env env, const napi_callback_info info, CommonAsyncContext& asyncContext)
 {
@@ -658,6 +937,25 @@ napi_value VectorStringToJs(napi_env env, const std::vector<std::string>& value)
         }
     }
     return jsArray;
+}
+
+bool ParseCallback(const napi_env& env, const napi_value& value, napi_ref& result)
+{
+    napi_valuetype valuetype = napi_undefined;
+    if (napi_typeof(env, value, &valuetype) != napi_ok) {
+        DLP_LOG_ERROR(LABEL, "Can not get napi type");
+        return false;
+    }
+    if (valuetype != napi_function) {
+        DLP_LOG_ERROR(LABEL, "value type is not napi_function");
+        return false;
+    }
+    int32_t res = napi_create_reference(env, value, 1, &result);
+    if (res != napi_ok) {
+        DLP_LOG_ERROR(LABEL, "cannot get value callback");
+        return false;
+    }
+    return true;
 }
 
 bool GetCallback(const napi_env env, napi_value jsObject, CommonAsyncContext& asyncContext)

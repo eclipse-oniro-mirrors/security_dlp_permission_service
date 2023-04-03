@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -25,6 +25,8 @@
 #include "dlp_permission.h"
 #include "i_dlp_permission_service.h"
 #include "dlp_permission_callback.h"
+#include "dlp_sandbox_change_callback_customize.h"
+#include "dlp_sandbox_change_callback.h"
 #include "nocopyable.h"
 
 namespace OHOS {
@@ -46,6 +48,8 @@ public:
     int32_t QueryDlpFileAccess(AuthPermType& permType);
     int32_t IsInDlpSandbox(bool& inSandbox);
     int32_t GetDlpSupportFileType(std::vector<std::string>& supportFileType);
+    int32_t RegisterDlpSandboxChangeCallback(const std::shared_ptr<DlpSandboxChangeCallbackCustomize> &customizedCb);
+    int32_t UnregisterDlpSandboxChangeCallback(bool &result);
 
     void FinishStartSASuccess(const sptr<IRemoteObject>& remoteObject);
     void FinishStartSAFail();
@@ -55,7 +59,8 @@ private:
     DlpPermissionClient();
     virtual ~DlpPermissionClient();
     DISALLOW_COPY_AND_MOVE(DlpPermissionClient);
-
+    int32_t CreateDlpSandboxChangeCallback(const std::shared_ptr<DlpSandboxChangeCallbackCustomize> &customizedCb,
+        sptr<DlpSandboxChangeCallback> &callback);
     bool StartLoadDlpPermissionSa();
     void WaitForDlpPermissionSa();
     void GetDlpPermissionSa();

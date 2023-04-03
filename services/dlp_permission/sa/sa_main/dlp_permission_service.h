@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -55,13 +55,16 @@ public:
     int32_t QueryDlpFileAccess(AuthPermType& permType) override;
     int32_t IsInDlpSandbox(bool& inSandbox) override;
     int32_t GetDlpSupportFileType(std::vector<std::string>& supportFileType) override;
+    int32_t RegisterDlpSandboxChangeCallback(const sptr<IRemoteObject> &callback) override;
+    int32_t UnRegisterDlpSandboxChangeCallback(bool &result) override;
 
     int Dump(int fd, const std::vector<std::u16string>& args) override;
 
 private:
     bool Initialize() const;
 
-    void InsertDlpSandboxInfo(const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t appIndex);
+    void InsertDlpSandboxInfo(const std::string &bundleName, AuthPermType permType, int32_t userId, int32_t appIndex,
+        uint32_t pid);
     void DeleteDlpSandboxInfo(const std::string& bundleName, int32_t appIndex, int32_t userId);
 
     ServiceRunningState state_;

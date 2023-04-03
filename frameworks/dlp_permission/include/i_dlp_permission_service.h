@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -52,6 +52,10 @@ public:
 
     virtual int32_t GetDlpSupportFileType(std::vector<std::string>& supportFileType) = 0;
 
+    virtual int32_t RegisterDlpSandboxChangeCallback(const sptr<IRemoteObject> &callback) = 0;
+
+    virtual int32_t UnRegisterDlpSandboxChangeCallback(bool &result) = 0;
+
     enum class InterfaceCode {
         GENERATE_DLP_CERTIFICATE = 0xff01,
         PARSE_DLP_CERTIFICATE = 0xff02,
@@ -62,6 +66,8 @@ public:
         IS_IN_DLP_SANDBOX = 0xff07,
         GET_DLP_SUPPORT_FILE_TYPE = 0xff08,
         QUERY_DLP_FILE_ACCESS_BY_TOKEN_ID = 0xff09,
+        REGISTER_DLP_SANDBOX_CHANGE_CALLBACK = 0xff0a,
+        UNREGISTER_DLP_SANDBOX_CHANGE_CALLBACK = 0xff0b,
     };
 };
 }  // namespace DlpPermission

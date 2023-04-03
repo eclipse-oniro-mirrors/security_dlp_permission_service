@@ -39,6 +39,7 @@ enum JsErrorCode : int32_t {
     ERR_JS_OUT_OF_MEMORY = 19100012,
     ERR_JS_DLP_FILE_OPERATE_FAIL = 19100013,
     ERR_JS_DLP_USR_CANCLE_FILEPICK = 19100014,
+    ERR_JS_ON_OFF_FAIL = 19100015,
 };
 
 std::string GetJsErrMsg(int32_t errNo);

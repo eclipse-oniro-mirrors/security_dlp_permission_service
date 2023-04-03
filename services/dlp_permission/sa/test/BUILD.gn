@@ -1,4 +1,4 @@
-# Copyright (c) 2022 Huawei Device Co., Ltd.
+# Copyright (c) 2022-2023 Huawei Device Co., Ltd.
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -23,6 +23,7 @@ ohos_unittest("dlp_permission_service_test") {
     "${dlp_root_dir}/services/dlp_permission/sa/adapt",
     "${dlp_root_dir}/services/dlp_permission/sa/sa_main",
     "${dlp_root_dir}/services/dlp_permission/sa/sa_common",
+    "${dlp_root_dir}/services/dlp_permission/sa/callback",
     "//third_party/json/include",
     "${dlp_root_dir}/frameworks/common/include",
     "${dlp_root_dir}/frameworks/dlp_permission/include",
@@ -35,8 +36,12 @@ ohos_unittest("dlp_permission_service_test") {
     "${dlp_root_dir}/frameworks/common/src/dlp_policy.cpp",
     "${dlp_root_dir}/frameworks/dlp_permission/src/auth_user_info_parcel.cpp",
     "${dlp_root_dir}/frameworks/dlp_permission/src/dlp_policy_parcel.cpp",
+    "${dlp_root_dir}/frameworks/dlp_permission/src/dlp_sandbox_callback_info_parcel.cpp",
     "${dlp_root_dir}/services/dlp_permission/sa/adapt/account_adapt.cpp",
     "${dlp_root_dir}/services/dlp_permission/sa/adapt/app_state_observer.cpp",
+    "${dlp_root_dir}/services/dlp_permission/sa/callback/callback_manager.cpp",
+    "${dlp_root_dir}/services/dlp_permission/sa/callback/dlp_sandbox_change_callback_death_recipient.cpp",
+    "${dlp_root_dir}/services/dlp_permission/sa/callback/dlp_sandbox_change_callback_proxy.cpp",
     "${dlp_root_dir}/services/dlp_permission/sa/test/unittest/mock/dlp_credential_service.c",
     "${dlp_root_dir}/services/dlp_permission/sa/sa_main/dlp_credential_adapt.cpp",
     "${dlp_root_dir}/services/dlp_permission/sa/sa_main/dlp_permission_async_proxy.cpp",
