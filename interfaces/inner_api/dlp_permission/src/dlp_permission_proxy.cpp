@@ -24,6 +24,7 @@ namespace Security {
 namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionProxy"};
+static const uint32_t MAX_SUPPORT_FILE_TYPE_NUM = 1024;
 }
 
 DlpPermissionProxy::DlpPermissionProxy(const sptr<IRemoteObject>& impl) : IRemoteProxy<IDlpPermissionService>(impl)
@@ -392,6 +393,10 @@ int32_t DlpPermissionProxy::GetDlpSupportFileType(std::vector<std::string>& supp
     uint32_t listNum;
     if (!reply.ReadUint32(listNum)) {
         DLP_LOG_ERROR(LABEL, "Read uint32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (listNum > MAX_SUPPORT_FILE_TYPE_NUM) {
+        DLP_LOG_ERROR(LABEL, "listNum larger than 1024");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     for (uint32_t i = 0; i < listNum; i++) {
