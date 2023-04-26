@@ -293,6 +293,17 @@ int32_t DlpPermissionClient::UnregisterDlpSandboxChangeCallback(bool &result)
     return proxy->UnRegisterDlpSandboxChangeCallback(result);
 }
 
+int32_t DlpPermissionClient::GetDlpGatheringPolicy(bool& isGathering)
+{
+    auto proxy = GetProxy(false);
+    if (proxy == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Proxy is null");
+        return DLP_OK;
+    }
+
+    return proxy->GetDlpGatheringPolicy(isGathering);
+}
+
 bool DlpPermissionClient::StartLoadDlpPermissionSa()
 {
     {

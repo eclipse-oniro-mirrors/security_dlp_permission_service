@@ -348,6 +348,22 @@ int32_t DlpPermissionStub::UnRegisterDlpSandboxChangeCallbackInner(MessageParcel
     return DLP_OK;
 }
 
+int32_t DlpPermissionStub::GetDlpGatheringPolicyInner(MessageParcel& data, MessageParcel& reply)
+{
+    bool isGathering = false;
+    int32_t res = this->GetDlpGatheringPolicy(isGathering);
+    if (!reply.WriteInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "Write GetDlpGatheringPolicy result fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (!reply.WriteBool(isGathering)) {
+        DLP_LOG_ERROR(LABEL, "Write isGathering fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    return DLP_OK;
+}
+
 DlpPermissionStub::DlpPermissionStub()
 {
     requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GENERATE_DLP_CERTIFICATE)] =
@@ -373,6 +389,8 @@ DlpPermissionStub::DlpPermissionStub()
     requestFuncMap_[static_cast<uint32_t>(
         IDlpPermissionService::InterfaceCode::UNREGISTER_DLP_SANDBOX_CHANGE_CALLBACK)] =
         &DlpPermissionStub::UnRegisterDlpSandboxChangeCallbackInner;
+    requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_DLP_GATHERING_POLICY)] =
+        &DlpPermissionStub::GetDlpGatheringPolicyInner;
 }
 
 DlpPermissionStub::~DlpPermissionStub()

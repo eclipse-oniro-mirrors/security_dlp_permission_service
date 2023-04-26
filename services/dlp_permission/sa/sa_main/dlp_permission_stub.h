@@ -45,6 +45,8 @@ private:
     int32_t RegisterDlpSandboxChangeCallbackInner(MessageParcel &data, MessageParcel &reply);
     int32_t UnRegisterDlpSandboxChangeCallbackInner(MessageParcel &data, MessageParcel &reply);
 
+    int32_t GetDlpGatheringPolicyInner(MessageParcel& data, MessageParcel& reply);
+
     using RequestFuncType = int32_t (DlpPermissionStub::*)(MessageParcel& data, MessageParcel& reply);
     std::map<uint32_t, RequestFuncType> requestFuncMap_;
 };

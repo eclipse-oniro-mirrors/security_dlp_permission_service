@@ -100,6 +100,10 @@ private:
 
     static napi_value RegisterSandboxChangeCallback(napi_env env, napi_callback_info cbInfo);
     static napi_value UnregisterSandboxChangeCallback(napi_env env, napi_callback_info cbInfo);
+
+    static void GetDlpGatheringPolicyExcute(napi_env env, void* data);
+    static void GetDlpGatheringPolicyComplete(napi_env env, napi_status status, void* data);
+    static napi_value GetDlpGatheringPolicy(napi_env env, napi_callback_info cbInfo);
 };
 }  // namespace DlpPermission
 }  // namespace Security

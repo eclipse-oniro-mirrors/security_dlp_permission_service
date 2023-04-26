@@ -480,6 +480,40 @@ int32_t DlpPermissionProxy::UnRegisterDlpSandboxChangeCallback(bool &result)
     }
     return res;
 }
+
+int32_t DlpPermissionProxy::GetDlpGatheringPolicy(bool& isGathering)
+{
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
+        DLP_LOG_ERROR(LABEL, "Write descriptor fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
+    sptr<IRemoteObject> remote = Remote();
+    if (remote == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Remote service is null");
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
+    }
+    int32_t requestResult = remote->SendRequest(
+        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_DLP_GATHERING_POLICY), data, reply, option);
+    if (requestResult != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
+        return requestResult;
+    }
+    int32_t res;
+    if (!reply.ReadInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (!reply.ReadBool(isGathering)) {
+        DLP_LOG_ERROR(LABEL, "Read bool fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    return res;
+}
+
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS

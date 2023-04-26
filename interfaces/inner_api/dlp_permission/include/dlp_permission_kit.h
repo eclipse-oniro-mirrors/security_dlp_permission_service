@@ -75,6 +75,7 @@ public:
     static int32_t GetDlpSupportFileType(std::vector<std::string>& supportFileType);
     static int32_t RegisterDlpSandboxChangeCallback(const std::shared_ptr<DlpSandboxChangeCallbackCustomize> &callback);
     static int32_t UnregisterDlpSandboxChangeCallback(bool &result);
+    static int32_t GetDlpGatheringPolicy(bool& isGathering);
 };
 }  // namespace DlpPermission
 }  // namespace Security

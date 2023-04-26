@@ -56,6 +56,8 @@ public:
 
     virtual int32_t UnRegisterDlpSandboxChangeCallback(bool &result) = 0;
 
+    virtual int32_t GetDlpGatheringPolicy(bool& isGathering) = 0;
+
     enum class InterfaceCode {
         GENERATE_DLP_CERTIFICATE = 0xff01,
         PARSE_DLP_CERTIFICATE = 0xff02,
@@ -68,6 +70,7 @@ public:
         QUERY_DLP_FILE_ACCESS_BY_TOKEN_ID = 0xff09,
         REGISTER_DLP_SANDBOX_CHANGE_CALLBACK = 0xff0a,
         UNREGISTER_DLP_SANDBOX_CHANGE_CALLBACK = 0xff0b,
+        GET_DLP_GATHERING_POLICY = 0xff0c,
     };
 };
 }  // namespace DlpPermission

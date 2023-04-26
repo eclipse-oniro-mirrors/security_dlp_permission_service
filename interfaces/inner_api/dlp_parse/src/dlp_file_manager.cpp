@@ -284,10 +284,6 @@ int32_t DlpFileManager::SetDlpFileParams(std::shared_ptr<DlpFile>& filePtr, cons
 int32_t DlpFileManager::GenerateDlpFilePrepare(const DlpProperty& property, std::shared_ptr<DlpFile>& filePtr)
 {
     filePtr = std::make_shared<DlpFile>(-1);
-    if (filePtr == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Generate dlp file fail, alloc dlp obj fail");
-        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
-    }
 
     int32_t result = SetDlpFileParams(filePtr, property);
     if (result != DLP_OK) {
@@ -340,10 +336,6 @@ int32_t DlpFileManager::OpenDlpFile(int32_t dlpFileFd, std::shared_ptr<DlpFile>&
     }
 
     filePtr = std::make_shared<DlpFile>(dlpFileFd);
-    if (filePtr == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Open dlp file fail, alloc dlp obj fail");
-        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
-    }
 
     int32_t result = ParseDlpFileFormat(filePtr, workDir);
     if (result != DLP_OK) {
@@ -370,11 +362,6 @@ int32_t DlpFileManager::IsDlpFile(int32_t dlpFileFd, bool& isDlpFile)
     }
 
     filePtr = std::make_shared<DlpFile>(dlpFileFd);
-    if (filePtr == nullptr) {
-        DLP_LOG_ERROR(LABEL, "File type check fail, alloc dlp obj fail");
-        isDlpFile = false;
-        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
-    }
 
     int32_t result = filePtr->ParseDlpHeader();
     if (result != DLP_OK) {

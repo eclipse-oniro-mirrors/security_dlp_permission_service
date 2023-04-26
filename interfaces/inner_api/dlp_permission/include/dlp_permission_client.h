@@ -50,6 +50,7 @@ public:
     int32_t GetDlpSupportFileType(std::vector<std::string>& supportFileType);
     int32_t RegisterDlpSandboxChangeCallback(const std::shared_ptr<DlpSandboxChangeCallbackCustomize> &customizedCb);
     int32_t UnregisterDlpSandboxChangeCallback(bool &result);
+    int32_t GetDlpGatheringPolicy(bool& isGathering);
 
     void FinishStartSASuccess(const sptr<IRemoteObject>& remoteObject);
     void FinishStartSAFail();

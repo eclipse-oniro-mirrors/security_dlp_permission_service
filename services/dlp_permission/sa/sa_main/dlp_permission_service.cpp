@@ -28,6 +28,9 @@
 #include "if_system_ability_manager.h"
 #include "ipc_skeleton.h"
 #include "iservice_registry.h"
+#if DLP_DEBUG_ENABLE
+#include "parameter.h"
+#endif
 #include "system_ability_definition.h"
 
 namespace OHOS {
@@ -330,6 +333,31 @@ int32_t DlpPermissionService::UnRegisterDlpSandboxChangeCallback(bool &result)
     return CallbackManager::GetInstance().RemoveCallback(pid, result);
 }
 
+int32_t DlpPermissionService::GetDlpGatheringPolicy(bool& isGathering)
+{
+    isGathering = isGathering_;
+#if DLP_DEBUG_ENABLE
+    const char* PARAM_KEY = "dlp.permission.gathering.policy";
+    const int32_t VALUE_MAX_LEN = 32;
+    char value[VALUE_MAX_LEN] = {0};
+    int32_t ret = GetParameter(PARAM_KEY, "false", value, VALUE_MAX_LEN - 1);
+    if (ret <= 0) {
+        DLP_LOG_WARN(LABEL, "Failed to get parameter, %{public}s", PARAM_KEY);
+        return DLP_OK;
+    }
+
+    std::string tmp(value);
+    if (tmp == "true") {
+        isGathering = true;
+    }
+
+    if (tmp == "false") {
+        isGathering = false;
+    }
+#endif
+    return DLP_OK;
+}
+
 int DlpPermissionService::Dump(int fd, const std::vector<std::u16string>& args)
 {
     if (fd < 0) {
@@ -349,6 +377,7 @@ int DlpPermissionService::Dump(int fd, const std::vector<std::u16string>& args)
             return ERR_INVALID_VALUE;
         }
     }
+
     return ERR_OK;
 }
 }  // namespace DlpPermission

@@ -101,12 +101,30 @@ ohos_shared_library("dlp_permission_service") {
   cflags_cc = [ "-DHILOG_ENABLE" ]
   cflags = [ "-DHILOG_ENABLE" ]
 
+  if (build_variant == "user") {
+    cflags_cc += [ "-DDLP_DEBUG_ENABLE=0" ]
+    cflags += [ "-DDLP_DEBUG_ENABLE=0" ]
+  } else if (build_variant == "root") {
+    cflags_cc += [ "-DDLP_DEBUG_ENABLE=1" ]
+    cflags += [ "-DDLP_DEBUG_ENABLE=1" ]
+  } else {
+    cflags_cc += [ "-DDLP_DEBUG_ENABLE=1" ]
+    cflags += [ "-DDLP_DEBUG_ENABLE=1" ]
+  }
+
+  if (dlp_permission_service_gathering_policy) {
+    cflags_cc += [ "-DDLP_GATHERING_SANDBOX" ]
+    cflags += [ "-DDLP_GATHERING_SANDBOX" ]
+  }
+
   deps = [
     ":dlp_hex_string_static",
     ":dlp_permission_serializer_static",
     ":dlp_permission_service.rc",
     "//base/security/dlp_credential_service/interfaces/innerkits:dlp_credential_sdk",
   ]
+
+  deps += [ "etc:param_files" ]
 
   configs = [ "//base/security/dlp_permission_service/config:coverage_flags" ]
 
@@ -119,6 +137,7 @@ ohos_shared_library("dlp_permission_service") {
     "c_utils:utils",
     "hisysevent_native:libhisysevent",
     "hiviewdfx_hilog_native:libhilog",
+    "init:libbegetutil",
     "ipc:ipc_core",
     "os_account:libaccountkits",
     "os_account:os_account_innerkits",

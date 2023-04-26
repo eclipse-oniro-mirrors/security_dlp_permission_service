@@ -18,7 +18,10 @@
     "hisysevent_config": [
       "//base/security/dlp_permission_service/hisysevent.yaml"
     ],
-    "features": [ "dlp_permission_service_feature_coverage = false" ],
+    "features": [
+      "dlp_permission_service_feature_coverage",
+      "dlp_permission_service_gathering_policy"
+    ],
     "adapted_system_type": [
       "standard"
     ],

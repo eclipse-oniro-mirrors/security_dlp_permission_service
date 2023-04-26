@@ -60,10 +60,7 @@ int32_t DlpPermissionKit::GenerateDlpCertificate(const PermissionPolicy& policy,
 {
     std::shared_ptr<ClientGenerateDlpCertificateCallback> callback =
         std::make_shared<ClientGenerateDlpCertificateCallback>();
-    if (callback == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Callback is null");
-        return DLP_SERVICE_ERROR_VALUE_INVALID;
-    }
+
     int32_t res = DlpPermissionClient::GetInstance().GenerateDlpCertificate(policy, callback);
     if (res != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "begin generate cert fail, error: %{public}d", res);
@@ -92,10 +89,6 @@ int32_t DlpPermissionKit::ParseDlpCertificate(const std::vector<uint8_t>& online
     uint32_t offlineFlag, PermissionPolicy& policy)
 {
     std::shared_ptr<ClientParseDlpCertificateCallback> callback = std::make_shared<ClientParseDlpCertificateCallback>();
-    if (callback == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Callback is null");
-        return DLP_SERVICE_ERROR_CREDENTIAL_TASK_TIMEOUT;
-    }
 
     std::vector<uint8_t> cert;
     DlpAuthType authFlag = offlineFlag ? DlpAuthType::ONLINE_AUTH_FOR_OFFLINE_CERT:DlpAuthType::ONLINE_AUTH_ONLY;
@@ -196,6 +189,11 @@ int32_t DlpPermissionKit::RegisterDlpSandboxChangeCallback(
 int32_t DlpPermissionKit::UnregisterDlpSandboxChangeCallback(bool &result)
 {
     return DlpPermissionClient::GetInstance().UnregisterDlpSandboxChangeCallback(result);
+}
+
+int32_t DlpPermissionKit::GetDlpGatheringPolicy(bool& isGathering)
+{
+    return DlpPermissionClient::GetInstance().GetDlpGatheringPolicy(isGathering);
 }
 }  // namespace DlpPermission
 }  // namespace Security

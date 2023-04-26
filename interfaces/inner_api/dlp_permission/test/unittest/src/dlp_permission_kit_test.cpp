@@ -716,3 +716,18 @@ HWTEST_F(DlpPermissionKitTest, GetDlpSupportFileType003, TestSize.Level1)
     TestUninstallDlpSandbox(DLP_MANAGER_APP, appIndex, DEFAULT_USERID);
     TestRecoverProcessInfo(uid, tokenId);
 }
+
+/**
+ * @tc.name: GetDlpGatheringPolicy001
+ * @tc.desc: GetDlpGatheringPolicy test
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionKitTest, GetDlpGatheringPolicy001, TestSize.Level1)
+{
+    // query gathering policy on this device
+    bool isGathering = false;
+
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::GetDlpGatheringPolicy(isGathering));
+    ASSERT_EQ(isGathering, false);
+}

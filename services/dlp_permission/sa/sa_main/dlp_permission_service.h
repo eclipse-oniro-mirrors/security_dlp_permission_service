@@ -29,6 +29,13 @@ namespace OHOS {
 namespace Security {
 namespace DlpPermission {
 enum class ServiceRunningState { STATE_NOT_START, STATE_RUNNING };
+
+#ifdef DLP_GATHERING_SANDBOX
+#define GATHERING_POLICY true
+#else
+#define GATHERING_POLICY false
+#endif
+
 class DlpPermissionService final : public SystemAbility, public DlpPermissionStub {
     DECLARE_DELAYED_SINGLETON(DlpPermissionService);
     DECLEAR_SYSTEM_ABILITY(DlpPermissionService);
@@ -58,6 +65,8 @@ public:
     int32_t RegisterDlpSandboxChangeCallback(const sptr<IRemoteObject> &callback) override;
     int32_t UnRegisterDlpSandboxChangeCallback(bool &result) override;
 
+    int32_t GetDlpGatheringPolicy(bool& isGathering) override;
+
     int Dump(int fd, const std::vector<std::u16string>& args) override;
 
 private:
@@ -67,6 +76,7 @@ private:
         uint32_t pid);
     void DeleteDlpSandboxInfo(const std::string& bundleName, int32_t appIndex, int32_t userId);
 
+    bool isGathering_ = GATHERING_POLICY;
     ServiceRunningState state_;
     sptr<AppExecFwk::IAppMgr> iAppMgr_;
     sptr<AppStateObserver> appStateObserver_;

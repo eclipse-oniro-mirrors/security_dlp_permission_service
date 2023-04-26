@@ -45,6 +45,7 @@ public:
     int32_t GetDlpSupportFileType(std::vector<std::string>& supportFileType) override;
     int32_t RegisterDlpSandboxChangeCallback(const sptr<IRemoteObject> &callback) override;
     int32_t UnRegisterDlpSandboxChangeCallback(bool &result) override;
+    int32_t GetDlpGatheringPolicy(bool& isGathering) override;
 
 private:
     static inline BrokerDelegator<DlpPermissionProxy> delegator_;

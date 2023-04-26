@@ -168,6 +168,11 @@ struct GetDlpSupportFileTypeAsyncContext : public CommonAsyncContext {
 
 void UvQueueWorkDeleteRef(uv_work_t *work, int32_t status);
 
+struct GetGatheringPolicyContext : public CommonAsyncContext {
+    explicit GetGatheringPolicyContext(napi_env env) : CommonAsyncContext(env){};
+    bool isGathering = false;
+};
+
 void DlpNapiThrow(napi_env env, int32_t jsErrCode, const std::string &jsErrMsg);
 napi_value GenerateBusinessError(napi_env env, int32_t jsErrCode, const std::string &jsErrMsg);
 
