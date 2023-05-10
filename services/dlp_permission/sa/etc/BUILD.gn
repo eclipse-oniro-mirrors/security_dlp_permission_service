@@ -11,8 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//base/security/dlp_permission_service/dlp_permission_service.gni")
 import("//build/ohos.gni")
+import("../../../../dlp_permission_service.gni")
 
 group("param_files") {
   deps = [
@@ -22,14 +22,15 @@ group("param_files") {
 }
 
 ohos_prebuilt_etc("dlp_permission.para") {
-  source = "//base/security/dlp_permission_service/services/dlp_permission/sa/etc/dlp_permission.para"
+  source = "${dlp_root_dir}/services/dlp_permission/sa/etc/dlp_permission.para"
   module_install_dir = "etc/param"
   part_name = "dlp_permission_service"
   subsystem_name = "security"
 }
 
 ohos_prebuilt_etc("dlp_permission.para.dac") {
-  source = "//base/security/dlp_permission_service/services/dlp_permission/sa/etc/dlp_permission.para.dac"
+  source =
+      "${dlp_root_dir}/services/dlp_permission/sa/etc/dlp_permission.para.dac"
   module_install_dir = "etc/param"
   part_name = "dlp_permission_service"
   subsystem_name = "security"

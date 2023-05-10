@@ -11,8 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//base/security/dlp_permission_service/dlp_permission_service.gni")
 import("//build/ohos.gni")
+import("../../../dlp_permission_service.gni")
 
 config("dlp_permission_config") {
   visibility = [ ":*" ]
@@ -47,12 +47,12 @@ ohos_shared_library("libdlp_permission_sdk") {
     "src/dlp_permission_kit.cpp",
     "src/dlp_permission_load_callback.cpp",
     "src/dlp_permission_proxy.cpp",
+    "src/dlp_sandbox_change_callback.cpp",
     "src/dlp_sandbox_change_callback_customize.cpp",
     "src/dlp_sandbox_change_callback_stub.cpp",
-    "src/dlp_sandbox_change_callback.cpp",
   ]
 
-  configs = [ "//base/security/dlp_permission_service/config:coverage_flags" ]
+  configs = [ "${dlp_root_dir}/config:coverage_flags" ]
 
   external_deps = [
     "ability_base:want",

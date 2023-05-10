@@ -11,8 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//base/security/dlp_permission_service/dlp_permission_service.gni")
 import("//build/ohos.gni")
+import("../../../dlp_permission_service.gni")
 
 ohos_prebuilt_etc("dlp_permission_service.rc") {
   source = "dlp_permission_service.cfg"
@@ -32,7 +32,7 @@ ohos_static_library("dlp_hex_string_static") {
 
   sources = [ "${dlp_root_dir}/frameworks/common/src/hex_string.cpp" ]
 
-  configs = [ "//base/security/dlp_permission_service/config:coverage_flags" ]
+  configs = [ "${dlp_root_dir}/config:coverage_flags" ]
 
   cflags_cc = [ "-DHILOG_ENABLE" ]
 
@@ -56,7 +56,7 @@ ohos_static_library("dlp_permission_serializer_static") {
 
   cflags_cc = [ "-DHILOG_ENABLE" ]
 
-  configs = [ "//base/security/dlp_permission_service/config:coverage_flags" ]
+  configs = [ "${dlp_root_dir}/config:coverage_flags" ]
 
   deps = [ ":dlp_hex_string_static" ]
 
@@ -126,7 +126,7 @@ ohos_shared_library("dlp_permission_service") {
 
   deps += [ "etc:param_files" ]
 
-  configs = [ "//base/security/dlp_permission_service/config:coverage_flags" ]
+  configs = [ "${dlp_root_dir}/config:coverage_flags" ]
 
   external_deps = [
     "ability_base:want",

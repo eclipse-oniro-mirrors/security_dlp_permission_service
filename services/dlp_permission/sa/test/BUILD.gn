@@ -11,8 +11,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import("//base/security/dlp_permission_service/dlp_permission_service.gni")
 import("//build/test.gni")
+import("../../../../dlp_permission_service.gni")
 
 ohos_unittest("dlp_permission_service_test") {
   subsystem_name = "security"
@@ -42,17 +42,17 @@ ohos_unittest("dlp_permission_service_test") {
     "${dlp_root_dir}/services/dlp_permission/sa/callback/callback_manager.cpp",
     "${dlp_root_dir}/services/dlp_permission/sa/callback/dlp_sandbox_change_callback_death_recipient.cpp",
     "${dlp_root_dir}/services/dlp_permission/sa/callback/dlp_sandbox_change_callback_proxy.cpp",
-    "${dlp_root_dir}/services/dlp_permission/sa/test/unittest/mock/dlp_credential_service.c",
     "${dlp_root_dir}/services/dlp_permission/sa/sa_main/dlp_credential_adapt.cpp",
     "${dlp_root_dir}/services/dlp_permission/sa/sa_main/dlp_permission_async_proxy.cpp",
     "${dlp_root_dir}/services/dlp_permission/sa/sa_main/dlp_permission_service.cpp",
     "${dlp_root_dir}/services/dlp_permission/sa/sa_main/dlp_permission_stub.cpp",
+    "${dlp_root_dir}/services/dlp_permission/sa/test/unittest/mock/dlp_credential_service.c",
     "unittest/src/dlp_permission_service_test.cpp",
+    "unittest/src/dlp_policy_test.cpp",
     "unittest/src/hex_string_test.cpp",
-    "unittest/src/dlp_policy_test.cpp"
   ]
 
-  configs = [ "//base/security/dlp_permission_service/config:coverage_flags" ]
+  configs = [ "${dlp_root_dir}/config:coverage_flags" ]
 
   cflags_cc = [ "-DHILOG_ENABLE" ]
   cflags = [ "-DHILOG_ENABLE" ]
