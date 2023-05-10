@@ -28,6 +28,7 @@
 #include "dlp_policy.h"
 #include "dlp_sandbox_callback_info.h"
 #include "dlp_sandbox_change_callback_customize.h"
+#include "retention_sandbox_info.h"
 
 namespace OHOS {
 namespace Security {
@@ -149,6 +150,7 @@ struct DlpSandboxAsyncContext : public CommonAsyncContext {
     AuthPermType permType = DEFAULT_PERM;
     int32_t userId = -1;
     int32_t appIndex = -1;
+    std::string uri = "";
 };
 
 struct QueryFileAccessAsyncContext : public CommonAsyncContext {
@@ -171,6 +173,17 @@ void UvQueueWorkDeleteRef(uv_work_t *work, int32_t status);
 struct GetGatheringPolicyContext : public CommonAsyncContext {
     explicit GetGatheringPolicyContext(napi_env env) : CommonAsyncContext(env){};
     bool isGathering = false;
+};
+
+struct RetentionStateAsyncContext : public CommonAsyncContext {
+    explicit RetentionStateAsyncContext(napi_env env) : CommonAsyncContext(env){};
+    std::vector<std::string> docUris;
+};
+
+struct GetRetentionSandboxListAsyncContext : public CommonAsyncContext {
+    explicit GetRetentionSandboxListAsyncContext(napi_env env) : CommonAsyncContext(env){};
+    std::string bundleName = "";
+    std::vector<RetentionSandBoxInfo> retentionSandBoxInfoVec;
 };
 
 void DlpNapiThrow(napi_env env, int32_t jsErrCode, const std::string &jsErrMsg);
@@ -203,6 +216,10 @@ bool ParseInputToRegister(const napi_env env, const napi_callback_info cbInfo,
     RegisterDlpSandboxChangeInfo &registerSandboxChangeInfo);
 bool GetUnregisterSandboxParams(const napi_env env, const napi_callback_info info,
     UnregisterSandboxChangeCallbackAsyncContext &asyncContext);
+bool GetRetentionStateParams(const napi_env env, const napi_callback_info info,
+    RetentionStateAsyncContext& asyncContext);
+bool GetRetentionSandboxListParams(const napi_env env, const napi_callback_info info,
+    GetRetentionSandboxListAsyncContext& asyncContext);
 
 bool GetDlpProperty(napi_env env, napi_value object, DlpProperty& property);
 bool GetCallback(const napi_env env, napi_value jsObject, CommonAsyncContext& asyncContext);
@@ -221,9 +238,14 @@ napi_value GetArrayValueByKey(napi_env env, napi_value jsObject, const std::stri
 bool GetVectorAuthUser(napi_env env, napi_value jsObject, std::vector<AuthUserInfo>& resultVec);
 bool GetVectorAuthUserByKey(
     napi_env env, napi_value jsObject, const std::string& key, std::vector<AuthUserInfo>& resultVec);
+bool GetVectorDocUriByKey(napi_env env, napi_value jsObject, const std::string& key,
+    std::vector<std::string>& docUriVec);
+
+napi_value RetentionSandboxInfoToJs(napi_env env, const std::vector<RetentionSandBoxInfo>& infoVec);
 napi_value DlpPropertyToJs(napi_env env, const DlpProperty& property);
 napi_value VectorAuthUserToJs(napi_env env, const std::vector<AuthUserInfo>& users);
 napi_value VectorStringToJs(napi_env env, const std::vector<std::string>& value);
+napi_value SetStringToJs(napi_env env, const std::set<std::string>& value);
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS

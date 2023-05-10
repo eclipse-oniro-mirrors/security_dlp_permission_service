@@ -104,6 +104,18 @@ private:
     static void GetDlpGatheringPolicyExcute(napi_env env, void* data);
     static void GetDlpGatheringPolicyComplete(napi_env env, napi_status status, void* data);
     static napi_value GetDlpGatheringPolicy(napi_env env, napi_callback_info cbInfo);
+
+    static void SetRetentionStateExcute(napi_env env, void* data);
+    static void SetRetentionStateComplete(napi_env env, napi_status status, void* data);
+    static napi_value SetRetentionState(napi_env env, napi_callback_info cbInfo);
+
+    static void SetNonRetentionStateExcute(napi_env env, void* data);
+    static void SetNonRetentionStateComplete(napi_env env, napi_status status, void* data);
+    static napi_value SetNonRetentionState(napi_env env, napi_callback_info cbInfo);
+
+    static void GetRetentionSandboxListExcute(napi_env env, void* data);
+    static void GetRetentionSandboxListComplete(napi_env env, napi_status status, void* data);
+    static napi_value GetRetentionSandboxList(napi_env env, napi_callback_info cbInfo);
 };
 }  // namespace DlpPermission
 }  // namespace Security

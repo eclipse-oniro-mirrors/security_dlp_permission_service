@@ -143,10 +143,10 @@ AUTH_RETRY:
     return callback->result_;
 }
 
-int32_t DlpPermissionKit::InstallDlpSandbox(
-    const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex)
+int32_t DlpPermissionKit::InstallDlpSandbox(const std::string& bundleName, AuthPermType permType, int32_t userId,
+    int32_t& appIndex, const std::string& uri)
 {
-    return DlpPermissionClient::GetInstance().InstallDlpSandbox(bundleName, permType, userId, appIndex);
+    return DlpPermissionClient::GetInstance().InstallDlpSandbox(bundleName, permType, userId, appIndex, uri);
 }
 
 int32_t DlpPermissionKit::UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId)
@@ -194,6 +194,27 @@ int32_t DlpPermissionKit::UnregisterDlpSandboxChangeCallback(bool &result)
 int32_t DlpPermissionKit::GetDlpGatheringPolicy(bool& isGathering)
 {
     return DlpPermissionClient::GetInstance().GetDlpGatheringPolicy(isGathering);
+}
+
+int32_t DlpPermissionKit::SetRetentionState(const std::vector<std::string>& docUriVec)
+{
+    return DlpPermissionClient::GetInstance().SetRetentionState(docUriVec);
+}
+
+int32_t DlpPermissionKit::SetNonRetentionState(const std::vector<std::string>& docUriVec)
+{
+    return DlpPermissionClient::GetInstance().SetNonRetentionState(docUriVec);
+}
+
+int32_t DlpPermissionKit::GetRetentionSandboxList(const std::string& bundleName,
+    std::vector<RetentionSandBoxInfo>& retentionSandBoxInfoVec)
+{
+    return DlpPermissionClient::GetInstance().GetRetentionSandboxList(bundleName, retentionSandBoxInfoVec);
+}
+
+int32_t DlpPermissionKit::ClearUnreservedSandbox()
+{
+    return DlpPermissionClient::GetInstance().ClearUnreservedSandbox();
 }
 }  // namespace DlpPermission
 }  // namespace Security

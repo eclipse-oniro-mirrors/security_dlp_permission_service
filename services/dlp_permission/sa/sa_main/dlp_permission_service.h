@@ -16,12 +16,14 @@
 #ifndef DLP_PERMISSION_SERVICE_H
 #define DLP_PERMISSION_SERVICE_H
 
+#include <atomic>
 #include <string>
 #include <vector>
 #include "app_state_observer.h"
 #include "dlp_permission_stub.h"
 #include "iremote_object.h"
 #include "nocopyable.h"
+#include "retention_file_manager.h"
 #include "singleton.h"
 #include "system_ability.h"
 
@@ -52,8 +54,8 @@ public:
         const sptr<DlpPolicyParcel>& policyParcel, sptr<IDlpPermissionCallback>& callback) override;
     int32_t ParseDlpCertificate(const std::vector<uint8_t>& cert, uint32_t flag,
         sptr<IDlpPermissionCallback>& callback) override;
-    int32_t InstallDlpSandbox(
-        const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex) override;
+    int32_t InstallDlpSandbox(const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex,
+        const std::string& uri) override;
     int32_t UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId) override;
     int32_t GetSandboxExternalAuthorization(
         int sandboxUid, const AAFwk::Want& want, SandBoxExternalAuthorType& authType) override;
@@ -66,6 +68,11 @@ public:
     int32_t UnRegisterDlpSandboxChangeCallback(bool &result) override;
 
     int32_t GetDlpGatheringPolicy(bool& isGathering) override;
+    int32_t SetRetentionState(const std::vector<std::string>& docUriVec) override;
+    int32_t SetNonRetentionState(const std::vector<std::string>& docUriVec) override;
+    int32_t GetRetentionSandboxList(const std::string& bundleName,
+        std::vector<RetentionSandBoxInfo>& retentionSandBoxInfoVec) override;
+    int32_t ClearUnreservedSandbox() override;
 
     int Dump(int fd, const std::vector<std::u16string>& args) override;
 
@@ -74,8 +81,17 @@ private:
 
     void InsertDlpSandboxInfo(const std::string &bundleName, AuthPermType permType, int32_t userId, int32_t appIndex,
         uint32_t pid);
-    void DeleteDlpSandboxInfo(const std::string& bundleName, int32_t appIndex, int32_t userId);
+    uint32_t DeleteDlpSandboxInfo(const std::string& bundleName, int32_t appIndex, int32_t userId);
+    bool GetCallerBundleName(const uint32_t tokenId, std::string& bundleName);
+    bool RemoveRetentionInfo(std::vector<RetentionSandBoxInfo>& retentionSandBoxInfoVec, RetentionInfo& info);
+    int32_t UninstallDlpSandboxApp(const std::string& bundleName, int32_t appIndex, int32_t userId);
+    void TerminalService();
+    void StartTimer();
 
+    std::atomic<int32_t> repeatTime_;
+    std::shared_ptr<std::thread> thread_;
+    std::mutex mutex_;
+    std::mutex terminalMutex_;
     bool isGathering_ = GATHERING_POLICY;
     ServiceRunningState state_;
     sptr<AppExecFwk::IAppMgr> iAppMgr_;

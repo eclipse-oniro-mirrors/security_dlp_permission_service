@@ -20,6 +20,7 @@
 #include "dlp_policy_parcel.h"
 #include "i_dlp_permission_callback.h"
 #include "iremote_broker.h"
+#include "retention_sandbox_info.h"
 #include "want.h"
 
 namespace OHOS {
@@ -37,8 +38,8 @@ public:
     virtual int32_t ParseDlpCertificate(const std::vector<uint8_t>& cert, uint32_t flag,
         sptr<IDlpPermissionCallback>& callback) = 0;
 
-    virtual int32_t InstallDlpSandbox(
-        const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex) = 0;
+    virtual int32_t InstallDlpSandbox(const std::string& bundleName, AuthPermType permType, int32_t userId,
+        int32_t& appIndex, const std::string& uri) = 0;
 
     virtual int32_t UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId) = 0;
     virtual int32_t GetSandboxExternalAuthorization(int sandboxUid, const AAFwk::Want& want,
@@ -58,6 +59,15 @@ public:
 
     virtual int32_t GetDlpGatheringPolicy(bool& isGathering) = 0;
 
+    virtual int32_t SetRetentionState(const std::vector<std::string>& docUriVec) = 0;
+
+    virtual int32_t SetNonRetentionState(const std::vector<std::string>& docUriVec) = 0;
+
+    virtual int32_t GetRetentionSandboxList(const std::string& bundleName,
+        std::vector<RetentionSandBoxInfo>& retentionSandBoxInfoVec) = 0;
+
+    virtual int32_t ClearUnreservedSandbox() = 0;
+
     enum class InterfaceCode {
         GENERATE_DLP_CERTIFICATE = 0xff01,
         PARSE_DLP_CERTIFICATE = 0xff02,
@@ -71,6 +81,10 @@ public:
         REGISTER_DLP_SANDBOX_CHANGE_CALLBACK = 0xff0a,
         UNREGISTER_DLP_SANDBOX_CHANGE_CALLBACK = 0xff0b,
         GET_DLP_GATHERING_POLICY = 0xff0c,
+        SET_RETENTION_STATE = 0xff0d,
+        SET_NOT_RETENTION_STATE = 0xff0e,
+        GET_RETETNTION_SANDBOX_LIST = 0xff0f,
+        CLEAR_UNRESERVED_SANDBOX = 0xff10,
     };
 };
 }  // namespace DlpPermission

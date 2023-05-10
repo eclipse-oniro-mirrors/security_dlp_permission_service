@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *     http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,8 +14,10 @@
  */
 
 #include "dlp_permission_service.h"
+#include <chrono>
 #include "accesstoken_kit.h"
 #include "account_adapt.h"
+#include "app_mgr_client.h"
 #include "bundle_mgr_client.h"
 #include "callback_manager.h"
 #include "dlp_credential_service.h"
@@ -25,6 +27,7 @@
 #include "dlp_permission_log.h"
 #include "dlp_permission_sandbox_info.h"
 #include "dlp_permission_serializer.h"
+#include "hap_token_info.h"
 #include "if_system_ability_manager.h"
 #include "ipc_skeleton.h"
 #include "iservice_registry.h"
@@ -36,15 +39,21 @@
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
+using namespace Security::AccessToken;
+using namespace OHOS::AppExecFwk;
 namespace {
-constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionService"};
+constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionService" };
 static const std::string ALLOW_ABILITY[] = {"com.ohos.dlpmanager"};
+static const std::string DLP_MANAGER = "com.ohos.dlpmanager";
+static const std::chrono::seconds SLEEP_TIME(120);
+static const int REPEAT_TIME = 5;
 }
 REGISTER_SYSTEM_ABILITY_BY_ID(DlpPermissionService, SA_ID_DLP_PERMISSION_SERVICE, true);
 
 DlpPermissionService::DlpPermissionService(int saId, bool runOnCreate)
     : SystemAbility(saId, runOnCreate), state_(ServiceRunningState::STATE_NOT_START)
 {
+    thread_ = nullptr;
     DLP_LOG_INFO(LABEL, "DlpPermissionService()");
 }
 
@@ -187,35 +196,50 @@ void DlpPermissionService::InsertDlpSandboxInfo(
     }
     sandboxInfo.tokenId = AccessToken::AccessTokenKit::GetHapTokenID(userId, bundleName, appIndex);
     appStateObserver_->AddDlpSandboxInfo(sandboxInfo);
-
     return;
 }
 
-int32_t DlpPermissionService::InstallDlpSandbox(
-    const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex)
+int32_t DlpPermissionService::InstallDlpSandbox(const std::string& bundleName, AuthPermType permType, int32_t userId,
+    int32_t& appIndex, const std::string& uri)
 {
     if (bundleName.empty() || permType >= DEFAULT_PERM || permType < READ_ONLY) {
         DLP_LOG_ERROR(LABEL, "param is invalid");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
-
-    AppExecFwk::BundleMgrClient bundleMgrClient;
-    int32_t res = bundleMgrClient.InstallSandboxApp(bundleName, permType, userId, appIndex);
+    std::vector<RetentionSandBoxInfo> infoVec;
+    auto res = RetentionFileManager::GetInstance().GetRetentionSandboxList(bundleName, infoVec, true);
     if (res != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "install sandbox %{public}s fail, error=%{public}d", bundleName.c_str(), res);
-        return DLP_SERVICE_ERROR_INSTALL_SANDBOX_FAIL;
+        DLP_LOG_ERROR(LABEL, "GetRetentionSandboxList fail bundleName:%{public}s,uri:%{public}s, error=%{public}d",
+            bundleName.c_str(), uri.c_str(), res);
+        return res;
+    }
+    bool isNeedInstall = true;
+    for (auto iter = infoVec.begin(); iter != infoVec.end(); ++iter) {
+        auto setIter = iter->docUriSet_.find(uri);
+        if (setIter != iter->docUriSet_.end()) {
+            appIndex = iter->appIndex_;
+            isNeedInstall = false;
+            break;
+        }
+    }
+    if (isNeedInstall) {
+        AppExecFwk::BundleMgrClient bundleMgrClient;
+        int32_t res = bundleMgrClient.InstallSandboxApp(bundleName, permType, userId, appIndex);
+        if (res != DLP_OK) {
+            DLP_LOG_ERROR(LABEL, "install sandbox %{public}s fail, error=%{public}d", bundleName.c_str(), res);
+            return DLP_SERVICE_ERROR_INSTALL_SANDBOX_FAIL;
+        }
     }
     uint32_t pid = IPCSkeleton::GetCallingPid();
-    DLP_LOG_INFO(LABEL, "GetCallingPid,%{public}d", pid);
     InsertDlpSandboxInfo(bundleName, permType, userId, appIndex, pid);
     return DLP_OK;
 }
 
-void DlpPermissionService::DeleteDlpSandboxInfo(const std::string& bundleName, int32_t appIndex, int32_t userId)
+uint32_t DlpPermissionService::DeleteDlpSandboxInfo(const std::string& bundleName, int32_t appIndex, int32_t userId)
 {
     if (appStateObserver_ == nullptr) {
         DLP_LOG_WARN(LABEL, "Failed to get app state observer instance");
-        return;
+        return 0;
     }
 
     AppExecFwk::BundleMgrClient bundleMgrClient;
@@ -223,11 +247,22 @@ void DlpPermissionService::DeleteDlpSandboxInfo(const std::string& bundleName, i
     int32_t result = bundleMgrClient.GetSandboxBundleInfo(bundleName, appIndex, userId, info);
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Get sandbox bundle info fail");
-        return;
+        return 0;
     }
 
-    appStateObserver_->EraseDlpSandboxInfo(info.uid);
-    return;
+    return appStateObserver_->EraseDlpSandboxInfo(info.uid);
+}
+
+int32_t DlpPermissionService::UninstallDlpSandboxApp(const std::string& bundleName, int32_t appIndex, int32_t userId)
+{
+    AppExecFwk::BundleMgrClient bundleMgrClient;
+    int32_t res = bundleMgrClient.UninstallSandboxApp(bundleName, appIndex, userId);
+    if (res != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "uninstall sandbox %{public}s fail, index=%{public}d, error=%{public}d",
+            bundleName.c_str(), appIndex, res);
+        return DLP_SERVICE_ERROR_UNINSTALL_SANDBOX_FAIL;
+    }
+    return DLP_OK;
 }
 
 int32_t DlpPermissionService::UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId)
@@ -237,13 +272,14 @@ int32_t DlpPermissionService::UninstallDlpSandbox(const std::string& bundleName,
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
-    DeleteDlpSandboxInfo(bundleName, appIndex, userId);
-    AppExecFwk::BundleMgrClient bundleMgrClient;
-    int32_t res = bundleMgrClient.UninstallSandboxApp(bundleName, appIndex, userId);
-    if (res != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "uninstall sandbox %{public}s fail, index=%{public}d, error=%{public}d",
-            bundleName.c_str(), appIndex, res);
+    uint32_t tokenId = DeleteDlpSandboxInfo(bundleName, appIndex, userId);
+    if (tokenId == 0) {
+        DLP_LOG_ERROR(LABEL, "DeleteDlpSandboxInfo sandbox %{public}s fail, index=%{public}d", bundleName.c_str(),
+            appIndex);
         return DLP_SERVICE_ERROR_UNINSTALL_SANDBOX_FAIL;
+    }
+    if (RetentionFileManager::GetInstance().CanUninstall(tokenId)) {
+        return UninstallDlpSandboxApp(bundleName, appIndex, userId);
     }
     return DLP_OK;
 }
@@ -358,6 +394,154 @@ int32_t DlpPermissionService::GetDlpGatheringPolicy(bool& isGathering)
     return DLP_OK;
 }
 
+int32_t DlpPermissionService::SetRetentionState(const std::vector<std::string>& docUriVec)
+{
+    if (docUriVec.empty()) {
+        DLP_LOG_ERROR(LABEL, "get docUriVec empty");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    RetentionInfo info;
+    info.tokenId = IPCSkeleton::GetCallingTokenID();
+    std::set<std::string> docUriSet(docUriVec.begin(), docUriVec.end());
+    return RetentionFileManager::GetInstance().UpdateSandboxInfo(docUriSet, info, true);
+}
+
+int32_t DlpPermissionService::SetNonRetentionState(const std::vector<std::string>& docUriVec)
+{
+    if (docUriVec.empty()) {
+        DLP_LOG_ERROR(LABEL, "get docUriVec empty");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    RetentionInfo info;
+    info.tokenId = IPCSkeleton::GetCallingTokenID();
+    if (!GetCallerBundleName(info.tokenId, info.bundleName)) {
+        DLP_LOG_ERROR(LABEL, "get callerBundleName error");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    bool isInSandbox = false;
+    IsInDlpSandbox(isInSandbox);
+    if (!isInSandbox) {
+        info.tokenId = 0;
+    }
+    int32_t res = 0;
+    {
+        std::lock_guard<std::mutex> lock(terminalMutex_);
+        std::set<std::string> docUriSet(docUriVec.begin(), docUriVec.end());
+        res = RetentionFileManager::GetInstance().UpdateSandboxInfo(docUriSet, info, false);
+        if (isInSandbox) {
+            return res;
+        }
+        std::vector<RetentionSandBoxInfo> retentionSandBoxInfoVec;
+        int32_t getRes = RetentionFileManager::GetInstance().GetRetentionSandboxList(info.bundleName,
+            retentionSandBoxInfoVec, false);
+        if (getRes != DLP_OK) {
+            DLP_LOG_ERROR(LABEL, "getRes != DLP_OK");
+            return getRes;
+        }
+        if (!retentionSandBoxInfoVec.empty()) {
+            if (!RemoveRetentionInfo(retentionSandBoxInfoVec, info)) {
+                return DLP_SERVICE_ERROR_VALUE_INVALID;
+            }
+        }
+    }
+    StartTimer();
+    return res;
+}
+
+bool DlpPermissionService::RemoveRetentionInfo(std::vector<RetentionSandBoxInfo>& retentionSandBoxInfoVec,
+    RetentionInfo& info)
+{
+    int32_t uid = IPCSkeleton::GetCallingUid();
+    int32_t userId;
+    if (GetUserIdFromUid(uid, &userId) != 0) {
+        DLP_LOG_ERROR(LABEL, "get GetUserIdFromUid error");
+        return false;
+    }
+    for (auto iter = retentionSandBoxInfoVec.begin(); iter != retentionSandBoxInfoVec.end(); ++iter) {
+        if (appStateObserver_->CheckSandboxInfo(info.bundleName, iter->appIndex_, userId)) {
+            continue;
+        }
+        DeleteDlpSandboxInfo(info.bundleName, iter->appIndex_, userId);
+        UninstallDlpSandboxApp(info.bundleName, iter->appIndex_, userId);
+        RetentionFileManager::GetInstance().RemoveRetentionState(info.bundleName, iter->appIndex_);
+    }
+    return true;
+}
+
+void DlpPermissionService::StartTimer()
+{
+    repeatTime_ = REPEAT_TIME;
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (thread_ != nullptr && !thread_->joinable()) { // avoid double assign to an active thread
+        DLP_LOG_ERROR(LABEL, "thread is active");
+        return;
+    }
+    thread_ = std::make_shared<std::thread>(&DlpPermissionService::TerminalService, this);
+    thread_->detach();
+    return;
+}
+
+void DlpPermissionService::TerminalService()
+{
+    DLP_LOG_DEBUG(LABEL, "enter");
+    int32_t remainingTime = repeatTime_.load();
+    while (remainingTime > 0) {
+        std::this_thread::sleep_for(SLEEP_TIME);
+        repeatTime_--;
+        remainingTime = repeatTime_.load();
+        DLP_LOG_DEBUG(LABEL, "repeatTime_ %{public}d", remainingTime);
+    }
+    std::lock_guard<std::mutex> lock(terminalMutex_);
+    appStateObserver_->ExitSaAfterAllDlpManagerDie();
+}
+
+int32_t DlpPermissionService::GetRetentionSandboxList(const std::string& bundleName,
+    std::vector<RetentionSandBoxInfo>& retentionSandBoxInfoVec)
+{
+    std::string callerBundleName;
+    uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
+    GetCallerBundleName(tokenId, callerBundleName);
+    bool isNeedTimer = true;
+    if (callerBundleName == DLP_MANAGER) {
+        callerBundleName = bundleName;
+        isNeedTimer = false;
+    }
+    if (bundleName.empty()) {
+        DLP_LOG_ERROR(LABEL, "get bundleName error");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    auto res =
+        RetentionFileManager::GetInstance().GetRetentionSandboxList(callerBundleName, retentionSandBoxInfoVec, true);
+    if (!isNeedTimer) {
+        return res;
+    }
+    StartTimer();
+    return res;
+}
+
+int32_t DlpPermissionService::ClearUnreservedSandbox()
+{
+    RetentionFileManager::GetInstance().ClearUnreservedSandbox();
+    StartTimer();
+    return DLP_OK;
+}
+
+bool DlpPermissionService::GetCallerBundleName(const uint32_t tokenId, std::string& bundleName)
+{
+    HapTokenInfo tokenInfo;
+    auto result = AccessTokenKit::GetHapTokenInfo(tokenId, tokenInfo);
+    if (result != RET_SUCCESS) {
+        DLP_LOG_ERROR(LABEL, "token:0x%{public}x, result:%{public}d", tokenId, result);
+        return false;
+    }
+    if (tokenInfo.bundleName.empty()) {
+        DLP_LOG_ERROR(LABEL, "bundlename is empty");
+        return false;
+    }
+    bundleName = tokenInfo.bundleName;
+    return true;
+}
+
 int DlpPermissionService::Dump(int fd, const std::vector<std::u16string>& args)
 {
     if (fd < 0) {
@@ -380,6 +564,6 @@ int DlpPermissionService::Dump(int fd, const std::vector<std::u16string>& args)
 
     return ERR_OK;
 }
-}  // namespace DlpPermission
-}  // namespace Security
-}  // namespace OHOS
+} // namespace DlpPermission
+} // namespace Security
+} // namespace OHOS

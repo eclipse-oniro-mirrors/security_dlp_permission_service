@@ -25,6 +25,7 @@ namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionProxy"};
 static const uint32_t MAX_SUPPORT_FILE_TYPE_NUM = 1024;
+static const uint32_t MAX_RETENTION_SIZE = 1024;
 }
 
 DlpPermissionProxy::DlpPermissionProxy(const sptr<IRemoteObject>& impl) : IRemoteProxy<IDlpPermissionService>(impl)
@@ -118,8 +119,8 @@ int32_t DlpPermissionProxy::ParseDlpCertificate(
     return res;
 }
 
-int32_t DlpPermissionProxy::InstallDlpSandbox(
-    const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex)
+int32_t DlpPermissionProxy::InstallDlpSandbox(const std::string& bundleName, AuthPermType permType, int32_t userId,
+    int32_t& appIndex, const std::string& uri)
 {
     MessageParcel data;
     if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
@@ -139,6 +140,11 @@ int32_t DlpPermissionProxy::InstallDlpSandbox(
 
     if (!data.WriteInt32(userId)) {
         DLP_LOG_ERROR(LABEL, "Write int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    if (!data.WriteString(uri)) {
+        DLP_LOG_ERROR(LABEL, "Write string fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
@@ -514,6 +520,148 @@ int32_t DlpPermissionProxy::GetDlpGatheringPolicy(bool& isGathering)
     return res;
 }
 
+int32_t DlpPermissionProxy::SetRetentionState(const std::vector<std::string>& docUriVec)
+{
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
+        DLP_LOG_ERROR(LABEL, "Write descriptor fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    if (!data.WriteStringVector(docUriVec)) {
+        DLP_LOG_ERROR(LABEL, "Write string vector fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
+    sptr<IRemoteObject> remote = Remote();
+    if (remote == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Remote service is null");
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
+    }
+    int32_t requestResult = remote->SendRequest(
+        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::SET_RETENTION_STATE), data, reply, option);
+    if (requestResult != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
+        return requestResult;
+    }
+    int32_t res;
+    if (!reply.ReadInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    return res;
+}
+
+int32_t DlpPermissionProxy::SetNonRetentionState(const std::vector<std::string>& docUriVec)
+{
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
+        DLP_LOG_ERROR(LABEL, "Write descriptor fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    if (!data.WriteStringVector(docUriVec)) {
+        DLP_LOG_ERROR(LABEL, "Write string vector fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
+    sptr<IRemoteObject> remote = Remote();
+    if (remote == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Remote service is null");
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
+    }
+    int32_t requestResult = remote->SendRequest(
+        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::SET_NOT_RETENTION_STATE), data, reply, option);
+    if (requestResult != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
+        return requestResult;
+    }
+    int32_t res;
+    if (!reply.ReadInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    return res;
+}
+
+int32_t DlpPermissionProxy::GetRetentionSandboxList(const std::string& bundleName,
+    std::vector<RetentionSandBoxInfo>& retentionSandBoxInfoVec)
+{
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
+        DLP_LOG_ERROR(LABEL, "Write descriptor fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    if (!data.WriteString(bundleName)) {
+        DLP_LOG_ERROR(LABEL, "Write string vector fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
+    sptr<IRemoteObject> remote = Remote();
+    if (remote == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Remote service is null");
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
+    }
+    int32_t requestResult = remote->SendRequest(
+        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_RETETNTION_SANDBOX_LIST), data, reply, option);
+    if (requestResult != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
+        return requestResult;
+    }
+
+    int32_t res;
+    if (!reply.ReadInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    uint32_t size;
+    if (!reply.ReadUint32(size)) {
+        DLP_LOG_ERROR(LABEL, "Read uint32 size fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (size > MAX_RETENTION_SIZE) {
+        DLP_LOG_ERROR(LABEL, "size larger than 1024");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    for (uint32_t i = 0; i < size; i++) {
+        std::unique_ptr<RetentionSandBoxInfo> info(reply.ReadParcelable<RetentionSandBoxInfo>());
+        if (info != nullptr) {
+            retentionSandBoxInfoVec.push_back(*info);
+        }
+    }
+    return res;
+}
+
+int32_t DlpPermissionProxy::ClearUnreservedSandbox()
+{
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
+        DLP_LOG_ERROR(LABEL, "Write descriptor fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
+    sptr<IRemoteObject> remote = Remote();
+    if (remote == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Remote service is null");
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
+    }
+    int32_t requestResult = remote->SendRequest(
+        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::CLEAR_UNRESERVED_SANDBOX), data, reply, option);
+    if (requestResult != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
+    }
+    return requestResult;
+}
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS

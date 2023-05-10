@@ -887,8 +887,8 @@ void NapiDlpPermission::InstallDlpSandboxExcute(napi_env env, void* data)
         return;
     }
 
-    asyncContext->errCode = DlpPermissionKit::InstallDlpSandbox(
-        asyncContext->bundleName, asyncContext->permType, asyncContext->userId, asyncContext->appIndex);
+    asyncContext->errCode = DlpPermissionKit::InstallDlpSandbox(asyncContext->bundleName, asyncContext->permType,
+        asyncContext->userId, asyncContext->appIndex, asyncContext->uri);
 }
 
 void NapiDlpPermission::InstallDlpSandboxComplete(napi_env env, napi_status status, void* data)
@@ -1279,6 +1279,158 @@ napi_value NapiDlpPermission::DlpFile(napi_env env, napi_callback_info cbInfo)
     return instance;
 }
 
+napi_value NapiDlpPermission::SetRetentionState(napi_env env, napi_callback_info cbInfo)
+{
+    auto* asyncContext = new (std::nothrow) RetentionStateAsyncContext(env);
+    if (asyncContext == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
+        return nullptr;
+    }
+    std::unique_ptr<RetentionStateAsyncContext> asyncContextPtr { asyncContext };
+
+    if (!GetRetentionStateParams(env, cbInfo, *asyncContext)) {
+        return nullptr;
+    }
+
+    napi_value result = nullptr;
+    if (asyncContext->callbackRef == nullptr) {
+        DLP_LOG_DEBUG(LABEL, "Create promise");
+        NAPI_CALL(env, napi_create_promise(env, &asyncContext->deferred, &result));
+    } else {
+        DLP_LOG_DEBUG(LABEL, "Undefined the result parameter");
+        NAPI_CALL(env, napi_get_undefined(env, &result));
+    }
+
+    napi_value resource = nullptr;
+    NAPI_CALL(env, napi_create_string_utf8(env, "SetRetentionState", NAPI_AUTO_LENGTH, &resource));
+    NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, SetRetentionStateExcute, SetRetentionStateComplete,
+        static_cast<void*>(asyncContext), &(asyncContext->work)));
+    NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
+    asyncContextPtr.release();
+    return result;
+}
+
+void NapiDlpPermission::SetRetentionStateExcute(napi_env env, void* data)
+{
+    DLP_LOG_DEBUG(LABEL, "napi_create_async_work running");
+    auto asyncContext = reinterpret_cast<RetentionStateAsyncContext*>(data);
+    asyncContext->errCode = DlpPermissionKit::SetRetentionState(asyncContext->docUris);
+}
+
+void NapiDlpPermission::SetRetentionStateComplete(napi_env env, napi_status status, void* data)
+{
+    DLP_LOG_DEBUG(LABEL, "napi_create_async_work complete");
+    auto asyncContext = reinterpret_cast<RetentionStateAsyncContext*>(data);
+    std::unique_ptr<RetentionStateAsyncContext> asyncContextPtr { asyncContext };
+    napi_value resJs = nullptr;
+    if (asyncContext->errCode == DLP_OK) {
+        NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &resJs));
+    }
+    ProcessCallbackOrPromise(env, asyncContext, resJs);
+}
+
+napi_value NapiDlpPermission::SetNonRetentionState(napi_env env, napi_callback_info cbInfo)
+{
+    auto* asyncContext = new (std::nothrow) RetentionStateAsyncContext(env);
+    if (asyncContext == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
+        return nullptr;
+    }
+    std::unique_ptr<RetentionStateAsyncContext> asyncContextPtr { asyncContext };
+
+    if (!GetRetentionStateParams(env, cbInfo, *asyncContext)) {
+        return nullptr;
+    }
+
+    napi_value result = nullptr;
+    if (asyncContext->callbackRef == nullptr) {
+        DLP_LOG_DEBUG(LABEL, "Create promise");
+        NAPI_CALL(env, napi_create_promise(env, &asyncContext->deferred, &result));
+    } else {
+        DLP_LOG_DEBUG(LABEL, "Undefined the result parameter");
+        NAPI_CALL(env, napi_get_undefined(env, &result));
+    }
+
+    napi_value resource = nullptr;
+    NAPI_CALL(env, napi_create_string_utf8(env, "SetNonRetentionState", NAPI_AUTO_LENGTH, &resource));
+    NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, SetNonRetentionStateExcute,
+        SetNonRetentionStateComplete, static_cast<void*>(asyncContext), &(asyncContext->work)));
+    NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
+    asyncContextPtr.release();
+    return result;
+}
+
+void NapiDlpPermission::SetNonRetentionStateExcute(napi_env env, void* data)
+{
+    DLP_LOG_DEBUG(LABEL, "napi_create_async_work running");
+    auto asyncContext = reinterpret_cast<RetentionStateAsyncContext*>(data);
+    asyncContext->errCode = DlpPermissionKit::SetNonRetentionState(asyncContext->docUris);
+}
+
+void NapiDlpPermission::SetNonRetentionStateComplete(napi_env env, napi_status status, void* data)
+{
+    DLP_LOG_DEBUG(LABEL, "napi_create_async_work complete");
+    auto asyncContext = reinterpret_cast<RetentionStateAsyncContext*>(data);
+    std::unique_ptr<RetentionStateAsyncContext> asyncContextPtr { asyncContext };
+    napi_value resJs = nullptr;
+    if (asyncContext->errCode == DLP_OK) {
+        NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &resJs));
+    }
+    ProcessCallbackOrPromise(env, asyncContext, resJs);
+}
+
+napi_value NapiDlpPermission::GetRetentionSandboxList(napi_env env, napi_callback_info cbInfo)
+{
+    DLP_LOG_DEBUG(LABEL, "napi_create_async_work running");
+    auto* asyncContext = new (std::nothrow) GetRetentionSandboxListAsyncContext(env);
+    if (asyncContext == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
+        return nullptr;
+    }
+    std::unique_ptr<GetRetentionSandboxListAsyncContext> asyncContextPtr { asyncContext };
+
+    if (!GetRetentionSandboxListParams(env, cbInfo, *asyncContext)) {
+        return nullptr;
+    }
+
+    napi_value result = nullptr;
+    if (asyncContext->callbackRef == nullptr) {
+        DLP_LOG_DEBUG(LABEL, "Create promise");
+        NAPI_CALL(env, napi_create_promise(env, &asyncContext->deferred, &result));
+    } else {
+        DLP_LOG_DEBUG(LABEL, "Undefined the result parameter");
+        NAPI_CALL(env, napi_get_undefined(env, &result));
+    }
+
+    napi_value resource = nullptr;
+    NAPI_CALL(env, napi_create_string_utf8(env, "GetRetentionSandboxList", NAPI_AUTO_LENGTH, &resource));
+    NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, GetRetentionSandboxListExcute,
+        GetRetentionSandboxListComplete, static_cast<void*>(asyncContext), &(asyncContext->work)));
+    NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
+    asyncContextPtr.release();
+    return result;
+}
+
+void NapiDlpPermission::GetRetentionSandboxListExcute(napi_env env, void* data)
+{
+    DLP_LOG_DEBUG(LABEL, "napi_create_async_work running");
+    auto asyncContext = reinterpret_cast<GetRetentionSandboxListAsyncContext*>(data);
+    asyncContext->errCode =
+        DlpPermissionKit::GetRetentionSandboxList(asyncContext->bundleName, asyncContext->retentionSandBoxInfoVec);
+}
+
+void NapiDlpPermission::GetRetentionSandboxListComplete(napi_env env, napi_status status, void* data)
+{
+    DLP_LOG_DEBUG(LABEL, "napi_create_async_work complete");
+    auto asyncContext = reinterpret_cast<GetRetentionSandboxListAsyncContext*>(data);
+    std::unique_ptr<GetRetentionSandboxListAsyncContext> asyncContextPtr { asyncContext };
+    napi_value resJs = nullptr;
+    if (asyncContext->errCode == DLP_OK) {
+        resJs = RetentionSandboxInfoToJs(env, asyncContext->retentionSandBoxInfoVec);
+    }
+    ProcessCallbackOrPromise(env, asyncContext, resJs);
+}
+
 bool NapiDlpPermission::IsSystemApp(napi_env env)
 {
     uint64_t fullTokenId = IPCSkeleton::GetSelfTokenID();
@@ -1305,6 +1457,9 @@ napi_value NapiDlpPermission::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("on", RegisterSandboxChangeCallback),
         DECLARE_NAPI_FUNCTION("off", UnregisterSandboxChangeCallback),
         DECLARE_NAPI_FUNCTION("getDlpGatheringPolicy", GetDlpGatheringPolicy),
+        DECLARE_NAPI_FUNCTION("setRetentionState", SetRetentionState),
+        DECLARE_NAPI_FUNCTION("setNonRetentionState", SetNonRetentionState),
+        DECLARE_NAPI_FUNCTION("getRetentionSandboxList", GetRetentionSandboxList),
     };
     NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[PARAM0]), desc));
 

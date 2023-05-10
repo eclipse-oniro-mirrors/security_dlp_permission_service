@@ -27,7 +27,7 @@ namespace OHOS {
 namespace Security {
 namespace DlpPermission {
 namespace {
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionNapi"};
+static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionCommon"};
 
 static bool ConvertDlpSandboxChangeInfo(napi_env env, napi_value value, const DlpSandboxCallbackInfo &result)
 {
@@ -626,11 +626,11 @@ bool GetCloseDlpFileParams(const napi_env env, const napi_callback_info info, Cl
 
 bool GetInstallDlpSandboxParams(const napi_env env, const napi_callback_info info, DlpSandboxAsyncContext& asyncContext)
 {
-    size_t argc = PARAM_SIZE_FOUR;
-    napi_value argv[PARAM_SIZE_FOUR] = {nullptr};
+    size_t argc = PARAM_SIZE_FIVE;
+    napi_value argv[PARAM_SIZE_FIVE] = {nullptr};
     NAPI_CALL_BASE(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr), false);
 
-    if (!NapiCheckArgc(env, argc, PARAM_SIZE_FOUR)) {
+    if (!NapiCheckArgc(env, argc, PARAM_SIZE_FIVE)) {
         return false;
     }
 
@@ -652,16 +652,21 @@ bool GetInstallDlpSandboxParams(const napi_env env, const napi_callback_info inf
         return false;
     }
     asyncContext.userId = static_cast<int32_t>(res);
+    if (!GetStringValue(env, argv[PARAM3], asyncContext.uri)) {
+        DLP_LOG_ERROR(LABEL, "js get uri fail");
+        ThrowParamError(env, "uri", "string");
+        return false;
+    }
 
-    if (argc == PARAM_SIZE_FOUR) {
-        if (!GetCallback(env, argv[PARAM3], asyncContext)) {
+    if (argc == PARAM_SIZE_FIVE) {
+        if (!GetCallback(env, argv[PARAM4], asyncContext)) {
             ThrowParamError(env, "callback", "function");
             return false;
         }
     }
 
-    DLP_LOG_DEBUG(LABEL, "bundleName: %{private}s, permType: %{private}d, userId: %{private}d",
-        asyncContext.bundleName.c_str(), asyncContext.permType, asyncContext.userId);
+    DLP_LOG_DEBUG(LABEL, "bundleName: %{private}s, permType: %{private}d, userId: %{private}d,uri: %{private}s",
+        asyncContext.bundleName.c_str(), asyncContext.permType, asyncContext.userId, asyncContext.uri.c_str());
     return true;
 }
 
@@ -815,6 +820,61 @@ bool GetUnregisterSandboxParams(const napi_env env, const napi_callback_info inf
     return true;
 }
 
+bool GetRetentionStateParams(const napi_env env, const napi_callback_info info,
+    RetentionStateAsyncContext& asyncContext)
+{
+    size_t argc = PARAM_SIZE_TWO;
+    napi_value argv[PARAM_SIZE_TWO] = {nullptr};
+    NAPI_CALL_BASE(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr), false);
+
+    if (!NapiCheckArgc(env, argc, PARAM_SIZE_TWO)) {
+        return false;
+    }
+
+    if (!GetVectorDocUriByKey(env, argv[PARAM0], "docUris", asyncContext.docUris)) {
+        DLP_LOG_ERROR(LABEL, "js get auth users fail");
+        return false;
+    }
+
+    if (argc == PARAM_SIZE_TWO) {
+        if (!GetCallback(env, argv[PARAM1], asyncContext)) {
+            ThrowParamError(env, "callback", "function");
+            return false;
+        }
+    }
+
+    DLP_LOG_DEBUG(LABEL, "docUriVec size: %{private}zu", asyncContext.docUris.size());
+    return true;
+}
+
+bool GetRetentionSandboxListParams(const napi_env env, const napi_callback_info info,
+    GetRetentionSandboxListAsyncContext& asyncContext)
+{
+    size_t argc = PARAM_SIZE_TWO;
+    napi_value argv[PARAM_SIZE_TWO] = {nullptr};
+    NAPI_CALL_BASE(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr), false);
+    if (argc == PARAM_SIZE_TWO) {
+        if (!GetCallback(env, argv[PARAM1], asyncContext)) {
+            ThrowParamError(env, "callback", "function");
+            return false;
+        }
+        if (!GetStringValue(env, argv[PARAM0], asyncContext.bundleName)) {
+            DLP_LOG_ERROR(LABEL, "js get bundle name fail");
+            ThrowParamError(env, "bundleName", "string");
+            return false;
+        }
+    }
+    if (argc == PARAM_SIZE_ONE) {
+        if (!GetStringValue(env, argv[PARAM0], asyncContext.bundleName) &&
+            !GetCallback(env, argv[PARAM0], asyncContext)) {
+            DLP_LOG_ERROR(LABEL, "js get bundle name or callback fail");
+            ThrowParamError(env, "bundleName or callback", "string or function");
+            return false;
+        }
+    }
+    return true;
+}
+
 bool GetThirdInterfaceParams(
     const napi_env env, const napi_callback_info info, CommonAsyncContext& asyncContext)
 {
@@ -862,6 +922,32 @@ bool GetDlpProperty(napi_env env, napi_value jsObject, DlpProperty& property)
         property.ownerAccount.c_str(), property.authUsers.size(), property.contractAccount.c_str(),
         property.ownerAccountType, property.offlineAccess);
     return true;
+}
+
+napi_value RetentionSandboxInfoToJs(napi_env env, const std::vector<RetentionSandBoxInfo>& infoVec)
+{
+    napi_value vectorJs = nullptr;
+    uint32_t index = 0;
+    NAPI_CALL(env, napi_create_array(env, &vectorJs));
+    for (auto item : infoVec) {
+        napi_value objInfo = nullptr;
+        NAPI_CALL(env, napi_create_object(env, &objInfo));
+
+        napi_value appIndexJs;
+        NAPI_CALL(env, napi_create_int32(env, item.appIndex_, &appIndexJs));
+        NAPI_CALL(env, napi_set_named_property(env, objInfo, "appIndex", appIndexJs));
+        DLP_LOG_INFO(LABEL, "GetAppIndex %{public}d", item.appIndex_);
+        napi_value bundleNameJs;
+        NAPI_CALL(env, napi_create_string_utf8(env, item.bundleName_.c_str(), NAPI_AUTO_LENGTH, &bundleNameJs));
+        NAPI_CALL(env, napi_set_named_property(env, objInfo, "bundleName", bundleNameJs));
+
+        napi_value docUriVecJs = SetStringToJs(env, item.docUriSet_);
+        NAPI_CALL(env, napi_set_named_property(env, objInfo, "docUris", docUriVecJs));
+
+        NAPI_CALL(env, napi_set_element(env, vectorJs, index, objInfo));
+        index++;
+    }
+    return vectorJs;
 }
 
 napi_value DlpPropertyToJs(napi_env env, const DlpProperty& property)
@@ -934,6 +1020,27 @@ napi_value VectorStringToJs(napi_env env, const std::vector<std::string>& value)
             if (napi_set_element(env, jsArray, index, jsValue) == napi_ok) {
                 index++;
             }
+        }
+    }
+    return jsArray;
+}
+
+napi_value SetStringToJs(napi_env env, const std::set<std::string>& value)
+{
+    napi_value jsArray = nullptr;
+    uint32_t index = 0;
+    NAPI_CALL(env, napi_create_array(env, &jsArray));
+    for (const auto& iter : value) {
+        napi_value jsValue = nullptr;
+        if (napi_create_string_utf8(env, iter.c_str(), NAPI_AUTO_LENGTH, &jsValue) == napi_ok) {
+            if (napi_set_element(env, jsArray, index, jsValue) == napi_ok) {
+                index++;
+            } else {
+                DLP_LOG_ERROR(LABEL, "napi_set_element error index:%{public}d,value:%{private}s", index, iter.c_str());
+            }
+        } else {
+            DLP_LOG_ERROR(LABEL, "napi_create_string_utf8 error index:%{public}d,value:%{private}s", index,
+                iter.c_str());
         }
     }
     return jsArray;
@@ -1150,6 +1257,34 @@ bool GetVectorAuthUserByKey(
         return false;
     }
     return GetVectorAuthUser(env, userArray, resultVec);
+}
+
+bool GetVectorDocUriByKey(napi_env env, napi_value jsObject, const std::string& key,
+    std::vector<std::string>& docUriVec)
+{
+    bool isArray = false;
+    NAPI_CALL_BASE(env, napi_is_array(env, jsObject, &isArray), false);
+    if (!isArray) {
+        DLP_LOG_ERROR(LABEL, "value is not array");
+        return false;
+    }
+    uint32_t size = 0;
+    if (napi_get_array_length(env, jsObject, &size) != napi_ok) {
+        DLP_LOG_ERROR(LABEL, "js get array size fail");
+        return false;
+    }
+    for (uint32_t i = 0; i < size; i++) {
+        napi_value obj;
+        NAPI_CALL_BASE(env, napi_get_element(env, jsObject, i, &obj), false);
+        std::string docUri;
+        if (!GetStringValue(env, obj, docUri)) {
+            DLP_LOG_ERROR(LABEL, "js get docUri fail");
+            ThrowParamError(env, "docUri", "string");
+            return false;
+        }
+        docUriVec.push_back(docUri);
+    }
+    return true;
 }
 }  // namespace DlpPermission
 }  // namespace Security

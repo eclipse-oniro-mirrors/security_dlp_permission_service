@@ -27,13 +27,14 @@
 using namespace OHOS::Security::DlpPermission;
 using namespace OHOS::Security::AccessToken;
 namespace OHOS {
+const std::string TEST_URI = "datashare:///media/file/8";
 static void FuzzTest(const uint8_t* data, size_t size)
 {
     std::string bundleName(reinterpret_cast<const char*>(data), size);
     AuthPermType permType = static_cast<AuthPermType>(size);
     int32_t userId = static_cast<int32_t>(size);
     int32_t appIndex;
-    DlpPermissionKit::InstallDlpSandbox(bundleName, permType, userId, appIndex);
+    DlpPermissionKit::InstallDlpSandbox(bundleName, permType, userId, appIndex, TEST_URI);
 }
 
 bool InstallDlpSandboxFuzzTest(const uint8_t* data, size_t size)

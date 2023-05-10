@@ -65,6 +65,108 @@ declare namespace DlpPermission {
     function getDlpSupportFileType(): Promise<Array<string>>;
     function getDlpSupportFileType(callback: AsyncCallback<Array<string>>): void;
 
+  /**
+   * Set Document Retention Status by dorUri.
+   *
+   * @param { Array<string> } docUris
+   * @param { AsyncCallback<boolean> } callback
+   * @syscap SystemCapability.Security.DlpPermissionService
+   * @since 9
+   * @return whether or not.
+   */
+  function setRetentionState(docUris: Array<string>, callback: AsyncCallback<boolean>): void;
+
+  /**
+   *  Set Document Retention Status by dorUri.
+   *
+   * @param { Array<string> } docUris
+   * @returns { Promise<boolean> }
+   * @syscap SystemCapability.Security.DlpPermissionService
+   * @since 9
+   * @return whether or not.
+   */
+  function setRetentionState(docUris: Array<string>): Promise<boolean>;
+
+  /**
+   * Set Document Non-Retention Status by dorUri.
+   *
+   * @param { Array<string> } docUris
+   * @param { AsyncCallback<boolean> } callback
+   * @syscap SystemCapability.Security.DlpPermissionService
+   * @since 9
+   * @return whether or not.
+   */
+  function setNonRetentionState(docUris: Array<string>, callback: AsyncCallback<boolean>): void;
+
+  /**
+   *  Set Document Non-Retention Status by dorUri.
+   *
+   * @param { Array<string> } docUris
+   * @returns { Promise<boolean> }
+   * @syscap SystemCapability.Security.DlpPermissionService
+   * @since 9
+   * @return whether or not.
+   */
+  function setNonRetentionState(docUris: Array<string>): Promise<boolean>;
+
+  export interface RetentionSandboxInfo {
+    /**
+     * appIndex
+     *
+     * @syscap SystemCapability.Security.DlpPermissionService
+     * @since 9
+     */
+    appIndex: number;
+
+    /**
+     * bundleName
+     *
+     * @syscap SystemCapability.Security.DlpPermissionService
+     * @since 9
+     */
+    bundleName: string;
+
+    /**
+     * Document uri list
+     *
+     * @syscap SystemCapability.Security.DlpPermissionService
+     * @since 9
+     */
+    docUris: Array<string>;
+  }
+
+  /**
+   *  get Document uri list.
+   *
+   * @param { AsyncCallback<Array<RetentionSandboxInfo>> } callback
+   * @syscap SystemCapability.Security.DlpPermissionService
+   * @since 9
+   * @return Document uri list.
+   */
+  function getRetentionSandboxList(callback: AsyncCallback<Array<RetentionSandboxInfo>>): void;
+
+  /**
+   *  get Document uri list.
+   *
+   * @param { string } bundleName
+   * @param { AsyncCallback<Array<RetentionSandboxInfo>> } callback
+   * @syscap SystemCapability.Security.DlpPermissionService
+   * @since 9
+   * @return Document uri list.
+   */
+  function getRetentionSandboxList(bundleName: string, callback: AsyncCallback<Array<RetentionSandboxInfo>>): void;
+
+  /**
+   *  get Document uri list.
+   *
+   * @param { string } bundleName
+   * @returns { Promise<Array<RetentionSandboxInfo>> }
+   * @syscap SystemCapability.Security.DlpPermissionService
+   * @since 9
+   * @return Document uri list.
+   */
+  function getRetentionSandboxList(bundleName?: string): Promise<Array<RetentionSandboxInfo>>;
+
     /**
      * Install an application in DLP sandbox.
      *

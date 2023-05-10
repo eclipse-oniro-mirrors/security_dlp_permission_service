@@ -23,6 +23,7 @@
 #include "app_mgr_proxy.h"
 #include "dlp_permission_sandbox_info.h"
 #include "iremote_object.h"
+#include "retention_file_manager.h"
 
 namespace OHOS {
 namespace Security {
@@ -36,17 +37,17 @@ public:
     int32_t QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t tokenId);
     int32_t QueryDlpFileAccessByUid(AuthPermType& permType, int32_t uid);
     int32_t IsInDlpSandbox(bool& inSandbox, int32_t uid);
-
     void AddDlpSandboxInfo(const DlpSandboxInfo& appInfo);
-    void EraseDlpSandboxInfo(int uid);
-
+    uint32_t EraseDlpSandboxInfo(int uid);
+    bool CheckSandboxInfo(const std::string& bundleName, int32_t appIndex, int32_t userId);
     void DumpSandbox(int fd);
+    void ExitSaAfterAllDlpManagerDie();
 
 private:
     void UninstallDlpSandbox(DlpSandboxInfo& appInfo);
     void UninstallAllDlpSandboxForUser(int32_t userId);
     void UninstallAllDlpSandbox();
-    void ExitSaAfterAllDlpManagerDie();
+
     void EraseUserId(int32_t userId);
     void AddUserId(int32_t userId);
 

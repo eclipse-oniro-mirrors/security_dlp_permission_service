@@ -172,8 +172,14 @@ int32_t DlpPermissionStub::InstallDlpSandboxInner(MessageParcel& data, MessagePa
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
+    std::string uri;
+    if (!data.ReadString(uri)) {
+        DLP_LOG_ERROR(LABEL, "Read uri fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
     int32_t appIndex;
-    int32_t res = this->InstallDlpSandbox(bundleName, permType, userId, appIndex);
+    int32_t res = this->InstallDlpSandbox(bundleName, permType, userId, appIndex, uri);
     if (!reply.WriteInt32(res)) {
         DLP_LOG_ERROR(LABEL, "Write install sandbox result fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
@@ -364,6 +370,76 @@ int32_t DlpPermissionStub::GetDlpGatheringPolicyInner(MessageParcel& data, Messa
     return DLP_OK;
 }
 
+int32_t DlpPermissionStub::SetRetentionStateInner(MessageParcel& data, MessageParcel& reply)
+{
+    std::vector<std::string> docUriVec;
+    if (!data.ReadStringVector(&docUriVec)) {
+        DLP_LOG_ERROR(LABEL, "Read docUriVec id fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    int32_t result = this->SetRetentionState(docUriVec);
+    if (!reply.WriteInt32(result)) {
+        DLP_LOG_ERROR(LABEL, "Write sandbox query result fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (!reply.WriteBool(result == DLP_OK)) {
+        DLP_LOG_ERROR(LABEL, "Write sandbox flag fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    return DLP_OK;
+}
+
+int32_t DlpPermissionStub::SetNonRetentionStateInner(MessageParcel& data, MessageParcel& reply)
+{
+    std::vector<std::string> docUriVec;
+    if (!data.ReadStringVector(&docUriVec)) {
+        DLP_LOG_ERROR(LABEL, "Read token id fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    int32_t result = this->SetNonRetentionState(docUriVec);
+    if (!reply.WriteInt32(result)) {
+        DLP_LOG_ERROR(LABEL, "Write sandbox query result fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (!reply.WriteBool(result == DLP_OK)) {
+        DLP_LOG_ERROR(LABEL, "Write sandbox flag fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    return DLP_OK;
+}
+
+int32_t DlpPermissionStub::GetRetentionSandboxListInner(MessageParcel& data, MessageParcel& reply)
+{
+    std::string bundleName;
+    if (!data.ReadString(bundleName)) {
+        DLP_LOG_ERROR(LABEL, "Read bundle name fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    std::vector<RetentionSandBoxInfo> retentionSandBoxInfoVec;
+    int32_t result = this->GetRetentionSandboxList(bundleName, retentionSandBoxInfoVec);
+    if (!reply.WriteInt32(result)) {
+        DLP_LOG_ERROR(LABEL, "Write sandbox query result fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (!reply.WriteUint32(retentionSandBoxInfoVec.size())) {
+        DLP_LOG_ERROR(LABEL, "Write sandbox size result fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    for (const auto& info : retentionSandBoxInfoVec) {
+        if (!reply.WriteParcelable(&info)) {
+            DLP_LOG_ERROR(LABEL, "Write sandbox size info fail");
+        }
+    }
+    return DLP_OK;
+}
+
+int32_t DlpPermissionStub::ClearUnreservedSandboxInner(MessageParcel& data, MessageParcel& reply)
+{
+    this->ClearUnreservedSandbox();
+    return DLP_OK;
+}
+
 DlpPermissionStub::DlpPermissionStub()
 {
     requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GENERATE_DLP_CERTIFICATE)] =
@@ -391,6 +467,14 @@ DlpPermissionStub::DlpPermissionStub()
         &DlpPermissionStub::UnRegisterDlpSandboxChangeCallbackInner;
     requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_DLP_GATHERING_POLICY)] =
         &DlpPermissionStub::GetDlpGatheringPolicyInner;
+    requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::SET_RETENTION_STATE)] =
+        &DlpPermissionStub::SetRetentionStateInner;
+    requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::SET_NOT_RETENTION_STATE)] =
+        &DlpPermissionStub::SetNonRetentionStateInner;
+    requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_RETETNTION_SANDBOX_LIST)] =
+        &DlpPermissionStub::GetRetentionSandboxListInner;
+        requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::CLEAR_UNRESERVED_SANDBOX)] =
+        &DlpPermissionStub::ClearUnreservedSandboxInner;
 }
 
 DlpPermissionStub::~DlpPermissionStub()

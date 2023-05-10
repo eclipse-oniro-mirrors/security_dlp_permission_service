@@ -116,10 +116,10 @@ int32_t DlpPermissionClient::ParseDlpCertificate(
     return proxy->ParseDlpCertificate(cert, flag, asyncStub);
 }
 
-int32_t DlpPermissionClient::InstallDlpSandbox(
-    const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex)
+int32_t DlpPermissionClient::InstallDlpSandbox(const std::string& bundleName, AuthPermType permType, int32_t userId,
+    int32_t& appIndex, const std::string& uri)
 {
-    if (bundleName.empty() || permType >= DEFAULT_PERM || permType < READ_ONLY) {
+    if (bundleName.empty() || permType >= DEFAULT_PERM || permType < READ_ONLY || uri.empty()) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
     auto proxy = GetProxy(true);
@@ -128,7 +128,7 @@ int32_t DlpPermissionClient::InstallDlpSandbox(
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
 
-    return proxy->InstallDlpSandbox(bundleName, permType, userId, appIndex);
+    return proxy->InstallDlpSandbox(bundleName, permType, userId, appIndex, uri);
 }
 
 int32_t DlpPermissionClient::UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId)
@@ -302,6 +302,51 @@ int32_t DlpPermissionClient::GetDlpGatheringPolicy(bool& isGathering)
     }
 
     return proxy->GetDlpGatheringPolicy(isGathering);
+}
+
+int32_t DlpPermissionClient::SetRetentionState(const std::vector<std::string>& docUriVec)
+{
+    auto proxy = GetProxy(false);
+    if (proxy == nullptr) {
+        DLP_LOG_INFO(LABEL, "Proxy is null");
+        return DLP_CALLBACK_SA_WORK_ABNORMAL;
+    }
+
+    return proxy->SetRetentionState(docUriVec);
+}
+
+int32_t DlpPermissionClient::SetNonRetentionState(const std::vector<std::string>& docUriVec)
+{
+    auto proxy = GetProxy(true);
+    if (proxy == nullptr) {
+        DLP_LOG_INFO(LABEL, "Proxy is null");
+        return DLP_CALLBACK_SA_WORK_ABNORMAL;
+    }
+
+    return proxy->SetNonRetentionState(docUriVec);
+}
+
+int32_t DlpPermissionClient::GetRetentionSandboxList(const std::string& bundleName,
+    std::vector<RetentionSandBoxInfo>& retentionSandBoxInfoVec)
+{
+    auto proxy = GetProxy(true);
+    if (proxy == nullptr) {
+        DLP_LOG_INFO(LABEL, "Proxy is null");
+        return DLP_CALLBACK_SA_WORK_ABNORMAL;
+    }
+
+    return proxy->GetRetentionSandboxList(bundleName, retentionSandBoxInfoVec);
+}
+
+int32_t DlpPermissionClient::ClearUnreservedSandbox()
+{
+    auto proxy = GetProxy(true);
+    if (proxy == nullptr) {
+        DLP_LOG_INFO(LABEL, "Proxy is null");
+        return DLP_CALLBACK_SA_WORK_ABNORMAL;
+    }
+
+    return proxy->ClearUnreservedSandbox();
 }
 
 bool DlpPermissionClient::StartLoadDlpPermissionSa()

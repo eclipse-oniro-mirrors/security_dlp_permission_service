@@ -46,6 +46,10 @@ private:
     int32_t UnRegisterDlpSandboxChangeCallbackInner(MessageParcel &data, MessageParcel &reply);
 
     int32_t GetDlpGatheringPolicyInner(MessageParcel& data, MessageParcel& reply);
+    int32_t SetRetentionStateInner(MessageParcel& data, MessageParcel& reply);
+    int32_t SetNonRetentionStateInner(MessageParcel& data, MessageParcel& reply);
+    int32_t GetRetentionSandboxListInner(MessageParcel& data, MessageParcel& reply);
+    int32_t ClearUnreservedSandboxInner(MessageParcel& data, MessageParcel& reply);
 
     using RequestFuncType = int32_t (DlpPermissionStub::*)(MessageParcel& data, MessageParcel& reply);
     std::map<uint32_t, RequestFuncType> requestFuncMap_;
