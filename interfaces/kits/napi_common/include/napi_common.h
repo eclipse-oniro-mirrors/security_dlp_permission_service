@@ -27,6 +27,7 @@
 #include "dlp_sandbox_callback_info.h"
 #include "dlp_sandbox_change_callback_customize.h"
 #include "retention_sandbox_info.h"
+#include "visited_dlp_file_info.h"
 
 namespace OHOS {
 namespace Security {
@@ -182,6 +183,11 @@ struct GetRetentionSandboxListAsyncContext : public CommonAsyncContext {
     std::vector<RetentionSandBoxInfo> retentionSandBoxInfoVec;
 };
 
+struct GetDLPFileVisitRecordAsyncContext : public CommonAsyncContext {
+    explicit GetDLPFileVisitRecordAsyncContext(napi_env env) : CommonAsyncContext(env) {};
+    std::vector<VisitedDLPFileInfo> visitedDlpFileInfoVec;
+};
+
 void DlpNapiThrow(napi_env env, int32_t jsErrCode, const std::string &jsErrMsg);
 napi_value GenerateBusinessError(napi_env env, int32_t jsErrCode, const std::string &jsErrMsg);
 
@@ -238,6 +244,7 @@ bool GetVectorDocUriByKey(napi_env env, napi_value jsObject, const std::string& 
     std::vector<std::string>& docUriVec);
 
 napi_value RetentionSandboxInfoToJs(napi_env env, const std::vector<RetentionSandBoxInfo>& infoVec);
+napi_value VisitInfoToJs(napi_env env, const std::vector<VisitedDLPFileInfo>& infoVec);
 napi_value DlpPropertyToJs(napi_env env, const DlpProperty& property);
 napi_value VectorAuthUserToJs(napi_env env, const std::vector<AuthUserInfo>& users);
 napi_value VectorStringToJs(napi_env env, const std::vector<std::string>& value);

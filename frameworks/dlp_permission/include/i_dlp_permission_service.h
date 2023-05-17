@@ -22,6 +22,7 @@
 #include "i_dlp_permission_callback.h"
 #include "iremote_broker.h"
 #include "retention_sandbox_info.h"
+#include "visited_dlp_file_info.h"
 #include "want.h"
 
 namespace OHOS {
@@ -69,6 +70,8 @@ public:
 
     virtual int32_t ClearUnreservedSandbox() = 0;
 
+    virtual int32_t GetDLPFileVisitRecord(std::vector<VisitedDLPFileInfo>& infoVec) = 0;
+
     enum class InterfaceCode {
         GENERATE_DLP_CERTIFICATE = 0xff01,
         PARSE_DLP_CERTIFICATE = 0xff02,
@@ -86,6 +89,7 @@ public:
         SET_NOT_RETENTION_STATE = 0xff0e,
         GET_RETETNTION_SANDBOX_LIST = 0xff0f,
         CLEAR_UNRESERVED_SANDBOX = 0xff10,
+        GET_VISTI_FILE_RECORD_LIST = 0xff11,
     };
 };
 }  // namespace DlpPermission

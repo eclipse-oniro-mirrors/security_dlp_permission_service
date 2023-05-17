@@ -25,6 +25,7 @@
 #include "dlp_sandbox_change_callback_customize.h"
 #include "parcel.h"
 #include "retention_sandbox_info.h"
+#include "visited_dlp_file_info.h"
 #include "want.h"
 
 namespace OHOS {
@@ -82,6 +83,7 @@ public:
     static int32_t GetRetentionSandboxList(const std::string& bundleName,
         std::vector<RetentionSandBoxInfo>& retentionSandBoxInfoVec);
     static int32_t ClearUnreservedSandbox();
+    static int32_t GetDLPFileVisitRecord(std::vector<VisitedDLPFileInfo>& infoVec);
 };
 }  // namespace DlpPermission
 }  // namespace Security

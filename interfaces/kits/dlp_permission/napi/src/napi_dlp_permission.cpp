@@ -1317,6 +1317,57 @@ void NapiDlpPermission::GetRetentionSandboxListComplete(napi_env env, napi_statu
     ProcessCallbackOrPromise(env, asyncContext, resJs);
 }
 
+napi_value NapiDlpPermission::GetDLPFileVisitRecord(napi_env env, napi_callback_info cbInfo)
+{
+    DLP_LOG_DEBUG(LABEL, "napi_create_async_work running");
+    auto* asyncContext = new (std::nothrow) GetDLPFileVisitRecordAsyncContext(env);
+    if (asyncContext == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
+        return nullptr;
+    }
+    std::unique_ptr<GetDLPFileVisitRecordAsyncContext> asyncContextPtr { asyncContext };
+
+    if (!GetThirdInterfaceParams(env, cbInfo, *asyncContext)) {
+        return nullptr;
+    }
+
+    napi_value result = nullptr;
+    if (asyncContext->callbackRef == nullptr) {
+        DLP_LOG_DEBUG(LABEL, "Create promise");
+        NAPI_CALL(env, napi_create_promise(env, &asyncContext->deferred, &result));
+    } else {
+        DLP_LOG_DEBUG(LABEL, "Undefined the result parameter");
+        NAPI_CALL(env, napi_get_undefined(env, &result));
+    }
+
+    napi_value resource = nullptr;
+    NAPI_CALL(env, napi_create_string_utf8(env, "GetDLPFileVisitRecord", NAPI_AUTO_LENGTH, &resource));
+    NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, GetDLPFileVisitRecordExcute,
+        GetDLPFileVisitRecordComplete, static_cast<void*>(asyncContext), &(asyncContext->work)));
+    NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
+    asyncContextPtr.release();
+    return result;
+}
+
+void NapiDlpPermission::GetDLPFileVisitRecordExcute(napi_env env, void* data)
+{
+    DLP_LOG_DEBUG(LABEL, "napi_create_async_work running");
+    auto asyncContext = reinterpret_cast<GetDLPFileVisitRecordAsyncContext*>(data);
+    asyncContext->errCode = DlpPermissionKit::GetDLPFileVisitRecord(asyncContext->visitedDlpFileInfoVec);
+}
+
+void NapiDlpPermission::GetDLPFileVisitRecordComplete(napi_env env, napi_status status, void* data)
+{
+    DLP_LOG_DEBUG(LABEL, "napi_create_async_work complete");
+    auto asyncContext = reinterpret_cast<GetDLPFileVisitRecordAsyncContext*>(data);
+    std::unique_ptr<GetDLPFileVisitRecordAsyncContext> asyncContextPtr { asyncContext };
+    napi_value resJs = nullptr;
+    if (asyncContext->errCode == DLP_OK) {
+        resJs = VisitInfoToJs(env, asyncContext->visitedDlpFileInfoVec);
+    }
+    ProcessCallbackOrPromise(env, asyncContext, resJs);
+}
+
 bool NapiDlpPermission::IsSystemApp(napi_env env)
 {
     uint64_t fullTokenId = IPCSkeleton::GetSelfTokenID();
@@ -1346,6 +1397,7 @@ napi_value NapiDlpPermission::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("setRetentionState", SetRetentionState),
         DECLARE_NAPI_FUNCTION("setNonRetentionState", SetNonRetentionState),
         DECLARE_NAPI_FUNCTION("getRetentionSandboxList", GetRetentionSandboxList),
+        DECLARE_NAPI_FUNCTION("getDLPFileVisitRecord", GetDLPFileVisitRecord),
     };
     NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[PARAM0]), desc));
 

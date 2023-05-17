@@ -219,6 +219,11 @@ int32_t DlpPermissionKit::ClearUnreservedSandbox()
 {
     return DlpPermissionClient::GetInstance().ClearUnreservedSandbox();
 }
+
+int32_t DlpPermissionKit::GetDLPFileVisitRecord(std::vector<VisitedDLPFileInfo>& infoVec)
+{
+    return DlpPermissionClient::GetInstance().GetDLPFileVisitRecord(infoVec);
+}
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS

@@ -13,37 +13,31 @@
  * limitations under the License.
  */
 
-#ifndef RETENTION_FILE_MANAGER_H
-#define RETENTION_FILE_MANAGER_H
+#ifndef DLP_VISIT_RECORD_FILE_MANAGER_H
+#define DLP_VISIT_RECORD_FILE_MANAGER_H
 
 #include <mutex>
 #include <map>
 
 #include "file_operator.h"
 #include "nlohmann/json.hpp"
-#include "sandbox_json_manager.h"
+#include "visited_dlp_file_info.h"
+#include "visit_record_json_manager.h"
 
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
 using Json = nlohmann::json;
 
-class RetentionFileManager {
+class VisitRecordFileManager {
 public:
-    explicit RetentionFileManager();
-    virtual ~RetentionFileManager();
-    static RetentionFileManager& GetInstance();
+    explicit VisitRecordFileManager();
+    virtual ~VisitRecordFileManager();
+    static VisitRecordFileManager& GetInstance();
 
-    int32_t AddSandboxInfo(const int32_t& appIndex, const uint32_t& tokenId, const std::string& bundleName,
-        const int32_t& userId);
-    int32_t DelSandboxInfo(uint32_t tokenId);
-    bool CanUninstall(const uint32_t& tokenId);
-    int32_t UpdateSandboxInfo(const std::set<std::string>& docUriSet, RetentionInfo& info, bool isRetention);
-    int32_t RemoveRetentionState(const std::string& bundleName, const int32_t& appIndex);
-    int32_t GetRetentionSandboxList(const std::string& bundleName,
-        std::vector<RetentionSandBoxInfo>& retentionSandBoxInfoVec, bool isRetention);
-    bool HasRetentionSandboxInfo(const std::string& bundleName);
-    int32_t ClearUnreservedSandbox();
+    int32_t AddVisitRecord(const std::string& bundleName, const int32_t& userId, const std::string& docUri);
+    int32_t GetVisitRecordList(const std::string& bundleName, const int32_t& userId,
+        std::vector<VisitedDLPFileInfo>& infoVec);
 
 private:
     bool Init();
@@ -51,9 +45,9 @@ private:
     bool hasInit;
     std::shared_ptr<FileOperator> fileOperator_;
     std::recursive_mutex mutex_;
-    std::shared_ptr<SandboxJsonManager> sandboxJsonManager_;
+    std::shared_ptr<VisitRecordJsonManager> visitRecordJsonManager_;
 };
 } // namespace DlpPermission
 } // namespace Security
 } // namespace OHOS
-#endif // RETENTION_FILE_MANAGER_H
+#endif // DLP_VISIT_RECORD_FILE_MANAGER_H

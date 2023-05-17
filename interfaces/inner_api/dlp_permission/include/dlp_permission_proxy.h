@@ -51,6 +51,7 @@ public:
     int32_t GetRetentionSandboxList(const std::string& bundleName,
         std::vector<RetentionSandBoxInfo>& retentionSandBoxInfoVec) override;
     int32_t ClearUnreservedSandbox() override;
+    int32_t GetDLPFileVisitRecord(std::vector<VisitedDLPFileInfo>& infoVec) override;
 
 private:
     static inline BrokerDelegator<DlpPermissionProxy> delegator_;

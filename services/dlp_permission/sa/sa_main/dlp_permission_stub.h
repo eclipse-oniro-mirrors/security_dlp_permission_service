@@ -50,6 +50,7 @@ private:
     int32_t SetNonRetentionStateInner(MessageParcel& data, MessageParcel& reply);
     int32_t GetRetentionSandboxListInner(MessageParcel& data, MessageParcel& reply);
     int32_t ClearUnreservedSandboxInner(MessageParcel& data, MessageParcel& reply);
+    int32_t GetDLPFileVisitRecordInner(MessageParcel& data, MessageParcel& reply);
 
     using RequestFuncType = int32_t (DlpPermissionStub::*)(MessageParcel& data, MessageParcel& reply);
     std::map<uint32_t, RequestFuncType> requestFuncMap_;

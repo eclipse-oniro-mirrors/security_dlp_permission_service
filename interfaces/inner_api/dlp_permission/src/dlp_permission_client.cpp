@@ -357,6 +357,17 @@ int32_t DlpPermissionClient::ClearUnreservedSandbox()
     return proxy->ClearUnreservedSandbox();
 }
 
+int32_t DlpPermissionClient::GetDLPFileVisitRecord(std::vector<VisitedDLPFileInfo>& infoVec)
+{
+    auto proxy = GetProxy(true);
+    if (proxy == nullptr) {
+        DLP_LOG_INFO(LABEL, "Proxy is null");
+        return DLP_CALLBACK_SA_WORK_ABNORMAL;
+    }
+
+    return proxy->GetDLPFileVisitRecord(infoVec);
+}
+
 bool DlpPermissionClient::StartLoadDlpPermissionSa()
 {
     {

@@ -36,6 +36,7 @@
 #include "parameter.h"
 #endif
 #include "system_ability_definition.h"
+#include "visit_record_file_manager.h"
 
 namespace OHOS {
 namespace Security {
@@ -228,6 +229,7 @@ int32_t DlpPermissionService::InstallDlpSandbox(const std::string& bundleName, A
     }
     int32_t pid = IPCSkeleton::GetCallingPid();
     InsertDlpSandboxInfo(bundleName, permType, userId, appIndex, pid);
+    VisitRecordFileManager::GetInstance().AddVisitRecord(bundleName, userId, uri);
     return DLP_OK;
 }
 
@@ -564,7 +566,10 @@ int32_t DlpPermissionService::GetRetentionSandboxList(const std::string& bundleN
 
 int32_t DlpPermissionService::ClearUnreservedSandbox()
 {
-    RetentionFileManager::GetInstance().ClearUnreservedSandbox();
+    {
+        std::lock_guard<std::mutex> lock(terminalMutex_);
+        RetentionFileManager::GetInstance().ClearUnreservedSandbox();
+    }
     StartTimer();
     return DLP_OK;
 }
@@ -583,6 +588,27 @@ bool DlpPermissionService::GetCallerBundleName(const uint32_t tokenId, std::stri
     }
     bundleName = tokenInfo.bundleName;
     return true;
+}
+
+int32_t DlpPermissionService::GetDLPFileVisitRecord(std::vector<VisitedDLPFileInfo>& infoVec)
+{
+    std::string callerBundleName;
+    uint32_t tokenId = IPCSkeleton::GetCallingTokenID();
+    if (!GetCallerBundleName(tokenId, callerBundleName)) {
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    int32_t userId = GetCallingUserId();
+    if (userId < 0) {
+        DLP_LOG_ERROR(LABEL, "get userId error");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    int32_t result = DLP_OK;
+    {
+        std::lock_guard<std::mutex> lock(terminalMutex_);
+        result = VisitRecordFileManager::GetInstance().GetVisitRecordList(callerBundleName, userId, infoVec);
+    }
+    StartTimer();
+    return result;
 }
 
 int DlpPermissionService::Dump(int fd, const std::vector<std::u16string>& args)

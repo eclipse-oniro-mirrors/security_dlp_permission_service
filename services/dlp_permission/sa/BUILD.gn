@@ -84,6 +84,7 @@ ohos_shared_library("dlp_permission_service") {
   sources = [
     "${dlp_root_dir}/frameworks/common/src/dlp_policy.cpp",
     "${dlp_root_dir}/frameworks/common/src/retention_sandbox_info.cpp",
+    "${dlp_root_dir}/frameworks/common/src/visited_dlp_file_info.cpp",
     "${dlp_root_dir}/frameworks/dlp_permission/src/auth_user_info_parcel.cpp",
     "${dlp_root_dir}/frameworks/dlp_permission/src/dlp_permission_info_parcel.cpp",
     "${dlp_root_dir}/frameworks/dlp_permission/src/dlp_policy_parcel.cpp",
@@ -94,6 +95,8 @@ ohos_shared_library("dlp_permission_service") {
     "adapt/file_operator.cpp",
     "adapt/retention_file_manager.cpp",
     "adapt/sandbox_json_manager.cpp",
+    "adapt/visit_record_file_manager.cpp",
+    "adapt/visit_record_json_manager.cpp",
     "callback/callback_manager.cpp",
     "callback/dlp_sandbox_change_callback_death_recipient.cpp",
     "callback/dlp_sandbox_change_callback_proxy.cpp",

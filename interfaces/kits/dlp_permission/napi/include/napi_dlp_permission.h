@@ -116,6 +116,10 @@ private:
     static void GetRetentionSandboxListExcute(napi_env env, void* data);
     static void GetRetentionSandboxListComplete(napi_env env, napi_status status, void* data);
     static napi_value GetRetentionSandboxList(napi_env env, napi_callback_info cbInfo);
+
+    static void GetDLPFileVisitRecordExcute(napi_env env, void* data);
+    static void GetDLPFileVisitRecordComplete(napi_env env, napi_status status, void* data);
+    static napi_value GetDLPFileVisitRecord(napi_env env, napi_callback_info cbInfo);
 };
 }  // namespace DlpPermission
 }  // namespace Security

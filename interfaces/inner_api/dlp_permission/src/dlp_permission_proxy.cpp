@@ -26,6 +26,7 @@ namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionProxy"};
 static const uint32_t MAX_SUPPORT_FILE_TYPE_NUM = 1024;
 static const uint32_t MAX_RETENTION_SIZE = 1024;
+static const uint32_t MAX_FIEL_RECORD_SIZE = 1024;
 }
 
 DlpPermissionProxy::DlpPermissionProxy(const sptr<IRemoteObject>& impl) : IRemoteProxy<IDlpPermissionService>(impl)
@@ -663,6 +664,56 @@ int32_t DlpPermissionProxy::ClearUnreservedSandbox()
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
     }
     return requestResult;
+}
+
+int32_t DlpPermissionProxy::GetDLPFileVisitRecord(std::vector<VisitedDLPFileInfo>& infoVec)
+{
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
+        DLP_LOG_ERROR(LABEL, "Write descriptor fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
+    sptr<IRemoteObject> remote = Remote();
+    if (remote == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Remote service is null");
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
+    }
+    int32_t requestResult = remote->SendRequest(
+        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_VISTI_FILE_RECORD_LIST), data, reply, option);
+    if (requestResult != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
+        return requestResult;
+    }
+    int32_t res;
+    if (!reply.ReadInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (res != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "res!=DLP_OK");
+        return res;
+    }
+    uint32_t listNum;
+    if (!reply.ReadUint32(listNum)) {
+        DLP_LOG_ERROR(LABEL, "Read uint32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (listNum > MAX_FIEL_RECORD_SIZE) {
+        DLP_LOG_ERROR(LABEL, "listNum larger than 1024");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    for (uint32_t i = 0; i < listNum; i++) {
+        VisitedDLPFileInfo visitInfo;
+        std::unique_ptr<VisitedDLPFileInfo> info(reply.ReadParcelable<VisitedDLPFileInfo>());
+        if (info != nullptr) {
+            infoVec.emplace_back(*info);
+        }
+    }
+
+    return res;
 }
 }  // namespace DlpPermission
 }  // namespace Security

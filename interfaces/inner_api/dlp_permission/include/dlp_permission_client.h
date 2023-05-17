@@ -57,6 +57,7 @@ public:
     int32_t GetRetentionSandboxList(const std::string& bundleName,
         std::vector<RetentionSandBoxInfo>& retentionSandBoxInfoVec);
     int32_t ClearUnreservedSandbox();
+    int32_t GetDLPFileVisitRecord(std::vector<VisitedDLPFileInfo>& infoVec);
 
     void FinishStartSASuccess(const sptr<IRemoteObject>& remoteObject);
     void FinishStartSAFail();

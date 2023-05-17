@@ -440,6 +440,31 @@ int32_t DlpPermissionStub::ClearUnreservedSandboxInner(MessageParcel& data, Mess
     return DLP_OK;
 }
 
+int32_t DlpPermissionStub::GetDLPFileVisitRecordInner(MessageParcel& data, MessageParcel& reply)
+{
+    std::vector<VisitedDLPFileInfo> infoVec;
+    int32_t res = this->GetDLPFileVisitRecord(infoVec);
+    if (!reply.WriteInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "Write support visit file record query result fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (res != DLP_OK) {
+        return DLP_OK;
+    }
+    size_t listNum = infoVec.size();
+    if (!reply.WriteUint32(listNum)) {
+        DLP_LOG_ERROR(LABEL, "Write support visit file record list num fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    for (const auto& iter : infoVec) {
+        if (!reply.WriteParcelable(&iter)) {
+            DLP_LOG_ERROR(LABEL, "Write support visit file record docUri string fail");
+            return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+        }
+    }
+    return DLP_OK;
+}
+
 DlpPermissionStub::DlpPermissionStub()
 {
     requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GENERATE_DLP_CERTIFICATE)] =
@@ -473,8 +498,10 @@ DlpPermissionStub::DlpPermissionStub()
         &DlpPermissionStub::SetNonRetentionStateInner;
     requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_RETETNTION_SANDBOX_LIST)] =
         &DlpPermissionStub::GetRetentionSandboxListInner;
-        requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::CLEAR_UNRESERVED_SANDBOX)] =
+    requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::CLEAR_UNRESERVED_SANDBOX)] =
         &DlpPermissionStub::ClearUnreservedSandboxInner;
+    requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_VISTI_FILE_RECORD_LIST)] =
+        &DlpPermissionStub::GetDLPFileVisitRecordInner;
 }
 
 DlpPermissionStub::~DlpPermissionStub()

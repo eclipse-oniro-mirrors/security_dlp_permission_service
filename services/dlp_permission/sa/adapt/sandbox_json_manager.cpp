@@ -75,7 +75,7 @@ int32_t SandboxJsonManager::AddSandboxInfo(const int32_t& appIndex, const uint32
     if (InsertSandboxInfo(docUriSet, tokenId, bundleName, appIndex, userId)) {
         return DLP_OK;
     }
-    return DLP_RETENTION_INSERT_FILE_ERROR;
+    return DLP_INSERT_FILE_ERROR;
 }
 
 bool SandboxJsonManager::CanUninstall(const uint32_t& tokenId)
@@ -187,7 +187,7 @@ int32_t SandboxJsonManager::UpdateRetentionState(const std::set<std::string>& ne
     }
     if (!isUpdate) {
         DLP_LOG_ERROR(LABEL, "not update : %{public}s", info.bundleName.c_str());
-        return DLP_RETENTION_NOT_UPDATE;
+        return DLP_FILE_NO_NEED_UPDATE;
     }
     return DLP_OK;
 }
@@ -272,7 +272,7 @@ int32_t SandboxJsonManager::ClearUnreservedSandbox()
     }
     if (!isChanged) {
         DLP_LOG_INFO(LABEL, "do not need update");
-        return DLP_RETENTION_NOT_UPDATE;
+        return DLP_FILE_NO_NEED_UPDATE;
     }
     return DLP_OK;
 }
@@ -317,7 +317,7 @@ int32_t SandboxJsonManager::ClearDateByUninstall()
     }
     if (!isNeedUpdate) {
         DLP_LOG_INFO(LABEL, "do not need update");
-        return DLP_RETENTION_NOT_UPDATE;
+        return DLP_FILE_NO_NEED_UPDATE;
     }
     return DLP_OK;
 }

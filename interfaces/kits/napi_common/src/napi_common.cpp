@@ -971,6 +971,29 @@ napi_value RetentionSandboxInfoToJs(napi_env env, const std::vector<RetentionSan
     return vectorJs;
 }
 
+napi_value VisitInfoToJs(napi_env env, const std::vector<VisitedDLPFileInfo>& infoVec)
+{
+    napi_value vectorJs = nullptr;
+    uint32_t index = 0;
+    NAPI_CALL(env, napi_create_array(env, &vectorJs));
+    for (auto& item : infoVec) {
+        napi_value objInfo = nullptr;
+        NAPI_CALL(env, napi_create_object(env, &objInfo));
+
+        napi_value timestampJs;
+        NAPI_CALL(env, napi_create_int64(env, item.visitTimestamp, &timestampJs));
+        NAPI_CALL(env, napi_set_named_property(env, objInfo, "recentOpenTime", timestampJs));
+        DLP_LOG_DEBUG(LABEL, "Get visitTimestamp %{public}ld", item.visitTimestamp);
+        napi_value uriJs;
+        NAPI_CALL(env, napi_create_string_utf8(env, item.docUri.c_str(), NAPI_AUTO_LENGTH, &uriJs));
+        NAPI_CALL(env, napi_set_named_property(env, objInfo, "uri", uriJs));
+
+        NAPI_CALL(env, napi_set_element(env, vectorJs, index, objInfo));
+        index++;
+    }
+    return vectorJs;
+}
+
 napi_value DlpPropertyToJs(napi_env env, const DlpProperty& property)
 {
     napi_value dlpPropertyJs = nullptr;

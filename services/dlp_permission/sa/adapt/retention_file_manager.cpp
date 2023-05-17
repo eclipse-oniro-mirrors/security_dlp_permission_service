@@ -32,7 +32,7 @@ RetentionFileManager::RetentionFileManager()
 {
     hasInit = false;
     fileOperator_ = std::make_shared<FileOperator>();
-    SandboxJsonManager_ = std::make_shared<SandboxJsonManager>();
+    sandboxJsonManager_ = std::make_shared<SandboxJsonManager>();
 
     EventFwk::MatchingSkills matchingSkills;
     matchingSkills.AddEvent(EventFwk::CommonEventSupport::COMMON_EVENT_PACKAGE_REMOVED);
@@ -54,7 +54,7 @@ RetentionFileManager& RetentionFileManager::GetInstance()
 
 bool RetentionFileManager::HasRetentionSandboxInfo(const std::string& bundleName)
 {
-    return SandboxJsonManager_->HasRetentionSandboxInfo(bundleName);
+    return sandboxJsonManager_->HasRetentionSandboxInfo(bundleName);
 }
 
 bool RetentionFileManager::Init()
@@ -70,8 +70,8 @@ bool RetentionFileManager::Init()
             return true;
         }
         Json callbackInfoJson = Json::parse(constraintsConfigStr, nullptr, false);
-        SandboxJsonManager_->FromJson(callbackInfoJson);
-        int32_t res = SandboxJsonManager_->ClearDateByUninstall();
+        sandboxJsonManager_->FromJson(callbackInfoJson);
+        int32_t res = sandboxJsonManager_->ClearDateByUninstall();
         if (res == DLP_RETENTION_UPDATE_ERROR) {
             return false;
         }
@@ -93,16 +93,16 @@ bool RetentionFileManager::Init()
 int32_t RetentionFileManager::UpdateFile(const int32_t& jsonRes)
 {
     std::lock_guard<std::recursive_mutex> lock(mutex_);
-    if (jsonRes == DLP_RETENTION_NOT_UPDATE) {
+    if (jsonRes == DLP_FILE_NO_NEED_UPDATE) {
         return DLP_OK;
     }
     if (jsonRes != DLP_OK) {
         return jsonRes;
     }
-    std::string jsonStr = SandboxJsonManager_->ToString();
+    std::string jsonStr = sandboxJsonManager_->ToString();
     if (fileOperator_->InputFileByPathAndContent(DLP_RETENTION_JSON_PATH, jsonStr) != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "InputFileByPathAndContent failed!");
-        return DLP_RETENTION_INSERT_FILE_ERROR;
+        return DLP_INSERT_FILE_ERROR;
     }
     return DLP_OK;
 }
@@ -114,7 +114,7 @@ int32_t RetentionFileManager::AddSandboxInfo(const int32_t& appIndex, const uint
         DLP_LOG_ERROR(LABEL, "Init failed!");
         return DLP_RETENTION_UPDATE_ERROR;
     }
-    int32_t res = SandboxJsonManager_->AddSandboxInfo(appIndex, tokenId, bundleName, userId);
+    int32_t res = sandboxJsonManager_->AddSandboxInfo(appIndex, tokenId, bundleName, userId);
     return UpdateFile(res);
 }
 
@@ -124,7 +124,7 @@ int32_t RetentionFileManager::DelSandboxInfo(uint32_t tokenId)
         DLP_LOG_ERROR(LABEL, "Init failed!");
         return DLP_RETENTION_UPDATE_ERROR;
     }
-    int32_t res = SandboxJsonManager_->DelSandboxInfo(tokenId);
+    int32_t res = sandboxJsonManager_->DelSandboxInfo(tokenId);
     return UpdateFile(res);
 }
 
@@ -134,7 +134,7 @@ bool RetentionFileManager::CanUninstall(const uint32_t& tokenId)
         DLP_LOG_ERROR(LABEL, "Init failed!");
         return DLP_RETENTION_UPDATE_ERROR;
     }
-    return SandboxJsonManager_->CanUninstall(tokenId);
+    return sandboxJsonManager_->CanUninstall(tokenId);
 }
 
 int32_t RetentionFileManager::UpdateSandboxInfo(const std::set<std::string>& docUriSet, RetentionInfo& info,
@@ -144,7 +144,7 @@ int32_t RetentionFileManager::UpdateSandboxInfo(const std::set<std::string>& doc
         DLP_LOG_ERROR(LABEL, "Init failed!");
         return DLP_RETENTION_UPDATE_ERROR;
     }
-    int32_t res = SandboxJsonManager_->UpdateRetentionState(docUriSet, info, isRetention);
+    int32_t res = sandboxJsonManager_->UpdateRetentionState(docUriSet, info, isRetention);
     return UpdateFile(res);
 }
 
@@ -154,7 +154,7 @@ int32_t RetentionFileManager::RemoveRetentionState(const std::string& bundleName
         DLP_LOG_ERROR(LABEL, "Init failed!");
         return DLP_RETENTION_UPDATE_ERROR;
     }
-    int32_t res = SandboxJsonManager_->RemoveRetentionState(bundleName, appIndex);
+    int32_t res = sandboxJsonManager_->RemoveRetentionState(bundleName, appIndex);
     return UpdateFile(res);
 }
 
@@ -164,7 +164,7 @@ int32_t RetentionFileManager::ClearUnreservedSandbox()
         DLP_LOG_ERROR(LABEL, "Init failed!");
         return DLP_RETENTION_UPDATE_ERROR;
     }
-    int32_t res = SandboxJsonManager_->ClearUnreservedSandbox();
+    int32_t res = sandboxJsonManager_->ClearUnreservedSandbox();
     return UpdateFile(res);
 }
 
@@ -175,7 +175,7 @@ int32_t RetentionFileManager::GetRetentionSandboxList(const std::string& bundleN
         DLP_LOG_ERROR(LABEL, "Init failed!");
         return DLP_RETENTION_UPDATE_ERROR;
     }
-    return SandboxJsonManager_->GetRetentionSandboxList(bundleName, retentionSandBoxInfoVec, isRetention);
+    return sandboxJsonManager_->GetRetentionSandboxList(bundleName, retentionSandBoxInfoVec, isRetention);
 }
 } // namespace DlpPermission
 } // namespace Security

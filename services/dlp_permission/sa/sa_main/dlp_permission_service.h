@@ -73,6 +73,7 @@ public:
     int32_t GetRetentionSandboxList(const std::string& bundleName,
         std::vector<RetentionSandBoxInfo>& retentionSandBoxInfoVec) override;
     int32_t ClearUnreservedSandbox() override;
+    int32_t GetDLPFileVisitRecord(std::vector<VisitedDLPFileInfo>& infoVec) override;
 
     int Dump(int fd, const std::vector<std::u16string>& args) override;
 

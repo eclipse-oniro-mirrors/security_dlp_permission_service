@@ -29,6 +29,7 @@
 #include "hex_string.h"
 #include "securec.h"
 #include "token_setproc.h"
+#include "visited_dlp_file_info.h"
 #include "want.h"
 #include "bundle_mgr_client.h"
 
@@ -1074,4 +1075,42 @@ HWTEST_F(DlpPermissionKitTest, ParseDlpCertificate002, TestSize.Level1)
         DlpPermissionKit::ParseDlpCertificate(cert, offlineCert, offlineFlag, policy));
     delete[] iv;
     delete[] aseKey;
+}
+
+/**
+ * @tc.name: GetDLPFileVisitRecord001
+ * @tc.desc: GetDLPFileVisitRecord.
+ * @tc.type: FUNC
+ * @tc.require: AR000I38MV
+ */
+HWTEST_F(DlpPermissionKitTest, GetDLPFileVisitRecord001, TestSize.Level1)
+{
+    std::vector<VisitedDLPFileInfo> infoVec;
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::GetDLPFileVisitRecord(infoVec));
+}
+
+/**
+ * @tc.name: GetDLPFileVisitRecord002
+ * @tc.desc: GetDLPFileVisitRecord.
+ * @tc.type: FUNC
+ * @tc.require: AR000I38MV
+ */
+HWTEST_F(DlpPermissionKitTest, GetDLPFileVisitRecord002, TestSize.Level1)
+{
+    std::vector<VisitedDLPFileInfo> infoVec;
+    int32_t appIndex;
+    ASSERT_EQ(DLP_OK,
+        DlpPermissionKit::InstallDlpSandbox(DLP_MANAGER_APP, FULL_CONTROL, DEFAULT_USERID, appIndex, TEST_URI));
+    ASSERT_TRUE(appIndex != 0);
+    int32_t uid = getuid();
+    setuid(g_dlpUid);
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::GetDLPFileVisitRecord(infoVec));
+    DLP_LOG_INFO(LABEL, "GetDLPFileVisitRecord size:%{public}zu", infoVec.size());
+    ASSERT_TRUE(1 == infoVec.size());
+    setuid(g_selfUid);
+    infoVec.clear();
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::GetDLPFileVisitRecord(infoVec));
+    ASSERT_TRUE(0 == infoVec.size());
+    setuid(uid);
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::UninstallDlpSandbox(DLP_MANAGER_APP, appIndex, DEFAULT_USERID));
 }
