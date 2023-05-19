@@ -28,7 +28,6 @@ ohos_unittest("dlp_fuse_test") {
     "//third_party/libfuse/lib/",
     "${dlp_root_dir}/frameworks/test/mock/",
     "${dlp_root_dir}/services/dlp_permission/sa/sa_common",
-    "//base/security/dlp_credential_service/interfaces/innerkits/include",
   ]
 
   sources = [
@@ -64,6 +63,7 @@ ohos_unittest("dlp_fuse_test") {
     "access_token:libaccesstoken_sdk",
     "access_token:libtoken_setproc",
     "c_utils:utils",
+    "dlp_credential_service:dlp_credential_sdk",
     "hitrace_native:hitrace_meter",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",
