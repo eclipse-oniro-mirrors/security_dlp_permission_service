@@ -59,14 +59,14 @@ public:
     void RetentionInfoToJson(Json& json, const RetentionInfo& info) const;
     int32_t ClearUnreservedSandbox();
     int32_t ClearDateByUninstall();
-    bool NeedRemove(const RetentionInfo& info, int32_t userId, std::map<std::string, bool> getBundleInfoRes);
+    bool NeedRemove(const RetentionInfo& info, int32_t userId, std::map<std::string, bool> bundleInfoMap);
     Json ToJson() const override;
     void FromJson(const Json& jsonObject) override;
     std::string ToString() const override;
 
 private:
-    bool InsertSandboxInfo(std::set<std::string> docUriSet, uint32_t tokenId, std::string bundleName, int32_t appIndex,
-        int32_t userId);
+    bool InsertSandboxInfo(const std::set<std::string>& docUriSet, uint32_t tokenId, const std::string& bundleName,
+        int32_t appIndex, int32_t userId);
     sptr<AppExecFwk::IBundleMgr> GetBundleMgr();
     bool GetUserIdByUid(int32_t& userId);
     bool GetUserIdByActiveAccount(int32_t& userId);

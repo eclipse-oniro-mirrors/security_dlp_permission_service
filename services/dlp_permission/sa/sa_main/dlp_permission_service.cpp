@@ -224,9 +224,10 @@ int32_t DlpPermissionService::InstallDlpSandbox(const std::string& bundleName, A
     }
     if (isNeedInstall) {
         AppExecFwk::BundleMgrClient bundleMgrClient;
-        int32_t res = bundleMgrClient.InstallSandboxApp(bundleName, permType, userId, appIndex);
-        if (res != DLP_OK) {
-            DLP_LOG_ERROR(LABEL, "install sandbox %{public}s fail, error=%{public}d", bundleName.c_str(), res);
+        int32_t bundleClientRes = bundleMgrClient.InstallSandboxApp(bundleName, permType, userId, appIndex);
+        if (bundleClientRes != DLP_OK) {
+            DLP_LOG_ERROR(LABEL, "install sandbox %{public}s fail, error=%{public}d", bundleName.c_str(),
+                bundleClientRes);
             return DLP_SERVICE_ERROR_INSTALL_SANDBOX_FAIL;
         }
     }

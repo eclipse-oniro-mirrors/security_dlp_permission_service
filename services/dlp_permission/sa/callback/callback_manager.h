@@ -26,8 +26,8 @@ namespace OHOS {
 namespace Security {
 namespace DlpPermission {
 struct CallbackRecord {
-    CallbackRecord() : callbackObject_(nullptr) {}
-    CallbackRecord(sptr<IRemoteObject> callback) : callbackObject_(callback) {}
+    CallbackRecord() : callbackObject_(nullptr), pid(0) {}
+    explicit CallbackRecord(sptr<IRemoteObject> callback) : callbackObject_(callback) {}
 
     sptr<IRemoteObject> callbackObject_;
     uint32_t pid;

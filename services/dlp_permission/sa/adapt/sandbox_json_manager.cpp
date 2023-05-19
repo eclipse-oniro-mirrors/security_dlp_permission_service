@@ -376,8 +376,8 @@ sptr<AppExecFwk::IBundleMgr> SandboxJsonManager::GetBundleMgr()
     return bundleMgr_;
 }
 
-bool SandboxJsonManager::InsertSandboxInfo(std::set<std::string> docUriSet, uint32_t tokenId, std::string bundleName,
-    int32_t appIndex, int32_t userId)
+bool SandboxJsonManager::InsertSandboxInfo(const std::set<std::string>& docUriSet, uint32_t tokenId,
+    const std::string& bundleName, int32_t appIndex, int32_t userId)
 {
     std::lock_guard<std::mutex> lock(mutex_);
     for (auto iter = infoVec_.begin(); iter != infoVec_.end(); ++iter) {
