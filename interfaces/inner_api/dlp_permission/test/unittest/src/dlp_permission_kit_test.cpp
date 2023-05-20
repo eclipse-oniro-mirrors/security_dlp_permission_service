@@ -21,7 +21,11 @@
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
 #include "dlp_policy.h"
+#include "dlp_sandbox_callback_info.h"
 #include "dlp_sandbox_change_callback_customize.h"
+#define private public
+#include "dlp_sandbox_change_callback.h"
+#undef private
 #include "hex_string.h"
 #include "securec.h"
 #include "token_setproc.h"
@@ -59,7 +63,6 @@ static AccessTokenID g_dlpManagerTokenId = 0;
 static int32_t g_selfUid = 0;
 static int32_t g_dlpUid = 20010031;
 constexpr const char* DLP_MANAGER_APP = "com.ohos.dlpmanager";
-const std::string NOTE_APP_NAME = "com.example.ohnotes";
 const std::string TEST_URI = "datashare:///media/file/8";
 const std::string TEST_UNEXIST_URI = "datashare:///media/file/1";
 }  // namespace
@@ -280,7 +283,7 @@ static int32_t TestGenerateDlpCertWithInvalidParam(uint32_t ownerAccountLen, uin
  * @tc.name: SetRetentionState01
  * @tc.desc: SetRetentionState abnormal input test.
  * @tc.type: FUNC
- * @tc.require:AR000GVIG0
+ * @tc.require:SR000I38N7
  */
 HWTEST_F(DlpPermissionKitTest, SetRetentionState01, TestSize.Level1)
 {
@@ -292,35 +295,35 @@ HWTEST_F(DlpPermissionKitTest, SetRetentionState01, TestSize.Level1)
     DLP_LOG_INFO(LABEL, "SetRetentionState01  tokenId from %{public}lu ", GetSelfTokenID());
 
     ASSERT_EQ(DLP_OK,
-        DlpPermissionKit::InstallDlpSandbox(NOTE_APP_NAME, FULL_CONTROL, DEFAULT_USERID, appIndex, TEST_URI));
+        DlpPermissionKit::InstallDlpSandbox(DLP_MANAGER_APP, FULL_CONTROL, DEFAULT_USERID, appIndex, TEST_URI));
     ASSERT_TRUE(appIndex != 0);
-    AccessTokenID tokenId = AccessTokenKit::GetHapTokenID(100, NOTE_APP_NAME, appIndex);
+    AccessTokenID tokenId = AccessTokenKit::GetHapTokenID(100, DLP_MANAGER_APP, appIndex);
     std::vector<RetentionSandBoxInfo> retentionSandBoxInfoVec;
 
-    ASSERT_EQ(DLP_OK, DlpPermissionKit::GetRetentionSandboxList(NOTE_APP_NAME, retentionSandBoxInfoVec));
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::GetRetentionSandboxList(DLP_MANAGER_APP, retentionSandBoxInfoVec));
     ASSERT_TRUE(0 == retentionSandBoxInfoVec.size());
     DLP_LOG_INFO(LABEL, "SetRetentionState01  GetHapTokenID tokenId from %{public}lu ", GetSelfTokenID());
     ASSERT_TRUE(TestSetSelfTokenId(tokenId));
     retentionSandBoxInfoVec.clear();
-    ASSERT_EQ(DLP_OK, DlpPermissionKit::GetRetentionSandboxList(NOTE_APP_NAME, retentionSandBoxInfoVec));
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::GetRetentionSandboxList(DLP_MANAGER_APP, retentionSandBoxInfoVec));
     ASSERT_TRUE(0 == retentionSandBoxInfoVec.size());
 
     ASSERT_EQ(DLP_OK, DlpPermissionKit::SetRetentionState(docUriVec));
     ASSERT_EQ(DLP_OK, setuid((g_dlpUid)));
     retentionSandBoxInfoVec.clear();
-    ASSERT_EQ(DLP_OK, DlpPermissionKit::GetRetentionSandboxList(NOTE_APP_NAME, retentionSandBoxInfoVec));
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::GetRetentionSandboxList(DLP_MANAGER_APP, retentionSandBoxInfoVec));
     ASSERT_TRUE(1 == retentionSandBoxInfoVec.size());
     ASSERT_TRUE(TestSetSelfTokenId(g_dlpManagerTokenId));
 
     retentionSandBoxInfoVec.clear();
-    ASSERT_EQ(DLP_OK, DlpPermissionKit::GetRetentionSandboxList(NOTE_APP_NAME, retentionSandBoxInfoVec));
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::GetRetentionSandboxList(DLP_MANAGER_APP, retentionSandBoxInfoVec));
     ASSERT_TRUE(1 == retentionSandBoxInfoVec.size());
 
-    ASSERT_EQ(DLP_OK, DlpPermissionKit::UninstallDlpSandbox(NOTE_APP_NAME, appIndex, DEFAULT_USERID));
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::UninstallDlpSandbox(DLP_MANAGER_APP, appIndex, DEFAULT_USERID));
     DLP_LOG_INFO(LABEL, "SetRetentionState01 restart InstallDlpSandbox");
 
     ASSERT_EQ(DLP_OK,
-        DlpPermissionKit::InstallDlpSandbox(NOTE_APP_NAME, FULL_CONTROL, DEFAULT_USERID, appIndex, TEST_URI));
+        DlpPermissionKit::InstallDlpSandbox(DLP_MANAGER_APP, FULL_CONTROL, DEFAULT_USERID, appIndex, TEST_URI));
     docUriVec.clear();
     ASSERT_TRUE(TestSetSelfTokenId(tokenId));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, DlpPermissionKit::SetNonRetentionState(docUriVec));
@@ -332,18 +335,18 @@ HWTEST_F(DlpPermissionKitTest, SetRetentionState01, TestSize.Level1)
     docUriVec.push_back(TEST_URI);
     ASSERT_EQ(DLP_OK, DlpPermissionKit::SetNonRetentionState(docUriVec));
     retentionSandBoxInfoVec.clear();
-    ASSERT_EQ(DLP_OK, DlpPermissionKit::GetRetentionSandboxList(NOTE_APP_NAME, retentionSandBoxInfoVec));
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::GetRetentionSandboxList(DLP_MANAGER_APP, retentionSandBoxInfoVec));
     ASSERT_TRUE(0 == retentionSandBoxInfoVec.size());
     ASSERT_TRUE(TestSetSelfTokenId(g_dlpManagerTokenId));
 
-    ASSERT_EQ(DLP_OK, DlpPermissionKit::UninstallDlpSandbox(NOTE_APP_NAME, appIndex, DEFAULT_USERID));
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::UninstallDlpSandbox(DLP_MANAGER_APP, appIndex, DEFAULT_USERID));
 }
 
 /* *
  * @tc.name: SetRetentionState02
  * @tc.desc: SetRetentionState abnormal input test.
  * @tc.type: FUNC
- * @tc.require:AR000GVIG0
+ * @tc.require:SR000I38N7
  */
 HWTEST_F(DlpPermissionKitTest, SetRetentionState02, TestSize.Level1)
 {
@@ -357,7 +360,7 @@ HWTEST_F(DlpPermissionKitTest, SetRetentionState02, TestSize.Level1)
  * @tc.name: SetRetentionState03
  * @tc.desc: SetRetentionState abnormal input test.
  * @tc.type: FUNC
- * @tc.require:AR000GVIG0
+ * @tc.require:SR000I38N7
  */
 HWTEST_F(DlpPermissionKitTest, SetRetentionState03, TestSize.Level1)
 {
@@ -860,7 +863,7 @@ public:
  * @tc.name: RegisterDlpSandboxChangeCallback001
  * @tc.desc: RegisterDlpSandboxChangeCallback.
  * @tc.type: FUNC
- * @tc.require: SR000I38N7
+ * @tc.require: DTS2023040302317
  */
 HWTEST_F(DlpPermissionKitTest, RegisterDlpSandboxChangeCallback001, TestSize.Level1)
 {
@@ -870,6 +873,10 @@ HWTEST_F(DlpPermissionKitTest, RegisterDlpSandboxChangeCallback001, TestSize.Lev
     res = DlpPermissionKit::RegisterDlpSandboxChangeCallback(callbackPtr);
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, res);
     bool result;
+    int appIndex;
+    ASSERT_EQ(DLP_OK,
+        DlpPermissionKit::InstallDlpSandbox(DLP_MANAGER_APP, FULL_CONTROL, DEFAULT_USERID, appIndex, TEST_URI));
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::UninstallDlpSandbox(DLP_MANAGER_APP, appIndex, DEFAULT_USERID));
     res = DlpPermissionKit::UnregisterDlpSandboxChangeCallback(result);
     ASSERT_EQ(DLP_OK, res);
 }
@@ -878,7 +885,7 @@ HWTEST_F(DlpPermissionKitTest, RegisterDlpSandboxChangeCallback001, TestSize.Lev
  * @tc.name: RegisterDlpSandboxChangeCallback002
  * @tc.desc: RegisterDlpSandboxChangeCallback.
  * @tc.type: FUNC
- * @tc.require: SR000I38N7
+ * @tc.require: DTS2023040302317
  */
 HWTEST_F(DlpPermissionKitTest, RegisterDlpSandboxChangeCallback002, TestSize.Level1)
 {
@@ -887,4 +894,55 @@ HWTEST_F(DlpPermissionKitTest, RegisterDlpSandboxChangeCallback002, TestSize.Lev
     bool result;
     res = DlpPermissionKit::UnregisterDlpSandboxChangeCallback(result);
     ASSERT_EQ(DLP_CALLBACK_PARAM_INVALID, res);
+}
+
+/**
+ * @tc.name: RegisterDlpSandboxChangeCallback003
+ * @tc.desc: RegisterDlpSandboxChangeCallback.
+ * @tc.type: FUNC
+ * @tc.require: DTS2023040302317
+ */
+HWTEST_F(DlpPermissionKitTest, RegisterDlpSandboxChangeCallback003, TestSize.Level1)
+{
+    bool result;
+    int32_t res = DlpPermissionKit::UnregisterDlpSandboxChangeCallback(result);
+    ASSERT_EQ(DLP_CALLBACK_PARAM_INVALID, res);
+}
+
+/**
+ * @tc.name: RegisterDlpSandboxChangeCallback004
+ * @tc.desc: RegisterDlpSandboxChangeCallback.
+ * @tc.type: FUNC
+ * @tc.require: DTS2023040302317
+ */
+HWTEST_F(DlpPermissionKitTest, RegisterDlpSandboxChangeCallback004, TestSize.Level1)
+{
+    const std::shared_ptr<DlpSandboxChangeCallbackCustomize> callbackPtr = std::make_shared<CbCustomizeTest>();
+    DlpPermissionKit::RegisterDlpSandboxChangeCallback(callbackPtr);
+    int32_t res = DlpPermissionKit::RegisterDlpSandboxChangeCallback(callbackPtr);
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, res);
+    for (int32_t i = 0; i < 1022; i++) {
+        const std::shared_ptr<DlpSandboxChangeCallbackCustomize> callbackPtrTemp = std::make_shared<CbCustomizeTest>();
+        DlpPermissionKit::RegisterDlpSandboxChangeCallback(callbackPtrTemp);
+    }
+    const std::shared_ptr<DlpSandboxChangeCallbackCustomize> callbackPtrTemp = std::make_shared<CbCustomizeTest>();
+    res = DlpPermissionKit::RegisterDlpSandboxChangeCallback(callbackPtrTemp);
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, res);
+}
+
+/**
+ * @tc.name: DlpSandboxChangeCallback001
+ * @tc.desc: DlpSandboxChangeCallback function test.
+ * @tc.type: FUNC
+ * @tc.require: DTS2023040302317
+ */
+HWTEST_F(DlpPermissionKitTest, DlpSandboxChangeCallback001, TestSize.Level1)
+{
+    std::shared_ptr<CbCustomizeTest> callbackPtr = nullptr;
+    std::shared_ptr<DlpSandboxChangeCallback> callback = std::make_shared<DlpSandboxChangeCallback>(
+        callbackPtr);
+    ASSERT_NE(callback, nullptr);
+    DlpSandboxCallbackInfo result;
+    callback->DlpSandboxStateChangeCallback(result);
+    ASSERT_EQ(callback->customizedCallback_, nullptr);
 }
