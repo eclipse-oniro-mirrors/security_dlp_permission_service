@@ -292,7 +292,7 @@ HWTEST_F(DlpFileManagerTest, ParseDlpFileFormat003, TestSize.Level1)
     DlpCMockCondition condition;
     condition.mockSequence = { false, false, false, false, false, false, false, true };
     SetMockConditions("memcpy_s", condition);
-    EXPECT_EQ(DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL,
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID,
         DlpFileManager::GetInstance().ParseDlpFileFormat(filePtr, ""));
     CleanMockConditions();
 

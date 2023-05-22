@@ -86,7 +86,7 @@ int32_t DlpPermissionKit::GenerateDlpCertificate(const PermissionPolicy& policy,
 }
 
 int32_t DlpPermissionKit::ParseDlpCertificate(const std::vector<uint8_t>& onlineCert, std::vector<uint8_t>& offlineCert,
-    uint32_t offlineFlag, PermissionPolicy& policy)
+    uint32_t& offlineFlag, PermissionPolicy& policy)
 {
     std::shared_ptr<ClientParseDlpCertificateCallback> callback = std::make_shared<ClientParseDlpCertificateCallback>();
 
@@ -96,8 +96,10 @@ int32_t DlpPermissionKit::ParseDlpCertificate(const std::vector<uint8_t>& online
     if (offlineCert.size() > 0) {
         authFlag = DlpAuthType::OFFLINE_AUTH_ONLY;
         cert = offlineCert;
+        DLP_LOG_DEBUG(LABEL, "try offline auth");
     } else {
         cert = onlineCert;
+        DLP_LOG_DEBUG(LABEL, "try online auth");
     }
 
 AUTH_RETRY:
@@ -106,11 +108,10 @@ AUTH_RETRY:
     if (res != DLP_OK) {
         if (authFlag == DlpAuthType::OFFLINE_AUTH_ONLY) {
             cert = onlineCert;
-            authFlag = DlpAuthType::ONLINE_AUTH_ONLY;
+            authFlag = DlpAuthType::ONLINE_AUTH_FOR_OFFLINE_CERT;
             DLP_LOG_INFO(LABEL, "return %{public}d, try online auth", res);
             goto AUTH_RETRY;
         }
-        DLP_LOG_ERROR(LABEL, "begin parse cert fail, error: %{public}d", res);
         return res;
     }
 
@@ -121,8 +122,8 @@ AUTH_RETRY:
             callback->parseCv_.wait_for(lck, std::chrono::seconds(TIME_WAIT_TIME_OUT));
         }
     }
+
     if (!callback->isCallBack_) {
-        DLP_LOG_ERROR(LABEL, "service did not call back! timeout!");
         return DLP_SERVICE_ERROR_CREDENTIAL_TASK_TIMEOUT;
     }
 
@@ -130,11 +131,13 @@ AUTH_RETRY:
         policy.CopyPermissionPolicy(callback->policy_);
         if (authFlag == DlpAuthType::ONLINE_AUTH_FOR_OFFLINE_CERT) {
             offlineCert = callback->offlineCert_;
+            offlineFlag = DLP_CERT_UPDATED;
         }
     } else {
         if (authFlag == DlpAuthType::OFFLINE_AUTH_ONLY) {
             cert = onlineCert;
-            authFlag = DlpAuthType::ONLINE_AUTH_ONLY;
+            authFlag = DlpAuthType::ONLINE_AUTH_FOR_OFFLINE_CERT;
+            callback->isCallBack_ = false;
             DLP_LOG_INFO(LABEL, "callback return %{public}d, try online auth", callback->result_);
             goto AUTH_RETRY;
         }

@@ -25,6 +25,8 @@ namespace DlpPermission {
 static const uint32_t DLP_MAX_CERT_SIZE = 1024 * 1024; // 1M
 static const uint32_t DLP_MAX_EXTRA_INFO_LEN = 100 * 1024; // 100K
 
+#define DLP_CERT_UPDATED 0xff56
+
 enum DlpAccountType : uint32_t {
     INVALID_ACCOUNT = 0,
     CLOUD_ACCOUNT = 1,
@@ -35,6 +37,7 @@ enum DlpAccountType : uint32_t {
 enum AuthPermType : uint32_t {
     READ_ONLY = 1,
     FULL_CONTROL = 2,
+    EDIT_ONLY = 3,
     DEFAULT_PERM,
 };
 

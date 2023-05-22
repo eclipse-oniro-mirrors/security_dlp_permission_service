@@ -30,6 +30,7 @@ namespace OHOS {
 namespace Security {
 namespace DlpPermission {
 namespace {
+const std::string LOCAL_ENCRYPTED_CERT = "encryptedPolicy";
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpCredential"};
 static const size_t MAX_REQUEST_NUM = 100;
 static std::unordered_map<uint64_t, sptr<IDlpPermissionCallback>> g_requestMap;
@@ -136,6 +137,18 @@ static void DlpPackPolicyCallback(uint64_t requestId, int errorCode, DLP_EncPoli
     callback->OnGenerateDlpCertificate(errorCode, cert);
 }
 
+static std::vector<uint8_t> GetOfflineCert(const nlohmann::json& jsonObj)
+{
+    nlohmann::json encPolicyJson;
+    if (jsonObj.find(LOCAL_ENCRYPTED_CERT) != jsonObj.end() && jsonObj.at(LOCAL_ENCRYPTED_CERT).is_object()) {
+        jsonObj.at(LOCAL_ENCRYPTED_CERT).get_to(encPolicyJson);
+    }
+
+    std::string offPolicy = encPolicyJson.dump();
+    std::vector<uint8_t> cert(offPolicy.begin(), offPolicy.end());
+    return cert;
+}
+
 static void DlpRestorePolicyCallback(uint64_t requestId, int errorCode, DLP_RestorePolicyData* outParams)
 {
     DLP_LOG_INFO(LABEL, "Called, requestId: %{public}llu", static_cast<unsigned long long>(requestId));
@@ -181,14 +194,14 @@ static void DlpRestorePolicyCallback(uint64_t requestId, int errorCode, DLP_Rest
     }
     delete[] policyStr;
     policyStr = nullptr;
+
     int32_t res = DlpPermissionSerializer::GetInstance().DeserializeDlpPermission(jsonObj, policyInfo);
     if (res != DLP_OK) {
         callback->OnParseDlpCertificate(res, policyInfo, {});
         return;
     }
-    std::string encData = "aaaaaaaaaaaaaaaa";
-    std::vector<uint8_t> cert(encData.begin(), encData.end());
-    callback->OnParseDlpCertificate(errorCode, policyInfo, cert);
+
+    callback->OnParseDlpCertificate(errorCode, policyInfo, GetOfflineCert(jsonObj));
 }
 
 DlpCredential& DlpCredential::GetInstance()
@@ -271,6 +284,20 @@ static void FreeDLPEncPolicyData(DLP_EncPolicyData& encPolicy)
     }
 }
 
+static CloudEncOption getCertOption(uint32_t flag)
+{
+    enum DlpAuthType opFlag = static_cast<enum DlpAuthType>(flag);
+
+    switch (opFlag) {
+        case DlpAuthType::ONLINE_AUTH_FOR_OFFLINE_CERT:
+            return CloudEncOption::RECIEVER_DECRYPT_MUST_USE_CLOUD_AND_RETURN_ENCRYPTION_VALUE;
+        case DlpAuthType::OFFLINE_AUTH_ONLY:
+            return CloudEncOption::ALLOW_RECIEVER_DECRYPT_WITHOUT_USE_CLOUD;
+        default:
+            return CloudEncOption::RECIEVER_DECRYPT_MUST_USE_CLOUD;
+    }
+}
+
 int32_t DlpCredential::ParseDlpCertificate(const std::vector<uint8_t>& cert, uint32_t flag,
     sptr<IDlpPermissionCallback>& callback)
 {
@@ -282,14 +309,15 @@ int32_t DlpCredential::ParseDlpCertificate(const std::vector<uint8_t>& cert, uin
     }
 
     EncAndDecOptions encAndDecOptions = {
-        .opt = RECIEVER_DECRYPT_MUST_USE_CLOUD
+        .opt = getCertOption(flag)
     };
     DLP_EncPolicyData encPolicy = {
         .featureName = strdup("dlp_permission_service"),
         .options = encAndDecOptions,
-        //flag
     };
-    int32_t result = DlpPermissionSerializer::GetInstance().DeserializeEncPolicyData(jsonObj, encPolicy);
+
+    bool opFlag = (encAndDecOptions.opt == CloudEncOption::ALLOW_RECIEVER_DECRYPT_WITHOUT_USE_CLOUD);
+    int32_t result = DlpPermissionSerializer::GetInstance().DeserializeEncPolicyData(jsonObj, encPolicy, opFlag);
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Serialize fail");
         FreeDLPEncPolicyData(encPolicy);

@@ -458,9 +458,11 @@ HWTEST_F(DlpPermissionKitTest, ParseDlpCertificate001, TestSize.Level1)
     std::vector<uint8_t> cert;
     std::vector<uint8_t> offlineCert;
     PermissionPolicy policy;
-    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, DlpPermissionKit::ParseDlpCertificate(cert, offlineCert, 0, policy));
+    uint32_t flag = 0;
+
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, DlpPermissionKit::ParseDlpCertificate(cert, offlineCert, flag, policy));
     cert = {1, 2, 3};
-    ASSERT_NE(DLP_OK, DlpPermissionKit::ParseDlpCertificate(cert, offlineCert, 0, policy));
+    ASSERT_NE(DLP_OK, DlpPermissionKit::ParseDlpCertificate(cert, offlineCert, flag, policy));
 }
 
 /**

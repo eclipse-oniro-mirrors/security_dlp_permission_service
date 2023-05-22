@@ -148,15 +148,6 @@ int32_t DlpPermissionService::GenerateDlpCertificate(
         return res;
     }
 
-    std::string ownerAccountUid;
-    res = GetLocalAccountUid(ownerAccountUid);
-    if (res != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Get account uid failed, errcode=%{public}d", res);
-        return DLP_SERVICE_ERROR_GET_ACCOUNT_FAIL;
-    }
-
-    jsonObj["ownerAccountUid"] = ownerAccountUid;
-
     return DlpCredential::GetInstance().GenerateDlpCertificate(
         jsonObj.dump(), policyParcel->policyParams_.ownerAccountType_, callback);
 }

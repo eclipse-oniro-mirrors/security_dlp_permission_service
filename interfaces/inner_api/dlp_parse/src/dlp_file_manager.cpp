@@ -158,7 +158,6 @@ int32_t DlpFileManager::ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr, co
 {
     int32_t result = filePtr->ParseDlpHeader();
     if (result != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Parse file header fail, not dlp file");
         return result;
     }
 
@@ -168,15 +167,13 @@ int32_t DlpFileManager::ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr, co
 
     std::vector<uint8_t> offlineCertBuf;
     struct DlpBlob offlineCert = { 0 };
-    bool flag =  filePtr->GetOfflineAccess();
-    if (flag) {
+    uint32_t flag =  filePtr->GetOfflineAccess();
+    if (flag != 0) {
         filePtr->GetOfflineCert(offlineCert);
         offlineCertBuf = std::vector<uint8_t>(offlineCert.data, offlineCert.data + offlineCert.size);
     }
 
     PermissionPolicy policy;
-
-    DLP_LOG_INFO(LABEL, "Parse cert");
     StartTrace(HITRACE_TAG_ACCESS_CONTROL, "DlpParseCertificate");
     result = DlpPermissionKit::ParseDlpCertificate(certBuf, offlineCertBuf, flag, policy);
     FinishTrace(HITRACE_TAG_ACCESS_CONTROL);
@@ -187,7 +184,6 @@ int32_t DlpFileManager::ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr, co
 
     result = filePtr->SetPolicy(policy);
     if (result != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Parse file header fail, set policy error, errno=%{public}d", result);
         return result;
     }
 
@@ -205,7 +201,8 @@ int32_t DlpFileManager::ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr, co
     }
 
     // only add offline cert when first time open the file.
-    if (flag && (offlineCert.data == nullptr)) {
+    if (flag == DLP_CERT_UPDATED) {
+        DLP_LOG_DEBUG(LABEL, "update offline cert");
         result = filePtr->AddOfflineCert(offlineCertBuf, workDir);
         if (result != DLP_OK) {
             DLP_LOG_ERROR(LABEL, "Add offline cert fail, errno=%{public}d", result);

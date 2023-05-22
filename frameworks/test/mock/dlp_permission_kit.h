@@ -27,7 +27,7 @@ class DlpPermissionKit {
 public:
     static int32_t GenerateDlpCertificate(const PermissionPolicy& policy, std::vector<uint8_t>& cert);
     static int32_t ParseDlpCertificate(const std::vector<uint8_t>& onlineCert,  std::vector<uint8_t>& offlineCert,
-        uint32_t offlineFlag, PermissionPolicy& policy);
+        uint32_t& offlineFlag, PermissionPolicy& policy);
 };
 }  // namespace DlpPermission
 }  // namespace Security

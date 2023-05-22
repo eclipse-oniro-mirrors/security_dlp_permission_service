@@ -32,7 +32,8 @@ static void FuzzTest(const uint8_t* data, size_t size)
     std::vector<uint8_t> cert(data, data + size);
     std::vector<uint8_t> offlineCert;
     PermissionPolicy policy;
-    DlpPermissionKit::ParseDlpCertificate(cert, offlineCert, 0, policy);
+    uint32_t flag = 0;
+    DlpPermissionKit::ParseDlpCertificate(cert, offlineCert, flag, policy);
 }
 
 bool ParseCertFuzzTest(const uint8_t* data, size_t size)

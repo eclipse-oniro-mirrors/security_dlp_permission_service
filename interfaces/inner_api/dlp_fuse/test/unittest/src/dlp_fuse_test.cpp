@@ -276,7 +276,6 @@ HWTEST_F(DlpFuseTest, OpenDlpFile001, TestSize.Level1)
     for (int32_t i = 0; i < static_cast<int32_t>(authUsers.size()); i++) {
         ASSERT_EQ(authUsers[i].authAccount, prop.authUsers[i].authAccount);
         ASSERT_EQ(authUsers[i].authPerm, prop.authUsers[i].authPerm);
-        ASSERT_EQ(authUsers[i].permExpiryTime, prop.authUsers[i].permExpiryTime);
         ASSERT_EQ(authUsers[i].authAccountType, prop.authUsers[i].authAccountType);
     }
 

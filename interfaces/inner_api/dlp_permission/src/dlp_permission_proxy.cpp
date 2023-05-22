@@ -105,12 +105,14 @@ int32_t DlpPermissionProxy::ParseDlpCertificate(
         DLP_LOG_ERROR(LABEL, "Remote service is null");
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
+
     int32_t requestResult = remote->SendRequest(
         static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::PARSE_DLP_CERTIFICATE), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
         return requestResult;
     }
+
     int32_t res;
     if (!reply.ReadInt32(res)) {
         DLP_LOG_ERROR(LABEL, "Read int32 fail");
