@@ -324,7 +324,7 @@ int32_t DlpFile::ParseDlpHeader()
     contactAccount_ = std::string(tmpBuf, tmpBuf + head_.contactAccountSize);
     delete[] tmpBuf;
 
-    if(head_.offlineCertSize != 0) {
+    if (head_.offlineCertSize != 0) {
         tmpBuf = new (std::nothrow)uint8_t[head_.offlineCertSize];
         if (tmpBuf == nullptr) {
             DLP_LOG_WARN(LABEL, "alloc tmpBuf failed.");

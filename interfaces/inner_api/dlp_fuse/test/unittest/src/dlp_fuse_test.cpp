@@ -869,7 +869,7 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile008, TestSize.Level1)
     int off = offsetof(struct DlpHeader, txtSize);
     ASSERT_EQ(read(g_dlpFileFd, readBuf, off + sizeof(uint32_t)), off + sizeof(uint32_t));
     uint32_t* hdr = reinterpret_cast<uint32_t*>(readBuf);
-    ASSERT_EQ(static_cast<int>(hdr[off/sizeof(uint32_t)]), 4);
+    ASSERT_EQ(static_cast<int>(hdr[off / sizeof(uint32_t)]), 4);
 }
 
 /**

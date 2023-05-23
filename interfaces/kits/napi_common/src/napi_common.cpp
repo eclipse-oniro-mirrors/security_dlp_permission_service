@@ -911,7 +911,7 @@ bool GetDlpProperty(napi_env env, napi_value jsObject, DlpProperty& property)
         DLP_LOG_ERROR(LABEL, "js get contact account fail");
         return false;
     }
-    if(!GetBoolValueByKey(env, jsObject, "offlineAccess", property.offlineAccess)) {
+    if (!GetBoolValueByKey(env, jsObject, "offlineAccess", property.offlineAccess)) {
         DLP_LOG_ERROR(LABEL, "js get offline access flag fail");
         return false;
     }

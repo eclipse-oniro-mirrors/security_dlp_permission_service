@@ -31,7 +31,7 @@
 #include "if_system_ability_manager.h"
 #include "ipc_skeleton.h"
 #include "iservice_registry.h"
-#if DLP_DEBUG_ENABLE
+#if defined(DLP_DEBUG_ENABLE) && DLP_DEBUG_ENABLE == 1
 #include "parameter.h"
 #endif
 #include "system_ability_definition.h"
@@ -364,7 +364,7 @@ int32_t DlpPermissionService::UnRegisterDlpSandboxChangeCallback(bool &result)
 int32_t DlpPermissionService::GetDlpGatheringPolicy(bool& isGathering)
 {
     isGathering = isGathering_;
-#if DLP_DEBUG_ENABLE
+#if defined(DLP_DEBUG_ENABLE) && DLP_DEBUG_ENABLE == 1
     const char* PARAM_KEY = "dlp.permission.gathering.policy";
     const int32_t VALUE_MAX_LEN = 32;
     char value[VALUE_MAX_LEN] = {0};

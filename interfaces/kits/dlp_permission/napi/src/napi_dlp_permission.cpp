@@ -136,7 +136,7 @@ static int32_t PickDstFile(GenerateDlpFileAsyncContext* asyncContext)
     std::condition_variable parseCv;
     std::string uri;
     AbilityRuntime::RuntimeTask task = [&isCallBack, &parseMtx, &parseCv, &uri](int32_t count,
-        const AAFwk::Want& want, bool flag){
+        const AAFwk::Want& want, bool flag) {
         std::vector<std::string> uriList = want.GetStringArrayParam("pick_path_return");
         if (uriList.size() > 0) {
             uri = uriList[0];
