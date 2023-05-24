@@ -458,19 +458,15 @@ HWTEST_F(DlpFileManagerTest, GenerateDlpFile001, TestSize.Level1)
     property.contractAccount = "owner";
     property.ownerAccountType = DOMAIN_ACCOUNT;
 
-    int32_t result = DlpFileManager::GetInstance().GenerateDlpFilePrepare(property, filePtr);
-    result += DlpFileManager::GetInstance().GenerateDlpFileFinish(-1, 1000, filePtr);
-    EXPECT_EQ(result, DLP_PARSE_ERROR_FD_ERROR);
+    EXPECT_EQ(DLP_PARSE_ERROR_FD_ERROR,
+        DlpFileManager::GetInstance().GenerateDlpFile(-1, 1000, property, filePtr));
 
-    result = DlpFileManager::GetInstance().GenerateDlpFilePrepare(property, filePtr);
-    result += DlpFileManager::GetInstance().GenerateDlpFileFinish(1000, -1, filePtr);
-    EXPECT_EQ(result, DLP_PARSE_ERROR_FD_ERROR);
+    EXPECT_EQ(DLP_PARSE_ERROR_FD_ERROR,
+        DlpFileManager::GetInstance().GenerateDlpFile(1000, -1, property, filePtr));
 
-    filePtr = std::make_shared<DlpFile>(1000);
     DlpFileManager::GetInstance().AddDlpFileNode(filePtr);
-    result = DlpFileManager::GetInstance().GenerateDlpFileFinish(1000, 1000, filePtr);
-    EXPECT_EQ(result, DLP_PARSE_ERROR_FILE_ALREADY_OPENED);
-
+    EXPECT_EQ(DLP_PARSE_ERROR_FILE_ALREADY_OPENED,
+        DlpFileManager::GetInstance().GenerateDlpFile(1000, 1000, property, filePtr));
     DlpFileManager::GetInstance().RemoveDlpFileNode(filePtr);
 }
 
@@ -489,8 +485,8 @@ HWTEST_F(DlpFileManagerTest, GenerateDlpFile002, TestSize.Level1)
     property.contractAccount = "owner";
     property.ownerAccountType = DOMAIN_ACCOUNT;
 
-    int32_t result = DlpFileManager::GetInstance().GenerateDlpFilePrepare(property, filePtr);
-    EXPECT_EQ(result, DLP_PARSE_ERROR_VALUE_INVALID);
+    EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID,
+        DlpFileManager::GetInstance().GenerateDlpFile(1000, 1000, property, filePtr));
 }
 
 /**
@@ -508,9 +504,8 @@ HWTEST_F(DlpFileManagerTest, GenerateDlpFile003, TestSize.Level1)
     property.contractAccount = "owner";
     property.ownerAccountType = DOMAIN_ACCOUNT;
 
-    int32_t result = DlpFileManager::GetInstance().GenerateDlpFilePrepare(property, filePtr);
-    result += DlpFileManager::GetInstance().GenerateDlpFileFinish(1000, 1000, filePtr);
-    EXPECT_EQ(result, DLP_PARSE_ERROR_FILE_OPERATE_FAIL);
+    EXPECT_EQ(DLP_PARSE_ERROR_FILE_OPERATE_FAIL,
+        DlpFileManager::GetInstance().GenerateDlpFile(1000, 1000, property, filePtr));
 }
 
 /**

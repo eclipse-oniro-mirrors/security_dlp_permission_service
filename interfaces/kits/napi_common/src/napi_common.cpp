@@ -13,13 +13,10 @@
  * limitations under the License.
  */
 
-#include "ability.h"
-#include "ability_manager_client.h"
 #include "napi_common.h"
 #include <unistd.h>
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
-#include "napi_base_context.h"
 #include "napi_error_msg.h"
 #include "securec.h"
 
@@ -364,94 +361,36 @@ static bool NapiCheckArgc(const napi_env env, int32_t argc, int32_t reqSize)
     return true;
 }
 
-static napi_value WrapVoidToJS(napi_env env)
-{
-    napi_value result = nullptr;
-    NAPI_CALL(env, napi_get_null(env, &result));
-    return result;
-}
-
-static napi_value GetAbilityContext(const napi_env &env, const napi_value &value,
-    std::shared_ptr<AbilityRuntime::AbilityContext> &abilityContext)
-{
-    bool stageMode = false;
-    napi_status status = OHOS::AbilityRuntime::IsStageContext(env, value, stageMode);
-    if (status != napi_ok || !stageMode) {
-        DLP_LOG_ERROR(LABEL, "it is not a stage mode");
-        return nullptr;
-    } else {
-        auto context = AbilityRuntime::GetStageModeContext(env, value);
-        if (context == nullptr) {
-            DLP_LOG_ERROR(LABEL, "get context failed");
-            return nullptr;
-        }
-        abilityContext = AbilityRuntime::Context::ConvertTo<AbilityRuntime::AbilityContext>(context);
-        if (abilityContext == nullptr) {
-            DLP_LOG_ERROR(LABEL, "get Stage model ability context failed");
-            return nullptr;
-        }
-        return WrapVoidToJS(env);
-    }
-}
-
-static bool GetDstFileInfo(const napi_env &env, const napi_value &value, GenerateDlpFileAsyncContext& asyncContext)
-{
-    napi_valuetype valueType = napi_undefined;
-    if (napi_typeof(env, value, &valueType) != napi_ok) {
-        DLP_LOG_ERROR(LABEL, "Can not get napi type");
-        return false;
-    }
-    if (valueType == napi_string) {
-        if (!GetStringValue(env, value, asyncContext.fileName)) {
-            DLP_LOG_ERROR(LABEL, "js get fileName fail");
-            ThrowParamError(env, "fileName", "string");
-            return false;
-        }
-    } else {
-        if (!GetInt64Value(env, value, asyncContext.cipherTextFd)) {
-            DLP_LOG_ERROR(LABEL, "js get cipherTextFd fail");
-            ThrowParamError(env, "cipherTextFd", "number");
-            return false;
-        }
-    }
-    return true;
-}
-
 bool GetGenerateDlpFileParams(
     const napi_env env, const napi_callback_info info, GenerateDlpFileAsyncContext& asyncContext)
 {
-    size_t argc = PARAM_SIZE_FIVE;
-    napi_value argv[PARAM_SIZE_FIVE] = {nullptr};
+    size_t argc = PARAM_SIZE_FOUR;
+    napi_value argv[PARAM_SIZE_FOUR] = {nullptr};
     NAPI_CALL_BASE(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr), false);
 
-    if (!NapiCheckArgc(env, argc, PARAM_SIZE_FIVE)) {
+    if (!NapiCheckArgc(env, argc, PARAM_SIZE_FOUR)) {
         return false;
     }
 
-    if (GetAbilityContext(env, argv[PARAM0], asyncContext.abilityContext) == nullptr) {
-        DLP_LOG_ERROR(LABEL, "js get abilityContext fail");
-        ThrowParamError(env, "plainTxtFd", "number");
-        return false;
-    }
-
-    if (!GetInt64Value(env, argv[PARAM1], asyncContext.plainTxtFd)) {
+    if (!GetInt64Value(env, argv[PARAM0], asyncContext.plainTxtFd)) {
         DLP_LOG_ERROR(LABEL, "js get plain fd fail");
         ThrowParamError(env, "plainTxtFd", "number");
         return false;
     }
-
-    if (!GetDstFileInfo(env, argv[PARAM2], asyncContext)) {
+    if (!GetInt64Value(env, argv[PARAM1], asyncContext.cipherTxtFd)) {
+        DLP_LOG_ERROR(LABEL, "js get cipher fd fail");
+        ThrowParamError(env, "cipherTxtFd", "number");
         return false;
     }
 
-    if (!GetDlpProperty(env, argv[PARAM3], asyncContext.property)) {
+    if (!GetDlpProperty(env, argv[PARAM2], asyncContext.property)) {
         DLP_LOG_ERROR(LABEL, "js get property fail");
         ThrowParamError(env, "property", "DlpProperty");
         return false;
     }
 
-    if (argc == PARAM_SIZE_FIVE) {
-        if (!GetCallback(env, argv[PARAM4], asyncContext)) {
+    if (argc == PARAM_SIZE_FOUR) {
+        if (!GetCallback(env, argv[PARAM3], asyncContext)) {
             ThrowParamError(env, "callback", "function");
             return false;
         }

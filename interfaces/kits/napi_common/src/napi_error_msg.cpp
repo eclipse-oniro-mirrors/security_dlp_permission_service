@@ -40,7 +40,6 @@ static const std::unordered_map<int32_t, std::string> JS_ERROR_MSG_MAP = {
     { ERR_JS_SYSTEM_SERVICE_EXCEPTION, "System service exception, please try again or reboot your device" },
     { ERR_JS_OUT_OF_MEMORY, "System out of memory, please try again or reboot your device" },
     { ERR_JS_DLP_FILE_OPERATE_FAIL, "DLP file is setting Permissions ,link file can not operate" },
-    { ERR_JS_DLP_USR_CANCLE_FILEPICK, "No file chosen, please choose a location in filepicker" },
     { ERR_JS_ON_OFF_FAIL, "Dlp sandbox subscriber on off error" },
 };
 
@@ -115,8 +114,6 @@ static const std::unordered_map<int32_t, int32_t> NATIVE_CODE_TO_JS_CODE_MAP = {
     { DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL, ERR_JS_OUT_OF_MEMORY },
     { DLP_FUSE_ERROR_MEMORY_OPERATE_FAIL, ERR_JS_OUT_OF_MEMORY },
 
-    // ERR_JS_DLP_USR_CANCLE_FILEPICK
-    { DLP_FILEPICK_NO_URI_RETURN, ERR_JS_DLP_USR_CANCLE_FILEPICK },
     { DLP_CALLBACK_EXCEEDED_MAXNUM_REGISTRATION_LIMIT_ERROR, ERR_JS_ON_OFF_FAIL },
 };
 

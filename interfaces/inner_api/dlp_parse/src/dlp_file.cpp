@@ -259,7 +259,7 @@ bool DlpFile::IsValidDlpHeader(const struct DlpHeader& head) const
     return true;
 }
 
-int32_t DlpFile::CheckDlpFile()
+int32_t DlpFile::ParseDlpHeader()
 {
     if (dlpFd_ < 0) {
         DLP_LOG_ERROR(LABEL, "dlp file fd is invalid");
@@ -286,15 +286,7 @@ int32_t DlpFile::CheckDlpFile()
         (void)memset_s(&head_, sizeof(struct DlpHeader), 0, sizeof(struct DlpHeader));
         return DLP_PARSE_ERROR_FILE_NOT_DLP;
     }
-    return DLP_OK;
-}
 
-int32_t DlpFile::ParseDlpHeader()
-{
-    int ret = CheckDlpFile();
-    if (ret != DLP_OK) {
-        return ret;
-    }
     // get cert encrypt context
     uint8_t* buf = new (std::nothrow)uint8_t[head_.certSize];
     if (buf == nullptr) {
@@ -353,11 +345,6 @@ void DlpFile::GetOfflineCert(struct DlpBlob& cert) const
 {
     cert.data = offlineCert_.data;
     cert.size = offlineCert_.size;
-}
-
-void DlpFile::SetFileFd(int32_t fd)
-{
-    dlpFd_ = fd;
 }
 
 int32_t DlpFile::SetEncryptCert(const struct DlpBlob& cert)

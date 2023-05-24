@@ -22,10 +22,6 @@ ohos_shared_library("libdlppermission_napi") {
     "${dlp_root_dir}/interfaces/kits/napi_common/include",
     "${dlp_root_dir}/interfaces/inner_api/dlp_parse/include",
     "${dlp_root_dir}/interfaces/inner_api/dlp_fuse/include",
-    "//foundation/filemanagement/file_api/interfaces/kits/js/src/mod_fs/properties",
-    "//foundation/filemanagement/file_api/utils/filemgmt_libn/include/",
-    "//foundation/filemanagement/file_api/utils/filemgmt_libn/include/n_async/",
-    "//foundation/filemanagement/file_api/utils/filemgmt_libhilog/",
   ]
 
   sources = [
@@ -56,8 +52,6 @@ ohos_shared_library("libdlppermission_napi") {
     "bundle_framework:appexecfwk_base",
     "bundle_framework:appexecfwk_core",
     "c_utils:utils",
-    "data_share:datashare_common",
-    "data_share:datashare_consumer",
     "file_api:filemgmt_libn",
     "hiviewdfx_hilog_native:libhilog",
     "ipc:ipc_core",

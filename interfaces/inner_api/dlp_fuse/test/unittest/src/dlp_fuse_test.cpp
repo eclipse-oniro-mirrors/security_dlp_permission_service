@@ -210,8 +210,7 @@ HWTEST_F(DlpFuseTest, GenerateDlpFile001, TestSize.Level1)
 
     struct DlpProperty prop;
     GenerateRandProperty(prop);
-    int32_t result = DlpFileManager::GetInstance().GenerateDlpFilePrepare(prop, g_Dlpfile);
-    result += DlpFileManager::GetInstance().GenerateDlpFileFinish(g_plainFileFd, g_dlpFileFd, g_Dlpfile);
+    int32_t result = DlpFileManager::GetInstance().GenerateDlpFile(g_plainFileFd, g_dlpFileFd, prop, g_Dlpfile);
     ASSERT_EQ(result, 0);
     ASSERT_NE(g_Dlpfile, nullptr);
 
@@ -253,8 +252,7 @@ HWTEST_F(DlpFuseTest, OpenDlpFile001, TestSize.Level1)
     struct DlpProperty prop;
     GenerateRandProperty(prop);
 
-    int32_t result = DlpFileManager::GetInstance().GenerateDlpFilePrepare(prop, g_Dlpfile);
-    result += DlpFileManager::GetInstance().GenerateDlpFileFinish(g_plainFileFd, g_dlpFileFd, g_Dlpfile);
+    int32_t result = DlpFileManager::GetInstance().GenerateDlpFile(g_plainFileFd, g_dlpFileFd, prop, g_Dlpfile);
     ASSERT_EQ(result, 0);
     ASSERT_NE(g_Dlpfile, nullptr);
 
@@ -322,8 +320,7 @@ HWTEST_F(DlpFuseTest, testIsDlpFile001, TestSize.Level1)
     GenerateRandProperty(prop);
 
     std::shared_ptr<DlpFile> dlpfile = nullptr;
-    int32_t result = DlpFileManager::GetInstance().GenerateDlpFilePrepare(prop, dlpfile);
-    result += DlpFileManager::GetInstance().GenerateDlpFileFinish(plainFileFd, dlpFileFd, dlpfile);
+    int32_t result = DlpFileManager::GetInstance().GenerateDlpFile(plainFileFd, dlpFileFd, prop, dlpfile);
     ASSERT_EQ(result, 0);
     ASSERT_NE(dlpfile, nullptr);
     result = DlpFileManager::GetInstance().CloseDlpFile(dlpfile);
@@ -367,9 +364,7 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile001, TestSize.Level1)
 
     struct DlpProperty prop;
     GenerateRandProperty(prop);
-    int32_t result = DlpFileManager::GetInstance().GenerateDlpFilePrepare(prop, g_Dlpfile);
-    result += DlpFileManager::GetInstance().GenerateDlpFileFinish(g_plainFileFd, g_dlpFileFd, g_Dlpfile);
-    ASSERT_EQ(result, 0);
+    ASSERT_EQ(DlpFileManager::GetInstance().GenerateDlpFile(g_plainFileFd, g_dlpFileFd, prop, g_Dlpfile), 0);
     ASSERT_NE(g_Dlpfile, nullptr);
     ASSERT_EQ(DlpLinkManager::GetInstance().AddDlpLinkFile(g_Dlpfile, TEST_LINK_FILE_NAME), 0);
 
@@ -422,9 +417,7 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile002, TestSize.Level1)
 
     struct DlpProperty prop;
     GenerateRandProperty(prop);
-    int32_t result = DlpFileManager::GetInstance().GenerateDlpFilePrepare(prop, g_Dlpfile);
-    result += DlpFileManager::GetInstance().GenerateDlpFileFinish(g_plainFileFd, g_dlpFileFd, g_Dlpfile);
-    ASSERT_EQ(result, 0);
+    ASSERT_EQ(DlpFileManager::GetInstance().GenerateDlpFile(g_plainFileFd, g_dlpFileFd, prop, g_Dlpfile), 0);
     ASSERT_NE(g_Dlpfile, nullptr);
     ASSERT_EQ(DlpLinkManager::GetInstance().AddDlpLinkFile(g_Dlpfile, TEST_LINK_FILE_NAME), 0);
 
@@ -527,9 +520,7 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile003, TestSize.Level1)
     struct DlpProperty prop;
     GenerateRandProperty(prop);
 
-    int32_t result = DlpFileManager::GetInstance().GenerateDlpFilePrepare(prop, g_Dlpfile);
-    result += DlpFileManager::GetInstance().GenerateDlpFileFinish(g_plainFileFd, g_dlpFileFd, g_Dlpfile);
-    ASSERT_EQ(result, 0);
+    ASSERT_EQ(DlpFileManager::GetInstance().GenerateDlpFile(g_plainFileFd, g_dlpFileFd, prop, g_Dlpfile), 0);
     ASSERT_NE(g_Dlpfile, nullptr);
     ASSERT_EQ(DlpLinkManager::GetInstance().AddDlpLinkFile(g_Dlpfile, TEST_LINK_FILE_NAME), 0);
 
@@ -639,9 +630,7 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile004, TestSize.Level1)
     struct DlpProperty prop;
     GenerateRandProperty(prop);
 
-    int32_t result = DlpFileManager::GetInstance().GenerateDlpFilePrepare(prop, g_Dlpfile);
-    result += DlpFileManager::GetInstance().GenerateDlpFileFinish(g_plainFileFd, g_dlpFileFd, g_Dlpfile);
-    ASSERT_EQ(result, 0);
+    ASSERT_EQ(DlpFileManager::GetInstance().GenerateDlpFile(g_plainFileFd, g_dlpFileFd, prop, g_Dlpfile), 0);
     ASSERT_NE(g_Dlpfile, nullptr);
     ASSERT_EQ(DlpLinkManager::GetInstance().AddDlpLinkFile(g_Dlpfile, TEST_LINK_FILE_NAME), 0);
 
@@ -682,9 +671,7 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile005, TestSize.Level1)
     struct DlpProperty prop;
     GenerateRandProperty(prop);
 
-    int32_t result = DlpFileManager::GetInstance().GenerateDlpFilePrepare(prop, g_Dlpfile);
-    result += DlpFileManager::GetInstance().GenerateDlpFileFinish(g_plainFileFd, g_dlpFileFd, g_Dlpfile);
-    ASSERT_EQ(result, 0);
+    ASSERT_EQ(DlpFileManager::GetInstance().GenerateDlpFile(g_plainFileFd, g_dlpFileFd, prop, g_Dlpfile), 0);
     ASSERT_NE(g_Dlpfile, nullptr);
     ASSERT_EQ(DlpLinkManager::GetInstance().AddDlpLinkFile(g_Dlpfile, TEST_LINK_FILE_NAME), 0);
 
@@ -725,9 +712,7 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile006, TestSize.Level1)
     struct DlpProperty prop;
     GenerateRandProperty(prop);
 
-    int32_t result = DlpFileManager::GetInstance().GenerateDlpFilePrepare(prop, g_Dlpfile);
-    result += DlpFileManager::GetInstance().GenerateDlpFileFinish(g_plainFileFd, g_dlpFileFd, g_Dlpfile);
-    ASSERT_EQ(result, 0);
+    ASSERT_EQ(DlpFileManager::GetInstance().GenerateDlpFile(g_plainFileFd, g_dlpFileFd, prop, g_Dlpfile), 0);
     ASSERT_NE(g_Dlpfile, nullptr);
     ASSERT_EQ(DlpLinkManager::GetInstance().AddDlpLinkFile(g_Dlpfile, TEST_LINK_FILE_NAME), 0);
 
@@ -776,9 +761,7 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile007, TestSize.Level1)
     struct DlpProperty prop;
     GenerateRandProperty(prop);
 
-    int32_t result = DlpFileManager::GetInstance().GenerateDlpFilePrepare(prop, g_Dlpfile);
-    result += DlpFileManager::GetInstance().GenerateDlpFileFinish(g_plainFileFd, g_dlpFileFd, g_Dlpfile);
-    ASSERT_EQ(result, 0);
+    ASSERT_EQ(DlpFileManager::GetInstance().GenerateDlpFile(g_plainFileFd, g_dlpFileFd, prop, g_Dlpfile), 0);
     ASSERT_NE(g_Dlpfile, nullptr);
     ASSERT_EQ(DlpLinkManager::GetInstance().AddDlpLinkFile(g_Dlpfile, TEST_LINK_FILE_NAME), 0);
 
@@ -835,9 +818,7 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile008, TestSize.Level1)
     struct DlpProperty prop;
     GenerateRandProperty(prop);
 
-    int32_t result = DlpFileManager::GetInstance().GenerateDlpFilePrepare(prop, g_Dlpfile);
-    result += DlpFileManager::GetInstance().GenerateDlpFileFinish(g_plainFileFd, g_dlpFileFd, g_Dlpfile);
-    ASSERT_EQ(result, 0);
+    ASSERT_EQ(DlpFileManager::GetInstance().GenerateDlpFile(g_plainFileFd, g_dlpFileFd, prop, g_Dlpfile), 0);
     ASSERT_NE(g_Dlpfile, nullptr);
     ASSERT_EQ(DlpLinkManager::GetInstance().AddDlpLinkFile(g_Dlpfile, TEST_LINK_FILE_NAME), 0);
 
@@ -1004,9 +985,7 @@ HWTEST_F(DlpFuseTest, ReadFuseDir001, TestSize.Level1)
     struct DlpProperty prop;
     GenerateRandProperty(prop);
 
-    int32_t result = DlpFileManager::GetInstance().GenerateDlpFilePrepare(prop, g_Dlpfile);
-    result += DlpFileManager::GetInstance().GenerateDlpFileFinish(g_plainFileFd, g_dlpFileFd, g_Dlpfile);
-    ASSERT_EQ(result, 0);
+    ASSERT_EQ(DlpFileManager::GetInstance().GenerateDlpFile(g_plainFileFd, g_dlpFileFd, prop, g_Dlpfile), 0);
     ASSERT_NE(g_Dlpfile, nullptr);
     ASSERT_EQ(DlpLinkManager::GetInstance().AddDlpLinkFile(g_Dlpfile, TEST_LINK_FILE_NAME), 0);
 

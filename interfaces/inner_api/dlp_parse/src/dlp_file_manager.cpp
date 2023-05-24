@@ -278,20 +278,8 @@ int32_t DlpFileManager::SetDlpFileParams(std::shared_ptr<DlpFile>& filePtr, cons
     return result;
 }
 
-int32_t DlpFileManager::GenerateDlpFilePrepare(const DlpProperty& property, std::shared_ptr<DlpFile>& filePtr)
-{
-    filePtr = std::make_shared<DlpFile>(-1);
-
-    int32_t result = SetDlpFileParams(filePtr, property);
-    if (result != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Generate dlp file fail, set dlp obj params error, errno=%{public}d", result);
-        return result;
-    }
-
-    return result;
-}
-
-int32_t DlpFileManager::GenerateDlpFileFinish(int32_t plainFileFd, int32_t dlpFileFd, std::shared_ptr<DlpFile>& filePtr)
+int32_t DlpFileManager::GenerateDlpFile(
+    int32_t plainFileFd, int32_t dlpFileFd, const DlpProperty& property, std::shared_ptr<DlpFile>& filePtr)
 {
     if (plainFileFd < 0 || dlpFileFd < 0) {
         DLP_LOG_ERROR(LABEL, "Generate dlp file fail, plain file fd or dlp file fd invalid");
@@ -303,14 +291,19 @@ int32_t DlpFileManager::GenerateDlpFileFinish(int32_t plainFileFd, int32_t dlpFi
         return DLP_PARSE_ERROR_FILE_ALREADY_OPENED;
     }
 
+    filePtr = std::make_shared<DlpFile>(dlpFileFd);
     if (filePtr == nullptr) {
         DLP_LOG_ERROR(LABEL, "Generate dlp file fail, alloc dlp obj fail");
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
-    filePtr->SetFileFd(dlpFileFd);
+    int32_t result = SetDlpFileParams(filePtr, property);
+    if (result != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Generate dlp file fail, set dlp obj params error, errno=%{public}d", result);
+        return result;
+    }
 
-    int32_t result = filePtr->GenFile(plainFileFd);
+    result = filePtr->GenFile(plainFileFd);
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Generate dlp file fail, errno=%{public}d", result);
         return result;

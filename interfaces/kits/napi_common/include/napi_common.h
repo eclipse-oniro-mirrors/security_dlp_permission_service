@@ -16,8 +16,6 @@
 #ifndef INTERFACES_KITS_NAPI_COMMON_INCLUDE_NAPI_H
 #define INTERFACES_KITS_NAPI_COMMON_INCLUDE_NAPI_H
 
-#include "ability.h"
-#include "ability_manager_client.h"
 #include <vector>
 #include <unistd.h>
 #include <uv.h>
@@ -112,11 +110,9 @@ struct UnregisterSandboxChangeCallbackAsyncContext : public CommonAsyncContext {
 struct GenerateDlpFileAsyncContext : public CommonAsyncContext {
     explicit GenerateDlpFileAsyncContext(napi_env env) : CommonAsyncContext(env){};
     int64_t plainTxtFd = -1;
-    int64_t cipherTextFd = -1;
-    std::string fileName = "";
+    int64_t cipherTxtFd = -1;
     DlpProperty property;
     std::shared_ptr<DlpFile> dlpFileNative = nullptr;
-    std::shared_ptr<AbilityRuntime::AbilityContext> abilityContext = nullptr;
 };
 
 struct DlpFileAsyncContext : public CommonAsyncContext {

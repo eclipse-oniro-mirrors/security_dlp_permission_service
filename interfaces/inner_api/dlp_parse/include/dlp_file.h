@@ -78,7 +78,6 @@ public:
     int32_t AddOfflineCert(std::vector<uint8_t>& offlineCert, const std::string& workDir);
     int32_t SetEncryptCert(const struct DlpBlob& cert);
     void SetOfflineAccess(bool flag);
-    void SetFileFd(int32_t fd);
     bool GetOfflineAccess();
     int32_t GenFile(int32_t inPlainFileFd);
     int32_t RemoveDlpPermission(int outPlainFileFd);
@@ -137,7 +136,6 @@ private:
     int32_t FillHoleData(uint32_t holeStart, uint32_t holeSize);
     int32_t DoDlpFileWrite(uint32_t offset, void* buf, uint32_t size);
     int32_t UpdateDlpFileContentSize();
-    int32_t CheckDlpFile();
 
     bool isFuseLink_;
     bool isReadOnly_;

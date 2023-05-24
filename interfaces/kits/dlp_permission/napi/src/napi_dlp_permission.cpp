@@ -14,12 +14,8 @@
  */
 
 #include "napi_dlp_permission.h"
-#include "ability.h"
-#include "ability_context.h"
-#include "ability_manager_client.h"
 #include "accesstoken_kit.h"
 #include "application_context.h"
-#include "datashare_helper.h"
 #include "dlp_link_manager.h"
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
@@ -31,7 +27,6 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "napi_common.h"
-#include "open.h"
 #include "securec.h"
 #include "tokenid_kit.h"
 
@@ -92,92 +87,6 @@ napi_value NapiDlpPermission::GenerateDlpFile(napi_env env, napi_callback_info c
     return result;
 }
 
-static bool OpenFileByDatashare(std::string &uriStr, int32_t& fd)
-{
-    using namespace OHOS::FileManagement::ModuleFileIO;
-    std::shared_ptr<DataShare::DataShareHelper> dataShareHelper = nullptr;
-    sptr<FileIoToken> remote = new (std::nothrow) IRemoteStub<FileIoToken>();
-    if (remote == nullptr) {
-        return false;
-    }
-
-    Uri uri(uriStr);
-    dataShareHelper = DataShare::DataShareHelper::Creator(remote->AsObject(), MEDIALIBRARY_DATA_URI);
-    if (dataShareHelper == nullptr) {
-        return false;
-    }
-    fd = dataShareHelper->OpenFile(uri, std::string("rw"));
-    if (fd < 0) {
-        return false;
-    }
-    return true;
-}
-
-static void PrepareArgs(AAFwk::Want& want, std::vector<std::string>& list, GenerateDlpFileAsyncContext* asyncContext)
-{
-    want.SetAction("ohos.want.action.CREATE_FILE");
-    list.push_back(asyncContext->fileName);
-    want.SetParam("key_pick_file_name", list);
-    want.SetParam("key_pick_file_location", 0);
-    want.SetParam("key_pick_file_paths", std::string(""));
-}
-
-static int32_t PickDstFile(GenerateDlpFileAsyncContext* asyncContext)
-{
-    AAFwk::Want want;
-    std::vector<std::string> list;
-    PrepareArgs(want, list, asyncContext);
-
-    AAFwk::StartOptions startOptions;
-    startOptions.SetWindowMode(1);
-
-    bool isCallBack = false;
-    std::mutex parseMtx;
-    std::condition_variable parseCv;
-    std::string uri;
-    AbilityRuntime::RuntimeTask task = [&isCallBack, &parseMtx, &parseCv, &uri](int32_t count,
-        const AAFwk::Want& want, bool flag) {
-        std::vector<std::string> uriList = want.GetStringArrayParam("pick_path_return");
-        if (uriList.size() > 0) {
-            uri = uriList[0];
-        }
-
-        std::unique_lock<std::mutex> lck(parseMtx);
-        isCallBack = true;
-        parseCv.notify_all();
-    };
-
-    static uint32_t requestCode = 0;
-    asyncContext->abilityContext->StartAbilityForResult(want, startOptions, requestCode++, std::move(task));
-    {
-        std::unique_lock<std::mutex> lck(parseMtx);
-        if (!isCallBack) {
-            parseCv.wait(lck);
-        }
-    }
-
-    if (!isCallBack) {
-        DLP_LOG_ERROR(LABEL, "fail to get uri callback:%{public}d", isCallBack);
-        asyncContext->errCode = DLP_FILEPICK_NO_URI_RETURN;
-        return -1;
-    }
-
-    if (uri.empty()) {
-        DLP_LOG_ERROR(LABEL, "fail to get uri");
-        asyncContext->errCode = DLP_FILEPICK_NO_URI_RETURN;
-        return -1;
-    }
-
-    int32_t fd;
-    bool ret = OpenFileByDatashare(uri, fd);
-    if (!ret) {
-        DLP_LOG_ERROR(LABEL, "open new file fail!");
-        asyncContext->errCode = DLP_SERVICE_ERROR_IPC_REQUEST_FAIL;
-        return -1;
-    }
-    return fd;
-}
-
 void NapiDlpPermission::GenerateDlpFileExcute(napi_env env, void* data)
 {
     DLP_LOG_DEBUG(LABEL, "napi_create_async_work running");
@@ -187,30 +96,8 @@ void NapiDlpPermission::GenerateDlpFileExcute(napi_env env, void* data)
         return;
     }
 
-    int result = DlpFileManager::GetInstance().GenerateDlpFilePrepare(asyncContext->property,
-        asyncContext->dlpFileNative);
-    if (result != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "GenerateDlpFilePrepare fail");
-        asyncContext->errCode = result;
-        return;
-    }
-
-    int32_t fd;
-    if (asyncContext->cipherTextFd == -1) {
-        fd = PickDstFile(asyncContext);
-        if (fd < 0) {
-            return;
-        }
-    } else {
-        fd = asyncContext->cipherTextFd;
-    }
-
-    asyncContext->errCode = DlpFileManager::GetInstance().GenerateDlpFileFinish(asyncContext->plainTxtFd,
-        fd, asyncContext->dlpFileNative);
-
-    if (asyncContext->cipherTextFd == -1) {
-        close(fd);
-    }
+    asyncContext->errCode = DlpFileManager::GetInstance().GenerateDlpFile(
+        asyncContext->plainTxtFd, asyncContext->cipherTxtFd, asyncContext->property, asyncContext->dlpFileNative);
 }
 
 void NapiDlpPermission::GenerateDlpFileComplete(napi_env env, napi_status status, void* data)
