@@ -948,3 +948,20 @@ HWTEST_F(DlpPermissionKitTest, DlpSandboxChangeCallback001, TestSize.Level1)
     callback->DlpSandboxStateChangeCallback(result);
     ASSERT_EQ(callback->customizedCallback_, nullptr);
 }
+
+/**
+ * @tc.name: DlpSandboxChangeCallback002
+ * @tc.desc: DlpSandboxChangeCallback function test.
+ * @tc.type: FUNC
+ * @tc.require: DTS2023040302317
+ */
+HWTEST_F(DlpPermissionKitTest, DlpSandboxChangeCallback002, TestSize.Level1)
+{
+    std::shared_ptr<CbCustomizeTest> callbackPtr = std::make_shared<CbCustomizeTest>();
+    std::shared_ptr<DlpSandboxChangeCallback> callback = std::make_shared<DlpSandboxChangeCallback>(callbackPtr);
+    ASSERT_NE(callback, nullptr);
+    DlpSandboxCallbackInfo result;
+    callback->DlpSandboxStateChangeCallback(result);
+    ASSERT_NE(callback->customizedCallback_, nullptr);
+    callback->Stop();
+}

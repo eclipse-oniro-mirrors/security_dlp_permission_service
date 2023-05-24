@@ -15,14 +15,19 @@
 
 #include "dlp_permission_service_test.h"
 #include <string>
+#include "app_uninstall_observer.h"
 #define private public
 #include "callback_manager.h"
 #undef private
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
+#include "dlp_policy.h"
+#include "dlp_sandbox_change_callback_proxy.h"
 #include "dlp_sandbox_change_callback_stub.h"
 #include "dlp_sandbox_change_callback_death_recipient.h"
 #include "file_operator.h"
+#include "retention_file_manager.h"
+#include "sandbox_json_manager.h"
 
 using namespace testing::ext;
 using namespace OHOS;
@@ -177,4 +182,170 @@ HWTEST_F(DlpPermissionServiceTest, SandboxJsonManager001, TestSize.Level1)
     info.tokenId = 0;
     res = sandboxJsonManager_->UpdateRetentionState(docUriSet, info, false);
     ASSERT_EQ(DLP_RETENTION_UPDATE_ERROR, res);
+}
+
+/**
+ * @tc.name:CallbackManager001
+ * @tc.desc: CallbackManager test
+ * @tc.type: FUNC
+ * @tc.require:DTS2023040302317
+ */
+HWTEST_F(DlpPermissionServiceTest, CallbackManager001, TestSize.Level1)
+{
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, CallbackManager::GetInstance().AddCallback(0, nullptr));
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, CallbackManager::GetInstance().RemoveCallback(nullptr));
+    bool result;
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, CallbackManager::GetInstance().RemoveCallback(0, result));
+    sptr<IRemoteObject> callback;
+    wptr<IRemoteObject> remote = new (std::nothrow) DlpSandboxChangeCallbackTest();
+    callback = remote.promote();
+    dlpPermissionService_->RegisterDlpSandboxChangeCallback(callback);
+    for (int i = 10000; i < 11024; i++) {
+        CallbackManager::GetInstance().AddCallback(i, callback);
+    }
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, CallbackManager::GetInstance().AddCallback(11024, callback));
+    DlpSandboxInfo dlpSandboxInfo;
+    dlpSandboxInfo.pid = 1;
+    CallbackManager::GetInstance().ExecuteCallbackAsync(dlpSandboxInfo);
+    dlpSandboxInfo.pid = 10010;
+    CallbackManager::GetInstance().ExecuteCallbackAsync(dlpSandboxInfo);
+}
+
+/**
+ * @tc.name:SandboxJsonManager002
+ * @tc.desc: SandboxJsonManager test
+ * @tc.type: FUNC
+ * @tc.require:DTS2023040302317
+ */
+HWTEST_F(DlpPermissionServiceTest, SandboxJsonManager002, TestSize.Level1)
+{
+    std::shared_ptr<SandboxJsonManager> sandboxJsonManager_ = std::make_shared<SandboxJsonManager>();
+    sandboxJsonManager_->AddSandboxInfo(1, 827878, "testbundle", 100);
+    ASSERT_TRUE(!sandboxJsonManager_->HasRetentionSandboxInfo("testbundle1"));
+    int32_t uid = getuid();
+    setuid(20010031);
+    ASSERT_TRUE(sandboxJsonManager_->HasRetentionSandboxInfo("testbundle"));
+    sandboxJsonManager_->AddSandboxInfo(1, 827818, "testbundle1", 10000);
+    ASSERT_TRUE(!sandboxJsonManager_->HasRetentionSandboxInfo("testbundle1"));
+
+    ASSERT_EQ(DLP_RETENTION_SERVICE_ERROR, sandboxJsonManager_->DelSandboxInfo(8888));
+
+    RetentionInfo info;
+    info.tokenId = 827878;
+    std::set<std::string> docUriSet;
+    ASSERT_TRUE(!sandboxJsonManager_->UpdateDocUriSetByDifference(info, docUriSet));
+    docUriSet.insert("testUri");
+    sandboxJsonManager_->UpdateRetentionState(docUriSet, info, true);
+    ASSERT_EQ(DLP_RETENTION_SERVICE_ERROR, sandboxJsonManager_->DelSandboxInfo(827878));
+    sandboxJsonManager_->UpdateRetentionState(docUriSet, info, false);
+    ASSERT_EQ(DLP_OK, sandboxJsonManager_->DelSandboxInfo(827878));
+    setuid(uid);
+}
+
+/**
+ * @tc.name:SandboxJsonManager003
+ * @tc.desc: SandboxJsonManager test
+ * @tc.type: FUNC
+ * @tc.require:DTS2023040302317
+ */
+HWTEST_F(DlpPermissionServiceTest, SandboxJsonManager003, TestSize.Level1)
+{
+    std::shared_ptr<SandboxJsonManager> sandboxJsonManager_ = std::make_shared<SandboxJsonManager>();
+    sandboxJsonManager_->AddSandboxInfo(1, 827818, "testbundle1", 10000);
+    int32_t uid = getuid();
+    ASSERT_EQ(DLP_RETENTION_GET_DATA_FROM_BASE_CONSTRAINTS_FILE_EMPTY,
+        sandboxJsonManager_->RemoveRetentionState("testbundle", -1));
+    ASSERT_EQ(DLP_RETENTION_GET_DATA_FROM_BASE_CONSTRAINTS_FILE_EMPTY,
+        sandboxJsonManager_->RemoveRetentionState("testbundle1", -1));
+    sandboxJsonManager_->AddSandboxInfo(1, 827878, "testbundle", 100);
+    ASSERT_EQ(DLP_RETENTION_GET_DATA_FROM_BASE_CONSTRAINTS_FILE_EMPTY,
+        sandboxJsonManager_->RemoveRetentionState("testbundle1", -1));
+    ASSERT_EQ(DLP_OK, sandboxJsonManager_->RemoveRetentionState("testbundle", -1));
+    sandboxJsonManager_->AddSandboxInfo(1, 827878, "testbundle", 100);
+    ASSERT_EQ(DLP_RETENTION_GET_DATA_FROM_BASE_CONSTRAINTS_FILE_EMPTY,
+        sandboxJsonManager_->RemoveRetentionState("testbundle", 2));
+    ASSERT_EQ(DLP_OK, sandboxJsonManager_->RemoveRetentionState("testbundle", 1));
+    setuid(uid);
+}
+
+/**
+ * @tc.name:RetentionFileManager001
+ * @tc.desc: RetentionFileManager test
+ * @tc.type: FUNC
+ * @tc.require:DTS2023040302317
+ */
+HWTEST_F(DlpPermissionServiceTest, RetentionFileManager001, TestSize.Level1)
+{
+    std::shared_ptr<SandboxJsonManager> sandboxJsonManager_ = std::make_shared<SandboxJsonManager>();
+    sandboxJsonManager_->AddSandboxInfo(1, 827878, "testbundle", 100);
+    int32_t uid = getuid();
+    setuid(10031);
+    ASSERT_TRUE(!RetentionFileManager::GetInstance().HasRetentionSandboxInfo("testbundle1"));
+    setuid(20010031);
+    RetentionFileManager::GetInstance().hasInit = false;
+    ASSERT_EQ(DLP_OK, RetentionFileManager::GetInstance().AddSandboxInfo(1, 827878, "testbundle", 100));
+    RetentionFileManager::GetInstance().hasInit = false;
+    ASSERT_EQ(DLP_RETENTION_SERVICE_ERROR, RetentionFileManager::GetInstance().DelSandboxInfo(8888));
+    RetentionFileManager::GetInstance().hasInit = false;
+    ASSERT_TRUE(RetentionFileManager::GetInstance().CanUninstall(8888));
+    RetentionFileManager::GetInstance().hasInit = false;
+    ASSERT_EQ(DLP_RETENTION_GET_DATA_FROM_BASE_CONSTRAINTS_FILE_EMPTY,
+        RetentionFileManager::GetInstance().RemoveRetentionState("testbundle1", -1));
+    RetentionFileManager::GetInstance().hasInit = false;
+    ASSERT_EQ(DLP_OK, RetentionFileManager::GetInstance().ClearUnreservedSandbox());
+    RetentionFileManager::GetInstance().hasInit = false;
+    std::vector<RetentionSandBoxInfo> vec;
+    ASSERT_EQ(DLP_OK, RetentionFileManager::GetInstance().GetRetentionSandboxList("testbundle1", vec, false));
+
+    setuid(uid);
+}
+
+/**
+ * @tc.name:UninstallDlpSandbox001
+ * @tc.desc:UninstallDlpSandbox test
+ * @tc.type: FUNC
+ * @tc.require:DTS2023040302317
+ */
+HWTEST_F(DlpPermissionServiceTest, UninstallDlpSandbox001, TestSize.Level1)
+{
+    int32_t appIndex;
+    uint32_t permType = 5;
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID,
+        dlpPermissionService_->InstallDlpSandbox("", static_cast<AuthPermType>(permType), 100, appIndex, "testUri"));
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, dlpPermissionService_->InstallDlpSandbox("testbundle",
+        static_cast<AuthPermType>(permType), 100, appIndex, "testUri"));
+    permType = 0;
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, dlpPermissionService_->InstallDlpSandbox("testbundle",
+        static_cast<AuthPermType>(permType), 100, appIndex, "testUri"));
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, dlpPermissionService_->UninstallDlpSandbox("", -1, -1));
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, dlpPermissionService_->UninstallDlpSandbox("testbundle", -1, -1));
+    permType = 0;
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, dlpPermissionService_->UninstallDlpSandbox("testbundle", 1, -1));
+}
+
+/**
+ * @tc.name:AppUninstallObserver001
+ * @tc.desc:AppUninstallObserver test
+ * @tc.type: FUNC
+ * @tc.require:DTS2023040302317
+ */
+HWTEST_F(DlpPermissionServiceTest, AppUninstallObserver001, TestSize.Level1)
+{
+    EventFwk::CommonEventSubscribeInfo subscribeInfo;
+    std::shared_ptr<AppUninstallObserver> observer_ = std::make_shared<AppUninstallObserver>(subscribeInfo);
+    EventFwk::CommonEventData data;
+    OHOS::AAFwk::Want want;
+    want.SetBundle("testbundle1");
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_PACKAGE_REMOVED);
+    data.SetWant(want);
+    observer_->OnReceiveEvent(data);
+    std::shared_ptr<SandboxJsonManager> sandboxJsonManager_ = std::make_shared<SandboxJsonManager>();
+    sandboxJsonManager_->AddSandboxInfo(1, 827818, "testbundle", 100);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_PACKAGE_FULLY_REMOVED);
+    want.SetBundle("testbundle");
+    data.SetWant(want);
+    observer_->OnReceiveEvent(data);
+    want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_PACKAGE_DATA_CLEARED);
+    data.SetWant(want);
+    observer_->OnReceiveEvent(data);
 }
