@@ -89,3 +89,20 @@ HWTEST_F(HexStringTest, HexStringToByte001, TestSize.Level1)
     // normal branch
     EXPECT_EQ(HexStringToByte("1d2c4F", byteBuffer, sizeof(byteBuffer)), DLP_OK);
 }
+
+/**
+ * @tc.name: HexStringToByte002
+ * @tc.desc: HexStringToByte test
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(HexStringTest, HexStringToByte002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "ByteToHexString001");
+    uint8_t byteBuffer[30] = {0};
+    // normal branch
+    EXPECT_EQ(HexStringToByte("1d2c4", byteBuffer, sizeof(byteBuffer)), DLP_SERVICE_ERROR_VALUE_INVALID);
+    EXPECT_EQ(HexStringToByte("1d2c4f", byteBuffer, 1), DLP_SERVICE_ERROR_VALUE_INVALID);
+    EXPECT_EQ(HexStringToByte("gd2c4f", byteBuffer, sizeof(byteBuffer)), DLP_SERVICE_ERROR_VALUE_INVALID);
+    EXPECT_EQ(HexStringToByte("1g2c4f", byteBuffer, sizeof(byteBuffer)), DLP_SERVICE_ERROR_VALUE_INVALID);
+}

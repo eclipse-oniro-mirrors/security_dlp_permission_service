@@ -64,6 +64,9 @@ HWTEST_F(DlpFileManagerTest, OperDlpFileNode001, TestSize.Level1)
     EXPECT_NE(DlpFileManager::GetInstance().GetDlpFile(1), nullptr);
     EXPECT_EQ(DlpFileManager::GetInstance().RemoveDlpFileNode(filePtr), DLP_OK);
     EXPECT_EQ(DlpFileManager::GetInstance().GetDlpFile(1), nullptr);
+    DlpFileManager::GetInstance().g_DlpFileMap_[1] = filePtr;
+    EXPECT_EQ(DlpFileManager::GetInstance().GetDlpFile(1), filePtr);
+    DlpFileManager::GetInstance().g_DlpFileMap_.clear();
     EXPECT_EQ(DlpFileManager::GetInstance().RemoveDlpFileNode(filePtr), DLP_PARSE_ERROR_FILE_NOT_OPENED);
 }
 

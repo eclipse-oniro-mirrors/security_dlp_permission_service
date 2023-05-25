@@ -582,6 +582,14 @@ HWTEST_F(FuseDaemonTest, FuseDaemonReadDir004, TestSize.Level1)
     CleanMockConditions();
 
     DlpLinkManager::GetInstance().DeleteDlpLinkFile(filePtr);
+    DlpCMockCondition condition2;
+    condition2.mockSequence = { true };
+    SetMockConditions("fuse_reply_buf", condition2);
+    SetMockCallback("fuse_reply_buf", reinterpret_cast<CommonMockFuncT>(FuseReplyBufMock));
+    g_fuseReplyBufSize = 1;
+    FuseDaemon::fuseDaemonOper_.readdir(req, ROOT_INODE, ADD_DIRENTRY_BUFF_LEN, ADD_DIRENTRY_BUFF_LEN + 1, nullptr);
+    EXPECT_EQ(static_cast<size_t>(0), g_fuseReplyBufSize);
+    CleanMockConditions();
 }
 
 /**
@@ -612,7 +620,7 @@ HWTEST_F(FuseDaemonTest, FuseDaemonReadDir005, TestSize.Level1)
 
     g_fuseReplyBufSize = 1;
     FuseDaemon::fuseDaemonOper_.readdir(req, ROOT_INODE, ADD_DIRENTRY_BUFF_LEN, ADD_DIRENTRY_BUFF_LEN + 1, nullptr);
-    EXPECT_EQ(static_cast<size_t>(0), g_fuseReplyBufSize);
+    EXPECT_EQ(static_cast<size_t>(1), g_fuseReplyBufSize);
     CleanMockConditions();
 }
 
@@ -667,6 +675,44 @@ HWTEST_F(FuseDaemonTest, FuseDaemonSetAttr001, TestSize.Level1)
     SetMockCallback("fuse_reply_err", reinterpret_cast<CommonMockFuncT>(FuseReplyErrMock));
     g_fuseReplyErr = 0;
     attr.st_size = 0;
+    FuseDaemon::fuseDaemonOper_.setattr(req, ino, &attr, FUSE_SET_ATTR_SIZE, nullptr);
+    EXPECT_EQ(EINVAL, g_fuseReplyErr);
+    CleanMockConditions();
+}
+
+/**
+ * @tc.name: FuseDaemonSetAttr002
+ * @tc.desc: test fuse set attr callback abnormal test
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIGC
+ */
+HWTEST_F(FuseDaemonTest, FuseDaemonSetAttr002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "FuseDaemonSetAttr002");
+    fuse_req_t req = nullptr;
+
+    // attr = nullptr
+    DlpCMockCondition condition;
+
+    std::shared_ptr<DlpFile> dlpFile = std::make_shared<DlpFile>(-1);
+    ASSERT_NE(dlpFile, nullptr);
+    DlpLinkFile linkfile("test", dlpFile);
+    fuse_ino_t ino = static_cast<fuse_ino_t>(reinterpret_cast<uintptr_t>(&linkfile));
+    struct stat attr;
+    g_fuseReplyErr = 0;
+
+    condition.mockSequence = { true };
+    SetMockConditions("fuse_reply_err", condition);
+    SetMockCallback("fuse_reply_err", reinterpret_cast<CommonMockFuncT>(FuseReplyErrMock));
+    attr.st_size = DLP_MAX_CONTENT_SIZE + 1;
+    FuseDaemon::fuseDaemonOper_.setattr(req, ino, &attr, FUSE_SET_ATTR_SIZE, nullptr);
+    EXPECT_EQ(EINVAL, g_fuseReplyErr);
+    CleanMockConditions();
+
+    condition.mockSequence = { true };
+    SetMockConditions("fuse_reply_err", condition);
+    SetMockCallback("fuse_reply_err", reinterpret_cast<CommonMockFuncT>(FuseReplyErrMock));
+    attr.st_size = -1;
     FuseDaemon::fuseDaemonOper_.setattr(req, ino, &attr, FUSE_SET_ATTR_SIZE, nullptr);
     EXPECT_EQ(EINVAL, g_fuseReplyErr);
     CleanMockConditions();
@@ -798,4 +844,17 @@ HWTEST_F(FuseDaemonTest, NotifyKernelNoFlush001, TestSize.Level1)
     EXPECT_EQ(-1, FuseDaemon::NotifyKernelNoFlush());
     DlpLinkManager::GetInstance().DeleteDlpLinkFile(defaultfilePtr);
     EXPECT_EQ(-1, FuseDaemon::NotifyKernelNoFlush());
+}
+
+/**
+ * @tc.name: FuseDaemonInit001
+ * @tc.desc: FuseDaemonInit
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIGC
+ */
+HWTEST_F(FuseDaemonTest, FuseDaemonInit001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "FuseDaemonInit001");
+
+    FuseDaemon::fuseDaemonOper_.init(nullptr, nullptr);
 }

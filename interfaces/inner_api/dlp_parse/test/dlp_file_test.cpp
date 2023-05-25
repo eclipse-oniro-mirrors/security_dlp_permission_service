@@ -1522,3 +1522,40 @@ HWTEST_F(DlpFileTest, Truncate001, TestSize.Level1)
     unlink("/data/fuse_test_plain.txt");
     unlink("/data/fuse_test_dlp.txt");
 }
+
+/**
+ * @tc.name: DoDlpContentCopyOperation001
+ * @tc.desc: DoDlpContentCopyOperation
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileTest, DoDlpContentCopyOperation001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DoDlpContentCopyOperation001");
+    DlpFile testFile(1000);
+    uint8_t ivData[16] = {};
+
+    struct DlpCipherParam param = {
+        .iv = {
+            .data = ivData,
+            .size = 16
+        }
+    };
+    struct DlpUsageSpec spec = {
+        .mode = DLP_MODE_CTR,
+        .algParam = &param
+    };
+    testFile.cipher_.usageSpec = spec;
+
+    ASSERT_EQ(DLP_PARSE_ERROR_FILE_OPERATE_FAIL, testFile.DoDlpContentCopyOperation(0, 0, 100, 10));
+    ASSERT_EQ(DLP_PARSE_ERROR_FILE_OPERATE_FAIL, testFile.DoDlpContentCopyOperation(0, 0, 10, 100));
+    int fd = open("/data/fuse_test.txt", O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
+    ASSERT_NE(fd, -1);
+    uint8_t buffer[40] = {1};
+    write(fd, buffer, 40);
+    lseek(fd, 0, SEEK_SET);
+    ASSERT_EQ(DLP_PARSE_ERROR_FILE_OPERATE_FAIL, testFile.DoDlpContentCopyOperation(fd, 0, 10, 100));
+    int fd2 = open("/data/fuse_test2.txt", O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
+    ASSERT_NE(fd2, -1);
+    ASSERT_EQ(DLP_PARSE_ERROR_FILE_OPERATE_FAIL, testFile.DoDlpContentCopyOperation(fd, fd2, 10, 100));
+}

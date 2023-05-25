@@ -965,3 +965,56 @@ HWTEST_F(DlpPermissionKitTest, DlpSandboxChangeCallback002, TestSize.Level1)
     ASSERT_NE(callback->customizedCallback_, nullptr);
     callback->Stop();
 }
+
+/**
+ * @tc.name: OnGenerateDlpCertificate002
+ * @tc.desc: OnGenerateDlpCertificate function test.
+ * @tc.type: FUNC
+ * @tc.require: DTS2023040302317
+ */
+HWTEST_F(DlpPermissionKitTest, OnGenerateDlpCertificate002, TestSize.Level1)
+{
+    std::vector<uint8_t> cert;
+    auto generateDlpCertificateCallback = std::make_shared<ClientGenerateDlpCertificateCallback>();
+    generateDlpCertificateCallback->OnGenerateDlpCertificate(0, cert);
+    ASSERT_EQ(0, generateDlpCertificateCallback->result_);
+    PermissionPolicy policy;
+    auto parseDlpCertificateCallback = std::make_shared<ClientParseDlpCertificateCallback>();
+    parseDlpCertificateCallback->OnParseDlpCertificate(0, policy, {});
+    ASSERT_EQ(0, generateDlpCertificateCallback->result_);
+}
+
+/**
+ * @tc.name: ParseDlpCertificate002
+ * @tc.desc: ParseDlpCertificate abnormal input test.
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIG0
+ */
+HWTEST_F(DlpPermissionKitTest, ParseDlpCertificate002, TestSize.Level1)
+{
+    std::vector<uint8_t> cert;
+    std::vector<uint8_t> offlineCert;
+    offlineCert.push_back(1);
+    PermissionPolicy policy;
+    uint32_t offlineFlag = 0;
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID,
+        DlpPermissionKit::ParseDlpCertificate(cert, offlineCert, offlineFlag, policy));
+
+    policy.ownerAccount_ = "test";
+    policy.ownerAccountType_ = CLOUD_ACCOUNT;
+    std::vector<AuthUserInfo> authUsers_;
+    AuthUserInfo info;
+    info.authAccount = "test";
+    info.authPerm = FULL_CONTROL;
+    info.permExpiryTime = 1784986283;
+    info.authAccountType = CLOUD_ACCOUNT;
+    authUsers_.push_back(info);
+    uint8_t* iv = new (std::nothrow) uint8_t[16];
+    uint8_t* aseKey = new (std::nothrow) uint8_t[16];
+    policy.SetIv(iv, 16);
+    policy.SetAeskey(aseKey, 16);
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID,
+        DlpPermissionKit::ParseDlpCertificate(cert, offlineCert, offlineFlag, policy));
+    delete[] iv;
+    delete[] aseKey;
+}
