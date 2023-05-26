@@ -164,7 +164,7 @@ int32_t DlpPermissionService::ParseDlpCertificate(
 }
 
 void DlpPermissionService::InsertDlpSandboxInfo(
-    const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t appIndex, uint32_t pid)
+    const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t appIndex, int32_t pid)
 {
     if (appStateObserver_ == nullptr) {
         DLP_LOG_WARN(LABEL, "Failed to get app state observer instance");
@@ -222,7 +222,7 @@ int32_t DlpPermissionService::InstallDlpSandbox(const std::string& bundleName, A
             return DLP_SERVICE_ERROR_INSTALL_SANDBOX_FAIL;
         }
     }
-    uint32_t pid = IPCSkeleton::GetCallingPid();
+    int32_t pid = IPCSkeleton::GetCallingPid();
     InsertDlpSandboxInfo(bundleName, permType, userId, appIndex, pid);
     return DLP_OK;
 }
@@ -349,14 +349,14 @@ int32_t DlpPermissionService::GetDlpSupportFileType(std::vector<std::string>& su
 
 int32_t DlpPermissionService::RegisterDlpSandboxChangeCallback(const sptr<IRemoteObject> &callback)
 {
-    uint32_t pid = IPCSkeleton::GetCallingPid();
+    int32_t pid = IPCSkeleton::GetCallingPid();
     DLP_LOG_INFO(LABEL, "GetCallingPid,%{public}d", pid);
     return CallbackManager::GetInstance().AddCallback(pid, callback);
 }
 
 int32_t DlpPermissionService::UnRegisterDlpSandboxChangeCallback(bool &result)
 {
-    uint32_t pid = IPCSkeleton::GetCallingPid();
+    int32_t pid = IPCSkeleton::GetCallingPid();
     DLP_LOG_INFO(LABEL, "GetCallingPid,%{public}d", pid);
     return CallbackManager::GetInstance().RemoveCallback(pid, result);
 }

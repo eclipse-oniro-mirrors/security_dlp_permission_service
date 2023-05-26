@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -29,6 +29,7 @@
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
+using Defer = std::shared_ptr<void>;
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpFile"};
 } // namespace
@@ -259,7 +260,7 @@ bool DlpFile::IsValidDlpHeader(const struct DlpHeader& head) const
     return true;
 }
 
-int32_t DlpFile::ParseDlpHeader()
+int32_t DlpFile::CheckDlpFile()
 {
     if (dlpFd_ < 0) {
         DLP_LOG_ERROR(LABEL, "dlp file fd is invalid");
@@ -285,6 +286,15 @@ int32_t DlpFile::ParseDlpHeader()
         DLP_LOG_ERROR(LABEL, "parse dlp file header error.");
         (void)memset_s(&head_, sizeof(struct DlpHeader), 0, sizeof(struct DlpHeader));
         return DLP_PARSE_ERROR_FILE_NOT_DLP;
+    }
+    return DLP_OK;
+}
+
+int32_t DlpFile::ParseDlpHeader()
+{
+    int ret = CheckDlpFile();
+    if (ret != DLP_OK) {
+        return ret;
     }
 
     // get cert encrypt context
@@ -374,14 +384,23 @@ int32_t DlpFile::AddOfflineCert(std::vector<uint8_t>& offlineCert, const std::st
 {
     static uint32_t count = 0;
 
-    std::string fileName = workDir + "/dlp" + std::to_string(count++) + ".txt";
-
-    DLP_LOG_INFO(LABEL, "tmpdlp file name : %{public}s", fileName.c_str());
-    int tmpFile = open(fileName.c_str(), O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
-    if (tmpFile < 0) {
-        DLP_LOG_ERROR(LABEL, "OPEN FILE FAIL, %{public}s, fd %{public}d", strerror(errno), tmpFile);
+    char realPath[PATH_MAX] = {0};
+    if ((realpath(workDir.c_str(), realPath) == nullptr) && (errno != ENOENT)) {
+        DLP_LOG_ERROR(LABEL, "realpath, %{public}s, workDir %{public}s", strerror(errno), workDir.c_str());
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
+    std::string rPath(realPath);
+    std::string path = rPath + "/dlp" + std::to_string(count++) + ".txt";
+    int tmpFile = open(path.c_str(), O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
+    if (tmpFile < 0) {
+        DLP_LOG_ERROR(LABEL, "open file fail, %{public}s, realPath %{public}s", strerror(errno), path.c_str());
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+
+    Defer p(nullptr, [&](...) {
+        close(tmpFile);
+        unlink(realPath);
+    });
 
     head_.offlineCertOffset = head_.contactAccountOffset + head_.contactAccountSize;
     head_.offlineCertSize = offlineCert.size();
@@ -391,31 +410,23 @@ int32_t DlpFile::AddOfflineCert(std::vector<uint8_t>& offlineCert, const std::st
 
     if (write(tmpFile, &head_, sizeof(struct DlpHeader)) != sizeof(struct DlpHeader)) {
         DLP_LOG_ERROR(LABEL, "write dlp head failed, %{public}s", strerror(errno));
-        close(tmpFile);
-        unlink(fileName.c_str());
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
 
     if (write(tmpFile, cert_.data, head_.certSize) != head_.certSize) {
         DLP_LOG_ERROR(LABEL, "write dlp cert data failed, %{public}s", strerror(errno));
-        close(tmpFile);
-        unlink(fileName.c_str());
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
 
     if (write(tmpFile, contactAccount_.c_str(), contactAccount_.size()) !=
         static_cast<int32_t>(contactAccount_.size())) {
         DLP_LOG_ERROR(LABEL, "write dlp contact data failed, %{public}s", strerror(errno));
-        close(tmpFile);
-        unlink(fileName.c_str());
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
 
     if (write(tmpFile, &offlineCert[0], offlineCert.size()) !=
         static_cast<int32_t>(offlineCert.size())) {
         DLP_LOG_ERROR(LABEL, "write offlineCert data failed, %{public}s", strerror(errno));
-        close(tmpFile);
-        unlink(fileName.c_str());
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
 
@@ -429,9 +440,6 @@ int32_t DlpFile::AddOfflineCert(std::vector<uint8_t>& offlineCert, const std::st
     DoDlpContentCopyOperation(tmpFile, dlpFd_, 0, fileSize);
 
     (void)fsync(dlpFd_);
-
-    close(tmpFile);
-    unlink(fileName.c_str());
 
     return DLP_OK;
 }

@@ -161,13 +161,8 @@ int32_t DlpPermissionSerializer::DeserializeAuthUserInfo(const nlohmann::json& a
         accountInfoJson.at(RIGHT_INDEX).get_to(rightInfoJson);
     }
 
-    bool read = false;
     bool edit = false;
     bool fullCtrl = false;
-
-    if (rightInfoJson.find(READ_INDEX) != rightInfoJson.end() && rightInfoJson.at(READ_INDEX).is_boolean()) {
-        rightInfoJson.at(READ_INDEX).get_to(read);
-    }
 
     if (rightInfoJson.find(EDIT_INDEX) != rightInfoJson.end() && rightInfoJson.at(EDIT_INDEX).is_boolean()) {
         rightInfoJson.at(EDIT_INDEX).get_to(edit);

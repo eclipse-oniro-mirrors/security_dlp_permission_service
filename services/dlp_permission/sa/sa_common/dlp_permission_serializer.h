@@ -31,13 +31,6 @@ public:
     DlpPermissionSerializer() = default;
     virtual ~DlpPermissionSerializer() = default;
 
-    void SerializeAuthUserInfo(nlohmann::json& authUsersJson, const AuthUserInfo& userInfo);
-    int32_t DeserializeAuthUserInfo(const nlohmann::json& accountInfoJson, AuthUserInfo& userInfo);
-
-    nlohmann::json SerializeAuthUserList(const std::vector<AuthUserInfo>& authUsers);
-    int32_t DeserializeAuthUserList(
-        const nlohmann::json& authUsersJson, std::vector<AuthUserInfo>& userList);
-
     int32_t SerializeDlpPermission(const PermissionPolicy& policy, nlohmann::json& permInfoJson);
     int32_t DeserializeDlpPermission(const nlohmann::json& permJson, PermissionPolicy& policy);
 
@@ -45,6 +38,12 @@ public:
     int32_t DeserializeEncPolicyData(
         const nlohmann::json& encDataJson, DLP_EncPolicyData& encData, bool isOff);
 private:
+    void SerializeAuthUserInfo(nlohmann::json& authUsersJson, const AuthUserInfo& userInfo);
+    int32_t DeserializeAuthUserInfo(const nlohmann::json& accountInfoJson, AuthUserInfo& userInfo);
+
+    nlohmann::json SerializeAuthUserList(const std::vector<AuthUserInfo>& authUsers);
+    int32_t DeserializeAuthUserList(
+        const nlohmann::json& authUsersJson, std::vector<AuthUserInfo>& userList);
 };
 }  // namespace DlpPermission
 }  // namespace Security

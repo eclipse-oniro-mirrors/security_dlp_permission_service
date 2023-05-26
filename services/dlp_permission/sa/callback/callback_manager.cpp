@@ -49,7 +49,7 @@ CallbackManager::CallbackManager()
 
 CallbackManager::~CallbackManager() {}
 
-int32_t CallbackManager::AddCallback(uint32_t pid, const sptr<IRemoteObject> &callback)
+int32_t CallbackManager::AddCallback(int32_t pid, const sptr<IRemoteObject> &callback)
 {
     if (callback == nullptr) {
         DLP_LOG_ERROR(LABEL, "input is nullptr");
@@ -100,7 +100,7 @@ int32_t CallbackManager::RemoveCallback(const sptr<IRemoteObject> &callback)
     return DLP_OK;
 }
 
-int32_t CallbackManager::RemoveCallback(uint32_t pid, bool &result)
+int32_t CallbackManager::RemoveCallback(int32_t pid, bool &result)
 {
     DLP_LOG_INFO(LABEL, "enter RemoveCallback");
     if (pid == 0) {
@@ -127,7 +127,7 @@ int32_t CallbackManager::RemoveCallback(uint32_t pid, bool &result)
 
 void CallbackManager::ExecuteCallbackAsync(const DlpSandboxInfo &dlpSandboxInfo)
 {
-    std::map<uint32_t, CallbackRecord>::iterator goalCallback;
+    std::map<int32_t, CallbackRecord>::iterator goalCallback;
     {
         std::lock_guard<std::mutex> lock(mutex_);
         goalCallback = callbackInfoMap_.find(dlpSandboxInfo.pid);

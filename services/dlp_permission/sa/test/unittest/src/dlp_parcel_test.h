@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -13,25 +13,28 @@
  * limitations under the License.
  */
 
-#ifndef DLP_PERMISSION_SANDBOX_INFO_H
-#define DLP_PERMISSION_SANDBOX_INFO_H
+#ifndef DLP_PARCEL_TEST_H
+#define DLP_PARCEL_TEST_H
 
-#include "dlp_policy.h"
+#include <gtest/gtest.h>
+#include "auth_user_info_parcel.h"
+#include "dlp_policy_parcel.h"
+#include "dlp_sandbox_callback_info_parcel.h"
 
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
-class DlpSandboxInfo {
+class DlpParcelTest : public testing::Test {
 public:
-    int uid = -1;
-    int32_t userId = -1;
-    int32_t appIndex = -1;
-    unsigned int tokenId = 0;
-    AuthPermType permType = DEFAULT_PERM;
-    std::string bundleName;
-    int32_t pid = 0;
+    static void SetUpTestCase();
+
+    static void TearDownTestCase();
+
+    void SetUp();
+
+    void TearDown();
 };
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS
-#endif  // DLP_PERMISSION_SANDBOX_INFO_H
+#endif  // DLP_PARCEL_TEST_H

@@ -15,6 +15,7 @@
 
 #include "dlp_permission_service_test.h"
 #include <string>
+#include "accesstoken_kit.h"
 #include "app_uninstall_observer.h"
 #define private public
 #include "callback_manager.h"
@@ -32,6 +33,7 @@
 using namespace testing::ext;
 using namespace OHOS;
 using namespace OHOS::Security::DlpPermission;
+using namespace OHOS::Security::AccessToken;
 
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {
@@ -319,7 +321,6 @@ HWTEST_F(DlpPermissionServiceTest, UninstallDlpSandbox001, TestSize.Level1)
         static_cast<AuthPermType>(permType), 100, appIndex, "testUri"));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, dlpPermissionService_->UninstallDlpSandbox("", -1, -1));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, dlpPermissionService_->UninstallDlpSandbox("testbundle", -1, -1));
-    permType = 0;
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, dlpPermissionService_->UninstallDlpSandbox("testbundle", 1, -1));
 }
 
@@ -348,4 +349,52 @@ HWTEST_F(DlpPermissionServiceTest, AppUninstallObserver001, TestSize.Level1)
     want.SetAction(EventFwk::CommonEventSupport::COMMON_EVENT_PACKAGE_DATA_CLEARED);
     data.SetWant(want);
     observer_->OnReceiveEvent(data);
+}
+
+class DlpTestRemoteObj : public IRemoteBroker {
+public:
+    DECLARE_INTERFACE_DESCRIPTOR(u"ohos.dlp.test");
+    DlpTestRemoteObj() = default;
+    virtual ~DlpTestRemoteObj() noexcept = default;
+};
+
+/**
+ * @tc.name:SandboxJsonManager001
+ * @tc.desc: SandboxJsonManager test
+ * @tc.type: FUNC
+ * @tc.require:SR000I38N7
+ */
+HWTEST_F(DlpPermissionServiceTest, DlpPermissionStub001, TestSize.Level1)
+{
+    sptr<DlpPermissionStub> stub = new (std::nothrow) DlpPermissionService(0, 0);
+    ASSERT_TRUE(!(stub == nullptr));
+
+    sptr<DlpPolicyParcel> policyParcel = new (std::nothrow) DlpPolicyParcel();
+    ASSERT_TRUE(!(policyParcel == nullptr));
+
+    sptr<DlpTestRemoteObj> callback = new (std::nothrow)IRemoteStub<DlpTestRemoteObj>();
+    EXPECT_TRUE(callback != nullptr);
+
+    int32_t res;
+    MessageParcel data;
+    MessageParcel reply;
+    res = stub->GenerateDlpCertificateInner(data, reply);
+    EXPECT_EQ(false, !res);
+
+    res = data.WriteParcelable(policyParcel);
+    EXPECT_EQ(false, !res);
+
+    res = data.WriteRemoteObject(callback->AsObject());
+    EXPECT_EQ(false, !res);
+
+    res = stub->GenerateDlpCertificateInner(data, reply);
+    EXPECT_EQ(false, !res);
+
+    sptr<IDlpPermissionCallback> callback2 = nullptr;
+    res = stub->GenerateDlpCertificate(policyParcel, callback2);
+    EXPECT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, res);
+
+    sptr<IDlpPermissionCallback> callback3 = iface_cast<IDlpPermissionCallback>(callback->AsObject());
+    res = stub->GenerateDlpCertificate(policyParcel, callback3);
+    EXPECT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, res);
 }

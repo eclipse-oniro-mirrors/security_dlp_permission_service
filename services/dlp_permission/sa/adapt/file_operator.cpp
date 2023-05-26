@@ -15,7 +15,9 @@
 
 #include "file_operator.h"
 #include <cerrno>
+#include <climits>
 #include <cstdio>
+#include <cstdlib>
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -44,6 +46,15 @@ int32_t FileOperator::InputFileByPathAndContent(const std::string& path, const s
         DLP_LOG_INFO(LABEL, "dir not exist, str = %{public}s errCode %{public}d.", str.c_str(), errno);
         return DLP_RETENTION_COMMON_FILE_OPEN_FAILED;
     }
+
+    char realPath[PATH_MAX] = {0};
+    (void)realpath(str.c_str(), realPath);
+
+    if (str.compare(realPath) != 0) {
+        DLP_LOG_INFO(LABEL, "path need to be canonical, str %{public}s realPath %{public}s.", str.c_str(), realPath);
+        return DLP_RETENTION_COMMON_FILE_OPEN_FAILED;
+    }
+
     FILE* fp = fopen(path.c_str(), "wb");
     if (fp == nullptr) {
         DLP_LOG_INFO(LABEL, "failed to open %{public}s, errno %{public}d.", path.c_str(), errno);

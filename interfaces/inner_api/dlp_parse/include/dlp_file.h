@@ -136,6 +136,7 @@ private:
     int32_t FillHoleData(uint32_t holeStart, uint32_t holeSize);
     int32_t DoDlpFileWrite(uint32_t offset, void* buf, uint32_t size);
     int32_t UpdateDlpFileContentSize();
+    int32_t CheckDlpFile();
 
     bool isFuseLink_;
     bool isReadOnly_;
