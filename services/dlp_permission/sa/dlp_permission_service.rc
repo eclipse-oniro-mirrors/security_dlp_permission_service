@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-service dlp_permission_service /system/bin/sa_main /system/profile/dlp_permission_service.xml
+service dlp_permission_service /system/bin/sa_main /system/profile/dlp_permission_service.json
     class dlp_permission_service
     priority -20
     user dlp_permisson
