@@ -37,13 +37,6 @@ public:
     int32_t SerializeEncPolicyData(const DLP_EncPolicyData& encData, nlohmann::json& encDataJson);
     int32_t DeserializeEncPolicyData(
         const nlohmann::json& encDataJson, DLP_EncPolicyData& encData, bool isOff);
-private:
-    void SerializeAuthUserInfo(nlohmann::json& authUsersJson, const AuthUserInfo& userInfo);
-    int32_t DeserializeAuthUserInfo(const nlohmann::json& accountInfoJson, AuthUserInfo& userInfo);
-
-    nlohmann::json SerializeAuthUserList(const std::vector<AuthUserInfo>& authUsers);
-    int32_t DeserializeAuthUserList(
-        const nlohmann::json& authUsersJson, std::vector<AuthUserInfo>& userList);
 };
 }  // namespace DlpPermission
 }  // namespace Security

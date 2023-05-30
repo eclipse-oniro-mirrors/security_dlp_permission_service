@@ -51,7 +51,6 @@ const std::string ENC_POLICY_INDEX = "encPolicy";
 
 #define VALID_TIME_STAMP (2147483647)
 
-
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {
     LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionSerializer"};
 }  // namespace
@@ -117,7 +116,7 @@ static void TransHexStringToByte(std::string& outer, const std::string& input)
     delete[] buff;
 }
 
-void DlpPermissionSerializer::SerializeAuthUserInfo(nlohmann::json& authUsersJson,
+static void SerializeAuthUserInfo(nlohmann::json& authUsersJson,
     const AuthUserInfo& userInfo)
 {
     bool read = false;
@@ -153,7 +152,7 @@ void DlpPermissionSerializer::SerializeAuthUserInfo(nlohmann::json& authUsersJso
     return;
 }
 
-int32_t DlpPermissionSerializer::DeserializeAuthUserInfo(const nlohmann::json& accountInfoJson,
+static int32_t DeserializeAuthUserInfo(const nlohmann::json& accountInfoJson,
     AuthUserInfo& userInfo)
 {
     nlohmann::json rightInfoJson;
@@ -186,7 +185,7 @@ int32_t DlpPermissionSerializer::DeserializeAuthUserInfo(const nlohmann::json& a
     return DLP_OK;
 }
 
-nlohmann::json DlpPermissionSerializer::SerializeAuthUserList(const std::vector<AuthUserInfo>& authUsers)
+static nlohmann::json SerializeAuthUserList(const std::vector<AuthUserInfo>& authUsers)
 {
     nlohmann::json authUsersJson;
     for (auto it = authUsers.begin(); it != authUsers.end(); ++it) {
@@ -195,7 +194,7 @@ nlohmann::json DlpPermissionSerializer::SerializeAuthUserList(const std::vector<
     return authUsersJson;
 }
 
-int32_t DlpPermissionSerializer::DeserializeAuthUserList(
+static int32_t DeserializeAuthUserList(
     const nlohmann::json& authUsersJson, std::vector<AuthUserInfo>& userList)
 {
     for (auto iter = authUsersJson.begin(); iter != authUsersJson.end(); ++iter) {
