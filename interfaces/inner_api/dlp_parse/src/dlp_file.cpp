@@ -398,8 +398,8 @@ int32_t DlpFile::AddOfflineCert(std::vector<uint8_t>& offlineCert, const std::st
     }
 
     Defer p(nullptr, [&](...) {
-        close(tmpFile);
-        unlink(realPath);
+        (void)close(tmpFile);
+        (void)unlink(path.c_str());
     });
 
     head_.offlineCertOffset = head_.contactAccountOffset + head_.contactAccountSize;
