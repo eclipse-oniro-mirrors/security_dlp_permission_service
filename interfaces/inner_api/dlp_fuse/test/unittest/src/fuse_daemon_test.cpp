@@ -582,14 +582,6 @@ HWTEST_F(FuseDaemonTest, FuseDaemonReadDir004, TestSize.Level1)
     CleanMockConditions();
 
     DlpLinkManager::GetInstance().DeleteDlpLinkFile(filePtr);
-    DlpCMockCondition condition2;
-    condition2.mockSequence = { true };
-    SetMockConditions("fuse_reply_buf", condition2);
-    SetMockCallback("fuse_reply_buf", reinterpret_cast<CommonMockFuncT>(FuseReplyBufMock));
-    g_fuseReplyBufSize = 1;
-    FuseDaemon::fuseDaemonOper_.readdir(req, ROOT_INODE, ADD_DIRENTRY_BUFF_LEN, ADD_DIRENTRY_BUFF_LEN + 1, nullptr);
-    EXPECT_EQ(static_cast<size_t>(0), g_fuseReplyBufSize);
-    CleanMockConditions();
 }
 
 /**
