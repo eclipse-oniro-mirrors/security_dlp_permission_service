@@ -118,9 +118,11 @@ HWTEST_F(DlpFileManagerTest, GenerateCertData001, TestSize.Level1)
     policy.ivLen_ = 16;
     policy.ownerAccountType_ = CLOUD_ACCOUNT;
     policy.ownerAccount_ = std::string(DLP_MAX_CERT_SIZE + 1, 'a');
+    policy.ownerAccountId_ = std::string(DLP_MAX_CERT_SIZE + 1, 'a');
     EXPECT_EQ(DlpFileManager::GetInstance().GenerateCertData(policy, certData), DLP_PARSE_ERROR_VALUE_INVALID);
 
     policy.ownerAccount_ = "test";
+    policy.ownerAccountId_ = "test";
     DlpCMockCondition condition;
     condition.mockSequence = { true };
     SetMockConditions("memcpy_s", condition);
@@ -147,6 +149,7 @@ HWTEST_F(DlpFileManagerTest, PrepareDlpEncryptParms001, TestSize.Level1)
     policy.ivLen_ = 16;
     policy.ownerAccountType_ = CLOUD_ACCOUNT;
     policy.ownerAccount_ = "test";
+    policy.ownerAccountId_ = "test";
     struct DlpBlob key;
     struct DlpUsageSpec usage;
     struct DlpBlob certData;
@@ -242,7 +245,8 @@ HWTEST_F(DlpFileManagerTest, ParseDlpFileFormat002, TestSize.Level1)
 
     write(g_fdDlp, &header, sizeof(struct DlpHeader));
     std::string certStr = "{\"aeskeyLen\":16, \"aeskey\":\"11223344556677889900112233445566\",\"ivLen\":16,"
-        "\"iv\":\"11223344556677889900112233445566\",\"ownerAccount\":\"test\",\"ownerAccountType\":0}";
+        "\"iv\":\"11223344556677889900112233445566\",\"ownerAccount\":\"test\",\"ownerAccountId\":\"test\","
+        "\"ownerAccountType\":0}";
     write(g_fdDlp, certStr.c_str(), certStr.length());
     lseek(g_fdDlp, sizeof(struct DlpHeader) + 256, SEEK_SET);
     uint8_t buffer[32] = {0};
@@ -283,7 +287,8 @@ HWTEST_F(DlpFileManagerTest, ParseDlpFileFormat003, TestSize.Level1)
 
     write(g_fdDlp, &header, sizeof(struct DlpHeader));
     std::string certStr = "{\"aeskeyLen\":16, \"aeskey\":\"11223344556677889900112233445566\",\"ivLen\":16,"
-        "\"iv\":\"11223344556677889900112233445566\",\"ownerAccount\":\"test\",\"ownerAccountType\":1}";
+        "\"iv\":\"11223344556677889900112233445566\",\"ownerAccount\":\"test\",\"ownerAccountId\":\"test\","
+        "\"ownerAccountType\":1}";
     write(g_fdDlp, certStr.c_str(), certStr.length());
     lseek(g_fdDlp, sizeof(struct DlpHeader) + 256, SEEK_SET);
     uint8_t buffer[32] = {0};
@@ -361,6 +366,7 @@ HWTEST_F(DlpFileManagerTest, SetDlpFileParams001, TestSize.Level1)
 
     // SetCipher fail
     property.ownerAccount = "owner";
+    property.ownerAccountId = "owner";
     property.contractAccount = "owner";
     property.ownerAccountType = DOMAIN_ACCOUNT;
 
@@ -386,6 +392,7 @@ HWTEST_F(DlpFileManagerTest, SetDlpFileParams002, TestSize.Level1)
 
     // SetPolicy fail
     property.ownerAccount = "";
+    property.ownerAccountId = "";
     property.contractAccount = "owner";
     property.ownerAccountType = DOMAIN_ACCOUNT;
 
@@ -408,8 +415,9 @@ HWTEST_F(DlpFileManagerTest, SetDlpFileParams003, TestSize.Level1)
 
     // SetPolicy fail
     property.ownerAccount = "owner";
+    property.ownerAccountId = "owner";
     property.contractAccount = "account";
-    property.ownerAccountType = DOMAIN_ACCOUNT;
+    property.ownerAccountType = CLOUD_ACCOUNT;
 
     DlpCMockCondition condition;
     condition.mockSequence = {
@@ -437,6 +445,7 @@ HWTEST_F(DlpFileManagerTest, SetDlpFileParams004, TestSize.Level1)
 
     // SetPolicy fail
     property.ownerAccount = "owner";
+    property.ownerAccountId = "owner";
     property.contractAccount = "";
     property.ownerAccountType = DOMAIN_ACCOUNT;
 
@@ -458,6 +467,7 @@ HWTEST_F(DlpFileManagerTest, GenerateDlpFile001, TestSize.Level1)
     ASSERT_NE(filePtr, nullptr);
     DlpProperty property;
     property.ownerAccount = "owner";
+    property.ownerAccountId = "owner";
     property.contractAccount = "owner";
     property.ownerAccountType = DOMAIN_ACCOUNT;
 
@@ -485,6 +495,7 @@ HWTEST_F(DlpFileManagerTest, GenerateDlpFile002, TestSize.Level1)
     std::shared_ptr<DlpFile> filePtr;
     DlpProperty property;
     property.ownerAccount = "";
+    property.ownerAccountId = "";
     property.contractAccount = "owner";
     property.ownerAccountType = DOMAIN_ACCOUNT;
 
@@ -504,6 +515,7 @@ HWTEST_F(DlpFileManagerTest, GenerateDlpFile003, TestSize.Level1)
     std::shared_ptr<DlpFile> filePtr;
     DlpProperty property;
     property.ownerAccount = "owner";
+    property.ownerAccountId = "owner";
     property.contractAccount = "owner";
     property.ownerAccountType = DOMAIN_ACCOUNT;
 
@@ -523,6 +535,7 @@ HWTEST_F(DlpFileManagerTest, OpenDlpFile001, TestSize.Level1)
     std::shared_ptr<DlpFile> filePtr;
     DlpProperty property;
     property.ownerAccount = "owner";
+    property.ownerAccountId = "owner";
     property.contractAccount = "owner";
     property.ownerAccountType = DOMAIN_ACCOUNT;
 

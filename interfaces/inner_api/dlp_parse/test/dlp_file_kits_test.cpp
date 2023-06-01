@@ -59,6 +59,7 @@ void CreateDlpFileFd()
 
     struct DlpProperty prop;
     prop.ownerAccount = "ohosAnonymousName";
+    prop.ownerAccountId = "ohosAnonymousName";
     prop.ownerAccountType = CLOUD_ACCOUNT;
     prop.contractAccount = "test@test.com";
 

@@ -76,6 +76,7 @@ typedef struct AuthUserInfo {
 
 struct DlpProperty {
     std::string ownerAccount;
+    std::string ownerAccountId;
     std::vector<AuthUserInfo> authUsers;
     std::string contractAccount;
     DlpAccountType ownerAccountType = INVALID_ACCOUNT;
@@ -106,6 +107,7 @@ public:
     uint32_t GetIvLen() const;
 
     std::string ownerAccount_;
+    std::string ownerAccountId_;
     DlpAccountType ownerAccountType_;
     std::vector<AuthUserInfo> authUsers_;
     bool supportEveryone_ = false;

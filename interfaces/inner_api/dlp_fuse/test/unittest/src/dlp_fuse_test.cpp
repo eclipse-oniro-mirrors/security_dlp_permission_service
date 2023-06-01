@@ -136,6 +136,7 @@ static void GenerateRandProperty(struct DlpProperty& encProp)
     auto seed = std::time(nullptr);
     std::srand(seed);
     encProp.ownerAccount = DEFAULT_CURRENT_ACCOUNT;
+    encProp.ownerAccountId = DEFAULT_CURRENT_ACCOUNT;
     encProp.ownerAccountType = CLOUD_ACCOUNT;
     for (uint32_t user = 0; user < TEST_USER_COUNT; ++user) {
         AuthUserInfo perminfo = {.authAccount = GenerateRandStr(RAND_STR_SIZE),

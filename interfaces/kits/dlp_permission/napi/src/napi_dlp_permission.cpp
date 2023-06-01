@@ -190,7 +190,6 @@ void NapiDlpPermission::OpenDlpFileExcute(napi_env env, void* data)
 
 void NapiDlpPermission::OpenDlpFileComplete(napi_env env, napi_status status, void* data)
 {
-    DLP_LOG_DEBUG(LABEL, "napi_create_async_work complete");
     auto asyncContext = reinterpret_cast<DlpFileAsyncContext*>(data);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
@@ -212,6 +211,7 @@ void NapiDlpPermission::OpenDlpFileComplete(napi_env env, napi_status status, vo
         asyncContext->dlpFileNative->GetContactAccount(contactAccount);
         DlpProperty property = {
             .ownerAccount = policy.ownerAccount_,
+            .ownerAccountId = policy.ownerAccountId_,
             .authUsers = policy.authUsers_,
             .contractAccount = contactAccount,
             .ownerAccountType = policy.ownerAccountType_,
@@ -219,7 +219,6 @@ void NapiDlpPermission::OpenDlpFileComplete(napi_env env, napi_status status, vo
             .supportEveryone = policy.supportEveryone_,
             .everyonePerm = policy.everyonePerm_,
         };
-
         napi_value dlpPropertyJs = DlpPropertyToJs(env, property);
         napi_value argv[PARAM_SIZE_TWO] = {nativeObjJs, dlpPropertyJs};
         napi_value instance = BindingJsWithNative(env, argv, PARAM_SIZE_TWO);
@@ -238,7 +237,6 @@ void NapiDlpPermission::OpenDlpFileComplete(napi_env env, napi_status status, vo
             }
         }
     }
-
     ProcessCallbackOrPromise(env, asyncContext, resJs);
 }
 

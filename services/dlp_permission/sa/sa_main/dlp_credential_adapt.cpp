@@ -34,6 +34,7 @@ const std::string LOCAL_ENCRYPTED_CERT = "encryptedPolicy";
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpCredential"};
 static const size_t MAX_REQUEST_NUM = 100;
 static std::unordered_map<uint64_t, sptr<IDlpPermissionCallback>> g_requestMap;
+static std::unordered_map<uint64_t, DlpAccountType> g_requestAccountTypeMap;
 std::mutex g_lockRequest;
 }  // namespace
 
@@ -95,6 +96,32 @@ static int32_t InsertCallbackToRequestMap(uint64_t requestId, const sptr<IDlpPer
     return DLP_OK;
 }
 
+static DlpAccountType GetAccountTypeFromRequestMap(uint64_t requestId)
+{
+    DLP_LOG_INFO(LABEL, "Get callback, requestId: %{public}llu", static_cast<unsigned long long>(requestId));
+    DlpAccountType accountType = INVALID_ACCOUNT;
+    std::lock_guard<std::mutex> lock(g_lockRequest);
+    auto iter = g_requestAccountTypeMap.find(requestId);
+    if (iter != g_requestAccountTypeMap.end()) {
+        accountType = iter->second;
+        g_requestAccountTypeMap.erase(requestId);
+        return accountType;
+    }
+    DLP_LOG_ERROR(LABEL, "Callback not found");
+    return INVALID_ACCOUNT;
+}
+
+static int32_t InsertAccountTypeToRequestMap(uint64_t requestId, const DlpAccountType& accountType)
+{
+    DLP_LOG_DEBUG(LABEL, "insert request, requestId: %{public}llu", static_cast<unsigned long long>(requestId));
+    if (g_requestAccountTypeMap.count(requestId) > 0) {
+        DLP_LOG_ERROR(LABEL, "Duplicate task, requestId: %{public}llu", static_cast<unsigned long long>(requestId));
+        return DLP_SERVICE_ERROR_CREDENTIAL_TASK_DUPLICATE;
+    }
+    g_requestAccountTypeMap[requestId] = accountType;
+    return DLP_OK;
+}
+
 static int32_t QueryRequestIdle()
 {
     DLP_LOG_DEBUG(LABEL, "Total tasks: %{public}zu", g_requestMap.size());
@@ -152,13 +179,12 @@ static std::vector<uint8_t> GetOfflineCert(const nlohmann::json& jsonObj)
 static void DlpRestorePolicyCallback(uint64_t requestId, int errorCode, DLP_RestorePolicyData* outParams)
 {
     DLP_LOG_INFO(LABEL, "Called, requestId: %{public}llu", static_cast<unsigned long long>(requestId));
-
     auto callback = GetCallbackFromRequestMap(requestId);
-    if (callback == nullptr) {
-        DLP_LOG_ERROR(LABEL, "callback is null");
+    auto accountType = GetAccountTypeFromRequestMap(requestId);
+    if (callback == nullptr || accountType == INVALID_ACCOUNT) {
+        DLP_LOG_ERROR(LABEL, "callback is null or accountType is 0");
         return;
     }
-
     PermissionPolicy policyInfo;
     if (errorCode != 0) {
         DLP_LOG_ERROR(LABEL, "Restore Policy error, errorCode: %{public}d", errorCode);
@@ -170,7 +196,6 @@ static void DlpRestorePolicyCallback(uint64_t requestId, int errorCode, DLP_Rest
         callback->OnParseDlpCertificate(DLP_SERVICE_ERROR_VALUE_INVALID, policyInfo, {});
         return;
     }
-
     auto policyStr = new (std::nothrow) char[outParams->dataLen + 1];
     if (policyStr == nullptr) {
         DLP_LOG_ERROR(LABEL, "New memory fail");
@@ -184,7 +209,6 @@ static void DlpRestorePolicyCallback(uint64_t requestId, int errorCode, DLP_Rest
         return;
     }
     policyStr[outParams->dataLen] = '\0';
-
     auto jsonObj = nlohmann::json::parse(policyStr, policyStr + outParams->dataLen + 1, nullptr, false);
     if (jsonObj.is_discarded() || (!jsonObj.is_object())) {
         DLP_LOG_ERROR(LABEL, "JsonObj is discarded");
@@ -194,13 +218,12 @@ static void DlpRestorePolicyCallback(uint64_t requestId, int errorCode, DLP_Rest
     }
     delete[] policyStr;
     policyStr = nullptr;
-
     int32_t res = DlpPermissionSerializer::GetInstance().DeserializeDlpPermission(jsonObj, policyInfo);
     if (res != DLP_OK) {
         callback->OnParseDlpCertificate(res, policyInfo, {});
         return;
     }
-
+    policyInfo.ownerAccountType_ = accountType;
     callback->OnParseDlpCertificate(errorCode, policyInfo, GetOfflineCert(jsonObj));
 }
 
@@ -260,6 +283,11 @@ int32_t DlpCredential::GenerateDlpCertificate(
                 FreeDlpPackPolicyParams(packPolicy);
                 return res;
             }
+            res = InsertAccountTypeToRequestMap(requestId, accountType);
+            if (res != DLP_OK) {
+                FreeDlpPackPolicyParams(packPolicy);
+                return res;
+            }
         } else {
             DLP_LOG_ERROR(LABEL, "Start request fail, error: %{public}d", res);
         }
@@ -307,7 +335,6 @@ int32_t DlpCredential::ParseDlpCertificate(const std::vector<uint8_t>& cert, uin
         DLP_LOG_ERROR(LABEL, "JsonObj is discarded");
         return DLP_SERVICE_ERROR_JSON_OPERATE_FAIL;
     }
-
     EncAndDecOptions encAndDecOptions = {
         .opt = getCertOption(flag)
     };
@@ -315,15 +342,14 @@ int32_t DlpCredential::ParseDlpCertificate(const std::vector<uint8_t>& cert, uin
         .featureName = strdup("dlp_permission_service"),
         .options = encAndDecOptions,
     };
-
     bool opFlag = (encAndDecOptions.opt == CloudEncOption::ALLOW_RECEIVER_DECRYPT_WITHOUT_USE_CLOUD);
     int32_t result = DlpPermissionSerializer::GetInstance().DeserializeEncPolicyData(jsonObj, encPolicy, opFlag);
+    auto accountType = static_cast<DlpAccountType>(encPolicy.accountType);
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Serialize fail");
         FreeDLPEncPolicyData(encPolicy);
         return DLP_SERVICE_ERROR_JSON_OPERATE_FAIL;
     }
-
     int res = 0;
     {
         std::lock_guard<std::mutex> lock(g_lockRequest);
@@ -332,14 +358,14 @@ int32_t DlpCredential::ParseDlpCertificate(const std::vector<uint8_t>& cert, uin
             FreeDLPEncPolicyData(encPolicy);
             return status;
         }
-
         uint64_t requestId;
         res = DLP_RestorePolicy(GetCallingUserId(), &encPolicy, DlpRestorePolicyCallback, &requestId);
         if (res == 0) {
             DLP_LOG_INFO(
                 LABEL, "Start request success, requestId: %{public}llu", static_cast<unsigned long long>(requestId));
             res = InsertCallbackToRequestMap(requestId, callback);
-            if (res != DLP_OK) {
+            int accountTypeRes = InsertAccountTypeToRequestMap(requestId, accountType);
+            if (res != DLP_OK || accountTypeRes != DLP_OK) {
                 FreeDLPEncPolicyData(encPolicy);
                 return res;
             }

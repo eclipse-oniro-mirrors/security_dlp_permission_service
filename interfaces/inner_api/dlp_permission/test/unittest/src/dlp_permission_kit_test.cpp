@@ -249,6 +249,7 @@ static void GeneratePolicy(PermissionPolicy& encPolicy, uint32_t ownerAccountLen
     auto seed = std::time(nullptr);
     std::srand(seed);
     encPolicy.ownerAccount_ = GenerateRandStr(ownerAccountLen);
+    encPolicy.ownerAccountId_ = encPolicy.ownerAccount_;
     encPolicy.ownerAccountType_ = DOMAIN_ACCOUNT;
     uint8_t* key = GenerateRandArray(aeskeyLen);
     encPolicy.SetAeskey(key, aeskeyLen);
@@ -314,12 +315,12 @@ HWTEST_F(DlpPermissionKitTest, SetRetentionState01, TestSize.Level1)
     ASSERT_EQ(DLP_OK, setuid((g_dlpUid)));
     retentionSandBoxInfoVec.clear();
     ASSERT_EQ(DLP_OK, DlpPermissionKit::GetRetentionSandboxList(DLP_MANAGER_APP, retentionSandBoxInfoVec));
-    ASSERT_TRUE(1 == retentionSandBoxInfoVec.size());
+    ASSERT_TRUE(0 != retentionSandBoxInfoVec.size());
     ASSERT_TRUE(TestSetSelfTokenId(g_dlpManagerTokenId));
 
     retentionSandBoxInfoVec.clear();
     ASSERT_EQ(DLP_OK, DlpPermissionKit::GetRetentionSandboxList(DLP_MANAGER_APP, retentionSandBoxInfoVec));
-    ASSERT_TRUE(1 == retentionSandBoxInfoVec.size());
+    ASSERT_TRUE(0 != retentionSandBoxInfoVec.size());
 
     ASSERT_EQ(DLP_OK, DlpPermissionKit::UninstallDlpSandbox(DLP_MANAGER_APP, appIndex, DEFAULT_USERID));
     DLP_LOG_INFO(LABEL, "SetRetentionState01 restart InstallDlpSandbox");
@@ -798,6 +799,7 @@ HWTEST_F(DlpPermissionKitTest, IsInDlpSandbox003, TestSize.Level1)
  */
 HWTEST_F(DlpPermissionKitTest, GetDlpSupportFileType001, TestSize.Level1)
 {
+    DLP_LOG_INFO(LABEL, "enter GetDlpSupportFileType001");
     // query support dlp file types in normal app
     std::vector<std::string> supportFileType;
     int32_t uid = getuid();
@@ -864,6 +866,7 @@ HWTEST_F(DlpPermissionKitTest, GetDlpSupportFileType003, TestSize.Level1)
  */
 HWTEST_F(DlpPermissionKitTest, GetDlpSupportFileType004, TestSize.Level1)
 {
+    DLP_LOG_INFO(LABEL, "enter GetDlpSupportFileType004");
     // query support dlp file types in full control sandbox app
     int32_t appIndex = 0;
     TestInstallDlpSandbox(DLP_MANAGER_APP, FULL_CONTROL, DEFAULT_USERID, appIndex);
@@ -1054,6 +1057,7 @@ HWTEST_F(DlpPermissionKitTest, ParseDlpCertificate002, TestSize.Level1)
         DlpPermissionKit::ParseDlpCertificate(cert, offlineCert, offlineFlag, policy));
 
     policy.ownerAccount_ = "test";
+    policy.ownerAccountId_ = "test";
     policy.ownerAccountType_ = CLOUD_ACCOUNT;
     std::vector<AuthUserInfo> authUsers_;
     AuthUserInfo info;

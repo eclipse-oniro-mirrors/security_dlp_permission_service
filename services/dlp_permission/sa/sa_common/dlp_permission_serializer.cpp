@@ -285,7 +285,7 @@ int32_t DlpPermissionSerializer::SerializeDlpPermission(const PermissionPolicy& 
     nlohmann::json policyJson;
     policyJson[KIA_INDEX] = "";
     policyJson[OWNER_ACCOUNT_NAME] = policy.ownerAccount_;
-    policyJson[OWNER_ACCOUNT_ID] = policy.ownerAccount_;
+    policyJson[OWNER_ACCOUNT_ID] = policy.ownerAccountId_;
     policyJson[VERSION_INDEX] = 1;
     policyJson[PERM_EXPIRY_TIME] = 0;
     policyJson[NEED_ONLINE] = 0;
@@ -389,6 +389,9 @@ int32_t DlpPermissionSerializer::DeserializeDlpPermission(const nlohmann::json& 
         policyJson.at(OWNER_ACCOUNT_NAME).get_to(policy.ownerAccount_);
     }
 
+    if (policyJson.find(OWNER_ACCOUNT_ID) != policyJson.end() && policyJson.at(OWNER_ACCOUNT_ID).is_string()) {
+        policyJson.at(OWNER_ACCOUNT_ID).get_to(policy.ownerAccountId_);
+    }
     policy.ownerAccountType_ = CLOUD_ACCOUNT;
 
     nlohmann::json fileEncJson;

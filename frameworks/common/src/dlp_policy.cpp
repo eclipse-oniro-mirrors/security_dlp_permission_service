@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -107,6 +107,7 @@ void PermissionPolicy::FreePermissionPolicyMem()
     FreeUint8Buffer(&aeskey_, aeskeyLen_);
     FreeUint8Buffer(&iv_, ivLen_);
     ownerAccount_ = "";
+    ownerAccountId_ = "";
     ownerAccountType_ = INVALID_ACCOUNT;
     authUsers_.clear();
 }
@@ -114,6 +115,7 @@ void PermissionPolicy::FreePermissionPolicyMem()
 PermissionPolicy::PermissionPolicy()
 {
     ownerAccount_ = "";
+    ownerAccountId_ = "";
     ownerAccountType_ = INVALID_ACCOUNT;
     authUsers_ = {};
     aeskey_ = nullptr;
@@ -125,6 +127,7 @@ PermissionPolicy::PermissionPolicy()
 PermissionPolicy::PermissionPolicy(const DlpProperty& property)
 {
     ownerAccount_ = property.ownerAccount;
+    ownerAccountId_ = property.ownerAccountId;
     ownerAccountType_ = property.ownerAccountType;
     authUsers_ = property.authUsers;
     supportEveryone_ = property.supportEveryone;
@@ -142,9 +145,9 @@ PermissionPolicy::~PermissionPolicy()
 
 bool PermissionPolicy::IsValid() const
 {
-    return (CheckAccount(this->ownerAccount_) && CheckAccountType(this->ownerAccountType_) &&
-            CheckAesParam(this->aeskey_, this->aeskeyLen_) && CheckAesParam(this->iv_, this->ivLen_) &&
-            CheckAuthUserInfoList(this->authUsers_));
+    return (CheckAccount(this->ownerAccount_) && CheckAccount(this->ownerAccountId_) &&
+        CheckAccountType(this->ownerAccountType_) && CheckAesParam(this->aeskey_, this->aeskeyLen_) &&
+        CheckAesParam(this->iv_, this->ivLen_) && CheckAuthUserInfoList(this->authUsers_));
 }
 
 void PermissionPolicy::SetAeskey(const uint8_t* key, uint32_t keyLen)
@@ -222,7 +225,10 @@ void PermissionPolicy::CopyPermissionPolicy(const PermissionPolicy& srcPolicy)
     if (!srcPolicy.IsValid()) {
         return;
     }
+    DLP_LOG_DEBUG(LABEL, "ownerAccount_ %{public}s ownerAccountId %{public}s accountType %{public}d",
+        srcPolicy.ownerAccount_.c_str(), srcPolicy.ownerAccountId_.c_str(), srcPolicy.ownerAccountType_);
     ownerAccount_ = srcPolicy.ownerAccount_;
+    ownerAccountId_ = srcPolicy.ownerAccountId_;
     ownerAccountType_ = srcPolicy.ownerAccountType_;
     authUsers_ = srcPolicy.authUsers_;
     supportEveryone_ = srcPolicy.supportEveryone_;

@@ -125,6 +125,7 @@ private:
     int32_t UpdateFileCertData();
     int32_t PrepareBuff(struct DlpBlob& message1, struct DlpBlob& message2) const;
     int32_t GetLocalAccountName(std::string& account) const;
+    int32_t GetDomainAccountName(std::string& account) const;
     int32_t DoDlpContentCryptyOperation(int32_t inFd, int32_t outFd, uint32_t inOffset,
         uint32_t inFileLen, bool isEncrypt);
     int32_t DoDlpContentCopyOperation(int32_t inFd, int32_t outFd, uint32_t inOffset, uint32_t inFileLen);

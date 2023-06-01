@@ -54,6 +54,9 @@ bool DlpPolicyParcel::Marshalling(Parcel& out) const
     if (!(out.WriteString(this->policyParams_.ownerAccount_))) {
         DLP_LOG_ERROR(LABEL, "Write owner account fail");
     }
+    if (!(out.WriteString(this->policyParams_.ownerAccountId_))) {
+        DLP_LOG_ERROR(LABEL, "Write owner accountId fail");
+    }
     if (!(out.WriteUint8(this->policyParams_.ownerAccountType_))) {
         DLP_LOG_ERROR(LABEL, "Write owner account type fail");
     }
@@ -139,6 +142,10 @@ static bool ReadParcel(Parcel& in, DlpPolicyParcel* policyParcel)
     policyParcel->policyParams_.everyonePerm_ = static_cast<AuthPermType>(perm);
     if (!(in.ReadString(policyParcel->policyParams_.ownerAccount_))) {
         DLP_LOG_ERROR(LABEL, "Read owner account fail");
+        return false;
+    }
+    if (!(in.ReadString(policyParcel->policyParams_.ownerAccountId_))) {
+        DLP_LOG_ERROR(LABEL, "Read owner accountId fail");
         return false;
     }
     uint8_t res = 0;

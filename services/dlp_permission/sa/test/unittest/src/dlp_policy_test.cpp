@@ -48,6 +48,7 @@ void NewUserSample(AuthUserInfo& user)
 void InitNormalPolicy(std::shared_ptr<PermissionPolicy>& policy)
 {
     policy->ownerAccount_ = "testAccount";
+    policy->ownerAccountId_ = "testAccountId";
     policy->ownerAccountType_ = CLOUD_ACCOUNT;
     policy->aeskey_ = new (std::nothrow) uint8_t[16];
     policy->aeskeyLen_ = AES_KEY_LEN;
@@ -247,6 +248,30 @@ HWTEST_F(PermissionPolicyTest, IsValid006, TestSize.Level1)
         policy->authUsers_.emplace_back(user);
     }
     EXPECT_FALSE(policy->IsValid());
+}
+
+/**
+ * @tc.name: IsValid007
+ * @tc.desc: IsValid owner abnormal test
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(PermissionPolicyTest, IsValid007, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "IsValid002");
+    std::shared_ptr<PermissionPolicy> policy = std::make_shared<PermissionPolicy>();
+    ASSERT_NE(policy, nullptr);
+
+    InitNormalPolicy(policy);
+
+    // empty ownerAccount
+    policy->ownerAccountId_ = "";
+    ASSERT_FALSE(policy->IsValid());
+
+    // ownerAccount name len > MAX_ACCOUNT_SIZE
+    std::string invalidPerm(MAX_ACCOUNT_SIZE + 1, 'a');
+    policy->ownerAccountId_ = invalidPerm;
+    ASSERT_FALSE(policy->IsValid());
 }
 
 /**

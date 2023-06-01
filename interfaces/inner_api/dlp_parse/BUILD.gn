@@ -59,4 +59,48 @@ ohos_shared_library("libdlpparse") {
 
   part_name = "dlp_permission_service"
   subsystem_name = "security"
+
+}
+
+ohos_shared_library("libdlpparse_inner") {
+  sources = [
+    "$ROOT_DIR/src/dlp_crypt.cpp",
+    "$ROOT_DIR/src/dlp_file.cpp",
+    "$ROOT_DIR/src/dlp_file_kits.cpp",
+    "$ROOT_DIR/src/dlp_file_manager.cpp",
+  ]
+
+  include_dirs = [
+    "$ROOT_DIR/include",
+    "${dlp_root_dir}/frameworks/common/include",
+    "${dlp_root_dir}/interfaces/inner_api/dlp_permission/include/",
+  ]
+
+  deps = [
+    "${dlp_root_dir}/interfaces/inner_api/dlp_permission:libdlp_permission_sdk",
+    "//third_party/openssl:libcrypto_shared",
+  ]
+
+  external_deps = [
+    "ability_base:want",
+    "c_utils:utils",
+    "hitrace_native:hitrace_meter",
+    "hiviewdfx_hilog_native:libhilog",
+    "ipc:ipc_core",
+    "os_account:libaccountkits",
+  ]
+
+  cflags_cc = [ "-DHILOG_ENABLE" ]
+  public_configs = [ ":dlpparse_public_config" ]
+  configs = [ "${dlp_root_dir}/config:coverage_flags" ]
+
+  part_name = "dlp_permission_service"
+  subsystem_name = "security"
+
+  if (dlp_parse_inner) {
+    cflags_cc += [ "-DDLP_PARSE_INNER" ]
+    external_deps += [
+      "os_account:os_account_innerkits",
+    ]
+  }
 }

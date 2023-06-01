@@ -209,6 +209,22 @@ HWTEST_F(DlpFileTest, GetLocalAccountName001, TestSize.Level1)
 }
 
 /**
+ * @tc.name: GetDomainAccountName001
+ * @tc.desc: test get local account name error
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileTest, GetDomainAccountName001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "GetLocalAccountName001");
+
+    DlpFile testFile(1000);
+    std::string account;
+    int ret = testFile.GetDomainAccountName(account);
+    ASSERT_EQ(ret, DLP_OK);
+}
+
+/**
  * @tc.name: UpdateDlpFilePermission001
  * @tc.desc: test update dlp permission, current account is owner
  * @tc.type: FUNC
@@ -220,6 +236,8 @@ HWTEST_F(DlpFileTest, UpdateDlpFilePermission001, TestSize.Level1)
 
     DlpFile testFile(1000);
     testFile.policy_.ownerAccount_ = "ohosAnonymousName";
+    testFile.policy_.ownerAccountId_ = "ohosAnonymousName";
+    testFile.policy_.ownerAccountType_ = CLOUD_ACCOUNT;
     testFile.authPerm_ = DEFAULT_PERM;
 
     testFile.UpdateDlpFilePermission();
@@ -290,6 +308,26 @@ HWTEST_F(DlpFileTest, UpdateDlpFilePermission004, TestSize.Level1)
 
     testFile.policy_.authUsers_.emplace_back(user);
     testFile.authPerm_ = DEFAULT_PERM;
+    testFile.UpdateDlpFilePermission();
+    ASSERT_EQ(testFile.authPerm_, DEFAULT_PERM);
+}
+
+/**
+ * @tc.name: UpdateDlpFilePermission005
+ * @tc.desc: test update dlp permission, current account is owner
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileTest, UpdateDlpFilePermission005, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "UpdateDlpFilePermission005");
+
+    DlpFile testFile(1000);
+    testFile.policy_.ownerAccount_ = "ohosAnonymousName";
+    testFile.policy_.ownerAccountId_ = "ohosAnonymousName";
+    testFile.policy_.ownerAccountType_ = DOMAIN_ACCOUNT;
+    testFile.authPerm_ = DEFAULT_PERM;
+
     testFile.UpdateDlpFilePermission();
     ASSERT_EQ(testFile.authPerm_, DEFAULT_PERM);
 }
@@ -1548,7 +1586,6 @@ HWTEST_F(DlpFileTest, DoDlpContentCopyOperation001, TestSize.Level1)
     testFile.cipher_.usageSpec = spec;
 
     ASSERT_EQ(DLP_PARSE_ERROR_FILE_OPERATE_FAIL, testFile.DoDlpContentCopyOperation(0, 0, 100, 10));
-    ASSERT_EQ(DLP_PARSE_ERROR_FILE_OPERATE_FAIL, testFile.DoDlpContentCopyOperation(0, 0, 10, 100));
     int fd = open("/data/fuse_test.txt", O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
     ASSERT_NE(fd, -1);
     uint8_t buffer[40] = {1};

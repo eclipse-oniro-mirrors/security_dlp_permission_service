@@ -24,6 +24,9 @@
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
 #include "ohos_account_kits.h"
+#ifdef DLP_PARSE_INNER
+#include "os_account_manager.h"
+#endif // DLP_PARSE_INNER
 #include "securec.h"
 
 namespace OHOS {
@@ -161,13 +164,49 @@ int32_t DlpFile::GetLocalAccountName(std::string& account) const
     return DLP_PARSE_ERROR_ACCOUNT_INVALID;
 }
 
+int32_t DlpFile::GetDomainAccountName(std::string& account) const
+{
+#ifdef DLP_PARSE_INNER
+    std::vector<int32_t> ids;
+    if (OHOS::AccountSA::OsAccountManager::QueryActiveOsAccountIds(ids) != 0) {
+        DLP_LOG_ERROR(LABEL, "QueryActiveOsAccountIds return not 0");
+        return DLP_PARSE_ERROR_ACCOUNT_INVALID;
+    }
+    if (ids.size() != 1) {
+        DLP_LOG_ERROR(LABEL, "QueryActiveOsAccountIds size not 1");
+        return DLP_PARSE_ERROR_ACCOUNT_INVALID;
+    }
+    int32_t userId = ids[0];
+    AccountSA::OsAccountInfo osAccountInfo;
+    if (OHOS::AccountSA::OsAccountManager::QueryOsAccountById(userId, osAccountInfo) != 0) {
+        DLP_LOG_ERROR(LABEL, "GetOsAccountLocalIdFromDomain return not 0");
+        return DLP_PARSE_ERROR_ACCOUNT_INVALID;
+    }
+    AccountSA::DomainAccountInfo domainInfo;
+    osAccountInfo.GetDomainInfo(domainInfo);
+    if (domainInfo.accountName_.empty()) {
+        DLP_LOG_ERROR(LABEL, "accountName_ empty");
+        return DLP_PARSE_ERROR_ACCOUNT_INVALID;
+    }
+#endif
+    return DLP_OK;
+}
+
 void DlpFile::UpdateDlpFilePermission()
 {
     std::string accountName;
-    if (GetLocalAccountName(accountName) != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "query current account failed");
-        return;
+    if (policy_.ownerAccountType_ == DOMAIN_ACCOUNT) {
+        if (GetDomainAccountName(accountName) != DLP_OK) {
+            DLP_LOG_ERROR(LABEL, "query GetDomainAccountName failed");
+            return;
+        }
+    } else {
+        if (GetLocalAccountName(accountName) != DLP_OK) {
+            DLP_LOG_ERROR(LABEL, "query GetLocalAccountName failed");
+            return;
+        }
     }
+
     DLP_LOG_DEBUG(LABEL, "current account Name %{private}s", accountName.c_str());
 
     if (accountName == policy_.ownerAccount_) {

@@ -63,6 +63,7 @@ HWTEST_F(DlpParcelTest, DlpParcelTest002, TestSize.Level1)
 {
     DlpPolicyParcel info;
     info.policyParams_.ownerAccount_ = "abc";
+    info.policyParams_.ownerAccountId_ = "abc";
     Parcel out;
 
     EXPECT_EQ(true, info.Marshalling(out));

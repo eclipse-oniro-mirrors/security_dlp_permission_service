@@ -464,10 +464,10 @@ bool GetGenerateDlpFileParams(
     }
 
     DLP_LOG_DEBUG(LABEL,
-        "Fd: %{private}ld, ownerAccount: %{private}s, ownerAccountType: %{private}d, contractAccount: %{private}s, "
-        "size: "
-        "%{private}zu",
-        asyncContext.plainTxtFd, asyncContext.property.ownerAccount.c_str(), asyncContext.property.ownerAccountType,
+        "Fd: %{private}ld, ownerAccount: %{private}s,ownerAccountId: %{private}s, ownerAccountType: %{private}d, "
+        "contractAccount: %{private}s, size: %{private}zu",
+        asyncContext.plainTxtFd, asyncContext.property.ownerAccount.c_str(),
+        asyncContext.property.ownerAccountId.c_str(), asyncContext.property.ownerAccountType,
         asyncContext.property.contractAccount.c_str(), asyncContext.property.authUsers.size());
     return true;
 }
@@ -903,6 +903,10 @@ bool GetDlpProperty(napi_env env, napi_value jsObject, DlpProperty& property)
         DLP_LOG_ERROR(LABEL, "js get owner account fail");
         return false;
     }
+    if (!GetStringValueByKey(env, jsObject, "ownerAccountId", property.ownerAccountId)) {
+        DLP_LOG_ERROR(LABEL, "js get owner accountId fail");
+        return false;
+    }
     int64_t type;
     if (!GetInt64ValueByKey(env, jsObject, "ownerAccountType", type)) {
         DLP_LOG_ERROR(LABEL, "js get owner account type fail");
@@ -987,6 +991,10 @@ napi_value DlpPropertyToJs(napi_env env, const DlpProperty& property)
     napi_value ownerAccountJs;
     NAPI_CALL(env, napi_create_string_utf8(env, property.ownerAccount.c_str(), NAPI_AUTO_LENGTH, &ownerAccountJs));
     NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "ownerAccount", ownerAccountJs));
+
+    napi_value ownerAccountIdJs;
+    NAPI_CALL(env, napi_create_string_utf8(env, property.ownerAccountId.c_str(), NAPI_AUTO_LENGTH, &ownerAccountIdJs));
+    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "ownerAccountId", ownerAccountIdJs));
 
     napi_value vectorAuthUserJs = VectorAuthUserToJs(env, property.authUsers);
     NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "authUsers", vectorAuthUserJs));
