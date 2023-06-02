@@ -216,13 +216,14 @@ void NapiDlpPermission::OpenDlpFileComplete(napi_env env, napi_status status, vo
             .contractAccount = contactAccount,
             .ownerAccountType = policy.ownerAccountType_,
             .offlineAccess = asyncContext->dlpFileNative->GetOfflineAccess(),
+            .supportEveryone = policy.supportEveryone_,
+            .everyonePerm = policy.everyonePerm_,
         };
 
         napi_value dlpPropertyJs = DlpPropertyToJs(env, property);
         napi_value argv[PARAM_SIZE_TWO] = {nativeObjJs, dlpPropertyJs};
         napi_value instance = BindingJsWithNative(env, argv, PARAM_SIZE_TWO);
         if (instance == nullptr) {
-            DLP_LOG_ERROR(LABEL, "native instance binding fail");
             asyncContext->errCode = DLP_NAPI_ERROR_NATIVE_BINDING_FAIL;
         } else {
             resJs = instance;
@@ -896,7 +897,7 @@ void NapiDlpPermission::QueryFileAccessExcute(napi_env env, void* data)
         return;
     }
 
-    asyncContext->errCode = DlpPermissionKit::QueryDlpFileAccess(asyncContext->permType);
+    asyncContext->errCode = DlpPermissionKit::QueryDlpFileAccess(asyncContext->permInfo);
 }
 
 void NapiDlpPermission::QueryFileAccessComplete(napi_env env, napi_status status, void* data)
@@ -908,11 +909,11 @@ void NapiDlpPermission::QueryFileAccessComplete(napi_env env, napi_status status
         return;
     }
     std::unique_ptr<QueryFileAccessAsyncContext> asyncContextPtr{asyncContext};
-    napi_value permTypeJs = nullptr;
+    napi_value permInfoJs = nullptr;
     if (asyncContext->errCode == DLP_OK) {
-        NAPI_CALL_RETURN_VOID(env, napi_create_int64(env, asyncContext->permType, &permTypeJs));
+        permInfoJs = DlpPermissionInfoToJs(env, asyncContext->permInfo);
     }
-    ProcessCallbackOrPromise(env, asyncContext, permTypeJs);
+    ProcessCallbackOrPromise(env, asyncContext, permInfoJs);
 }
 
 napi_value NapiDlpPermission::IsInSandbox(napi_env env, napi_callback_info cbInfo)
@@ -1374,6 +1375,7 @@ napi_value NapiDlpPermission::Init(napi_env env, napi_value exports)
 
     CreateEnumAuthPermType(env, exports);
     CreateEnumAccountType(env, exports);
+    CreateEnumActionFlags(env, exports);
 
     return exports;
 }

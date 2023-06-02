@@ -36,8 +36,8 @@ enum DlpAccountType : uint32_t {
 
 enum AuthPermType : uint32_t {
     READ_ONLY = 1,
-    FULL_CONTROL = 2,
-    EDIT_ONLY = 3,
+    CONTENT_EDIT = 2,
+    FULL_CONTROL = 3,
     DEFAULT_PERM,
 };
 
@@ -46,6 +46,26 @@ enum DlpAuthType : uint32_t {
     ONLINE_AUTH_FOR_OFFLINE_CERT = 1,
     OFFLINE_AUTH_ONLY = 2,
 };
+
+enum ActionFlags : uint32_t {
+    ACTION_INVALID = 0,
+    ACTION_VIEW = 1,
+    ACTION_SAVE = 1 << 1,
+    ACTION_SAVE_AS = 1 << 2,
+    ACTION_EDIT = 1 << 3,
+    ACTION_SCREEN_CAPTURE = 1 << 4,
+    ACTION_SCREEN_SHARE = 1 << 5,
+    ACTION_SCREEN_RECORD = 1 << 6,
+    ACTION_COPY = 1 << 7,
+    ACTION_PRINT = 1 << 8,
+    ACTION_EXPORT = 1 << 9,
+    ACTION_PERMISSION_CHANGE = 1 << 10
+};
+
+typedef struct DLPPermissionInfo {
+    AuthPermType permType = DEFAULT_PERM;
+    ActionFlags flags = ACTION_INVALID;
+} DLPPermissionInfo;
 
 typedef struct AuthUserInfo {
     std::string authAccount;
@@ -60,6 +80,8 @@ struct DlpProperty {
     std::string contractAccount;
     DlpAccountType ownerAccountType = INVALID_ACCOUNT;
     bool offlineAccess = false;
+    bool supportEveryone = false;
+    AuthPermType everyonePerm = DEFAULT_PERM;
 };
 
 typedef enum SandBoxExternalAuthorType {
@@ -86,6 +108,8 @@ public:
     std::string ownerAccount_;
     DlpAccountType ownerAccountType_;
     std::vector<AuthUserInfo> authUsers_;
+    bool supportEveryone_ = false;
+    AuthPermType everyonePerm_ = DEFAULT_PERM;
 
 private:
     uint8_t* aeskey_;

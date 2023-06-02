@@ -18,6 +18,7 @@ group("param_files") {
   deps = [
     ":dlp_permission.para",
     ":dlp_permission.para.dac",
+    ":dlp_config.json",
   ]
 }
 
@@ -32,6 +33,13 @@ ohos_prebuilt_etc("dlp_permission.para.dac") {
   source =
       "${dlp_root_dir}/services/dlp_permission/sa/etc/dlp_permission.para.dac"
   module_install_dir = "etc/param"
+  part_name = "dlp_permission_service"
+  subsystem_name = "security"
+}
+
+ohos_prebuilt_etc("dlp_config.json") {
+  source = "${dlp_root_dir}/services/dlp_permission/sa/etc/dlp_config.json"
+  module_install_dir = ""
   part_name = "dlp_permission_service"
   subsystem_name = "security"
 }

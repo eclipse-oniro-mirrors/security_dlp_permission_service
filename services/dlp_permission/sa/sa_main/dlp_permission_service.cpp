@@ -27,6 +27,7 @@
 #include "dlp_permission_log.h"
 #include "dlp_permission_sandbox_info.h"
 #include "dlp_permission_serializer.h"
+#include "file_operator.h"
 #include "hap_token_info.h"
 #include "if_system_ability_manager.h"
 #include "ipc_skeleton.h"
@@ -47,6 +48,8 @@ static const std::string ALLOW_ABILITY[] = {"com.ohos.dlpmanager"};
 static const std::string DLP_MANAGER = "com.ohos.dlpmanager";
 static const std::chrono::seconds SLEEP_TIME(120);
 static const int REPEAT_TIME = 5;
+static const std::string DLP_CONFIG = "/system/etc/dlp_config.json";
+static const std::string SUPPORT_FILE_TYPE = "support_file_type";
 }
 REGISTER_SYSTEM_ABILITY_BY_ID(DlpPermissionService, SA_ID_DLP_PERMISSION_SERVICE, true);
 
@@ -215,7 +218,8 @@ int32_t DlpPermissionService::InstallDlpSandbox(const std::string& bundleName, A
     }
     if (isNeedInstall) {
         AppExecFwk::BundleMgrClient bundleMgrClient;
-        int32_t bundleClientRes = bundleMgrClient.InstallSandboxApp(bundleName, permType, userId, appIndex);
+        AuthPermType permForBMS = (permType == READ_ONLY) ? READ_ONLY : CONTENT_EDIT;
+        int32_t bundleClientRes = bundleMgrClient.InstallSandboxApp(bundleName, permForBMS, userId, appIndex);
         if (bundleClientRes != DLP_OK) {
             DLP_LOG_ERROR(LABEL, "install sandbox %{public}s fail, error=%{public}d", bundleName.c_str(),
                 bundleClientRes);
@@ -317,14 +321,38 @@ int32_t DlpPermissionService::QueryDlpFileCopyableByTokenId(bool& copyable, uint
     return appStateObserver_->QueryDlpFileCopyableByTokenId(copyable, tokenId);
 }
 
-int32_t DlpPermissionService::QueryDlpFileAccess(AuthPermType& permType)
+static ActionFlags GetDlpActionFlag(AuthPermType permType)
+{
+    switch (permType) {
+        case READ_ONLY: {
+            return ACTION_VIEW;
+        }
+        case CONTENT_EDIT: {
+            return static_cast<ActionFlags>(ACTION_VIEW | ACTION_SAVE | ACTION_SAVE_AS | ACTION_EDIT |
+            ACTION_SCREEN_CAPTURE | ACTION_SCREEN_SHARE | ACTION_SCREEN_RECORD | ACTION_COPY);
+        }
+        case FULL_CONTROL: {
+            return static_cast<ActionFlags>(ACTION_VIEW | ACTION_SAVE | ACTION_SAVE_AS | ACTION_EDIT |
+                ACTION_SCREEN_CAPTURE | ACTION_SCREEN_SHARE | ACTION_SCREEN_RECORD | ACTION_COPY | ACTION_PRINT |
+                ACTION_EXPORT | ACTION_PERMISSION_CHANGE);
+        }
+        default:
+            return ACTION_INVALID;
+    }
+}
+
+int32_t DlpPermissionService::QueryDlpFileAccess(DLPPermissionInfoParcel& permInfoParcel)
 {
     if (appStateObserver_ == nullptr) {
         DLP_LOG_WARN(LABEL, "Failed to get app state observer instance");
         return DLP_SERVICE_ERROR_APPOBSERVER_NULL;
     }
     int32_t uid = IPCSkeleton::GetCallingUid();
-    return appStateObserver_->QueryDlpFileAccessByUid(permType, uid);
+    AuthPermType permType = DEFAULT_PERM;
+    int32_t res = appStateObserver_->QueryDlpFileAccessByUid(permType, uid);
+    permInfoParcel.permInfo_.permType = permType;
+    permInfoParcel.permInfo_.flags = GetDlpActionFlag(permType);
+    return res;
 }
 
 int32_t DlpPermissionService::IsInDlpSandbox(bool& inSandbox)
@@ -337,13 +365,36 @@ int32_t DlpPermissionService::IsInDlpSandbox(bool& inSandbox)
     return appStateObserver_->IsInDlpSandbox(inSandbox, uid);
 }
 
+std::vector<std::string> DlpPermissionService::InitConfig()
+{
+    static std::vector<std::string> typeList;
+    static bool cfgInit = true;
+    std::lock_guard<std::mutex> lock(mutex_);
+    if (cfgInit) {
+        cfgInit = false;
+        std::string content;
+        (void)FileOperator().GetFileContentByPath(DLP_CONFIG, content);
+        if (content.empty()) {
+            return typeList;
+        }
+        auto jsonObj = nlohmann::json::parse(content);
+        if (jsonObj.is_discarded() || (!jsonObj.is_object())) {
+            DLP_LOG_ERROR(LABEL, "JsonObj is discarded");
+            return typeList;
+        }
+
+        if (jsonObj.find(SUPPORT_FILE_TYPE) != jsonObj.end() && jsonObj.at(SUPPORT_FILE_TYPE).is_array()) {
+            typeList = jsonObj.at(SUPPORT_FILE_TYPE).get<std::vector<std::string>>();
+        }
+    }
+
+    return typeList;
+}
+
 int32_t DlpPermissionService::GetDlpSupportFileType(std::vector<std::string>& supportFileType)
 {
-    supportFileType = {
-        ".doc", ".docm", ".docx", ".dot", ".dotm", ".dotx", ".odp", ".odt", ".pdf", ".pot", ".potm", ".potx", ".ppa",
-        ".ppam", ".pps", ".ppsm", ".ppsx", ".ppt", ".pptm", ".pptx", ".rtf", ".txt", ".wps", ".xla", ".xlam", ".xls",
-        ".xlsb", ".xlsm", ".xlsx", ".xlt", ".xltm", ".xltx", ".xlw", ".xml", ".xps"
-    };
+    supportFileType = InitConfig();
+    StartTimer();
     return DLP_OK;
 }
 

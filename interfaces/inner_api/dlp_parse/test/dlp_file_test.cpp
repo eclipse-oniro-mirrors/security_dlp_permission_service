@@ -220,10 +220,10 @@ HWTEST_F(DlpFileTest, UpdateDlpFilePermission001, TestSize.Level1)
 
     DlpFile testFile(1000);
     testFile.policy_.ownerAccount_ = "ohosAnonymousName";
-    testFile.isReadOnly_ = true;
+    testFile.authPerm_ = DEFAULT_PERM;
 
     testFile.UpdateDlpFilePermission();
-    ASSERT_FALSE(testFile.isReadOnly_);
+    ASSERT_EQ(testFile.authPerm_, FULL_CONTROL);
 }
 
 /**
@@ -243,10 +243,10 @@ HWTEST_F(DlpFileTest, UpdateDlpFilePermission002, TestSize.Level1)
     };
 
     testFile.policy_.authUsers_.emplace_back(user);
-    testFile.isReadOnly_ = false;
+    testFile.authPerm_ = DEFAULT_PERM;
 
     testFile.UpdateDlpFilePermission();
-    ASSERT_TRUE(testFile.isReadOnly_);
+    ASSERT_EQ(testFile.authPerm_, READ_ONLY);
 }
 
 /**
@@ -266,10 +266,10 @@ HWTEST_F(DlpFileTest, UpdateDlpFilePermission003, TestSize.Level1)
     };
 
     testFile.policy_.authUsers_.emplace_back(user);
-    testFile.isReadOnly_ = true;
+    testFile.authPerm_ = DEFAULT_PERM;
 
     testFile.UpdateDlpFilePermission();
-    ASSERT_FALSE(testFile.isReadOnly_);
+    ASSERT_EQ(testFile.authPerm_, FULL_CONTROL);
 }
 
 /**
@@ -289,9 +289,9 @@ HWTEST_F(DlpFileTest, UpdateDlpFilePermission004, TestSize.Level1)
     };
 
     testFile.policy_.authUsers_.emplace_back(user);
-    testFile.isReadOnly_ = true;
+    testFile.authPerm_ = DEFAULT_PERM;
     testFile.UpdateDlpFilePermission();
-    ASSERT_TRUE(testFile.isReadOnly_);
+    ASSERT_EQ(testFile.authPerm_, DEFAULT_PERM);
 }
 
 /**
@@ -1136,10 +1136,10 @@ HWTEST_F(DlpFileTest, RemoveDlpPermission001, TestSize.Level1)
     EXPECT_EQ(DLP_PARSE_ERROR_FILE_LINKING, testFile.RemoveDlpPermission(fdPlain));
     testFile.isFuseLink_ = false;
 
-    // isReadOnly_ true
-    testFile.isReadOnly_ = true;
+    // authPerm_ READ_ONLY
+    testFile.authPerm_ = READ_ONLY;
     EXPECT_EQ(DLP_PARSE_ERROR_FILE_READ_ONLY, testFile.RemoveDlpPermission(fdPlain));
-    testFile.isReadOnly_ = false;
+    testFile.authPerm_ = FULL_CONTROL;
 
     // outPlainFileFd invalid
     EXPECT_EQ(DLP_PARSE_ERROR_FD_ERROR, testFile.RemoveDlpPermission(-1));
@@ -1451,9 +1451,9 @@ HWTEST_F(DlpFileTest, DlpFileWrite001, TestSize.Level1)
 
     testFile.head_.txtOffset = 0;
 
-    testFile.isReadOnly_ = true;
+    testFile.authPerm_ = READ_ONLY;
     EXPECT_EQ(DLP_PARSE_ERROR_FILE_READ_ONLY, testFile.DlpFileWrite(4, writeBuffer, 16));
-    testFile.isReadOnly_ = false;
+    testFile.authPerm_ = FULL_CONTROL;
 
     EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, testFile.DlpFileWrite(4, nullptr, 16));
     EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, testFile.DlpFileWrite(4, writeBuffer, 0));
@@ -1499,9 +1499,9 @@ HWTEST_F(DlpFileTest, Truncate001, TestSize.Level1)
 
     testFile.head_.txtOffset = 0;
 
-    testFile.isReadOnly_ = true;
+    testFile.authPerm_ = READ_ONLY;
     EXPECT_EQ(DLP_PARSE_ERROR_FILE_READ_ONLY, testFile.Truncate(16));
-    testFile.isReadOnly_ = false;
+    testFile.authPerm_ = FULL_CONTROL;
 
     testFile.dlpFd_ = -1;
     EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, testFile.Truncate(16));

@@ -289,6 +289,57 @@ HWTEST_F(DlpFuseTest, OpenDlpFile001, TestSize.Level1)
 }
 
 /**
+ * @tc.name: OpenDlpFile002
+ * @tc.desc: test dlp fuse init，fd is right
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIGC
+ */
+HWTEST_F(DlpFuseTest, OpenDlpFile002, TestSize.Level1)
+{
+    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    ASSERT_GE(g_plainFileFd, 0);
+    ASSERT_GE(g_dlpFileFd, 0);
+    char buffer[] = "123456";
+    ASSERT_NE(write(g_plainFileFd, buffer, sizeof(buffer)), -1);
+    struct DlpProperty prop;
+    GenerateRandProperty(prop);
+    prop.supportEveryone = true;
+    prop.everyonePerm = READ_ONLY;
+    int32_t result = DlpFileManager::GetInstance().GenerateDlpFile(g_plainFileFd, g_dlpFileFd, prop, g_Dlpfile);
+    ASSERT_EQ(result, 0);
+    ASSERT_NE(g_Dlpfile, nullptr);
+    result = DlpFileManager::GetInstance().CloseDlpFile(g_Dlpfile);
+    ASSERT_EQ(result, 0);
+    g_Dlpfile = nullptr;
+    result = DlpFileManager::GetInstance().OpenDlpFile(g_dlpFileFd, g_Dlpfile, "");
+    ASSERT_EQ(result, 0);
+    ASSERT_NE(g_Dlpfile, nullptr);
+    PermissionPolicy policy;
+    g_Dlpfile->GetPolicy(policy);
+    ASSERT_EQ(policy.ownerAccount_, prop.ownerAccount);
+    ASSERT_EQ(policy.supportEveryone_, prop.supportEveryone);
+    ASSERT_EQ(policy.everyonePerm_, prop.everyonePerm);
+    std::vector<AuthUserInfo>& authUsers = policy.authUsers_;
+    ASSERT_EQ(authUsers.size(), prop.authUsers.size());
+
+    std::string contactAccount;
+    g_Dlpfile->GetContactAccount(contactAccount);
+    ASSERT_EQ(contactAccount, prop.contractAccount);
+    g_recoveryFileFd = open("/data/fuse_test.txt.recovery", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    ASSERT_GE(g_recoveryFileFd, 0);
+    ASSERT_EQ(DlpFileManager::GetInstance().RecoverDlpFile(g_Dlpfile, g_recoveryFileFd), 0);
+    lseek(g_recoveryFileFd, 0, SEEK_SET);
+    char buffer2[16] = {0};
+    result = read(g_recoveryFileFd, buffer2, 16);
+    ASSERT_GE(result, 0);
+    result = memcmp(buffer, buffer2, result);
+    ASSERT_EQ(result, 0);
+    ASSERT_EQ(DlpFileManager::GetInstance().CloseDlpFile(g_Dlpfile), 0);
+    g_Dlpfile = nullptr;
+}
+
+/**
  * @tc.name: testIsDlpFile
  * @tc.desc: test check dlp file
  * @tc.type: FUNC

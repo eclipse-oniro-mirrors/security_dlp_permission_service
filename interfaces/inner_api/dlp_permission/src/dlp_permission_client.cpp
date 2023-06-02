@@ -194,7 +194,7 @@ int32_t DlpPermissionClient::QueryDlpFileCopyableByTokenId(bool& copyable, uint3
     return proxy->QueryDlpFileCopyableByTokenId(copyable, tokenId);
 }
 
-int32_t DlpPermissionClient::QueryDlpFileAccess(AuthPermType& permType)
+int32_t DlpPermissionClient::QueryDlpFileAccess(DLPPermissionInfo& permInfo)
 {
     bool sandboxFlag;
     if (CheckSandboxFlag(GetSelfTokenID(), sandboxFlag) != DLP_OK) {
@@ -203,18 +203,26 @@ int32_t DlpPermissionClient::QueryDlpFileAccess(AuthPermType& permType)
 
     if (!sandboxFlag) {
         DLP_LOG_INFO(LABEL, "it is not a sandbox app");
-        permType = DEFAULT_PERM;
         return DLP_OK;
     }
 
     auto proxy = GetProxy(false);
     if (proxy == nullptr) {
         DLP_LOG_INFO(LABEL, "Proxy is null");
-        permType = DEFAULT_PERM;
         return DLP_OK;
     }
+    sptr<DLPPermissionInfoParcel> permInfoyParcel = new (std::nothrow) DLPPermissionInfoParcel();
+    if (permInfoyParcel == nullptr) {
+        DLP_LOG_ERROR(LABEL, "New memory fail");
+        return DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL;
+    }
 
-    return proxy->QueryDlpFileAccess(permType);
+    int32_t result = proxy->QueryDlpFileAccess(*permInfoyParcel);
+    if (result != DLP_OK) {
+        return result;
+    }
+    permInfo = permInfoyParcel->permInfo_;
+    return result;
 }
 
 int32_t DlpPermissionClient::IsInDlpSandbox(bool& inSandbox)
@@ -242,7 +250,7 @@ int32_t DlpPermissionClient::IsInDlpSandbox(bool& inSandbox)
 
 int32_t DlpPermissionClient::GetDlpSupportFileType(std::vector<std::string>& supportFileType)
 {
-    auto proxy = GetProxy(false);
+    auto proxy = GetProxy(true);
     if (proxy == nullptr) {
         DLP_LOG_INFO(LABEL, "Proxy is null");
         return DLP_OK;

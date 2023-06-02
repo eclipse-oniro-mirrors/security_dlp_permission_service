@@ -46,7 +46,7 @@ public:
     int32_t GetSandboxExternalAuthorization(int sandboxUid, const AAFwk::Want& want,
         SandBoxExternalAuthorType& authType);
     int32_t QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t tokenId);
-    int32_t QueryDlpFileAccess(AuthPermType& permType);
+    int32_t QueryDlpFileAccess(DLPPermissionInfo& permInfo);
     int32_t IsInDlpSandbox(bool& inSandbox);
     int32_t GetDlpSupportFileType(std::vector<std::string>& supportFileType);
     int32_t RegisterDlpSandboxChangeCallback(const std::shared_ptr<DlpSandboxChangeCallbackCustomize> &customizedCb);

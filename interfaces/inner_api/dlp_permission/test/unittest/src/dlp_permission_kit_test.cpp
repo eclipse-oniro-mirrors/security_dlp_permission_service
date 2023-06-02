@@ -58,6 +58,8 @@ const uint32_t INVALID_AUTH_PERM_LOWER = 0;
 const int64_t INVALID_DELTA_EXPIRY_TIME = -100;
 
 const int32_t DEFAULT_USERID = 100;
+const int32_t ACTION_SET_EDIT = 0xff;
+const int32_t ACTION_SET_FC = 0x7ff;
 static AccessTokenID g_selfTokenId = 0;
 static AccessTokenID g_dlpManagerTokenId = 0;
 static int32_t g_selfUid = 0;
@@ -637,9 +639,10 @@ HWTEST_F(DlpPermissionKitTest, QueryDlpFileAccess001, TestSize.Level1)
     AccessTokenID tokenId = GetSelfTokenID();
     TestMockApp(DLP_MANAGER_APP, 0, DEFAULT_USERID);
 
-    AuthPermType permType;
-    ASSERT_EQ(DLP_OK, DlpPermissionKit::QueryDlpFileAccess(permType));
-    ASSERT_EQ(permType, DEFAULT_PERM);
+    DLPPermissionInfo permInfo;
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::QueryDlpFileAccess(permInfo));
+    ASSERT_EQ(permInfo.permType, DEFAULT_PERM);
+    ASSERT_EQ(permInfo.flags, ACTION_INVALID);
 
     TestRecoverProcessInfo(uid, tokenId);
 }
@@ -660,9 +663,10 @@ HWTEST_F(DlpPermissionKitTest, QueryDlpFileAccess002, TestSize.Level1)
     AccessTokenID tokenId = GetSelfTokenID();
     TestMockApp(DLP_MANAGER_APP, appIndex, DEFAULT_USERID);
 
-    AuthPermType permType;
-    ASSERT_EQ(DLP_OK, DlpPermissionKit::QueryDlpFileAccess(permType));
-    ASSERT_EQ(permType, READ_ONLY);
+    DLPPermissionInfo permInfo;
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::QueryDlpFileAccess(permInfo));
+    ASSERT_EQ(permInfo.permType, READ_ONLY);
+    ASSERT_EQ(permInfo.flags, ACTION_VIEW);
 
     TestUninstallDlpSandbox(DLP_MANAGER_APP, appIndex, DEFAULT_USERID);
     TestRecoverProcessInfo(uid, tokenId);
@@ -670,11 +674,36 @@ HWTEST_F(DlpPermissionKitTest, QueryDlpFileAccess002, TestSize.Level1)
 
 /**
  * @tc.name: QueryDlpFileAccess003
- * @tc.desc: QueryDlpFileAccess in full control sandbox app.
+ * @tc.desc: QueryDlpFileAccess in content edit sandbox app.
  * @tc.type: FUNC
  * @tc.require: SR000GVIGN AR000GVIGO
  */
 HWTEST_F(DlpPermissionKitTest, QueryDlpFileAccess003, TestSize.Level1)
+{
+    // query dlp file access in content edit sandbox app
+    int32_t appIndex = 0;
+    TestInstallDlpSandbox(DLP_MANAGER_APP, CONTENT_EDIT, DEFAULT_USERID, appIndex);
+
+    int32_t uid = getuid();
+    AccessTokenID tokenId = GetSelfTokenID();
+    TestMockApp(DLP_MANAGER_APP, appIndex, DEFAULT_USERID);
+
+    DLPPermissionInfo permInfo;
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::QueryDlpFileAccess(permInfo));
+    ASSERT_EQ(permInfo.permType, CONTENT_EDIT);
+    ASSERT_EQ(permInfo.flags, ACTION_SET_EDIT);
+
+    TestUninstallDlpSandbox(DLP_MANAGER_APP, appIndex, DEFAULT_USERID);
+    TestRecoverProcessInfo(uid, tokenId);
+}
+
+/**
+ * @tc.name: QueryDlpFileAccess004
+ * @tc.desc: QueryDlpFileAccess in full control sandbox app.
+ * @tc.type: FUNC
+ * @tc.require: SR000GVIGN AR000GVIGO
+ */
+HWTEST_F(DlpPermissionKitTest, QueryDlpFileAccess004, TestSize.Level1)
 {
     // query dlp file access in full control sandbox app
     int32_t appIndex = 0;
@@ -684,9 +713,10 @@ HWTEST_F(DlpPermissionKitTest, QueryDlpFileAccess003, TestSize.Level1)
     AccessTokenID tokenId = GetSelfTokenID();
     TestMockApp(DLP_MANAGER_APP, appIndex, DEFAULT_USERID);
 
-    AuthPermType permType;
-    ASSERT_EQ(DLP_OK, DlpPermissionKit::QueryDlpFileAccess(permType));
-    ASSERT_EQ(permType, FULL_CONTROL);
+    DLPPermissionInfo permInfo;
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::QueryDlpFileAccess(permInfo));
+    ASSERT_EQ(permInfo.permType, FULL_CONTROL);
+    ASSERT_EQ(permInfo.flags, ACTION_SET_FC);
 
     TestUninstallDlpSandbox(DLP_MANAGER_APP, appIndex, DEFAULT_USERID);
     TestRecoverProcessInfo(uid, tokenId);
@@ -805,11 +835,34 @@ HWTEST_F(DlpPermissionKitTest, GetDlpSupportFileType002, TestSize.Level1)
 
 /**
  * @tc.name: GetDlpSupportFileType003
+ * @tc.desc: GetDlpSupportFileType in context edit sandbox app.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionKitTest, GetDlpSupportFileType003, TestSize.Level1)
+{
+    // query support dlp file types in context edit sandbox app
+    int32_t appIndex = 0;
+    TestInstallDlpSandbox(DLP_MANAGER_APP, CONTENT_EDIT, DEFAULT_USERID, appIndex);
+
+    int32_t uid = getuid();
+    AccessTokenID tokenId = GetSelfTokenID();
+    TestMockApp(DLP_MANAGER_APP, appIndex, DEFAULT_USERID);
+    std::vector<std::string> supportFileType;
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::GetDlpSupportFileType(supportFileType));
+    ASSERT_EQ(supportFileType.empty(), false);
+
+    TestUninstallDlpSandbox(DLP_MANAGER_APP, appIndex, DEFAULT_USERID);
+    TestRecoverProcessInfo(uid, tokenId);
+}
+
+/**
+ * @tc.name: GetDlpSupportFileType004
  * @tc.desc: GetDlpSupportFileType in full control sandbox app.
  * @tc.type: FUNC
  * @tc.require: SR000GVIGN AR000GVIGO
  */
-HWTEST_F(DlpPermissionKitTest, GetDlpSupportFileType003, TestSize.Level1)
+HWTEST_F(DlpPermissionKitTest, GetDlpSupportFileType004, TestSize.Level1)
 {
     // query support dlp file types in full control sandbox app
     int32_t appIndex = 0;

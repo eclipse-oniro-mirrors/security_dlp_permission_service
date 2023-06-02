@@ -127,6 +127,8 @@ PermissionPolicy::PermissionPolicy(const DlpProperty& property)
     ownerAccount_ = property.ownerAccount;
     ownerAccountType_ = property.ownerAccountType;
     authUsers_ = property.authUsers;
+    supportEveryone_ = property.supportEveryone;
+    everyonePerm_ = property.everyonePerm;
     aeskey_ = nullptr;
     aeskeyLen_ = 0;
     iv_ = nullptr;
@@ -223,6 +225,8 @@ void PermissionPolicy::CopyPermissionPolicy(const PermissionPolicy& srcPolicy)
     ownerAccount_ = srcPolicy.ownerAccount_;
     ownerAccountType_ = srcPolicy.ownerAccountType_;
     authUsers_ = srcPolicy.authUsers_;
+    supportEveryone_ = srcPolicy.supportEveryone_;
+    everyonePerm_ = srcPolicy.everyonePerm_;
     aeskeyLen_ = srcPolicy.aeskeyLen_;
     aeskey_ = new (std::nothrow) uint8_t[aeskeyLen_];
     if (aeskey_ == nullptr) {

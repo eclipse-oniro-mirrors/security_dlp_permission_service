@@ -264,14 +264,20 @@ static napi_value EnumAuthPermTypeConstructor(napi_env env, napi_callback_info i
 napi_value CreateEnumAuthPermType(napi_env env, napi_value exports)
 {
     napi_value readOnly = nullptr;
+    napi_value contentEdit = nullptr;
     napi_value fullControl = nullptr;
+    napi_value defaultPerm = nullptr;
 
     NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(READ_ONLY), &readOnly));
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(CONTENT_EDIT), &contentEdit));
     NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(FULL_CONTROL), &fullControl));
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(DEFAULT_PERM), &defaultPerm));
 
     napi_property_descriptor desc[] = {
         DECLARE_NAPI_STATIC_PROPERTY("READ_ONLY", readOnly),
+        DECLARE_NAPI_STATIC_PROPERTY("CONTENT_EDIT", contentEdit),
         DECLARE_NAPI_STATIC_PROPERTY("FULL_CONTROL", fullControl),
+        DECLARE_NAPI_STATIC_PROPERTY("DEFAULT_PERM", defaultPerm),
     };
     napi_value result = nullptr;
     NAPI_CALL(env, napi_define_class(env, "AuthPermType", NAPI_AUTO_LENGTH, EnumAuthPermTypeConstructor, nullptr,
@@ -311,6 +317,67 @@ napi_value CreateEnumAccountType(napi_env env, napi_value exports)
                        sizeof(desc) / sizeof(*desc), desc, &result));
 
     NAPI_CALL(env, napi_set_named_property(env, exports, "AccountType", result));
+    return exports;
+}
+
+static napi_value ActionFlagsConstructor(napi_env env, napi_callback_info info)
+{
+    napi_value thisArg = nullptr;
+    void* data = nullptr;
+    NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisArg, &data));
+    napi_value global = nullptr;
+    NAPI_CALL(env, napi_get_global(env, &global));
+    return thisArg;
+}
+
+napi_value CreateEnumActionFlags(napi_env env, napi_value exports)
+{
+    napi_value actionInvalid = nullptr;
+    napi_value actionView = nullptr;
+    napi_value actionSave = nullptr;
+    napi_value actionSaveAs = nullptr;
+    napi_value actionEdit = nullptr;
+    napi_value actionScreenCapture = nullptr;
+    napi_value actionScreenShare = nullptr;
+    napi_value actionScreenRecord = nullptr;
+    napi_value actionCopy = nullptr;
+    napi_value actionPrint = nullptr;
+    napi_value actionExport = nullptr;
+    napi_value actionPermissionChange = nullptr;
+
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_INVALID), &actionInvalid));
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_VIEW), &actionView));
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_SAVE), &actionSave));
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_SAVE_AS), &actionSaveAs));
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_EDIT), &actionEdit));
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_SCREEN_CAPTURE), &actionScreenCapture));
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_SCREEN_SHARE), &actionScreenShare));
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_SCREEN_RECORD), &actionScreenRecord));
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_COPY), &actionCopy));
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_PRINT), &actionPrint));
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_EXPORT), &actionExport));
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_PERMISSION_CHANGE), &actionPermissionChange));
+
+    napi_property_descriptor desc[] = {
+        DECLARE_NAPI_STATIC_PROPERTY("ACTION_INVALID", actionInvalid),
+        DECLARE_NAPI_STATIC_PROPERTY("ACTION_VIEW", actionView),
+        DECLARE_NAPI_STATIC_PROPERTY("ACTION_SAVE", actionSave),
+        DECLARE_NAPI_STATIC_PROPERTY("ACTION_SAVE_AS", actionSaveAs),
+        DECLARE_NAPI_STATIC_PROPERTY("ACTION_EDIT", actionEdit),
+        DECLARE_NAPI_STATIC_PROPERTY("ACTION_SCREEN_CAPTURE", actionScreenCapture),
+        DECLARE_NAPI_STATIC_PROPERTY("ACTION_SCREEN_SHARE", actionScreenShare),
+        DECLARE_NAPI_STATIC_PROPERTY("ACTION_SCREEN_RECORD", actionScreenRecord),
+        DECLARE_NAPI_STATIC_PROPERTY("ACTION_COPY", actionCopy),
+        DECLARE_NAPI_STATIC_PROPERTY("ACTION_PRINT", actionPrint),
+        DECLARE_NAPI_STATIC_PROPERTY("ACTION_EXPORT", actionExport),
+        DECLARE_NAPI_STATIC_PROPERTY("ACTION_PERMISSION_CHANGE", actionPermissionChange),
+    };
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_define_class(env, "ActionFlags", NAPI_AUTO_LENGTH, ActionFlagsConstructor, nullptr,
+                       sizeof(desc) / sizeof(*desc), desc, &result));
+
+    NAPI_CALL(env, napi_set_named_property(env, exports, "ActionFlags", result));
     return exports;
 }
 
@@ -390,7 +457,7 @@ bool GetGenerateDlpFileParams(
     }
 
     if (argc == PARAM_SIZE_FOUR) {
-        if (!GetCallback(env, argv[PARAM3], asyncContext)) {
+        if (!ParseCallback(env, argv[PARAM3], asyncContext.callbackRef)) {
             ThrowParamError(env, "callback", "function");
             return false;
         }
@@ -422,7 +489,7 @@ bool GetOpenDlpFileParams(const napi_env env, const napi_callback_info info, Dlp
     }
 
     if (argc == PARAM_SIZE_TWO) {
-        if (!GetCallback(env, argv[PARAM1], asyncContext)) {
+        if (!ParseCallback(env, argv[PARAM1], asyncContext.callbackRef)) {
             ThrowParamError(env, "callback", "function");
             return false;
         }
@@ -449,7 +516,7 @@ bool GetIsDlpFileParams(const napi_env env, const napi_callback_info info, DlpFi
     }
 
     if (argc == PARAM_SIZE_TWO) {
-        if (!GetCallback(env, argv[PARAM1], asyncContext)) {
+        if (!ParseCallback(env, argv[PARAM1], asyncContext.callbackRef)) {
             ThrowParamError(env, "callback", "function");
             return false;
         }
@@ -487,7 +554,7 @@ bool GetDlpLinkFileParams(const napi_env env, const napi_callback_info info, Dlp
     }
 
     if (argc == PARAM_SIZE_TWO) {
-        if (!GetCallback(env, argv[PARAM1], asyncContext)) {
+        if (!ParseCallback(env, argv[PARAM1], asyncContext.callbackRef)) {
             ThrowParamError(env, "callback", "function");
             return false;
         }
@@ -526,7 +593,7 @@ bool GetRecoverDlpFileParams(
     }
 
     if (argc == PARAM_SIZE_TWO) {
-        if (!GetCallback(env, argv[PARAM1], asyncContext)) {
+        if (!ParseCallback(env, argv[PARAM1], asyncContext.callbackRef)) {
             ThrowParamError(env, "callback", "function");
             return false;
         }
@@ -554,7 +621,7 @@ bool GetCloseDlpFileParams(const napi_env env, const napi_callback_info info, Cl
     }
 
     if (argc == PARAM_SIZE_ONE) {
-        if (!GetCallback(env, argv[PARAM0], asyncContext)) {
+        if (!ParseCallback(env, argv[PARAM0], asyncContext.callbackRef)) {
             ThrowParamError(env, "callback", "function");
             return false;
         }
@@ -598,7 +665,7 @@ bool GetInstallDlpSandboxParams(const napi_env env, const napi_callback_info inf
     }
 
     if (argc == PARAM_SIZE_FIVE) {
-        if (!GetCallback(env, argv[PARAM4], asyncContext)) {
+        if (!ParseCallback(env, argv[PARAM4], asyncContext.callbackRef)) {
             ThrowParamError(env, "callback", "function");
             return false;
         }
@@ -642,7 +709,7 @@ bool GetUninstallDlpSandboxParams(
     asyncContext.appIndex = static_cast<int32_t>(res);
 
     if (argc == PARAM_SIZE_FOUR) {
-        if (!GetCallback(env, argv[PARAM3], asyncContext)) {
+        if (!ParseCallback(env, argv[PARAM3], asyncContext.callbackRef)) {
             ThrowParamError(env, "callback", "function");
             return false;
         }
@@ -776,7 +843,7 @@ bool GetRetentionStateParams(const napi_env env, const napi_callback_info info,
     }
 
     if (argc == PARAM_SIZE_TWO) {
-        if (!GetCallback(env, argv[PARAM1], asyncContext)) {
+        if (!ParseCallback(env, argv[PARAM1], asyncContext.callbackRef)) {
             ThrowParamError(env, "callback", "function");
             return false;
         }
@@ -793,7 +860,7 @@ bool GetRetentionSandboxListParams(const napi_env env, const napi_callback_info 
     napi_value argv[PARAM_SIZE_TWO] = {nullptr};
     NAPI_CALL_BASE(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr), false);
     if (argc == PARAM_SIZE_TWO) {
-        if (!GetCallback(env, argv[PARAM1], asyncContext)) {
+        if (!ParseCallback(env, argv[PARAM1], asyncContext.callbackRef)) {
             ThrowParamError(env, "callback", "function");
             return false;
         }
@@ -805,7 +872,7 @@ bool GetRetentionSandboxListParams(const napi_env env, const napi_callback_info 
     }
     if (argc == PARAM_SIZE_ONE) {
         if (!GetStringValue(env, argv[PARAM0], asyncContext.bundleName) &&
-            !GetCallback(env, argv[PARAM0], asyncContext)) {
+            !ParseCallback(env, argv[PARAM0], asyncContext.callbackRef)) {
             DLP_LOG_ERROR(LABEL, "js get bundle name or callback fail");
             ThrowParamError(env, "bundleName or callback", "string or function");
             return false;
@@ -822,7 +889,7 @@ bool GetThirdInterfaceParams(
     NAPI_CALL_BASE(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr), false);
 
     if (argc == PARAM_SIZE_ONE) {
-        if (!GetCallback(env, argv[PARAM0], asyncContext)) {
+        if (!ParseCallback(env, argv[PARAM0], asyncContext.callbackRef)) {
             ThrowParamError(env, "callback", "function");
             return false;
         }
@@ -854,6 +921,17 @@ bool GetDlpProperty(napi_env env, napi_value jsObject, DlpProperty& property)
         DLP_LOG_ERROR(LABEL, "js get offline access flag fail");
         return false;
     }
+    if (!GetBoolValueByKey(env, jsObject, "supportEveryone", property.supportEveryone)) {
+        DLP_LOG_ERROR(LABEL, "js get supportEveryone flag fail");
+        return false;
+    }
+
+    int64_t perm;
+    if (!GetInt64ValueByKey(env, jsObject, "everyonePerm", perm)) {
+        DLP_LOG_ERROR(LABEL, "js get auth perm fail");
+        return false;
+    }
+    property.everyonePerm = static_cast<AuthPermType>(perm);
 
     DLP_LOG_DEBUG(LABEL,
         "ownerAccount: %{private}s, authUsers size: %{private}zu, contractAccount: %{private}s, ownerAccountType: "
@@ -894,6 +972,14 @@ napi_value DlpPropertyToJs(napi_env env, const DlpProperty& property)
     napi_value dlpPropertyJs = nullptr;
     NAPI_CALL(env, napi_create_object(env, &dlpPropertyJs));
 
+    napi_value everyonePermJs;
+    NAPI_CALL(env, napi_create_int64(env, property.everyonePerm, &everyonePermJs));
+    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "everyonePerm", everyonePermJs));
+
+    napi_value supportEveryoneJs;
+    napi_get_boolean(env, property.supportEveryone, &supportEveryoneJs);
+    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "supportEveryone", supportEveryoneJs));
+
     napi_value offlineAccessJs;
     napi_get_boolean(env, property.offlineAccess, &offlineAccessJs);
     NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "offlineAccess", offlineAccessJs));
@@ -915,6 +1001,22 @@ napi_value DlpPropertyToJs(napi_env env, const DlpProperty& property)
     NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "ownerAccountType", ownerAccountTypeJs));
 
     return dlpPropertyJs;
+}
+
+napi_value DlpPermissionInfoToJs(napi_env env, const DLPPermissionInfo& permInfo)
+{
+    napi_value dlpPermInfoJs = nullptr;
+    NAPI_CALL(env, napi_create_object(env, &dlpPermInfoJs));
+
+    napi_value accessJs;
+    NAPI_CALL(env, napi_create_uint32(env, permInfo.permType, &accessJs));
+    NAPI_CALL(env, napi_set_named_property(env, dlpPermInfoJs, "access", accessJs));
+
+    napi_value flagsJs;
+    NAPI_CALL(env, napi_create_uint32(env, permInfo.flags, &flagsJs));
+    NAPI_CALL(env, napi_set_named_property(env, dlpPermInfoJs, "flags", flagsJs));
+
+    return dlpPermInfoJs;
 }
 
 napi_value VectorAuthUserToJs(napi_env env, const std::vector<AuthUserInfo>& users)
@@ -985,36 +1087,19 @@ napi_value SetStringToJs(napi_env env, const std::set<std::string>& value)
     return jsArray;
 }
 
-bool ParseCallback(const napi_env& env, const napi_value& value, napi_ref& result)
+bool ParseCallback(const napi_env& env, const napi_value& value, napi_ref& callbackRef)
 {
     napi_valuetype valuetype = napi_undefined;
-    if (napi_typeof(env, value, &valuetype) != napi_ok) {
-        DLP_LOG_ERROR(LABEL, "Can not get napi type");
-        return false;
-    }
-    if (valuetype != napi_function) {
-        DLP_LOG_ERROR(LABEL, "value type is not napi_function");
-        return false;
-    }
-    int32_t res = napi_create_reference(env, value, 1, &result);
-    if (res != napi_ok) {
-        DLP_LOG_ERROR(LABEL, "cannot get value callback");
-        return false;
-    }
-    return true;
-}
-
-bool GetCallback(const napi_env env, napi_value jsObject, CommonAsyncContext& asyncContext)
-{
-    napi_valuetype valueType = napi_undefined;
-    NAPI_CALL_BASE(env, napi_typeof(env, jsObject, &valueType), false);
-    if (valueType == napi_function) {
-        NAPI_CALL_BASE(env, napi_create_reference(env, jsObject, 1, &asyncContext.callbackRef), false);
+    NAPI_CALL_BASE(env, napi_typeof(env, value, &valuetype), false);
+    
+    if (valuetype == napi_function) {
+        NAPI_CALL_BASE(env, napi_create_reference(env, value, 1, &callbackRef), false);
         return true;
-    } else {
-        DLP_LOG_ERROR(LABEL, "get callback fail");
-        return false;
     }
+    if (valuetype == napi_null || valuetype == napi_undefined) {
+        return true;
+    }
+    return false;
 }
 
 napi_value GetNapiValue(napi_env env, napi_value jsObject, const std::string& key)

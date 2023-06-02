@@ -17,6 +17,7 @@
 #define I_DLP_PERMISSION_SERVICE_H
 
 #include <string>
+#include "dlp_permission_info_parcel.h"
 #include "dlp_policy_parcel.h"
 #include "i_dlp_permission_callback.h"
 #include "iremote_broker.h"
@@ -45,7 +46,7 @@ public:
     virtual int32_t GetSandboxExternalAuthorization(int sandboxUid, const AAFwk::Want& want,
         SandBoxExternalAuthorType& authType) = 0;
 
-    virtual int32_t QueryDlpFileAccess(AuthPermType& permType) = 0;
+    virtual int32_t QueryDlpFileAccess(DLPPermissionInfoParcel& permInfoParcel) = 0;
 
     virtual int32_t QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t tokenId) = 0;
 

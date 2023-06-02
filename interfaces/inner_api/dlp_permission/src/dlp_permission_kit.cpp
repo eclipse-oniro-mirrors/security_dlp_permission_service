@@ -168,9 +168,9 @@ int32_t DlpPermissionKit::QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t
     return DlpPermissionClient::GetInstance().QueryDlpFileCopyableByTokenId(copyable, tokenId);
 }
 
-int32_t DlpPermissionKit::QueryDlpFileAccess(AuthPermType& permType)
+int32_t DlpPermissionKit::QueryDlpFileAccess(DLPPermissionInfo& permInfo)
 {
-    return DlpPermissionClient::GetInstance().QueryDlpFileAccess(permType);
+    return DlpPermissionClient::GetInstance().QueryDlpFileAccess(permInfo);
 }
 
 int32_t DlpPermissionKit::IsInDlpSandbox(bool& inSandbox)

@@ -151,7 +151,7 @@ struct DlpSandboxAsyncContext : public CommonAsyncContext {
 
 struct QueryFileAccessAsyncContext : public CommonAsyncContext {
     explicit QueryFileAccessAsyncContext(napi_env env) : CommonAsyncContext(env){};
-    AuthPermType permType = DEFAULT_PERM;
+    DLPPermissionInfo permInfo;
 };
 
 struct IsInSandboxAsyncContext : public CommonAsyncContext {
@@ -187,6 +187,7 @@ napi_value GenerateBusinessError(napi_env env, int32_t jsErrCode, const std::str
 
 napi_value CreateEnumAuthPermType(napi_env env, napi_value exports);
 napi_value CreateEnumAccountType(napi_env env, napi_value exports);
+napi_value CreateEnumActionFlags(napi_env env, napi_value exports);
 
 void ProcessCallbackOrPromise(napi_env env, const CommonAsyncContext* asyncContext, napi_value data);
 
@@ -218,8 +219,7 @@ bool GetRetentionSandboxListParams(const napi_env env, const napi_callback_info 
     GetRetentionSandboxListAsyncContext& asyncContext);
 
 bool GetDlpProperty(napi_env env, napi_value object, DlpProperty& property);
-bool GetCallback(const napi_env env, napi_value jsObject, CommonAsyncContext& asyncContext);
-bool ParseCallback(const napi_env& env, const napi_value& value, napi_ref& result);
+bool ParseCallback(const napi_env& env, const napi_value& value, napi_ref& callbackRef);
 
 napi_value GetNapiValue(napi_env env, napi_value jsObject, const std::string& key);
 bool GetStringValue(napi_env env, napi_value jsObject, std::string& result);
@@ -242,6 +242,7 @@ napi_value DlpPropertyToJs(napi_env env, const DlpProperty& property);
 napi_value VectorAuthUserToJs(napi_env env, const std::vector<AuthUserInfo>& users);
 napi_value VectorStringToJs(napi_env env, const std::vector<std::string>& value);
 napi_value SetStringToJs(napi_env env, const std::set<std::string>& value);
+napi_value DlpPermissionInfoToJs(napi_env env, const DLPPermissionInfo& permInfo);
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS

@@ -34,7 +34,7 @@ namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpFile"};
 } // namespace
 
-DlpFile::DlpFile(int32_t dlpFd) : dlpFd_(dlpFd), isFuseLink_(false), isReadOnly_(true)
+DlpFile::DlpFile(int32_t dlpFd) : dlpFd_(dlpFd), isFuseLink_(false), authPerm_(READ_ONLY)
 {
     head_.magic = DLP_FILE_MAGIC;
     head_.version = 1;
@@ -172,15 +172,22 @@ void DlpFile::UpdateDlpFilePermission()
 
     if (accountName == policy_.ownerAccount_) {
         DLP_LOG_DEBUG(LABEL, "current account is owner, it has full permission");
-        isReadOnly_ = false;
+        authPerm_ = FULL_CONTROL;
         return;
+    }
+
+    if (policy_.supportEveryone_) {
+        DLP_LOG_DEBUG(LABEL, "everyone has perm permission %{public}d", policy_.everyonePerm_);
+        authPerm_ = policy_.everyonePerm_;
+    } else {
+        DLP_LOG_DEBUG(LABEL, "everyone has not perm permission %{public}d", policy_.everyonePerm_);
     }
 
     for (int32_t i = 0; i < static_cast<int32_t>(policy_.authUsers_.size()); i++) {
         if (accountName == policy_.authUsers_[i].authAccount) {
-            isReadOnly_ = (policy_.authUsers_[i].authPerm == READ_ONLY);
-            DLP_LOG_DEBUG(LABEL, "current account match authUsers list, isReadOnly_ %{public}s",
-                isReadOnly_ ? "true" : "false");
+            authPerm_ = policy_.authUsers_[i].authPerm;
+            DLP_LOG_DEBUG(LABEL, "current account match authUsers list, authPerm_ %{public}d",
+                authPerm_);
         }
     }
 }
@@ -658,8 +665,8 @@ int32_t DlpFile::RemoveDlpPermission(int32_t outPlainFileFd)
         return DLP_PARSE_ERROR_FILE_LINKING;
     }
 
-    if (isReadOnly_) {
-        DLP_LOG_ERROR(LABEL, "dlp file is read only, remove dlp permission failed.");
+    if (authPerm_ != FULL_CONTROL) {
+        DLP_LOG_ERROR(LABEL, "check permission fail, remove dlp permission failed.");
         return DLP_PARSE_ERROR_FILE_READ_ONLY;
     }
 
@@ -934,7 +941,7 @@ int32_t DlpFile::FillHoleData(uint32_t holeStart, uint32_t holeSize)
 
 int32_t DlpFile::DlpFileWrite(uint32_t offset, void* buf, uint32_t size)
 {
-    if (isReadOnly_) {
+    if (authPerm_ == READ_ONLY) {
         DLP_LOG_ERROR(LABEL, "Dlp file is readonly, write failed");
         return DLP_PARSE_ERROR_FILE_READ_ONLY;
     }
@@ -961,7 +968,7 @@ int32_t DlpFile::Truncate(uint32_t size)
 {
     DLP_LOG_INFO(LABEL, "Truncate file size %{public}d", size);
 
-    if (isReadOnly_) {
+    if (authPerm_ == READ_ONLY) {
         DLP_LOG_ERROR(LABEL, "Dlp file is readonly, truncate failed");
         return DLP_PARSE_ERROR_FILE_READ_ONLY;
     }

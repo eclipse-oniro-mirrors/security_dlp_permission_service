@@ -29,8 +29,8 @@ using namespace OHOS::Security::AccessToken;
 namespace OHOS {
 static void FuzzTest(const uint8_t* data, size_t size)
 {
-    AuthPermType permType;
-    DlpPermissionKit::QueryDlpFileAccess(permType);
+    DLPPermissionInfo permInfo;
+    DlpPermissionKit::QueryDlpFileAccess(permInfo);
 }
 
 bool QueryDlpFileAccessFuzzTest(const uint8_t* data, size_t size)

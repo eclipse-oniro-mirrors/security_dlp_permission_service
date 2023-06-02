@@ -47,6 +47,7 @@ const std::string READ_INDEX = "read";
 const std::string EDIT_INDEX = "edit";
 const std::string FC_INDEX = "fullCtrl";
 const std::string RIGHT_INDEX = "right";
+const std::string EVERYONE_INDEX = "everyone";
 const std::string ENC_POLICY_INDEX = "encPolicy";
 
 #define VALID_TIME_STAMP (2147483647)
@@ -128,7 +129,7 @@ static void SerializeAuthUserInfo(nlohmann::json& authUsersJson,
             read = true;
             break;
         }
-        case EDIT_ONLY: {
+        case CONTENT_EDIT: {
             edit = true;
             break;
         }
@@ -174,7 +175,7 @@ static int32_t DeserializeAuthUserInfo(const nlohmann::json& accountInfoJson,
     if (fullCtrl) {
         userInfo.authPerm = FULL_CONTROL;
     } else if (edit) {
-        userInfo.authPerm = EDIT_ONLY;
+        userInfo.authPerm = CONTENT_EDIT;
     } else {
         userInfo.authPerm = READ_ONLY;
     }
@@ -211,6 +212,43 @@ static int32_t DeserializeAuthUserList(
         }
     }
     return DLP_OK;
+}
+
+static void SerializeEveryoneInfo(const PermissionPolicy& policy, nlohmann::json& permInfoJson)
+{
+    if (policy.supportEveryone_) {
+        bool read = false;
+        bool edit = false;
+        bool fullCtrl = false;
+
+        switch (policy.everyonePerm_) {
+            case READ_ONLY: {
+                read = true;
+                break;
+            }
+            case CONTENT_EDIT: {
+                edit = true;
+                break;
+            }
+            case FULL_CONTROL: {
+                read = true;
+                edit = true;
+                fullCtrl = true;
+                break;
+            }
+            default:
+                break;
+        }
+
+        nlohmann::json rightInfoJson;
+        rightInfoJson[READ_INDEX] = read;
+        rightInfoJson[EDIT_INDEX] = edit;
+        rightInfoJson[FC_INDEX] = fullCtrl;
+        nlohmann::json everyoneJson;
+        everyoneJson[RIGHT_INDEX] = rightInfoJson;
+        permInfoJson[EVERYONE_INDEX] = everyoneJson;
+        return;
+    }
 }
 
 int32_t DlpPermissionSerializer::SerializeDlpPermission(const PermissionPolicy& policy, nlohmann::json& permInfoJson)
@@ -252,6 +290,7 @@ int32_t DlpPermissionSerializer::SerializeDlpPermission(const PermissionPolicy& 
     policyJson[PERM_EXPIRY_TIME] = 0;
     policyJson[NEED_ONLINE] = 0;
     policyJson[ACCOUNT_INDEX] = authUsersJson;
+    SerializeEveryoneInfo(policy, policyJson);
 
     nlohmann::json fileEnc;
     fileEnc[AESKEY] = keyHex;
@@ -285,6 +324,43 @@ static void GetPolicyJson(const nlohmann::json& permJson, nlohmann::json& plainP
     }
 }
 
+static void DeserializeEveryoneInfo(const nlohmann::json& policyJson, PermissionPolicy& policy)
+{
+    if (policyJson.find(EVERYONE_INDEX) == policyJson.end() || !policyJson.at(EVERYONE_INDEX).is_object()) {
+        return;
+    }
+
+    policy.supportEveryone_ = true;
+    nlohmann::json everyoneInfoJson;
+    policyJson.at(EVERYONE_INDEX).get_to(everyoneInfoJson);
+
+    nlohmann::json rightInfoJson;
+    if (everyoneInfoJson.find(RIGHT_INDEX) == everyoneInfoJson.end() ||
+        !everyoneInfoJson.at(RIGHT_INDEX).is_object()) {
+        return;
+    }
+    everyoneInfoJson.at(RIGHT_INDEX).get_to(rightInfoJson);
+
+    bool edit = false;
+    bool fullCtrl = false;
+
+    if (rightInfoJson.find(EDIT_INDEX) != rightInfoJson.end() && rightInfoJson.at(EDIT_INDEX).is_boolean()) {
+        rightInfoJson.at(EDIT_INDEX).get_to(edit);
+    }
+
+    if (rightInfoJson.find(FC_INDEX) != rightInfoJson.end() && rightInfoJson.at(FC_INDEX).is_boolean()) {
+        rightInfoJson.at(FC_INDEX).get_to(fullCtrl);
+    }
+
+    if (fullCtrl) {
+        policy.everyonePerm_ = FULL_CONTROL;
+    } else if (edit) {
+        policy.everyonePerm_ = CONTENT_EDIT;
+    } else {
+        policy.everyonePerm_ = READ_ONLY;
+    }
+}
+
 int32_t DlpPermissionSerializer::DeserializeDlpPermission(const nlohmann::json& permJson, PermissionPolicy& policy)
 {
     nlohmann::json plainPolicyJson;
@@ -299,6 +375,7 @@ int32_t DlpPermissionSerializer::DeserializeDlpPermission(const nlohmann::json& 
     if (policyJson.find(ACCOUNT_INDEX) != policyJson.end() && policyJson.at(ACCOUNT_INDEX).is_object()) {
         policyJson.at(ACCOUNT_INDEX).get_to(accountListJson);
     }
+    DeserializeEveryoneInfo(policyJson, policy);
 
     std::vector<AuthUserInfo> userList;
     int32_t res = DeserializeAuthUserList(accountListJson, userList);

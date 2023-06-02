@@ -45,6 +45,12 @@ bool DlpPolicyParcel::Marshalling(Parcel& out) const
             return false;
         }
     }
+    if (!(out.WriteBool(this->policyParams_.supportEveryone_))) {
+        DLP_LOG_ERROR(LABEL, "Write supportEveryone_ fail");
+    }
+    if (!(out.WriteUint8(this->policyParams_.everyonePerm_))) {
+        DLP_LOG_ERROR(LABEL, "Write everyonePerm_ fail");
+    }
     if (!(out.WriteString(this->policyParams_.ownerAccount_))) {
         DLP_LOG_ERROR(LABEL, "Write owner account fail");
     }
@@ -121,6 +127,16 @@ static bool ReadParcel(Parcel& in, DlpPolicyParcel* policyParcel)
         }
         policyParcel->policyParams_.authUsers_.emplace_back(authUserInfoParcel->authUserInfo_);
     }
+    if (!(in.ReadBool(policyParcel->policyParams_.supportEveryone_))) {
+        DLP_LOG_ERROR(LABEL, "Write supportEveryone_ fail");
+        return false;
+    }
+    uint8_t perm;
+    if (!(in.ReadUint8(perm))) {
+        DLP_LOG_ERROR(LABEL, "Write everyonePerm_ fail");
+        return false;
+    }
+    policyParcel->policyParams_.everyonePerm_ = static_cast<AuthPermType>(perm);
     if (!(in.ReadString(policyParcel->policyParams_.ownerAccount_))) {
         DLP_LOG_ERROR(LABEL, "Read owner account fail");
         return false;

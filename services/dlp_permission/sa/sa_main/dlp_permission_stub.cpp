@@ -276,14 +276,14 @@ int32_t DlpPermissionStub::QueryDlpFileCopyableByTokenIdInner(MessageParcel& dat
 
 int32_t DlpPermissionStub::QueryDlpFileAccessInner(MessageParcel& data, MessageParcel& reply)
 {
-    AuthPermType permType = DEFAULT_PERM;
-    int32_t res = this->QueryDlpFileAccess(permType);
+    DLPPermissionInfoParcel permInfoParcel;
+    int32_t res = this->QueryDlpFileAccess(permInfoParcel);
     if (!reply.WriteInt32(res)) {
         DLP_LOG_ERROR(LABEL, "Write dlp file access query result fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
-    if (!reply.WriteUint32(permType)) {
-        DLP_LOG_ERROR(LABEL, "Write file access fail");
+    if (!reply.WriteParcelable(&permInfoParcel)) {
+        DLP_LOG_ERROR(LABEL, "WriteParcelable fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     return DLP_OK;

@@ -267,6 +267,8 @@ static bool IsCopyable(AuthPermType permType)
     switch (permType) {
         case READ_ONLY:
             return false;
+        case CONTENT_EDIT:
+            return true;
         case FULL_CONTROL:
             return true;
         default:

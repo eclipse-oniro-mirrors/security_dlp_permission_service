@@ -472,7 +472,7 @@ void FuseDaemon::FuseFsDaemonThread(int fuseFd)
 {
     struct stat fileStat;
     if (fstat(fuseFd, &fileStat) < 0) {
-        DLP_LOG_ERROR(LABEL, "Fuse fs daemon exit, %{public}d is wrong fd", fuseFd);
+        DLP_LOG_ERROR(LABEL, "Fuse fs daemon exit, %{public}d is wrong fd, errno %{public}d", fuseFd, errno);
         NotifyDaemonDisable();
         return;
     }

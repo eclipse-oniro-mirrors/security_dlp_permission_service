@@ -304,7 +304,7 @@ int32_t DlpPermissionProxy::QueryDlpFileCopyableByTokenId(bool& copyable, uint32
     return res;
 }
 
-int32_t DlpPermissionProxy::QueryDlpFileAccess(AuthPermType& permType)
+int32_t DlpPermissionProxy::QueryDlpFileAccess(DLPPermissionInfoParcel& permInfoParcel)
 {
     MessageParcel data;
     if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
@@ -330,12 +330,12 @@ int32_t DlpPermissionProxy::QueryDlpFileAccess(AuthPermType& permType)
         DLP_LOG_ERROR(LABEL, "Read int32 fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
-    uint32_t perm;
-    if (!reply.ReadUint32(perm)) {
-        DLP_LOG_ERROR(LABEL, "Read uint32 fail");
+    std::unique_ptr<DLPPermissionInfoParcel> info(reply.ReadParcelable<DLPPermissionInfoParcel>());
+    if (info == nullptr) {
+        DLP_LOG_ERROR(LABEL, "ReadParcelable fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
-    permType = static_cast<AuthPermType>(perm);
+    permInfoParcel = *info;
     return res;
 }
 

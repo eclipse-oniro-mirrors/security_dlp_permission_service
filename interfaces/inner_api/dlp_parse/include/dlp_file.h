@@ -108,9 +108,9 @@ public:
         isFuseLink_ = false;
     };
 
-    bool GetReadOnlyFlag()
+    AuthPermType GetAuthPerm()
     {
-        return isReadOnly_;
+        return authPerm_;
     };
 
     int32_t Truncate(uint32_t size);
@@ -139,7 +139,7 @@ private:
     int32_t CheckDlpFile();
 
     bool isFuseLink_;
-    bool isReadOnly_;
+    AuthPermType authPerm_;
 
     // dlp parse format
     struct DlpHeader head_;
