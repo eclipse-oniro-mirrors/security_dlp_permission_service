@@ -80,6 +80,11 @@ bool RetentionFileManager::Init()
         if (updateRes != DLP_OK) {
             return false;
         }
+    } else {
+        if (fileOperator_->InputFileByPathAndContent(DLP_RETENTION_JSON_PATH, "") != DLP_OK) {
+            DLP_LOG_ERROR(LABEL, "InputFileByPathAndContent failed!");
+            return false;
+        }
     }
     hasInit = true;
     return true;
