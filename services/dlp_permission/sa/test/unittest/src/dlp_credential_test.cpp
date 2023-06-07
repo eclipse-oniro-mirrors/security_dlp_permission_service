@@ -20,7 +20,7 @@
 #include <unistd.h>
 #include <unordered_map>
 #include "account_adapt.h"
-#include "dlp_credential_service.h"
+#include "dlp_credential_client.h"
 #include "dlp_permission.h"
 #include "dlp_permission_async_proxy.h"
 #include "dlp_permission_log.h"
@@ -108,7 +108,7 @@ HWTEST_F(DlpCredentialTest, DlpCredentialTest002, TestSize.Level1)
 {
     sptr<IDlpPermissionCallback> stub = new (std::nothrow) DlpPermissionAsyncStubTest();
     std::string policy;
-    DlpAccountType accountType = CLOUD_ACCOUNT;
+    DlpAccountType accountType = OHOS::Security::DlpPermission::CLOUD_ACCOUNT;
 
     int res = DlpCredential::GetInstance().GenerateDlpCertificate(policy, accountType, stub);
     EXPECT_EQ(DLP_CREDENTIAL_ERROR_COMMON_ERROR, res);

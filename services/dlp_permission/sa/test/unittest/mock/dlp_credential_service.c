@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "dlp_credential_service.h"
+#include "dlp_credential_client.h"
 #include <pthread.h>
 #include <unistd.h>
 #include "account_adapt.h"

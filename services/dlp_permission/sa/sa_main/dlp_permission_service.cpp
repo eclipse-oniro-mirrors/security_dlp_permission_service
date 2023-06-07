@@ -20,7 +20,7 @@
 #include "app_mgr_client.h"
 #include "bundle_mgr_client.h"
 #include "callback_manager.h"
-#include "dlp_credential_service.h"
+#include "dlp_credential_client.h"
 #include "dlp_credential_adapt.h"
 #include "dlp_permission.h"
 #include "dlp_policy.h"

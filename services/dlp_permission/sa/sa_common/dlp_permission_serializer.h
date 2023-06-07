@@ -18,7 +18,7 @@
 
 #include <string>
 #include <vector>
-#include "dlp_credential_service.h"
+#include "dlp_credential_client.h"
 #include "dlp_policy.h"
 #include "nlohmann/json.hpp"
 

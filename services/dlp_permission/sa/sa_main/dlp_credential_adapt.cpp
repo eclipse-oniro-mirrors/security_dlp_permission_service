@@ -18,7 +18,7 @@
 #include <unistd.h>
 #include <unordered_map>
 #include "account_adapt.h"
-#include "dlp_credential_service.h"
+#include "dlp_credential_client.h"
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
 #include "dlp_permission_serializer.h"
@@ -229,7 +229,7 @@ int32_t DlpCredential::GenerateDlpCertificate(
     const std::string& policy, DlpAccountType accountType, sptr<IDlpPermissionCallback>& callback)
 {
     EncAndDecOptions encAndDecOptions = {
-        .opt = RECIEVER_DECRYPT_MUST_USE_CLOUD,
+        .opt = RECEIVER_DECRYPT_MUST_USE_CLOUD,
         .extraInfo = nullptr,
         .extraInfoLen = 0
     };
@@ -290,11 +290,11 @@ static CloudEncOption getCertOption(uint32_t flag)
 
     switch (opFlag) {
         case DlpAuthType::ONLINE_AUTH_FOR_OFFLINE_CERT:
-            return CloudEncOption::RECIEVER_DECRYPT_MUST_USE_CLOUD_AND_RETURN_ENCRYPTION_VALUE;
+            return CloudEncOption::RECEIVER_DECRYPT_MUST_USE_CLOUD_AND_RETURN_ENCRYPTION_VALUE;
         case DlpAuthType::OFFLINE_AUTH_ONLY:
-            return CloudEncOption::ALLOW_RECIEVER_DECRYPT_WITHOUT_USE_CLOUD;
+            return CloudEncOption::ALLOW_RECEIVER_DECRYPT_WITHOUT_USE_CLOUD;
         default:
-            return CloudEncOption::RECIEVER_DECRYPT_MUST_USE_CLOUD;
+            return CloudEncOption::RECEIVER_DECRYPT_MUST_USE_CLOUD;
     }
 }
 
@@ -316,7 +316,7 @@ int32_t DlpCredential::ParseDlpCertificate(const std::vector<uint8_t>& cert, uin
         .options = encAndDecOptions,
     };
 
-    bool opFlag = (encAndDecOptions.opt == CloudEncOption::ALLOW_RECIEVER_DECRYPT_WITHOUT_USE_CLOUD);
+    bool opFlag = (encAndDecOptions.opt == CloudEncOption::ALLOW_RECEIVER_DECRYPT_WITHOUT_USE_CLOUD);
     int32_t result = DlpPermissionSerializer::GetInstance().DeserializeEncPolicyData(jsonObj, encPolicy, opFlag);
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Serialize fail");
