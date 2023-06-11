@@ -1397,10 +1397,7 @@ napi_value NapiDlpPermission::JsConstructor(napi_env env, napi_callback_info cbi
     napi_status wrapStatus = napi_wrap(env, thisVar, obj,
         [](napi_env env, void* data, void* hint) {
             DLP_LOG_INFO(LABEL, "native obj destructed by js callback %{private}p", data);
-            auto objInfo = reinterpret_cast<class DlpFile*>(data);
-            if (objInfo != nullptr) {
-                delete objInfo;
-            }
+            return;
         },
         nullptr, nullptr);
     if (wrapStatus != napi_ok) {
