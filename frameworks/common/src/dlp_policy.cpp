@@ -225,7 +225,7 @@ void PermissionPolicy::CopyPermissionPolicy(const PermissionPolicy& srcPolicy)
     if (!srcPolicy.IsValid()) {
         return;
     }
-    DLP_LOG_DEBUG(LABEL, "ownerAccount_ %{public}s ownerAccountId %{public}s accountType %{public}d",
+    DLP_LOG_DEBUG(LABEL, "ownerAccount_ %{private}s ownerAccountId %{private}s accountType %{public}d",
         srcPolicy.ownerAccount_.c_str(), srcPolicy.ownerAccountId_.c_str(), srcPolicy.ownerAccountType_);
     ownerAccount_ = srcPolicy.ownerAccount_;
     ownerAccountId_ = srcPolicy.ownerAccountId_;

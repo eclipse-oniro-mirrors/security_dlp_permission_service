@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -14,8 +14,15 @@
  */
 
 #include "dlp_file_kits.h"
+#include <cstdlib>
+#include <fcntl.h>
+#include <string>
+#include <sys/stat.h>
+#include <sys/types.h>
+#include <unistd.h>
 #include <unordered_map>
 #include "dlp_permission_log.h"
+#include "securec.h"
 
 namespace OHOS {
 namespace Security {
@@ -94,6 +101,40 @@ static std::string GetMimeTypeBySuffix(const std::string& suffix)
     return DEFAULT_STRING;
 }
 
+static bool IsValidDlpHeader(const struct DlpHeader& head)
+{
+    if (head.magic != DLP_FILE_MAGIC || head.certSize == 0 || head.certSize > DLP_MAX_CERT_SIZE ||
+        head.contactAccountSize == 0 || head.contactAccountSize > DLP_MAX_CERT_SIZE ||
+        head.certOffset != sizeof(struct DlpHeader) ||
+        head.contactAccountOffset != (sizeof(struct DlpHeader) + head.certSize) ||
+        head.txtOffset != (sizeof(struct DlpHeader) + head.certSize + head.contactAccountSize + head.offlineCertSize) ||
+        head.txtSize > DLP_MAX_CONTENT_SIZE || head.offlineCertSize > DLP_MAX_CERT_SIZE) {
+        DLP_LOG_ERROR(LABEL, "parse dlp file header error.");
+        return false;
+    }
+    return true;
+}
+
+static bool IsDlpFile(int32_t dlpFd)
+{
+    if (dlpFd < 0) {
+        DLP_LOG_ERROR(LABEL, "dlp file fd is invalid");
+        return false;
+    }
+
+    if (lseek(dlpFd, 0, SEEK_SET) == static_cast<off_t>(-1)) {
+        DLP_LOG_ERROR(LABEL, "seek dlp file start failed, %{public}s", strerror(errno));
+        return false;
+    }
+    struct DlpHeader head;
+    if (read(dlpFd, &head, sizeof(struct DlpHeader)) != sizeof(struct DlpHeader)) {
+        DLP_LOG_ERROR(LABEL, "can not read dlp file head, %{public}s", strerror(errno));
+        return false;
+    }
+
+    return IsValidDlpHeader(head);
+}
+
 bool DlpFileKits::GetSandboxFlag(Want& want)
 {
     std::string action = want.GetAction();
@@ -115,9 +156,7 @@ bool DlpFileKits::GetSandboxFlag(Want& want)
         return false;
     }
 
-    bool isDlpFile = false;
-    DlpFileManager::GetInstance().IsDlpFile(fd, isDlpFile);
-    if (!isDlpFile) {
+    if (!IsDlpFile(fd)) {
         DLP_LOG_WARN(LABEL, "Fd %{public}d is not dlp file", fd);
         return false;
     }

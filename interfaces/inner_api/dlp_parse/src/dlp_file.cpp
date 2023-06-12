@@ -188,6 +188,7 @@ int32_t DlpFile::GetDomainAccountName(std::string& account) const
         DLP_LOG_ERROR(LABEL, "accountName_ empty");
         return DLP_PARSE_ERROR_ACCOUNT_INVALID;
     }
+    account = domainInfo.accountName_;
 #endif
     return DLP_OK;
 }
