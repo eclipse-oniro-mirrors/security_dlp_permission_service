@@ -24,9 +24,9 @@ extern "C" {
 #endif
 
 #ifdef _ARM64_
-static const std::string LIB_PATH = "/system/lib64/";
+static const std::string LIB_PATH = "/system/lib64/platformsdk/";
 #else
-static const std::string LIB_PATH = "/system/lib/";
+static const std::string LIB_PATH = "/system/lib/platformsdk/";
 #endif
 static const std::string OPENSSL_LIB_PATH = LIB_PATH + "libcrypto_openssl.z.so";
 
