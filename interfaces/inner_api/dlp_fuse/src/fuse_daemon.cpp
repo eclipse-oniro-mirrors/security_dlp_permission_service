@@ -39,7 +39,7 @@ static constexpr uint32_t MAX_READ_DIR_BUF_SIZE = 100 * 1024;  // 100K
 static constexpr const char* CUR_DIR = ".";
 static constexpr const char* UPPER_DIR = "..";
 static constexpr const char* DEFAULT_DLP_LINK_FILE = "default.dlp";
-static constexpr const char* DEFAULT_DLP_LINK_FILE_PATH = "/data/fuse/default.dlp";
+static constexpr const char* DEFAULT_DLP_LINK_FILE_PATH = "/mnt/data/fuse/default.dlp";
 }  // namespace
 
 std::condition_variable FuseDaemon::daemonEnableCv_;
