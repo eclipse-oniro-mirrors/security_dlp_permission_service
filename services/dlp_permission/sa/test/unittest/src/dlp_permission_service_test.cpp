@@ -18,7 +18,7 @@
 #include "accesstoken_kit.h"
 #include "app_uninstall_observer.h"
 #define private public
-#include "callback_manager.h"
+#include "dlp_sandbox_change_callback_manager.h"
 #undef private
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
@@ -140,9 +140,9 @@ HWTEST_F(DlpPermissionServiceTest, DlpSandboxChangeCallbackDeathRecipient001, Te
     wptr<IRemoteObject> remote = new (std::nothrow) DlpSandboxChangeCallbackTest();
     callback = remote.promote();
     dlpPermissionService_->RegisterDlpSandboxChangeCallback(callback);
-    ASSERT_EQ(static_cast<uint32_t>(1), CallbackManager::GetInstance().callbackInfoMap_.size());
+    ASSERT_EQ(static_cast<uint32_t>(1), DlpSandboxChangeCallbackManager::GetInstance().callbackInfoMap_.size());
     recipient->OnRemoteDied(remote); // remote is not nullptr
-    ASSERT_EQ(static_cast<uint32_t>(0), CallbackManager::GetInstance().callbackInfoMap_.size());
+    ASSERT_EQ(static_cast<uint32_t>(0), DlpSandboxChangeCallbackManager::GetInstance().callbackInfoMap_.size());
     bool result;
     int32_t res = dlpPermissionService_->UnRegisterDlpSandboxChangeCallback(result);
     ASSERT_EQ(DLP_CALLBACK_PARAM_INVALID, res);
@@ -192,29 +192,31 @@ HWTEST_F(DlpPermissionServiceTest, SandboxJsonManager001, TestSize.Level1)
 
 /**
  * @tc.name:CallbackManager001
- * @tc.desc: CallbackManager test
+ * @tc.desc: DlpSandboxChangeCallbackManager test
  * @tc.type: FUNC
  * @tc.require:DTS2023040302317
  */
 HWTEST_F(DlpPermissionServiceTest, CallbackManager001, TestSize.Level1)
 {
-    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, CallbackManager::GetInstance().AddCallback(0, nullptr));
-    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, CallbackManager::GetInstance().RemoveCallback(nullptr));
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, DlpSandboxChangeCallbackManager::GetInstance().AddCallback(0, nullptr));
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, DlpSandboxChangeCallbackManager::GetInstance().RemoveCallback(nullptr));
     bool result;
-    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, CallbackManager::GetInstance().RemoveCallback(0, result));
+    ASSERT_EQ(
+        DLP_SERVICE_ERROR_VALUE_INVALID, DlpSandboxChangeCallbackManager::GetInstance().RemoveCallback(0, result));
     sptr<IRemoteObject> callback;
     wptr<IRemoteObject> remote = new (std::nothrow) DlpSandboxChangeCallbackTest();
     callback = remote.promote();
     dlpPermissionService_->RegisterDlpSandboxChangeCallback(callback);
     for (int i = 10000; i < 11024; i++) {
-        CallbackManager::GetInstance().AddCallback(i, callback);
+        DlpSandboxChangeCallbackManager::GetInstance().AddCallback(i, callback);
     }
-    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, CallbackManager::GetInstance().AddCallback(11024, callback));
+    ASSERT_EQ(
+        DLP_SERVICE_ERROR_VALUE_INVALID, DlpSandboxChangeCallbackManager::GetInstance().AddCallback(11024, callback));
     DlpSandboxInfo dlpSandboxInfo;
     dlpSandboxInfo.pid = 1;
-    CallbackManager::GetInstance().ExecuteCallbackAsync(dlpSandboxInfo);
+    DlpSandboxChangeCallbackManager::GetInstance().ExecuteCallbackAsync(dlpSandboxInfo);
     dlpSandboxInfo.pid = 10010;
-    CallbackManager::GetInstance().ExecuteCallbackAsync(dlpSandboxInfo);
+    DlpSandboxChangeCallbackManager::GetInstance().ExecuteCallbackAsync(dlpSandboxInfo);
 }
 
 /**
@@ -315,16 +317,18 @@ HWTEST_F(DlpPermissionServiceTest, RetentionFileManager001, TestSize.Level1)
 HWTEST_F(DlpPermissionServiceTest, UninstallDlpSandbox001, TestSize.Level1)
 {
     int32_t appIndex;
-    uint32_t permType = 5;
-    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID,
-        dlpPermissionService_->InstallDlpSandbox("", static_cast<AuthPermType>(permType), 100, appIndex, "testUri"));
+    uint32_t dlpFileAccess = 5;
+    int32_t ret = dlpPermissionService_->InstallDlpSandbox(
+        "", static_cast<DLPFileAccess>(dlpFileAccess), 100, appIndex, "testUri");
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, ret);
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, dlpPermissionService_->InstallDlpSandbox("testbundle",
-        static_cast<AuthPermType>(permType), 100, appIndex, "testUri"));
-    permType = 0;
+        static_cast<DLPFileAccess>(dlpFileAccess), 100, appIndex, "testUri"));
+    dlpFileAccess = 0;
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, dlpPermissionService_->InstallDlpSandbox("testbundle",
-        static_cast<AuthPermType>(permType), 100, appIndex, "testUri"));
+        static_cast<DLPFileAccess>(dlpFileAccess), 100, appIndex, "testUri"));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, dlpPermissionService_->UninstallDlpSandbox("", -1, -1));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, dlpPermissionService_->UninstallDlpSandbox("testbundle", -1, -1));
+    dlpFileAccess = 0;
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, dlpPermissionService_->UninstallDlpSandbox("testbundle", 1, -1));
 }
 

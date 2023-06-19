@@ -55,7 +55,7 @@ static bool CheckAccount(const std::string& account)
 
 static bool CheckPerm(uint32_t perm)
 {
-    if (perm == 0 || perm >= DEFAULT_PERM) {
+    if (perm <= NO_PERMISSION || perm > FULL_CONTROL) {
         DLP_LOG_ERROR(LABEL, "Auth Perm invalid, perm=%{public}d", perm);
         return false;
     }

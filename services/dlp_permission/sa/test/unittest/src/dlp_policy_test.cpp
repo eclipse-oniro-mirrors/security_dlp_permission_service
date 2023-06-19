@@ -220,7 +220,7 @@ HWTEST_F(PermissionPolicyTest, IsValid006, TestSize.Level1)
 
     // 2. test auth perm
     // auth perm DEFAULT
-    policy->authUsers_[0].authPerm = DEFAULT_PERM;
+    policy->authUsers_[0].authPerm = NO_PERMISSION;
     EXPECT_FALSE(policy->IsValid());
 
     // restore

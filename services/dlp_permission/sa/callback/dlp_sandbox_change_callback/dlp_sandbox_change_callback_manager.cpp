@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "callback_manager.h"
+#include "dlp_sandbox_change_callback_manager.h"
 
 #include <datetime_ex.h>
 #include <future>
@@ -30,26 +30,27 @@ namespace OHOS {
 namespace Security {
 namespace DlpPermission {
 namespace {
-static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "CallbackManager" };
+static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {
+    LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpSandboxChangeCallbackManager"};
 static const time_t MAX_TIMEOUT_SEC = 30;
 static const uint32_t MAX_CALLBACK_SIZE = 1024;
 static const int MAX_PTHREAD_NAME_LEN = 15; // pthread name max length
 }
 
-CallbackManager &CallbackManager::GetInstance()
+DlpSandboxChangeCallbackManager &DlpSandboxChangeCallbackManager::GetInstance()
 {
-    static CallbackManager instance;
+    static DlpSandboxChangeCallbackManager instance;
     return instance;
 }
 
-CallbackManager::CallbackManager()
+DlpSandboxChangeCallbackManager::DlpSandboxChangeCallbackManager()
     : callbackDeathRecipient_(
     sptr<IRemoteObject::DeathRecipient>(new (std::nothrow) DlpSandboxChangeCallbackDeathRecipient()))
 {}
 
-CallbackManager::~CallbackManager() {}
+DlpSandboxChangeCallbackManager::~DlpSandboxChangeCallbackManager() {}
 
-int32_t CallbackManager::AddCallback(int32_t pid, const sptr<IRemoteObject> &callback)
+int32_t DlpSandboxChangeCallbackManager::AddCallback(int32_t pid, const sptr<IRemoteObject> &callback)
 {
     if (callback == nullptr) {
         DLP_LOG_ERROR(LABEL, "input is nullptr");
@@ -67,7 +68,7 @@ int32_t CallbackManager::AddCallback(int32_t pid, const sptr<IRemoteObject> &cal
         DLP_LOG_ERROR(LABEL, "already has the same callback");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
-    CallbackRecord recordInstance;
+    DlpSandboxChangeCallbackRecord recordInstance;
     recordInstance.callbackObject_ = callback;
     recordInstance.pid = pid;
     callbackInfoMap_[pid] = recordInstance;
@@ -75,7 +76,7 @@ int32_t CallbackManager::AddCallback(int32_t pid, const sptr<IRemoteObject> &cal
     return DLP_OK;
 }
 
-int32_t CallbackManager::RemoveCallback(const sptr<IRemoteObject> &callback)
+int32_t DlpSandboxChangeCallbackManager::RemoveCallback(const sptr<IRemoteObject> &callback)
 {
     DLP_LOG_INFO(LABEL, "enter RemoveCallback by kill");
     if (callback == nullptr) {
@@ -100,7 +101,7 @@ int32_t CallbackManager::RemoveCallback(const sptr<IRemoteObject> &callback)
     return DLP_OK;
 }
 
-int32_t CallbackManager::RemoveCallback(int32_t pid, bool &result)
+int32_t DlpSandboxChangeCallbackManager::RemoveCallback(int32_t pid, bool &result)
 {
     DLP_LOG_INFO(LABEL, "enter RemoveCallback");
     if (pid == 0) {
@@ -125,9 +126,9 @@ int32_t CallbackManager::RemoveCallback(int32_t pid, bool &result)
     return DLP_OK;
 }
 
-void CallbackManager::ExecuteCallbackAsync(const DlpSandboxInfo &dlpSandboxInfo)
+void DlpSandboxChangeCallbackManager::ExecuteCallbackAsync(const DlpSandboxInfo &dlpSandboxInfo)
 {
-    std::map<int32_t, CallbackRecord>::iterator goalCallback;
+    std::map<int32_t, DlpSandboxChangeCallbackRecord>::iterator goalCallback;
     {
         std::lock_guard<std::mutex> lock(mutex_);
         goalCallback = callbackInfoMap_.find(dlpSandboxInfo.pid);

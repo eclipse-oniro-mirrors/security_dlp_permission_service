@@ -19,7 +19,8 @@
 #include "account_adapt.h"
 #include "app_mgr_client.h"
 #include "bundle_mgr_client.h"
-#include "callback_manager.h"
+#include "dlp_sandbox_change_callback_manager.h"
+#include "open_dlp_file_callback_manager.h"
 #include "dlp_credential_client.h"
 #include "dlp_credential_adapt.h"
 #include "dlp_permission.h"
@@ -167,37 +168,32 @@ int32_t DlpPermissionService::ParseDlpCertificate(
     return DlpCredential::GetInstance().ParseDlpCertificate(cert, flag, callback);
 }
 
-void DlpPermissionService::InsertDlpSandboxInfo(
-    const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t appIndex, int32_t pid)
+void DlpPermissionService::InsertDlpSandboxInfo(DlpSandboxInfo &sandboxInfo)
 {
     if (appStateObserver_ == nullptr) {
         DLP_LOG_WARN(LABEL, "Failed to get app state observer instance");
         return;
     }
 
-    DlpSandboxInfo sandboxInfo;
-    sandboxInfo.permType = permType;
-    sandboxInfo.bundleName = bundleName;
-    sandboxInfo.userId = userId;
-    sandboxInfo.appIndex = appIndex;
-    sandboxInfo.pid = pid;
     AppExecFwk::BundleInfo info;
     AppExecFwk::BundleMgrClient bundleMgrClient;
-    if (bundleMgrClient.GetSandboxBundleInfo(bundleName, appIndex, userId, info) != DLP_OK) {
+    if (bundleMgrClient.GetSandboxBundleInfo(sandboxInfo.bundleName, sandboxInfo.appIndex, sandboxInfo.userId, info) !=
+        DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Get sandbox bundle info fail");
         return;
     } else {
         sandboxInfo.uid = info.uid;
     }
-    sandboxInfo.tokenId = AccessToken::AccessTokenKit::GetHapTokenID(userId, bundleName, appIndex);
+    sandboxInfo.tokenId = AccessToken::AccessTokenKit::GetHapTokenID(sandboxInfo.userId, sandboxInfo.bundleName,
+        sandboxInfo.appIndex);
     appStateObserver_->AddDlpSandboxInfo(sandboxInfo);
     return;
 }
 
-int32_t DlpPermissionService::InstallDlpSandbox(const std::string& bundleName, AuthPermType permType, int32_t userId,
-    int32_t& appIndex, const std::string& uri)
+int32_t DlpPermissionService::InstallDlpSandbox(const std::string& bundleName, DLPFileAccess dlpFileAccess,
+    int32_t userId, int32_t& appIndex, const std::string& uri)
 {
-    if (bundleName.empty() || permType >= DEFAULT_PERM || permType < READ_ONLY) {
+    if (bundleName.empty() || dlpFileAccess > FULL_CONTROL || dlpFileAccess <= NO_PERMISSION) {
         DLP_LOG_ERROR(LABEL, "param is invalid");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
@@ -219,7 +215,7 @@ int32_t DlpPermissionService::InstallDlpSandbox(const std::string& bundleName, A
     }
     if (isNeedInstall) {
         AppExecFwk::BundleMgrClient bundleMgrClient;
-        AuthPermType permForBMS = (permType == READ_ONLY) ? READ_ONLY : CONTENT_EDIT;
+        DLPFileAccess permForBMS = (dlpFileAccess == READ_ONLY) ? READ_ONLY : CONTENT_EDIT;
         int32_t bundleClientRes = bundleMgrClient.InstallSandboxApp(bundleName, permForBMS, userId, appIndex);
         if (bundleClientRes != DLP_OK) {
             DLP_LOG_ERROR(LABEL, "install sandbox %{public}s fail, error=%{public}d", bundleName.c_str(),
@@ -228,7 +224,16 @@ int32_t DlpPermissionService::InstallDlpSandbox(const std::string& bundleName, A
         }
     }
     int32_t pid = IPCSkeleton::GetCallingPid();
-    InsertDlpSandboxInfo(bundleName, permType, userId, appIndex, pid);
+    DlpSandboxInfo sandboxInfo;
+    sandboxInfo.dlpFileAccess = dlpFileAccess;
+    sandboxInfo.bundleName = bundleName;
+    sandboxInfo.userId = userId;
+    sandboxInfo.appIndex = appIndex;
+    sandboxInfo.pid = pid;
+    sandboxInfo.uri = uri;
+    sandboxInfo.timeStamp = static_cast<uint64_t>(
+        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    InsertDlpSandboxInfo(sandboxInfo);
     VisitRecordFileManager::GetInstance().AddVisitRecord(bundleName, userId, uri);
     return DLP_OK;
 }
@@ -323,9 +328,9 @@ int32_t DlpPermissionService::QueryDlpFileCopyableByTokenId(bool& copyable, uint
     return appStateObserver_->QueryDlpFileCopyableByTokenId(copyable, tokenId);
 }
 
-static ActionFlags GetDlpActionFlag(AuthPermType permType)
+static ActionFlags GetDlpActionFlag(DLPFileAccess dlpFileAccess)
 {
-    switch (permType) {
+    switch (dlpFileAccess) {
         case READ_ONLY: {
             return ACTION_VIEW;
         }
@@ -350,10 +355,10 @@ int32_t DlpPermissionService::QueryDlpFileAccess(DLPPermissionInfoParcel& permIn
         return DLP_SERVICE_ERROR_APPOBSERVER_NULL;
     }
     int32_t uid = IPCSkeleton::GetCallingUid();
-    AuthPermType permType = DEFAULT_PERM;
-    int32_t res = appStateObserver_->QueryDlpFileAccessByUid(permType, uid);
-    permInfoParcel.permInfo_.permType = permType;
-    permInfoParcel.permInfo_.flags = GetDlpActionFlag(permType);
+    DLPFileAccess dlpFileAccess = NO_PERMISSION;
+    int32_t res = appStateObserver_->QueryDlpFileAccessByUid(dlpFileAccess, uid);
+    permInfoParcel.permInfo_.dlpFileAccess = dlpFileAccess;
+    permInfoParcel.permInfo_.flags = GetDlpActionFlag(dlpFileAccess);
     return res;
 }
 
@@ -404,14 +409,53 @@ int32_t DlpPermissionService::RegisterDlpSandboxChangeCallback(const sptr<IRemot
 {
     int32_t pid = IPCSkeleton::GetCallingPid();
     DLP_LOG_INFO(LABEL, "GetCallingPid,%{public}d", pid);
-    return CallbackManager::GetInstance().AddCallback(pid, callback);
+    return DlpSandboxChangeCallbackManager::GetInstance().AddCallback(pid, callback);
 }
 
 int32_t DlpPermissionService::UnRegisterDlpSandboxChangeCallback(bool &result)
 {
     int32_t pid = IPCSkeleton::GetCallingPid();
     DLP_LOG_INFO(LABEL, "GetCallingPid,%{public}d", pid);
-    return CallbackManager::GetInstance().RemoveCallback(pid, result);
+    return DlpSandboxChangeCallbackManager::GetInstance().RemoveCallback(pid, result);
+}
+
+int32_t DlpPermissionService::RegisterOpenDlpFileCallback(const sptr<IRemoteObject>& callback)
+{
+    if (appStateObserver_ == nullptr) {
+        DLP_LOG_WARN(LABEL, "Failed to get app state observer instance");
+        return DLP_SERVICE_ERROR_APPOBSERVER_NULL;
+    }
+    std::string callerBundleName;
+    if (!GetCallerBundleName(IPCSkeleton::GetCallingTokenID(), callerBundleName)) {
+        DLP_LOG_ERROR(LABEL, "get callerBundleName error");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    int32_t uid = IPCSkeleton::GetCallingUid();
+    int32_t userId;
+    if (GetUserIdFromUid(uid, &userId) != 0) {
+        DLP_LOG_ERROR(LABEL, "GetUserIdFromUid error");
+        return false;
+    }
+    int32_t pid = IPCSkeleton::GetCallingPid();
+
+    DLP_LOG_INFO(LABEL, "CallingPid: %{public}d, userId: %{public}d, CallingBundle: %{public}s", pid, userId,
+        callerBundleName.c_str());
+
+    int res = OpenDlpFileCallbackManager::GetInstance().AddCallback(pid, userId, callerBundleName, callback);
+    if (res != DLP_OK) {
+        return res;
+    }
+    appStateObserver_->AddCallbackListener(pid);
+    return DLP_OK;
+}
+
+int32_t DlpPermissionService::UnRegisterOpenDlpFileCallback(const sptr<IRemoteObject>& callback)
+{
+    int32_t pid = IPCSkeleton::GetCallingPid();
+    int32_t res = OpenDlpFileCallbackManager::GetInstance().RemoveCallback(pid, callback);
+    appStateObserver_->RemoveCallbackListener(pid);
+    StartTimer();
+    return res;
 }
 
 int32_t DlpPermissionService::GetDlpGatheringPolicy(bool& isGathering)
@@ -451,7 +495,7 @@ int32_t DlpPermissionService::SetRetentionState(const std::vector<std::string>& 
     return RetentionFileManager::GetInstance().UpdateSandboxInfo(docUriSet, info, true);
 }
 
-int32_t DlpPermissionService::SetNonRetentionState(const std::vector<std::string>& docUriVec)
+int32_t DlpPermissionService::CancelRetentionState(const std::vector<std::string>& docUriVec)
 {
     if (docUriVec.empty()) {
         DLP_LOG_ERROR(LABEL, "get docUriVec empty");

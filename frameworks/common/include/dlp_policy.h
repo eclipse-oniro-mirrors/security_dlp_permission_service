@@ -34,11 +34,16 @@ enum DlpAccountType : uint32_t {
     APPLICATION_ACCOUNT = 3,
 };
 
-enum AuthPermType : uint32_t {
+enum DLPFileAccess : uint32_t {
+    NO_PERMISSION = 0,
     READ_ONLY = 1,
     CONTENT_EDIT = 2,
     FULL_CONTROL = 3,
-    DEFAULT_PERM,
+};
+
+enum GatheringPolicyType : uint32_t {
+    GATHERING = 1,
+    NON_GATHERING = 2
 };
 
 enum DlpAuthType : uint32_t {
@@ -63,13 +68,13 @@ enum ActionFlags : uint32_t {
 };
 
 typedef struct DLPPermissionInfo {
-    AuthPermType permType = DEFAULT_PERM;
+    DLPFileAccess dlpFileAccess = NO_PERMISSION;
     ActionFlags flags = ACTION_INVALID;
 } DLPPermissionInfo;
 
 typedef struct AuthUserInfo {
     std::string authAccount;
-    AuthPermType authPerm = DEFAULT_PERM;
+    DLPFileAccess authPerm = NO_PERMISSION;
     uint64_t permExpiryTime = 0;
     DlpAccountType authAccountType = INVALID_ACCOUNT;
 } AuthUserInfo;
@@ -82,7 +87,7 @@ struct DlpProperty {
     DlpAccountType ownerAccountType = INVALID_ACCOUNT;
     bool offlineAccess = false;
     bool supportEveryone = false;
-    AuthPermType everyonePerm = DEFAULT_PERM;
+    DLPFileAccess everyonePerm = NO_PERMISSION;
 };
 
 typedef enum SandBoxExternalAuthorType {
@@ -111,7 +116,7 @@ public:
     DlpAccountType ownerAccountType_;
     std::vector<AuthUserInfo> authUsers_;
     bool supportEveryone_ = false;
-    AuthPermType everyonePerm_ = DEFAULT_PERM;
+    DLPFileAccess everyonePerm_ = NO_PERMISSION;
 
 private:
     uint8_t* aeskey_;

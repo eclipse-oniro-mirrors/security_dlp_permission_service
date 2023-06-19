@@ -65,7 +65,7 @@ AuthUserInfoParcel* AuthUserInfoParcel::Unmarshalling(Parcel& in)
         authUserInfoParcel = nullptr;
         return nullptr;
     }
-    authUserInfoParcel->authUserInfo_.authPerm = static_cast<AuthPermType>(res);
+    authUserInfoParcel->authUserInfo_.authPerm = static_cast<DLPFileAccess>(res);
     if (!(in.ReadUint64(authUserInfoParcel->authUserInfo_.permExpiryTime))) {
         DLP_LOG_ERROR(LABEL, "Read auth user expiry time fail");
         delete authUserInfoParcel;

@@ -14,7 +14,7 @@
  */
 
 #include "dlp_sandbox_change_callback_death_recipient.h"
-#include "callback_manager.h"
+#include "dlp_sandbox_change_callback_manager.h"
 #include "dlp_permission_log.h"
 
 namespace OHOS {
@@ -36,7 +36,7 @@ void DlpSandboxChangeCallbackDeathRecipient::OnRemoteDied(const wptr<IRemoteObje
         DLP_LOG_ERROR(LABEL, "object is nullptr");
         return;
     }
-    CallbackManager::GetInstance().RemoveCallback(object);
+    DlpSandboxChangeCallbackManager::GetInstance().RemoveCallback(object);
     DLP_LOG_INFO(LABEL, "end");
 }
 } // namespace DlpPermission

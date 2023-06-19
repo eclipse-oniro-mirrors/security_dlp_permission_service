@@ -35,13 +35,17 @@ public:
 
     void OnProcessDied(const AppExecFwk::ProcessData& processData) override;
     int32_t QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t tokenId);
-    int32_t QueryDlpFileAccessByUid(AuthPermType& permType, int32_t uid);
+    int32_t QueryDlpFileAccessByUid(DLPFileAccess& dlpFileAccess, int32_t uid);
     int32_t IsInDlpSandbox(bool& inSandbox, int32_t uid);
     void AddDlpSandboxInfo(const DlpSandboxInfo& appInfo);
     uint32_t EraseDlpSandboxInfo(int uid);
     bool CheckSandboxInfo(const std::string& bundleName, int32_t appIndex, int32_t userId);
     void DumpSandbox(int fd);
     void ExitSaAfterAllDlpManagerDie();
+
+    void AddCallbackListener(int32_t pid);
+    bool RemoveCallbackListener(int32_t pid);
+    bool CallbackListenerEmpty();
 
 private:
     void UninstallDlpSandbox(DlpSandboxInfo& appInfo);
@@ -67,6 +71,8 @@ private:
     std::mutex sandboxInfoLock_;
     std::set<int32_t> userIdList_;
     std::mutex userIdListLock_;
+    std::map<int32_t, int32_t> callbackList_;
+    std::mutex callbackListLock_;
 };
 }  // namespace DlpPermission
 }  // namespace Security

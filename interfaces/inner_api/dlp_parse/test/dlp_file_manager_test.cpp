@@ -310,6 +310,29 @@ HWTEST_F(DlpFileManagerTest, ParseDlpFileFormat003, TestSize.Level1)
 }
 
 /**
+ * @tc.name: ParseDlpFileFormat004
+ * @tc.desc: test parse dlp file formate error with offineAccess is true
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileManagerTest, ParseDlpFileFormat004, TestSize.Level1)
+{
+        DLP_LOG_INFO(LABEL, "UpdateDlpFileContentSize001");
+    g_fdDlp = open("/data/fuse_test_dlp.txt", O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
+    ASSERT_NE(g_fdDlp, -1);
+    std::shared_ptr<DlpFile> filePtr = std::make_shared<DlpFile>(g_fdDlp);
+    ASSERT_NE(filePtr, nullptr);
+    filePtr->SetOfflineAccess(true);
+
+    filePtr->dlpFd_ = -1;
+    EXPECT_EQ(DLP_PARSE_ERROR_FD_ERROR, DlpFileManager::GetInstance().ParseDlpFileFormat(filePtr, ""));
+
+    close(g_fdDlp);
+    unlink("/data/fuse_test_dlp.txt");
+    g_fdDlp = -1;
+}
+
+/**
  * @tc.name: FreeChiperBlob001
  * @tc.desc: test free chiper blob abnormal branch
  * @tc.type: FUNC

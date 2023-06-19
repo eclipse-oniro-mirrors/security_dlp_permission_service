@@ -122,8 +122,8 @@ int32_t DlpPermissionProxy::ParseDlpCertificate(
     return res;
 }
 
-int32_t DlpPermissionProxy::InstallDlpSandbox(const std::string& bundleName, AuthPermType permType, int32_t userId,
-    int32_t& appIndex, const std::string& uri)
+int32_t DlpPermissionProxy::InstallDlpSandbox(const std::string& bundleName, DLPFileAccess dlpFileAccess,
+    int32_t userId, int32_t& appIndex, const std::string& uri)
 {
     MessageParcel data;
     if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
@@ -136,7 +136,7 @@ int32_t DlpPermissionProxy::InstallDlpSandbox(const std::string& bundleName, Aut
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
-    if (!data.WriteUint32(permType)) {
+    if (!data.WriteUint32(dlpFileAccess)) {
         DLP_LOG_ERROR(LABEL, "Write uint32 fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
@@ -490,6 +490,76 @@ int32_t DlpPermissionProxy::UnRegisterDlpSandboxChangeCallback(bool &result)
     return res;
 }
 
+int32_t DlpPermissionProxy::RegisterOpenDlpFileCallback(const sptr<IRemoteObject>& callback)
+{
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
+        DLP_LOG_ERROR(LABEL, "Failed to write WriteInterfaceToken.");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (!data.WriteRemoteObject(callback)) {
+        DLP_LOG_ERROR(LABEL, "Failed to write remote object.");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
+    sptr<IRemoteObject> remote = Remote();
+    if (remote == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Remote service is null");
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
+    }
+    int32_t requestResult = remote->SendRequest(
+        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::REGISTER_OPEN_DLP_FILE_CALLBACK), data, reply,
+        option);
+    if (requestResult != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
+        return DLP_CALLBACK_SA_WORK_ABNORMAL;
+    }
+
+    int32_t result;
+    if (!reply.ReadInt32(result)) {
+        DLP_LOG_ERROR(LABEL, "ReadInt32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    return result;
+}
+
+int32_t DlpPermissionProxy::UnRegisterOpenDlpFileCallback(const sptr<IRemoteObject>& callback)
+{
+    MessageParcel data;
+    if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
+        DLP_LOG_ERROR(LABEL, "Failed to write WriteInterfaceToken.");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (!data.WriteRemoteObject(callback)) {
+        DLP_LOG_ERROR(LABEL, "Failed to write remote object.");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    MessageParcel reply;
+    MessageOption option(MessageOption::TF_SYNC);
+    sptr<IRemoteObject> remote = Remote();
+    if (remote == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Remote service is null");
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
+    }
+    int32_t requestResult = remote->SendRequest(
+        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::UN_REGISTER_OPEN_DLP_FILE_CALLBACK), data,
+        reply, option);
+    if (requestResult != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
+        return DLP_CALLBACK_SA_WORK_ABNORMAL;
+    }
+
+    int32_t res;
+    if (!reply.ReadInt32(res)) {
+        DLP_LOG_ERROR(LABEL, "ReadInt32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    return res;
+}
+
 int32_t DlpPermissionProxy::GetDlpGatheringPolicy(bool& isGathering)
 {
     MessageParcel data;
@@ -557,7 +627,7 @@ int32_t DlpPermissionProxy::SetRetentionState(const std::vector<std::string>& do
     return res;
 }
 
-int32_t DlpPermissionProxy::SetNonRetentionState(const std::vector<std::string>& docUriVec)
+int32_t DlpPermissionProxy::CancelRetentionState(const std::vector<std::string>& docUriVec)
 {
     MessageParcel data;
     if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {

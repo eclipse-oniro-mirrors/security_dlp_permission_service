@@ -34,7 +34,7 @@ static void FuzzTest(const uint8_t* data, size_t size)
         return;
     }
     std::string bundleName(reinterpret_cast<const char*>(data), size);
-    AuthPermType permType = static_cast<AuthPermType>(size);
+    DLPFileAccess dlpFileAccess = static_cast<DLPFileAccess>(size);
     int32_t userId = static_cast<int32_t>(size);
     std::string uri(reinterpret_cast<const char*>(data), size);
 
@@ -44,7 +44,7 @@ static void FuzzTest(const uint8_t* data, size_t size)
     if (!datas.WriteString(bundleName)) {
         return;
     }
-    uint32_t type = static_cast<uint32_t>(permType);
+    uint32_t type = static_cast<uint32_t>(dlpFileAccess);
     type = 2;
     if (!datas.WriteUint32(type)) {
         return;

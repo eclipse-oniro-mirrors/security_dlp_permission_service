@@ -34,13 +34,13 @@ static const std::unordered_map<int32_t, std::string> JS_ERROR_MSG_MAP = {
       "Credential encryption or decryption timeout, please wait for a moment and try again" },
     { ERR_JS_CREDENTIAL_SERVICE_ERROR, "Credential service error, please check the service and try again" },
     { ERR_JS_CREDENTIAL_SERVER_ERROR, "Credential server error, please check the server and try again" },
+    { ERR_JS_API_ONLY_FOR_SANDBOX_ERROR, "No permission to invoke this api, it is only for DLP sandbox app" },
+    { ERR_JS_API_NOT_FOR_SANDBOX_ERROR, "No permission to invoke this api, it is not for DLP sandbox app" },
     { ERR_JS_NOT_DLP_FILE, "Operate invalid DLP file, please use DLP file" },
-    { ERR_JS_OPERATE_DLP_FILE_FAIL, "Open DLP file fail, please check your permission and try again" },
+    { ERR_JS_OPERATE_DLP_FILE_FAIL, "Operate DLP file fail, please check your permission and try again" },
     { ERR_JS_DLP_FILE_READ_ONLY, "DLP file is read only, please check your permission" },
     { ERR_JS_SYSTEM_SERVICE_EXCEPTION, "System service exception, please try again or reboot your device" },
     { ERR_JS_OUT_OF_MEMORY, "System out of memory, please try again or reboot your device" },
-    { ERR_JS_DLP_FILE_OPERATE_FAIL, "DLP file is setting Permissions ,link file can not operate" },
-    { ERR_JS_ON_OFF_FAIL, "Dlp sandbox subscriber on off error" },
 };
 
 static const std::unordered_map<int32_t, int32_t> NATIVE_CODE_TO_JS_CODE_MAP = {
@@ -76,6 +76,14 @@ static const std::unordered_map<int32_t, int32_t> NATIVE_CODE_TO_JS_CODE_MAP = {
     // ERR_JS_CREDENTIAL_SERVER_ERROR
     { DLP_CREDENTIAL_ERROR_SERVER_ERROR, ERR_JS_CREDENTIAL_SERVER_ERROR },
 
+    // ERR_JS_API_ONLY_FOR_SANDBOX_ERROR
+    { DLP_NAPI_ERROR_API_ONLY_FOR_SANDBOX_ERROR, ERR_JS_API_ONLY_FOR_SANDBOX_ERROR },
+    { DLP_SERVICE_ERROR_API_ONLY_FOR_SANDBOX_ERROR, ERR_JS_API_ONLY_FOR_SANDBOX_ERROR },
+
+    // ERR_JS_API_NOT_FOR_SANDBOX_ERROR
+    { DLP_NAPI_ERROR_API_NOT_FOR_SANDBOX_ERROR, ERR_JS_API_NOT_FOR_SANDBOX_ERROR },
+    { DLP_SERVICE_ERROR_API_NOT_FOR_SANDBOX_ERROR, ERR_JS_API_NOT_FOR_SANDBOX_ERROR },
+
     // ERR_JS_NOT_DLP_FILE
     { DLP_PARSE_ERROR_FILE_NOT_DLP, ERR_JS_NOT_DLP_FILE },
     { DLP_PARSE_ERROR_FILE_FORMAT_ERROR, ERR_JS_NOT_DLP_FILE },
@@ -91,7 +99,7 @@ static const std::unordered_map<int32_t, int32_t> NATIVE_CODE_TO_JS_CODE_MAP = {
     { DLP_PARSE_ERROR_FILE_NOT_OPENED, ERR_JS_OPERATE_DLP_FILE_FAIL },
     { DLP_FUSE_ERROR_LINKFILE_NOT_EXIST, ERR_JS_OPERATE_DLP_FILE_FAIL },
     { DLP_FUSE_ERROR_TOO_MANY_LINK_FILE, ERR_JS_OPERATE_DLP_FILE_FAIL },
-    { DLP_LINK_FILE_NOT_ALLOW_OPERATE, ERR_JS_DLP_FILE_OPERATE_FAIL },
+    { DLP_LINK_FILE_NOT_ALLOW_OPERATE, ERR_JS_OPERATE_DLP_FILE_FAIL },
 
     // ERR_JS_DLP_FILE_READ_ONLY
     { DLP_PARSE_ERROR_FILE_READ_ONLY, ERR_JS_DLP_FILE_READ_ONLY },
@@ -113,8 +121,6 @@ static const std::unordered_map<int32_t, int32_t> NATIVE_CODE_TO_JS_CODE_MAP = {
     { DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL, ERR_JS_OUT_OF_MEMORY },
     { DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL, ERR_JS_OUT_OF_MEMORY },
     { DLP_FUSE_ERROR_MEMORY_OPERATE_FAIL, ERR_JS_OUT_OF_MEMORY },
-
-    { DLP_CALLBACK_EXCEEDED_MAXNUM_REGISTRATION_LIMIT_ERROR, ERR_JS_ON_OFF_FAIL },
 };
 
 std::string GetJsErrMsg(int32_t jsErrCode)

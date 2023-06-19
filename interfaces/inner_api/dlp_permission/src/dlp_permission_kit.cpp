@@ -146,10 +146,10 @@ AUTH_RETRY:
     return callback->result_;
 }
 
-int32_t DlpPermissionKit::InstallDlpSandbox(const std::string& bundleName, AuthPermType permType, int32_t userId,
+int32_t DlpPermissionKit::InstallDlpSandbox(const std::string& bundleName, DLPFileAccess dlpFileAccess, int32_t userId,
     int32_t& appIndex, const std::string& uri)
 {
-    return DlpPermissionClient::GetInstance().InstallDlpSandbox(bundleName, permType, userId, appIndex, uri);
+    return DlpPermissionClient::GetInstance().InstallDlpSandbox(bundleName, dlpFileAccess, userId, appIndex, uri);
 }
 
 int32_t DlpPermissionKit::UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId)
@@ -194,6 +194,16 @@ int32_t DlpPermissionKit::UnregisterDlpSandboxChangeCallback(bool &result)
     return DlpPermissionClient::GetInstance().UnregisterDlpSandboxChangeCallback(result);
 }
 
+int32_t DlpPermissionKit::RegisterOpenDlpFileCallback(const std::shared_ptr<OpenDlpFileCallbackCustomize>& callback)
+{
+    return DlpPermissionClient::GetInstance().RegisterOpenDlpFileCallback(callback);
+}
+
+int32_t DlpPermissionKit::UnRegisterOpenDlpFileCallback(const std::shared_ptr<OpenDlpFileCallbackCustomize>& callback)
+{
+    return DlpPermissionClient::GetInstance().UnRegisterOpenDlpFileCallback(callback);
+}
+
 int32_t DlpPermissionKit::GetDlpGatheringPolicy(bool& isGathering)
 {
     return DlpPermissionClient::GetInstance().GetDlpGatheringPolicy(isGathering);
@@ -204,9 +214,9 @@ int32_t DlpPermissionKit::SetRetentionState(const std::vector<std::string>& docU
     return DlpPermissionClient::GetInstance().SetRetentionState(docUriVec);
 }
 
-int32_t DlpPermissionKit::SetNonRetentionState(const std::vector<std::string>& docUriVec)
+int32_t DlpPermissionKit::CancelRetentionState(const std::vector<std::string>& docUriVec)
 {
-    return DlpPermissionClient::GetInstance().SetNonRetentionState(docUriVec);
+    return DlpPermissionClient::GetInstance().CancelRetentionState(docUriVec);
 }
 
 int32_t DlpPermissionKit::GetRetentionSandboxList(const std::string& bundleName,

@@ -27,6 +27,8 @@
 #include "dlp_permission_callback.h"
 #include "dlp_sandbox_change_callback_customize.h"
 #include "dlp_sandbox_change_callback.h"
+#include "open_dlp_file_callback_customize.h"
+#include "open_dlp_file_callback.h"
 #include "nocopyable.h"
 
 namespace OHOS {
@@ -40,8 +42,8 @@ public:
         const PermissionPolicy& policy, std::shared_ptr<GenerateDlpCertificateCallback> callback);
     int32_t ParseDlpCertificate(
         const std::vector<uint8_t>& cert, uint32_t flag, std::shared_ptr<ParseDlpCertificateCallback> callback);
-    int32_t InstallDlpSandbox(const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex,
-        const std::string& uri);
+    int32_t InstallDlpSandbox(const std::string& bundleName, DLPFileAccess dlpFileAccess, int32_t userId,
+        int32_t& appIndex, const std::string& uri);
     int32_t UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId);
     int32_t GetSandboxExternalAuthorization(int sandboxUid, const AAFwk::Want& want,
         SandBoxExternalAuthorType& authType);
@@ -49,11 +51,13 @@ public:
     int32_t QueryDlpFileAccess(DLPPermissionInfo& permInfo);
     int32_t IsInDlpSandbox(bool& inSandbox);
     int32_t GetDlpSupportFileType(std::vector<std::string>& supportFileType);
-    int32_t RegisterDlpSandboxChangeCallback(const std::shared_ptr<DlpSandboxChangeCallbackCustomize> &customizedCb);
-    int32_t UnregisterDlpSandboxChangeCallback(bool &result);
+    int32_t RegisterDlpSandboxChangeCallback(const std::shared_ptr<DlpSandboxChangeCallbackCustomize>& customizedCb);
+    int32_t UnregisterDlpSandboxChangeCallback(bool& result);
+    int32_t RegisterOpenDlpFileCallback(const std::shared_ptr<OpenDlpFileCallbackCustomize>& callback);
+    int32_t UnRegisterOpenDlpFileCallback(const std::shared_ptr<OpenDlpFileCallbackCustomize>& callback);
     int32_t GetDlpGatheringPolicy(bool& isGathering);
     int32_t SetRetentionState(const std::vector<std::string>& docUriVec);
-    int32_t SetNonRetentionState(const std::vector<std::string>& docUriVec);
+    int32_t CancelRetentionState(const std::vector<std::string>& docUriVec);
     int32_t GetRetentionSandboxList(const std::string& bundleName,
         std::vector<RetentionSandBoxInfo>& retentionSandBoxInfoVec);
     int32_t ClearUnreservedSandbox();
@@ -69,6 +73,8 @@ private:
     DISALLOW_COPY_AND_MOVE(DlpPermissionClient);
     int32_t CreateDlpSandboxChangeCallback(const std::shared_ptr<DlpSandboxChangeCallbackCustomize> &customizedCb,
         sptr<DlpSandboxChangeCallback> &callback);
+    int32_t CreateOpenDlpFileCallback(
+        const std::shared_ptr<OpenDlpFileCallbackCustomize>& customizedCb, sptr<OpenDlpFileCallback>& callback);
     bool StartLoadDlpPermissionSa();
     void WaitForDlpPermissionSa();
     void GetDlpPermissionSa();
@@ -83,6 +89,8 @@ private:
     std::mutex proxyMutex_;
     sptr<IDlpPermissionService> proxy_ = nullptr;
     sptr<DlpPermissionDeathRecipient> serviceDeathObserver_ = nullptr;
+    std::mutex callbackMutex_;
+    std::map<std::shared_ptr<OpenDlpFileCallbackCustomize>, sptr<OpenDlpFileCallback>> callbackMap_;
 };
 }  // namespace DlpPermission
 }  // namespace Security

@@ -23,6 +23,7 @@
 #include "dlp_policy.h"
 #include "dlp_permission_callback.h"
 #include "dlp_sandbox_change_callback_customize.h"
+#include "open_dlp_file_callback_customize.h"
 #include "parcel.h"
 #include "retention_sandbox_info.h"
 #include "visited_dlp_file_info.h"
@@ -66,7 +67,7 @@ public:
     static int32_t GenerateDlpCertificate(const PermissionPolicy& policy, std::vector<uint8_t>& cert);
     static int32_t ParseDlpCertificate(const std::vector<uint8_t>& onlineCert,  std::vector<uint8_t>& offlineCert,
         uint32_t& offlineFlag, PermissionPolicy& policy);
-    static int32_t InstallDlpSandbox(const std::string& bundleName, AuthPermType permType, int32_t userId,
+    static int32_t InstallDlpSandbox(const std::string& bundleName, DLPFileAccess access, int32_t userId,
         int32_t& appIndex, const std::string& uri);
     static int32_t UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId);
     static int32_t GetSandboxExternalAuthorization(int sandboxUid, const AAFwk::Want& want,
@@ -75,11 +76,13 @@ public:
     static int32_t QueryDlpFileAccess(DLPPermissionInfo& permInfo);
     static int32_t IsInDlpSandbox(bool& inSandbox);
     static int32_t GetDlpSupportFileType(std::vector<std::string>& supportFileType);
-    static int32_t RegisterDlpSandboxChangeCallback(const std::shared_ptr<DlpSandboxChangeCallbackCustomize> &callback);
-    static int32_t UnregisterDlpSandboxChangeCallback(bool &result);
+    static int32_t RegisterDlpSandboxChangeCallback(const std::shared_ptr<DlpSandboxChangeCallbackCustomize>& callback);
+    static int32_t UnregisterDlpSandboxChangeCallback(bool& result);
+    static int32_t RegisterOpenDlpFileCallback(const std::shared_ptr<OpenDlpFileCallbackCustomize>& callback);
+    static int32_t UnRegisterOpenDlpFileCallback(const std::shared_ptr<OpenDlpFileCallbackCustomize>& callback);
     static int32_t GetDlpGatheringPolicy(bool& isGathering);
     static int32_t SetRetentionState(const std::vector<std::string>& docUriVec);
-    static int32_t SetNonRetentionState(const std::vector<std::string>& docUriVec);
+    static int32_t CancelRetentionState(const std::vector<std::string>& docUriVec);
     static int32_t GetRetentionSandboxList(const std::string& bundleName,
         std::vector<RetentionSandBoxInfo>& retentionSandBoxInfoVec);
     static int32_t ClearUnreservedSandbox();

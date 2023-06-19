@@ -292,10 +292,6 @@ int32_t DlpFileManager::GenerateDlpFile(
     }
 
     filePtr = std::make_shared<DlpFile>(dlpFileFd);
-    if (filePtr == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Generate dlp file fail, alloc dlp obj fail");
-        return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
-    }
 
     int32_t result = SetDlpFileParams(filePtr, property);
     if (result != DLP_OK) {

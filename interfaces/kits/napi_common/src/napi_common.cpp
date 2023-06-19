@@ -15,6 +15,7 @@
 
 #include "napi_common.h"
 #include <unistd.h>
+#include "dlp_file_kits.h"
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
 #include "napi_error_msg.h"
@@ -25,6 +26,7 @@ namespace Security {
 namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionCommon"};
+static const int MAX_FILE_NAME_LEN = 256;
 
 static bool ConvertDlpSandboxChangeInfo(napi_env env, napi_value value, const DlpSandboxCallbackInfo &result)
 {
@@ -74,6 +76,56 @@ static void UvQueueWorkDlpSandboxChanged(uv_work_t *work, int status)
         napi_call_function(registerSandboxChangeData->env, undefined, callback, 1, &result, &resultout), scope);
     napi_close_handle_scope(registerSandboxChangeData->env, scope);
     DLP_LOG_DEBUG(LABEL, "UvQueueWorkDlpSandboxChanged end");
+};
+
+static bool ConvertOpenDlpFileCallbackInfo(napi_env env, napi_value value, const OpenDlpFileCallbackInfo &result)
+{
+    napi_value element = nullptr;
+    NAPI_CALL_BASE(env, napi_create_string_utf8(env, result.uri.c_str(), NAPI_AUTO_LENGTH, &element), false);
+    NAPI_CALL_BASE(env, napi_set_named_property(env, value, "uri", element), false);
+    element = nullptr;
+    NAPI_CALL_BASE(env, napi_create_bigint_uint64(env, result.timeStamp, &element), false);
+    NAPI_CALL_BASE(env, napi_set_named_property(env, value, "recentOpenTime", element), false);
+    return true;
+};
+
+static void UvQueueWorkOpenDlpFile(uv_work_t *work, int status)
+{
+    DLP_LOG_INFO(LABEL, "enter UvQueueWorkOpenDlpFile");
+    if ((work == nullptr) || (work->data == nullptr)) {
+        DLP_LOG_ERROR(LABEL, "work == nullptr || work->data == nullptr");
+        return;
+    }
+    std::unique_ptr<uv_work_t> uvWorkPtr { work };
+    OpenDlpFileSubscriberWorker *oepnDlpFileDate =
+        reinterpret_cast<OpenDlpFileSubscriberWorker *>(work->data);
+    std::unique_ptr<OpenDlpFileSubscriberWorker> workPtr { oepnDlpFileDate };
+    napi_handle_scope scope = nullptr;
+    napi_open_handle_scope(oepnDlpFileDate->env, &scope);
+    if (scope == nullptr) {
+        DLP_LOG_ERROR(LABEL, "scope is nullptr");
+        return;
+    }
+    napi_value result = { nullptr };
+    NAPI_CALL_RETURN_VOID_WITH_SCOPE(oepnDlpFileDate->env,
+        napi_create_array(oepnDlpFileDate->env, &result), scope);
+    if (!ConvertOpenDlpFileCallbackInfo(oepnDlpFileDate->env, result, oepnDlpFileDate->result)) {
+        napi_close_handle_scope(oepnDlpFileDate->env, scope);
+        DLP_LOG_ERROR(LABEL, "ConvertOpenDlpFileCallbackInfo failed");
+        return;
+    }
+
+    napi_value undefined = nullptr;
+    napi_value callback = nullptr;
+    napi_value resultout = nullptr;
+    NAPI_CALL_RETURN_VOID_WITH_SCOPE(oepnDlpFileDate->env,
+        napi_get_undefined(oepnDlpFileDate->env, &undefined), scope);
+    NAPI_CALL_RETURN_VOID_WITH_SCOPE(oepnDlpFileDate->env,
+        napi_get_reference_value(oepnDlpFileDate->env, oepnDlpFileDate->ref, &callback), scope);
+    NAPI_CALL_RETURN_VOID_WITH_SCOPE(oepnDlpFileDate->env,
+        napi_call_function(oepnDlpFileDate->env, undefined, callback, 1, &result, &resultout), scope);
+    napi_close_handle_scope(oepnDlpFileDate->env, scope);
+    DLP_LOG_INFO(LABEL, "UvQueueWorkOpenDlpFile end");
 };
 } // namespace
 
@@ -200,6 +252,129 @@ void UvQueueWorkDeleteRef(uv_work_t *work, int32_t status)
     DLP_LOG_DEBUG(LABEL, "UvQueueWorkDeleteRef end");
 }
 
+OpenDlpFileSubscriberPtr::OpenDlpFileSubscriberPtr() {}
+
+OpenDlpFileSubscriberPtr::~OpenDlpFileSubscriberPtr() {}
+
+void OpenDlpFileSubscriberPtr::OnOpenDlpFile(OpenDlpFileCallbackInfo &result)
+{
+    DLP_LOG_INFO(LABEL, "enter OnOpenDlpFile");
+    std::lock_guard<std::mutex> lock(validMutex_);
+    if (!valid_) {
+        DLP_LOG_ERROR(LABEL, "object is invalid.");
+        return;
+    }
+    uv_loop_s *loop = nullptr;
+    NAPI_CALL_RETURN_VOID(env_, napi_get_uv_event_loop(env_, &loop));
+    if (loop == nullptr) {
+        DLP_LOG_ERROR(LABEL, "loop instance is nullptr");
+        return;
+    }
+    uv_work_t *work = new (std::nothrow) uv_work_t;
+    if (work == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for work!");
+        return;
+    }
+    std::unique_ptr<uv_work_t> uvWorkPtr { work };
+    OpenDlpFileSubscriberWorker *openDlpFileWorker = new (std::nothrow) OpenDlpFileSubscriberWorker();
+    if (openDlpFileWorker == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for OpenDlpFileSubscriberWorker!");
+        return;
+    }
+    std::unique_ptr<OpenDlpFileSubscriberWorker> workPtr { openDlpFileWorker };
+    openDlpFileWorker->env = env_;
+    openDlpFileWorker->ref = ref_;
+    openDlpFileWorker->result = result;
+    DLP_LOG_DEBUG(LABEL, "result uri = %{public}s, openTime = %{public}lu", result.uri.c_str(),
+        result.timeStamp);
+    openDlpFileWorker->subscriber = this;
+    work->data = reinterpret_cast<void *>(openDlpFileWorker);
+    NAPI_CALL_RETURN_VOID(env_, uv_queue_work(
+        loop, work, [](uv_work_t *work) {}, UvQueueWorkOpenDlpFile));
+    uvWorkPtr.release();
+    workPtr.release();
+}
+
+void OpenDlpFileSubscriberPtr::SetEnv(const napi_env &env)
+{
+    env_ = env;
+}
+
+void OpenDlpFileSubscriberPtr::SetCallbackRef(const napi_ref &ref)
+{
+    ref_ = ref;
+}
+
+void OpenDlpFileSubscriberPtr::SetValid(bool valid)
+{
+    std::lock_guard<std::mutex> lock(validMutex_);
+    valid_ = valid;
+}
+
+OpenDlpFileSubscriberContext::~OpenDlpFileSubscriberContext()
+{
+    if (callbackRef == nullptr) {
+        return;
+    }
+    DeleteNapiRef();
+}
+
+void OpenDlpFileUvQueueWorkDeleteRef(uv_work_t *work, int32_t status)
+{
+    DLP_LOG_INFO(LABEL, "enter OpenDlpFileUvQueueWorkDeleteRef");
+    if (work == nullptr) {
+        DLP_LOG_ERROR(LABEL, "work == nullptr : %{public}d", work == nullptr);
+        return;
+    } else if (work->data == nullptr) {
+        DLP_LOG_ERROR(LABEL, "work->data == nullptr : %{public}d", work->data == nullptr);
+        return;
+    }
+    OpenDlpFileSubscriberWorker *openDlpFileWorker =
+        reinterpret_cast<OpenDlpFileSubscriberWorker *>(work->data);
+    if (openDlpFileWorker == nullptr) {
+        delete work;
+        return;
+    }
+    napi_delete_reference(openDlpFileWorker->env, openDlpFileWorker->ref);
+    delete openDlpFileWorker;
+    openDlpFileWorker = nullptr;
+    delete work;
+    DLP_LOG_INFO(LABEL, "OpenDlpFileUvQueueWorkDeleteRef end");
+}
+
+void OpenDlpFileSubscriberContext::DeleteNapiRef()
+{
+    DLP_LOG_INFO(LABEL, "enter DeleteNapiRef");
+    uv_loop_s *loop = nullptr;
+    NAPI_CALL_RETURN_VOID(env, napi_get_uv_event_loop(env, &loop));
+    if (loop == nullptr) {
+        DLP_LOG_ERROR(LABEL, "loop instance is nullptr");
+        return;
+    }
+    uv_work_t *work = new (std::nothrow) uv_work_t;
+    if (work == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for work!");
+        return;
+    }
+
+    std::unique_ptr<uv_work_t> uvWorkPtr { work };
+    OpenDlpFileSubscriberWorker *openDlpFileWorker = new (std::nothrow) OpenDlpFileSubscriberWorker();
+    if (openDlpFileWorker == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for openDlpFileWorker!");
+        return;
+    }
+    std::unique_ptr<OpenDlpFileSubscriberWorker> workPtr { openDlpFileWorker };
+    openDlpFileWorker->env = env;
+    openDlpFileWorker->ref = callbackRef;
+
+    work->data = reinterpret_cast<void *>(openDlpFileWorker);
+    NAPI_CALL_RETURN_VOID(env, uv_queue_work(
+        loop, work, [](uv_work_t *work) {}, OpenDlpFileUvQueueWorkDeleteRef));
+    DLP_LOG_DEBUG(LABEL, "DeleteNapiRef");
+    uvWorkPtr.release();
+    workPtr.release();
+}
+
 napi_value GenerateBusinessError(napi_env env, int32_t jsErrCode, const std::string &jsErrMsg)
 {
     napi_value errCodeJs = nullptr;
@@ -226,7 +401,7 @@ void DlpNapiThrow(napi_env env, int32_t jsErrCode, const std::string &jsErrMsg)
     NAPI_CALL_RETURN_VOID(env, napi_throw(env, GenerateBusinessError(env, jsErrCode, jsErrMsg)));
 }
 
-static void ThrowParamError(const napi_env env, const std::string& param, const std::string& type)
+void ThrowParamError(const napi_env env, const std::string& param, const std::string& type)
 {
     std::string msg = "Parameter Error. The type of \"" + param + "\" must be " + type + ".";
     DlpNapiThrow(env, ERR_JS_PARAMETER_ERROR, msg);
@@ -251,134 +426,119 @@ CommonAsyncContext::~CommonAsyncContext()
     }
 }
 
-static napi_value EnumAuthPermTypeConstructor(napi_env env, napi_callback_info info)
+napi_value CreateEnumDLPFileAccess(napi_env env)
 {
-    napi_value thisArg = nullptr;
-    void* data = nullptr;
-    NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisArg, &data));
-    napi_value global = nullptr;
-    NAPI_CALL(env, napi_get_global(env, &global));
-    return thisArg;
+    napi_value authPerm = nullptr;
+    NAPI_CALL(env, napi_create_object(env, &authPerm));
+
+    napi_value prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(NO_PERMISSION), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, authPerm, "NO_PERMISSION", prop));
+
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(READ_ONLY), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, authPerm, "READ_ONLY", prop));
+
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(CONTENT_EDIT), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, authPerm, "CONTENT_EDIT", prop));
+
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(FULL_CONTROL), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, authPerm, "FULL_CONTROL", prop));
+
+    return authPerm;
 }
 
-napi_value CreateEnumAuthPermType(napi_env env, napi_value exports)
+napi_value CreateEnumAccountType(napi_env env)
 {
-    napi_value readOnly = nullptr;
-    napi_value contentEdit = nullptr;
-    napi_value fullControl = nullptr;
-    napi_value defaultPerm = nullptr;
+    napi_value accountType = nullptr;
+    NAPI_CALL(env, napi_create_object(env, &accountType));
 
-    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(READ_ONLY), &readOnly));
-    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(CONTENT_EDIT), &contentEdit));
-    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(FULL_CONTROL), &fullControl));
-    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(DEFAULT_PERM), &defaultPerm));
+    napi_value prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(CLOUD_ACCOUNT), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, accountType, "CLOUD_ACCOUNT", prop));
 
-    napi_property_descriptor desc[] = {
-        DECLARE_NAPI_STATIC_PROPERTY("READ_ONLY", readOnly),
-        DECLARE_NAPI_STATIC_PROPERTY("CONTENT_EDIT", contentEdit),
-        DECLARE_NAPI_STATIC_PROPERTY("FULL_CONTROL", fullControl),
-        DECLARE_NAPI_STATIC_PROPERTY("DEFAULT_PERM", defaultPerm),
-    };
-    napi_value result = nullptr;
-    NAPI_CALL(env, napi_define_class(env, "AuthPermType", NAPI_AUTO_LENGTH, EnumAuthPermTypeConstructor, nullptr,
-                       sizeof(desc) / sizeof(*desc), desc, &result));
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(DOMAIN_ACCOUNT), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, accountType, "DOMAIN_ACCOUNT", prop));
 
-    NAPI_CALL(env, napi_set_named_property(env, exports, "AuthPermType", result));
-    return exports;
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(APPLICATION_ACCOUNT), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, accountType, "APPLICATION_ACCOUNT", prop));
+
+    return accountType;
 }
 
-static napi_value EnumAccountTypeConstructor(napi_env env, napi_callback_info info)
+napi_value CreateEnumActionFlags(napi_env env)
 {
-    napi_value thisArg = nullptr;
-    void* data = nullptr;
-    NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisArg, &data));
-    napi_value global = nullptr;
-    NAPI_CALL(env, napi_get_global(env, &global));
-    return thisArg;
+    napi_value actionFlags = nullptr;
+    NAPI_CALL(env, napi_create_object(env, &actionFlags));
+
+    napi_value prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_INVALID), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, actionFlags, "ACTION_INVALID", prop));
+
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_VIEW), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, actionFlags, "ACTION_VIEW", prop));
+
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_SAVE), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, actionFlags, "ACTION_SAVE", prop));
+
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_SAVE_AS), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, actionFlags, "ACTION_SAVE_AS", prop));
+
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_EDIT), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, actionFlags, "ACTION_EDIT", prop));
+
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_SCREEN_CAPTURE), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, actionFlags, "ACTION_SCREEN_CAPTURE", prop));
+
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_SCREEN_SHARE), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, actionFlags, "ACTION_SCREEN_SHARE", prop));
+
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_SCREEN_RECORD), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, actionFlags, "ACTION_SCREEN_RECORD", prop));
+
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_COPY), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, actionFlags, "ACTION_COPY", prop));
+
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_PRINT), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, actionFlags, "ACTION_PRINT", prop));
+
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_EXPORT), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, actionFlags, "ACTION_EXPORT", prop));
+
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_PERMISSION_CHANGE), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, actionFlags, "ACTION_PERMISSION_CHANGE", prop));
+    return actionFlags;
 }
 
-napi_value CreateEnumAccountType(napi_env env, napi_value exports)
+napi_value CreateEnumGatheringPolicy(napi_env env)
 {
-    napi_value cloudAccount = nullptr;
-    napi_value domainAccount = nullptr;
-    napi_value appAccount = nullptr;
+    napi_value gatheringPolicy = nullptr;
+    NAPI_CALL(env, napi_create_object(env, &gatheringPolicy));
 
-    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(CLOUD_ACCOUNT), &cloudAccount));
-    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(DOMAIN_ACCOUNT), &domainAccount));
-    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(APPLICATION_ACCOUNT), &appAccount));
+    napi_value prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(GATHERING), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, gatheringPolicy, "GATHERING", prop));
 
-    napi_property_descriptor desc[] = {
-        DECLARE_NAPI_STATIC_PROPERTY("CLOUD_ACCOUNT", cloudAccount),
-        DECLARE_NAPI_STATIC_PROPERTY("DOMAIN_ACCOUNT", domainAccount),
-        DECLARE_NAPI_STATIC_PROPERTY("APPLICATION_ACCOUNT", domainAccount),
-    };
-    napi_value result = nullptr;
-    NAPI_CALL(env, napi_define_class(env, "AccountType", NAPI_AUTO_LENGTH, EnumAccountTypeConstructor, nullptr,
-                       sizeof(desc) / sizeof(*desc), desc, &result));
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(NON_GATHERING), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, gatheringPolicy, "NON_GATHERING", prop));
 
-    NAPI_CALL(env, napi_set_named_property(env, exports, "AccountType", result));
-    return exports;
-}
-
-static napi_value ActionFlagsConstructor(napi_env env, napi_callback_info info)
-{
-    napi_value thisArg = nullptr;
-    void* data = nullptr;
-    NAPI_CALL(env, napi_get_cb_info(env, info, nullptr, nullptr, &thisArg, &data));
-    napi_value global = nullptr;
-    NAPI_CALL(env, napi_get_global(env, &global));
-    return thisArg;
-}
-
-napi_value CreateEnumActionFlags(napi_env env, napi_value exports)
-{
-    napi_value actionInvalid = nullptr;
-    napi_value actionView = nullptr;
-    napi_value actionSave = nullptr;
-    napi_value actionSaveAs = nullptr;
-    napi_value actionEdit = nullptr;
-    napi_value actionScreenCapture = nullptr;
-    napi_value actionScreenShare = nullptr;
-    napi_value actionScreenRecord = nullptr;
-    napi_value actionCopy = nullptr;
-    napi_value actionPrint = nullptr;
-    napi_value actionExport = nullptr;
-    napi_value actionPermissionChange = nullptr;
-
-    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_INVALID), &actionInvalid));
-    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_VIEW), &actionView));
-    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_SAVE), &actionSave));
-    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_SAVE_AS), &actionSaveAs));
-    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_EDIT), &actionEdit));
-    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_SCREEN_CAPTURE), &actionScreenCapture));
-    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_SCREEN_SHARE), &actionScreenShare));
-    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_SCREEN_RECORD), &actionScreenRecord));
-    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_COPY), &actionCopy));
-    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_PRINT), &actionPrint));
-    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_EXPORT), &actionExport));
-    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ACTION_PERMISSION_CHANGE), &actionPermissionChange));
-
-    napi_property_descriptor desc[] = {
-        DECLARE_NAPI_STATIC_PROPERTY("ACTION_INVALID", actionInvalid),
-        DECLARE_NAPI_STATIC_PROPERTY("ACTION_VIEW", actionView),
-        DECLARE_NAPI_STATIC_PROPERTY("ACTION_SAVE", actionSave),
-        DECLARE_NAPI_STATIC_PROPERTY("ACTION_SAVE_AS", actionSaveAs),
-        DECLARE_NAPI_STATIC_PROPERTY("ACTION_EDIT", actionEdit),
-        DECLARE_NAPI_STATIC_PROPERTY("ACTION_SCREEN_CAPTURE", actionScreenCapture),
-        DECLARE_NAPI_STATIC_PROPERTY("ACTION_SCREEN_SHARE", actionScreenShare),
-        DECLARE_NAPI_STATIC_PROPERTY("ACTION_SCREEN_RECORD", actionScreenRecord),
-        DECLARE_NAPI_STATIC_PROPERTY("ACTION_COPY", actionCopy),
-        DECLARE_NAPI_STATIC_PROPERTY("ACTION_PRINT", actionPrint),
-        DECLARE_NAPI_STATIC_PROPERTY("ACTION_EXPORT", actionExport),
-        DECLARE_NAPI_STATIC_PROPERTY("ACTION_PERMISSION_CHANGE", actionPermissionChange),
-    };
-
-    napi_value result = nullptr;
-    NAPI_CALL(env, napi_define_class(env, "ActionFlags", NAPI_AUTO_LENGTH, ActionFlagsConstructor, nullptr,
-                       sizeof(desc) / sizeof(*desc), desc, &result));
-
-    NAPI_CALL(env, napi_set_named_property(env, exports, "ActionFlags", result));
-    return exports;
+    return gatheringPolicy;
 }
 
 void ProcessCallbackOrPromise(napi_env env, const CommonAsyncContext* asyncContext, napi_value data)
@@ -416,7 +576,7 @@ void ProcessCallbackOrPromise(napi_env env, const CommonAsyncContext* asyncConte
     }
 }
 
-static bool NapiCheckArgc(const napi_env env, int32_t argc, int32_t reqSize)
+bool NapiCheckArgc(const napi_env env, int32_t argc, int32_t reqSize)
 {
     if (argc < (reqSize - 1)) {
         DLP_LOG_ERROR(LABEL, "params number mismatch");
@@ -511,7 +671,12 @@ bool GetIsDlpFileParams(const napi_env env, const napi_callback_info info, DlpFi
 
     if (!GetInt64Value(env, argv[PARAM0], asyncContext.cipherTxtFd)) {
         DLP_LOG_ERROR(LABEL, "js get cipher fd fail");
-        ThrowParamError(env, "cipherTxtFd", "number");
+        ThrowParamError(env, "fd", "number");
+        return false;
+    }
+
+    if (asyncContext.cipherTxtFd < 0) {
+        DlpNapiThrow(env, ERR_JS_INVALID_PARAMETER, GetJsErrMsg(ERR_JS_INVALID_PARAMETER));
         return false;
     }
 
@@ -648,10 +813,10 @@ bool GetInstallDlpSandboxParams(const napi_env env, const napi_callback_info inf
     int64_t res;
     if (!GetInt64Value(env, argv[PARAM1], res)) {
         DLP_LOG_ERROR(LABEL, "js get perm fail");
-        ThrowParamError(env, "permType", "number");
+        ThrowParamError(env, "access", "number");
         return false;
     }
-    asyncContext.permType = static_cast<AuthPermType>(res);
+    asyncContext.dlpFileAccess = static_cast<DLPFileAccess>(res);
     if (!GetInt64Value(env, argv[PARAM2], res)) {
         DLP_LOG_ERROR(LABEL, "js get user id fail");
         ThrowParamError(env, "userId", "number");
@@ -671,8 +836,8 @@ bool GetInstallDlpSandboxParams(const napi_env env, const napi_callback_info inf
         }
     }
 
-    DLP_LOG_DEBUG(LABEL, "bundleName: %{private}s, permType: %{private}d, userId: %{private}d,uri: %{private}s",
-        asyncContext.bundleName.c_str(), asyncContext.permType, asyncContext.userId, asyncContext.uri.c_str());
+    DLP_LOG_DEBUG(LABEL, "bundleName: %{private}s, dlpFileAccess: %{private}d, userId: %{private}d,uri: %{private}s",
+        asyncContext.bundleName.c_str(), asyncContext.dlpFileAccess, asyncContext.userId, asyncContext.uri.c_str());
     return true;
 }
 
@@ -881,6 +1046,34 @@ bool GetRetentionSandboxListParams(const napi_env env, const napi_callback_info 
     return true;
 }
 
+bool GetOriginalFilenameParams(const napi_env env, const napi_callback_info info,
+    GetOriginalFileAsyncContext& asyncContext)
+{
+    size_t argc = PARAM_SIZE_ONE;
+    napi_value argv[PARAM_SIZE_ONE] = {nullptr};
+    NAPI_CALL_BASE(env, napi_get_cb_info(env, info, &argc, argv, nullptr, nullptr), false);
+
+    if (argc == PARAM_SIZE_ONE) {
+        if (!GetStringValue(env, argv[PARAM0], asyncContext.dlpFilename)) {
+            ThrowParamError(env, "fileName", "string");
+            return false;
+        }
+    }
+
+    std::string filename = asyncContext.dlpFilename;
+    size_t size = filename.size();
+    if ((size <= DLP_FILE_SUFFIX.size()) || (size > MAX_FILE_NAME_LEN)) {
+        DlpNapiThrow(env, ERR_JS_INVALID_PARAMETER, GetJsErrMsg(ERR_JS_INVALID_PARAMETER));
+        return false;
+    }
+
+    if (filename.substr(filename.size() - DLP_FILE_SUFFIX.size()) != DLP_FILE_SUFFIX) {
+        DlpNapiThrow(env, ERR_JS_INVALID_PARAMETER, GetJsErrMsg(ERR_JS_INVALID_PARAMETER));
+        return false;
+    }
+    return true;
+}
+
 bool GetThirdInterfaceParams(
     const napi_env env, const napi_callback_info info, CommonAsyncContext& asyncContext)
 {
@@ -903,7 +1096,7 @@ bool GetDlpProperty(napi_env env, napi_value jsObject, DlpProperty& property)
         DLP_LOG_ERROR(LABEL, "js get owner account fail");
         return false;
     }
-    if (!GetStringValueByKey(env, jsObject, "ownerAccountId", property.ownerAccountId)) {
+    if (!GetStringValueByKey(env, jsObject, "ownerAccountID", property.ownerAccountId)) {
         DLP_LOG_ERROR(LABEL, "js get owner accountId fail");
         return false;
     }
@@ -913,7 +1106,7 @@ bool GetDlpProperty(napi_env env, napi_value jsObject, DlpProperty& property)
         return false;
     }
     property.ownerAccountType = static_cast<DlpAccountType>(type);
-    if (!GetVectorAuthUserByKey(env, jsObject, "authUsers", property.authUsers)) {
+    if (!GetVectorAuthUserByKey(env, jsObject, "authUserList", property.authUsers)) {
         DLP_LOG_ERROR(LABEL, "js get auth users fail");
         return false;
     }
@@ -935,10 +1128,10 @@ bool GetDlpProperty(napi_env env, napi_value jsObject, DlpProperty& property)
         DLP_LOG_ERROR(LABEL, "js get auth perm fail");
         return false;
     }
-    property.everyonePerm = static_cast<AuthPermType>(perm);
+    property.everyonePerm = static_cast<DLPFileAccess>(perm);
 
     DLP_LOG_DEBUG(LABEL,
-        "ownerAccount: %{private}s, authUsers size: %{private}zu, contractAccount: %{private}s, ownerAccountType: "
+        "ownerAccount: %{private}s, authUserList size: %{private}zu, contractAccount: %{private}s, ownerAccountType: "
         "%{private}d, offlineAccess: %{private}d",
         property.ownerAccount.c_str(), property.authUsers.size(), property.contractAccount.c_str(),
         property.ownerAccountType, property.offlineAccess);
@@ -1017,10 +1210,10 @@ napi_value DlpPropertyToJs(napi_env env, const DlpProperty& property)
 
     napi_value ownerAccountIdJs;
     NAPI_CALL(env, napi_create_string_utf8(env, property.ownerAccountId.c_str(), NAPI_AUTO_LENGTH, &ownerAccountIdJs));
-    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "ownerAccountId", ownerAccountIdJs));
+    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "ownerAccountID", ownerAccountIdJs));
 
     napi_value vectorAuthUserJs = VectorAuthUserToJs(env, property.authUsers);
-    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "authUsers", vectorAuthUserJs));
+    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "authUserList", vectorAuthUserJs));
 
     napi_value contractAccountJs;
     NAPI_CALL(
@@ -1040,8 +1233,8 @@ napi_value DlpPermissionInfoToJs(napi_env env, const DLPPermissionInfo& permInfo
     NAPI_CALL(env, napi_create_object(env, &dlpPermInfoJs));
 
     napi_value accessJs;
-    NAPI_CALL(env, napi_create_uint32(env, permInfo.permType, &accessJs));
-    NAPI_CALL(env, napi_set_named_property(env, dlpPermInfoJs, "access", accessJs));
+    NAPI_CALL(env, napi_create_uint32(env, permInfo.dlpFileAccess, &accessJs));
+    NAPI_CALL(env, napi_set_named_property(env, dlpPermInfoJs, "dlpFileAccess", accessJs));
 
     napi_value flagsJs;
     NAPI_CALL(env, napi_create_uint32(env, permInfo.flags, &flagsJs));
@@ -1065,7 +1258,7 @@ napi_value VectorAuthUserToJs(napi_env env, const std::vector<AuthUserInfo>& use
 
         napi_value authPermJs;
         NAPI_CALL(env, napi_create_int64(env, item.authPerm, &authPermJs));
-        NAPI_CALL(env, napi_set_named_property(env, objAuthUserInfo, "authPerm", authPermJs));
+        NAPI_CALL(env, napi_set_named_property(env, objAuthUserInfo, "dlpFileAccess", authPermJs));
 
         napi_value permExpiryTimeJs;
         NAPI_CALL(env, napi_create_int64(env, item.permExpiryTime, &permExpiryTimeJs));
@@ -1278,12 +1471,12 @@ bool GetVectorAuthUser(napi_env env, napi_value jsObject, std::vector<AuthUserIn
             return false;
         }
         int64_t perm;
-        if (!GetInt64ValueByKey(env, obj, "authPerm", perm)) {
+        if (!GetInt64ValueByKey(env, obj, "dlpFileAccess", perm)) {
             DLP_LOG_ERROR(LABEL, "js get auth perm fail");
             resultVec.clear();
             return false;
         }
-        userInfo.authPerm = static_cast<AuthPermType>(perm);
+        userInfo.authPerm = static_cast<DLPFileAccess>(perm);
         int64_t time;
         if (!GetInt64ValueByKey(env, obj, "permExpiryTime", time)) {
             DLP_LOG_ERROR(LABEL, "js get time fail");

@@ -150,13 +150,13 @@ static bool TestGetAppUid(const std::string& bundleName, int32_t appIndex, int32
 }
 
 static void TestInstallDlpSandbox(
-    const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex)
+    const std::string& bundleName, DLPFileAccess dlpFileAccess, int32_t userId, int32_t& appIndex)
 {
     // install sandbox need permission ACCESS_DLP_FILE, dlpmanager has this permission
     AccessTokenID tokenId = GetSelfTokenID();
     ASSERT_TRUE(TestSetSelfTokenId(g_dlpManagerTokenId));
 
-    ASSERT_EQ(DLP_OK, DlpPermissionKit::InstallDlpSandbox(bundleName, permType, userId, appIndex, TEST_URI));
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::InstallDlpSandbox(bundleName, dlpFileAccess, userId, appIndex, TEST_URI));
     ASSERT_TRUE(appIndex != 0);
 
     ASSERT_TRUE(TestSetSelfTokenId(tokenId));
@@ -266,7 +266,7 @@ static void GeneratePolicy(PermissionPolicy& encPolicy, uint32_t ownerAccountLen
     }
     for (uint32_t user = 0; user < userNum; ++user) {
         AuthUserInfo perminfo = {.authAccount = GenerateRandStr(authAccountLen),
-            .authPerm = static_cast<AuthPermType>(authPerm),
+            .authPerm = static_cast<DLPFileAccess>(authPerm),
             .permExpiryTime = curTime + deltaTime,
             .authAccountType = DOMAIN_ACCOUNT};
         encPolicy.authUsers_.emplace_back(perminfo);
@@ -330,14 +330,14 @@ HWTEST_F(DlpPermissionKitTest, SetRetentionState01, TestSize.Level1)
         DlpPermissionKit::InstallDlpSandbox(DLP_MANAGER_APP, FULL_CONTROL, DEFAULT_USERID, appIndex, TEST_URI));
     docUriVec.clear();
     ASSERT_TRUE(TestSetSelfTokenId(tokenId));
-    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, DlpPermissionKit::SetNonRetentionState(docUriVec));
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, DlpPermissionKit::CancelRetentionState(docUriVec));
 
     docUriVec.push_back(TEST_UNEXIST_URI);
-    ASSERT_EQ(DLP_OK, DlpPermissionKit::SetNonRetentionState(docUriVec));
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::CancelRetentionState(docUriVec));
 
     docUriVec.clear();
     docUriVec.push_back(TEST_URI);
-    ASSERT_EQ(DLP_OK, DlpPermissionKit::SetNonRetentionState(docUriVec));
+    ASSERT_EQ(DLP_OK, DlpPermissionKit::CancelRetentionState(docUriVec));
     retentionSandBoxInfoVec.clear();
     ASSERT_EQ(DLP_OK, DlpPermissionKit::GetRetentionSandboxList(DLP_MANAGER_APP, retentionSandBoxInfoVec));
     ASSERT_TRUE(0 == retentionSandBoxInfoVec.size());
@@ -497,7 +497,7 @@ HWTEST_F(DlpPermissionKitTest, InstallDlpSandbox002, TestSize.Level1)
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID,
         DlpPermissionKit::InstallDlpSandbox("", READ_ONLY, DEFAULT_USERID, appIndex, TEST_URI));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, DlpPermissionKit::InstallDlpSandbox(DLP_MANAGER_APP,
-        static_cast<AuthPermType>(100), DEFAULT_USERID, appIndex, TEST_URI));
+        static_cast<DLPFileAccess>(100), DEFAULT_USERID, appIndex, TEST_URI));
 }
 
 /**
@@ -643,7 +643,7 @@ HWTEST_F(DlpPermissionKitTest, QueryDlpFileAccess001, TestSize.Level1)
 
     DLPPermissionInfo permInfo;
     ASSERT_EQ(DLP_OK, DlpPermissionKit::QueryDlpFileAccess(permInfo));
-    ASSERT_EQ(permInfo.permType, DEFAULT_PERM);
+    ASSERT_EQ(permInfo.dlpFileAccess, NO_PERMISSION);
     ASSERT_EQ(permInfo.flags, ACTION_INVALID);
 
     TestRecoverProcessInfo(uid, tokenId);
@@ -667,7 +667,7 @@ HWTEST_F(DlpPermissionKitTest, QueryDlpFileAccess002, TestSize.Level1)
 
     DLPPermissionInfo permInfo;
     ASSERT_EQ(DLP_OK, DlpPermissionKit::QueryDlpFileAccess(permInfo));
-    ASSERT_EQ(permInfo.permType, READ_ONLY);
+    ASSERT_EQ(permInfo.dlpFileAccess, READ_ONLY);
     ASSERT_EQ(permInfo.flags, ACTION_VIEW);
 
     TestUninstallDlpSandbox(DLP_MANAGER_APP, appIndex, DEFAULT_USERID);
@@ -692,7 +692,7 @@ HWTEST_F(DlpPermissionKitTest, QueryDlpFileAccess003, TestSize.Level1)
 
     DLPPermissionInfo permInfo;
     ASSERT_EQ(DLP_OK, DlpPermissionKit::QueryDlpFileAccess(permInfo));
-    ASSERT_EQ(permInfo.permType, CONTENT_EDIT);
+    ASSERT_EQ(permInfo.dlpFileAccess, CONTENT_EDIT);
     ASSERT_EQ(permInfo.flags, ACTION_SET_EDIT);
 
     TestUninstallDlpSandbox(DLP_MANAGER_APP, appIndex, DEFAULT_USERID);
@@ -717,7 +717,7 @@ HWTEST_F(DlpPermissionKitTest, QueryDlpFileAccess004, TestSize.Level1)
 
     DLPPermissionInfo permInfo;
     ASSERT_EQ(DLP_OK, DlpPermissionKit::QueryDlpFileAccess(permInfo));
-    ASSERT_EQ(permInfo.permType, FULL_CONTROL);
+    ASSERT_EQ(permInfo.dlpFileAccess, FULL_CONTROL);
     ASSERT_EQ(permInfo.flags, ACTION_SET_FC);
 
     TestUninstallDlpSandbox(DLP_MANAGER_APP, appIndex, DEFAULT_USERID);

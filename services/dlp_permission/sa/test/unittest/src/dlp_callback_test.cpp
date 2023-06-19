@@ -14,7 +14,7 @@
  */
 
 #define  private public
-#include "callback_manager.h"
+#include "dlp_sandbox_change_callback_manager.h"
 #undef private
 #include "dlp_callback_test.h"
 #include "dlp_permission_log.h"
@@ -72,41 +72,40 @@ public:
 
 /**
  * @tc.name: DlpCallbackTest001
- * @tc.desc: CallbackManager test
+ * @tc.desc: DlpSandboxChangeCallbackManager test
  * @tc.type: FUNC
  * @tc.require:
  */
 HWTEST_F(DlpCallbackTest, CallbackManager002, TestSize.Level1)
 {
-    int32_t res = CallbackManager::GetInstance().AddCallback(0, nullptr);
+    int32_t res = DlpSandboxChangeCallbackManager::GetInstance().AddCallback(0, nullptr);
     EXPECT_EQ(res, DLP_SERVICE_ERROR_VALUE_INVALID);
 
     sptr<DlpSandboxChangeCallbackTest> callback = new (std::nothrow) DlpSandboxChangeCallbackTest();
     EXPECT_TRUE(callback != nullptr);
 
     for (uint32_t index = 0; index <= MAX_CALLBACK_SIZE; ++index) {
-        CallbackRecord recordInstance;
+        DlpSandboxChangeCallbackRecord recordInstance;
         recordInstance.callbackObject_ = callback->AsObject();
         recordInstance.pid = index;
-        CallbackManager::GetInstance().callbackInfoMap_.
-            insert(std::pair<int32_t, CallbackRecord>(index, recordInstance));
+        DlpSandboxChangeCallbackManager::GetInstance().callbackInfoMap_.
+            insert(std::pair<int32_t, DlpSandboxChangeCallbackRecord>(index, recordInstance));
     }
-    res = CallbackManager::GetInstance().AddCallback(0, callback->AsObject());
+    res = DlpSandboxChangeCallbackManager::GetInstance().AddCallback(0, callback->AsObject());
     EXPECT_EQ(res, DLP_SERVICE_ERROR_VALUE_INVALID);
-    res = CallbackManager::GetInstance().RemoveCallback(nullptr);
+    res = DlpSandboxChangeCallbackManager::GetInstance().RemoveCallback(nullptr);
     EXPECT_EQ(res, DLP_SERVICE_ERROR_VALUE_INVALID);
     DlpSandboxInfo dlpSandboxInfo;
     dlpSandboxInfo.pid = MAX_CALLBACK_SIZE + 1;
-    CallbackManager::GetInstance().ExecuteCallbackAsync(dlpSandboxInfo);
+    DlpSandboxChangeCallbackManager::GetInstance().ExecuteCallbackAsync(dlpSandboxInfo);
     dlpSandboxInfo.pid = 1;
-    CallbackManager::GetInstance().ExecuteCallbackAsync(dlpSandboxInfo);
+    DlpSandboxChangeCallbackManager::GetInstance().ExecuteCallbackAsync(dlpSandboxInfo);
     bool result = false;
-    res = CallbackManager::GetInstance().RemoveCallback(0, result);
+    res = DlpSandboxChangeCallbackManager::GetInstance().RemoveCallback(0, result);
     EXPECT_EQ(res, DLP_SERVICE_ERROR_VALUE_INVALID);
-    for (auto it = CallbackManager::GetInstance().callbackInfoMap_.begin();
-        it != CallbackManager::GetInstance().callbackInfoMap_.end(); ++it) {
+    for (auto it = DlpSandboxChangeCallbackManager::GetInstance().callbackInfoMap_.begin();
+        it != DlpSandboxChangeCallbackManager::GetInstance().callbackInfoMap_.end(); ++it) {
         it->second.callbackObject_ = nullptr;
-        CallbackManager::GetInstance().callbackInfoMap_.erase(it);
+        DlpSandboxChangeCallbackManager::GetInstance().callbackInfoMap_.erase(it);
     }
 }
-

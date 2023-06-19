@@ -19,7 +19,8 @@
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
 #include "bundle_mgr_client.h"
-#include "callback_manager.h"
+#include "dlp_sandbox_change_callback_manager.h"
+#include "open_dlp_file_callback_manager.h"
 #include "iservice_registry.h"
 #include "i_dlp_permission_service.h"
 
@@ -66,7 +67,7 @@ void AppStateObserver::UninstallAllDlpSandboxForUser(int32_t userId)
         sandboxInfo_.erase(iter++);
         DLP_LOG_INFO(LABEL, "ExecuteCallbackAsync appInfo bundleName:%{public}s,appIndex:%{public}d,pid:%{public}d",
             appInfo.bundleName.c_str(), appInfo.appIndex, appInfo.pid);
-        CallbackManager::GetInstance().ExecuteCallbackAsync(appInfo);
+        DlpSandboxChangeCallbackManager::GetInstance().ExecuteCallbackAsync(appInfo);
     }
 }
 
@@ -84,8 +85,8 @@ void AppStateObserver::ExitSaAfterAllDlpManagerDie()
 {
     std::lock_guard<std::mutex> lock(userIdListLock_);
     DLP_LOG_DEBUG(LABEL, "userIdList_ size:%{public}zu", userIdList_.size());
-    if (userIdList_.empty()) {
-        DLP_LOG_INFO(LABEL, "all dlp manager app die,start service exit");
+    if (userIdList_.empty() && CallbackListenerEmpty()) {
+        DLP_LOG_INFO(LABEL, "all dlp manager app die, and callbacks are empty, start service exit");
         auto systemAbilityMgr = SystemAbilityManagerClient::GetInstance().GetSystemAbilityManager();
         if (systemAbilityMgr == nullptr) {
             DLP_LOG_ERROR(LABEL, "Failed to get SystemAbilityManager.");
@@ -180,6 +181,7 @@ void AppStateObserver::AddDlpSandboxInfo(const DlpSandboxInfo& appInfo)
     AddUidWithTokenId(appInfo.tokenId, appInfo.uid);
     RetentionFileManager::GetInstance().AddSandboxInfo(appInfo.appIndex, appInfo.tokenId, appInfo.bundleName,
         appInfo.userId);
+    OpenDlpFileCallbackManager::GetInstance().ExecuteCallbackAsync(appInfo);
     return;
 }
 
@@ -211,6 +213,11 @@ void AppStateObserver::OnProcessDied(const AppExecFwk::ProcessData& processData)
         ExitSaAfterAllDlpManagerDie();
         return;
     }
+    // if current died process is a listener
+    if (RemoveCallbackListener(processData.pid)) {
+        ExitSaAfterAllDlpManagerDie();
+        return;
+    }
 
     // current died process is dlp sandbox app
     DlpSandboxInfo appInfo;
@@ -223,7 +230,7 @@ void AppStateObserver::OnProcessDied(const AppExecFwk::ProcessData& processData)
     EraseDlpSandboxInfo(appInfo.uid);
     DLP_LOG_INFO(LABEL, "ExecuteCallbackAsync appInfo bundleName:%{public}s,appIndex:%{public}d,pid:%{public}d",
         appInfo.bundleName.c_str(), appInfo.appIndex, appInfo.pid);
-    CallbackManager::GetInstance().ExecuteCallbackAsync(appInfo);
+    DlpSandboxChangeCallbackManager::GetInstance().ExecuteCallbackAsync(appInfo);
 }
 
 void AppStateObserver::EraseUidTokenIdMap(uint32_t tokenId)
@@ -262,9 +269,37 @@ bool AppStateObserver::GetUidByTokenId(uint32_t tokenId, int32_t& uid)
     return false;
 }
 
-static bool IsCopyable(AuthPermType permType)
+bool AppStateObserver::CallbackListenerEmpty()
 {
-    switch (permType) {
+    std::lock_guard<std::mutex> lock(callbackListLock_);
+    return callbackList_.empty();
+}
+
+bool AppStateObserver::RemoveCallbackListener(int32_t pid)
+{
+    std::lock_guard<std::mutex> lock(callbackListLock_);
+    auto iter = callbackList_.find(pid);
+    if (iter != callbackList_.end()) {
+        (*iter).second--;
+        if ((*iter).second <= 0) {
+            DLP_LOG_INFO(LABEL, "erase pid %{public}d", pid);
+            callbackList_.erase(pid);
+            return callbackList_.empty();
+        }
+    }
+    return false;
+}
+
+void AppStateObserver::AddCallbackListener(int32_t pid)
+{
+    std::lock_guard<std::mutex> lock(callbackListLock_);
+    DLP_LOG_INFO(LABEL, "add pid %{public}d", pid);
+    callbackList_[pid]++;
+}
+
+static bool IsCopyable(DLPFileAccess dlpFileAccess)
+{
+    switch (dlpFileAccess) {
         case READ_ONLY:
             return false;
         case CONTENT_EDIT:
@@ -285,28 +320,28 @@ int32_t AppStateObserver::QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t
         copyable = false;
         return DLP_SERVICE_ERROR_APPOBSERVER_ERROR;
     }
-    AuthPermType permType = DEFAULT_PERM;
-    int32_t res = QueryDlpFileAccessByUid(permType, uid);
+    DLPFileAccess dlpFileAccess = NO_PERMISSION;
+    int32_t res = QueryDlpFileAccessByUid(dlpFileAccess, uid);
     if (res != DLP_OK) {
         copyable = false;
     } else {
-        copyable = IsCopyable(permType);
+        copyable = IsCopyable(dlpFileAccess);
     }
     return res;
 }
 
-int32_t AppStateObserver::QueryDlpFileAccessByUid(AuthPermType& permType, int32_t uid)
+int32_t AppStateObserver::QueryDlpFileAccessByUid(DLPFileAccess& dlpFileAccess, int32_t uid)
 {
     DlpSandboxInfo appInfo;
-    if (!GetSandboxInfo(uid, appInfo) || appInfo.permType == DEFAULT_PERM) {
+    if (!GetSandboxInfo(uid, appInfo) || appInfo.dlpFileAccess == NO_PERMISSION) {
         DLP_LOG_ERROR(LABEL, "current uid %{public}d is not a sandbox app", uid);
-        permType = DEFAULT_PERM;
+        dlpFileAccess = NO_PERMISSION;
         return DLP_SERVICE_ERROR_APPOBSERVER_ERROR;
     }
-    permType = appInfo.permType;
+    dlpFileAccess = appInfo.dlpFileAccess;
     auto sandboxBundleName = appInfo.bundleName + std::to_string(appInfo.appIndex);
     DLP_LOG_INFO(
-        LABEL, "current dlp sandbox %{public}s's perm type is %{public}d", sandboxBundleName.c_str(), permType);
+        LABEL, "current dlp sandbox %{public}s's perm type is %{public}d", sandboxBundleName.c_str(), dlpFileAccess);
     return DLP_OK;
 }
 
@@ -327,9 +362,9 @@ void AppStateObserver::DumpSandbox(int fd)
     dprintf(fd, "DlpSandbox:\n");
     for (auto iter = sandboxInfo_.begin(); iter != sandboxInfo_.end(); iter++) {
         DlpSandboxInfo& appInfo = iter->second;
-        dprintf(fd, "    userId:%d;bundleName:%s;sandboxIndex:%d;permType:%s\n",
+        dprintf(fd, "    userId:%d;bundleName:%s;sandboxIndex:%d;dlpFileAccess:%s\n",
             appInfo.userId, appInfo.bundleName.c_str(), appInfo.appIndex,
-            appInfo.permType == READ_ONLY ? "ReadOnly" : "FullControl");
+            appInfo.dlpFileAccess == READ_ONLY ? "ReadOnly" : "FullControl");
     }
 }
 }  // namespace DlpPermission

@@ -40,7 +40,7 @@ public:
     virtual int32_t ParseDlpCertificate(const std::vector<uint8_t>& cert, uint32_t flag,
         sptr<IDlpPermissionCallback>& callback) = 0;
 
-    virtual int32_t InstallDlpSandbox(const std::string& bundleName, AuthPermType permType, int32_t userId,
+    virtual int32_t InstallDlpSandbox(const std::string& bundleName, DLPFileAccess dlpFileAccess, int32_t userId,
         int32_t& appIndex, const std::string& uri) = 0;
 
     virtual int32_t UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId) = 0;
@@ -55,15 +55,19 @@ public:
 
     virtual int32_t GetDlpSupportFileType(std::vector<std::string>& supportFileType) = 0;
 
-    virtual int32_t RegisterDlpSandboxChangeCallback(const sptr<IRemoteObject> &callback) = 0;
+    virtual int32_t RegisterDlpSandboxChangeCallback(const sptr<IRemoteObject>& callback) = 0;
 
-    virtual int32_t UnRegisterDlpSandboxChangeCallback(bool &result) = 0;
+    virtual int32_t UnRegisterDlpSandboxChangeCallback(bool& result) = 0;
+
+    virtual int32_t RegisterOpenDlpFileCallback(const sptr<IRemoteObject>& callback) = 0;
+
+    virtual int32_t UnRegisterOpenDlpFileCallback(const sptr<IRemoteObject>& callback) = 0;
 
     virtual int32_t GetDlpGatheringPolicy(bool& isGathering) = 0;
 
     virtual int32_t SetRetentionState(const std::vector<std::string>& docUriVec) = 0;
 
-    virtual int32_t SetNonRetentionState(const std::vector<std::string>& docUriVec) = 0;
+    virtual int32_t CancelRetentionState(const std::vector<std::string>& docUriVec) = 0;
 
     virtual int32_t GetRetentionSandboxList(const std::string& bundleName,
         std::vector<RetentionSandBoxInfo>& retentionSandBoxInfoVec) = 0;
@@ -90,6 +94,8 @@ public:
         GET_RETETNTION_SANDBOX_LIST = 0xff0f,
         CLEAR_UNRESERVED_SANDBOX = 0xff10,
         GET_VISTI_FILE_RECORD_LIST = 0xff11,
+        REGISTER_OPEN_DLP_FILE_CALLBACK = 0xff12,
+        UN_REGISTER_OPEN_DLP_FILE_CALLBACK = 0xff13,
     };
 };
 }  // namespace DlpPermission

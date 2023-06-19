@@ -238,7 +238,7 @@ HWTEST_F(DlpFileTest, UpdateDlpFilePermission001, TestSize.Level1)
     testFile.policy_.ownerAccount_ = "ohosAnonymousName";
     testFile.policy_.ownerAccountId_ = "ohosAnonymousName";
     testFile.policy_.ownerAccountType_ = CLOUD_ACCOUNT;
-    testFile.authPerm_ = DEFAULT_PERM;
+    testFile.authPerm_ = NO_PERMISSION;
 
     testFile.UpdateDlpFilePermission();
     ASSERT_EQ(testFile.authPerm_, FULL_CONTROL);
@@ -261,7 +261,7 @@ HWTEST_F(DlpFileTest, UpdateDlpFilePermission002, TestSize.Level1)
     };
 
     testFile.policy_.authUsers_.emplace_back(user);
-    testFile.authPerm_ = DEFAULT_PERM;
+    testFile.authPerm_ = NO_PERMISSION;
 
     testFile.UpdateDlpFilePermission();
     ASSERT_EQ(testFile.authPerm_, READ_ONLY);
@@ -284,7 +284,7 @@ HWTEST_F(DlpFileTest, UpdateDlpFilePermission003, TestSize.Level1)
     };
 
     testFile.policy_.authUsers_.emplace_back(user);
-    testFile.authPerm_ = DEFAULT_PERM;
+    testFile.authPerm_ = NO_PERMISSION;
 
     testFile.UpdateDlpFilePermission();
     ASSERT_EQ(testFile.authPerm_, FULL_CONTROL);
@@ -307,9 +307,9 @@ HWTEST_F(DlpFileTest, UpdateDlpFilePermission004, TestSize.Level1)
     };
 
     testFile.policy_.authUsers_.emplace_back(user);
-    testFile.authPerm_ = DEFAULT_PERM;
+    testFile.authPerm_ = NO_PERMISSION;
     testFile.UpdateDlpFilePermission();
-    ASSERT_EQ(testFile.authPerm_, DEFAULT_PERM);
+    ASSERT_EQ(testFile.authPerm_, NO_PERMISSION);
 }
 
 /**
@@ -326,10 +326,31 @@ HWTEST_F(DlpFileTest, UpdateDlpFilePermission005, TestSize.Level1)
     testFile.policy_.ownerAccount_ = "ohosAnonymousName";
     testFile.policy_.ownerAccountId_ = "ohosAnonymousName";
     testFile.policy_.ownerAccountType_ = DOMAIN_ACCOUNT;
-    testFile.authPerm_ = DEFAULT_PERM;
+    testFile.authPerm_ = NO_PERMISSION;
 
     testFile.UpdateDlpFilePermission();
-    ASSERT_EQ(testFile.authPerm_, DEFAULT_PERM);
+    ASSERT_EQ(testFile.authPerm_, NO_PERMISSION);
+}
+
+/**
+ * @tc.name: UpdateDlpFilePermission006
+ * @tc.desc: test update dlp permission, support everyone
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileTest, UpdateDlpFilePermission006, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "UpdateDlpFilePermission006");
+
+    DlpFile testFile(1000);
+    testFile.policy_.ownerAccount_ = "ohosAnonymousName";
+    testFile.policy_.ownerAccountId_ = "ohosAnonymousName";
+    testFile.policy_.ownerAccountType_ = DOMAIN_ACCOUNT;
+    testFile.policy_.supportEveryone_ = true;
+    testFile.authPerm_ = NO_PERMISSION;
+
+    testFile.UpdateDlpFilePermission();
+    ASSERT_EQ(testFile.authPerm_, NO_PERMISSION);
 }
 
 /**
@@ -686,7 +707,7 @@ HWTEST_F(DlpFileTest, ParseDlpHeader005, TestSize.Level1)
 
 /**
  * @tc.name: ParseDlpHeader006
- * @tc.desc: test parse dlp file header success
+ * @tc.desc: test parse dlp file header success with header.offlineCertSize = 0
  * @tc.type: FUNC
  * @tc.require:
  */
@@ -715,6 +736,41 @@ HWTEST_F(DlpFileTest, ParseDlpHeader006, TestSize.Level1)
     write(fd, buffer, 40);
 
     EXPECT_EQ(DLP_OK, testFile.ParseDlpHeader());
+    close(fd);
+    unlink("/data/fuse_test.txt");
+}
+
+/**
+ * @tc.name: ParseDlpHeader007
+ * @tc.desc: test parse dlp file header success with header.offlineCertSize != 0
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileTest, ParseDlpHeader007, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "ParseDlpHeader007");
+
+    int fd = open("/data/fuse_test.txt", O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
+    ASSERT_NE(fd, -1);
+    DlpFile testFile(fd);
+
+    struct DlpHeader header = {
+        .magic = DLP_FILE_MAGIC,
+        .certOffset = sizeof(struct DlpHeader),
+        .offlineAccess = 0,
+        .certSize = 20,
+        .contactAccountOffset = sizeof(struct DlpHeader) + 20,
+        .contactAccountSize = 20,
+        .txtOffset  = sizeof(struct DlpHeader) + 20 + 20,
+        .txtSize = 100,
+        .offlineCertOffset = 0,
+        .offlineCertSize = 1,
+    };
+    write(fd, &header, sizeof(header));
+    uint8_t buffer[40] = {0};
+    write(fd, buffer, 40);
+
+    EXPECT_EQ(DLP_PARSE_ERROR_FILE_NOT_DLP, testFile.ParseDlpHeader());
     close(fd);
     unlink("/data/fuse_test.txt");
 }

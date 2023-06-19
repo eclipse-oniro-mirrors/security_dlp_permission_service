@@ -115,7 +115,7 @@ static bool IsValidDlpHeader(const struct DlpHeader& head)
     return true;
 }
 
-static bool IsDlpFile(int32_t dlpFd)
+bool DlpFileKits::IsDlpFile(int32_t dlpFd)
 {
     if (dlpFd < 0) {
         DLP_LOG_ERROR(LABEL, "dlp file fd is invalid");
@@ -151,11 +151,6 @@ bool DlpFileKits::GetSandboxFlag(Want& want)
     }
 
     int fd = GetWantFileDescriptor(param);
-    if (fd == INVALID_FD) {
-        DLP_LOG_WARN(LABEL, "Get file descriptor fail");
-        return false;
-    }
-
     if (!IsDlpFile(fd)) {
         DLP_LOG_WARN(LABEL, "Fd %{public}d is not dlp file", fd);
         return false;

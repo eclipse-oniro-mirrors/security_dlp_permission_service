@@ -108,7 +108,7 @@ public:
         isFuseLink_ = false;
     };
 
-    AuthPermType GetAuthPerm()
+    DLPFileAccess GetAuthPerm()
     {
         return authPerm_;
     };
@@ -140,7 +140,7 @@ private:
     int32_t CheckDlpFile();
 
     bool isFuseLink_;
-    AuthPermType authPerm_;
+    DLPFileAccess authPerm_;
 
     // dlp parse format
     struct DlpHeader head_;

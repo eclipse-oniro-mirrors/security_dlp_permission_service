@@ -54,6 +54,17 @@ static bool IsSaCall()
     return (res == Security::AccessToken::TOKEN_NATIVE);
 }
 
+static int32_t CheckSandboxFlag(AccessToken::AccessTokenID tokenId, bool& sandboxFlag)
+{
+    int32_t res = AccessToken::AccessTokenKit::GetHapDlpFlag(tokenId);
+    if (res < 0) {
+        DLP_LOG_ERROR(LABEL, "Invalid tokenId");
+        return res;
+    }
+    sandboxFlag = (res == 1);
+    return DLP_OK;
+}
+
 int32_t DlpPermissionStub::OnRemoteRequest(
     uint32_t code, MessageParcel& data, MessageParcel& reply, MessageOption& option)
 {
@@ -164,7 +175,7 @@ int32_t DlpPermissionStub::InstallDlpSandboxInner(MessageParcel& data, MessagePa
         DLP_LOG_ERROR(LABEL, "Read auth perm type fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
-    AuthPermType permType = static_cast<AuthPermType>(type);
+    DLPFileAccess dlpFileAccess = static_cast<DLPFileAccess>(type);
 
     int32_t userId;
     if (!data.ReadInt32(userId)) {
@@ -179,7 +190,7 @@ int32_t DlpPermissionStub::InstallDlpSandboxInner(MessageParcel& data, MessagePa
     }
 
     int32_t appIndex;
-    int32_t res = this->InstallDlpSandbox(bundleName, permType, userId, appIndex, uri);
+    int32_t res = this->InstallDlpSandbox(bundleName, dlpFileAccess, userId, appIndex, uri);
     if (!reply.WriteInt32(res)) {
         DLP_LOG_ERROR(LABEL, "Write install sandbox result fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
@@ -276,6 +287,14 @@ int32_t DlpPermissionStub::QueryDlpFileCopyableByTokenIdInner(MessageParcel& dat
 
 int32_t DlpPermissionStub::QueryDlpFileAccessInner(MessageParcel& data, MessageParcel& reply)
 {
+    bool sandboxFlag;
+    if (CheckSandboxFlag(GetCallingTokenID(), sandboxFlag) != DLP_OK) {
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    if (!sandboxFlag) {
+        DLP_LOG_ERROR(LABEL, "Forbid called by a non-sandbox app");
+        return DLP_SERVICE_ERROR_API_ONLY_FOR_SANDBOX_ERROR;
+    }
     DLPPermissionInfoParcel permInfoParcel;
     int32_t res = this->QueryDlpFileAccess(permInfoParcel);
     if (!reply.WriteInt32(res)) {
@@ -354,6 +373,51 @@ int32_t DlpPermissionStub::UnRegisterDlpSandboxChangeCallbackInner(MessageParcel
     return DLP_OK;
 }
 
+int32_t DlpPermissionStub::RegisterOpenDlpFileCallbackInner(MessageParcel &data, MessageParcel &reply)
+{
+    bool sandboxFlag;
+    if (CheckSandboxFlag(GetCallingTokenID(), sandboxFlag) != DLP_OK) {
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    if (sandboxFlag) {
+        DLP_LOG_ERROR(LABEL, "Forbid called by a sandbox app");
+        return DLP_SERVICE_ERROR_API_NOT_FOR_SANDBOX_ERROR;
+    }
+    sptr<IRemoteObject> callback = data.ReadRemoteObject();
+    if (callback == nullptr) {
+        DLP_LOG_ERROR(LABEL, "read callback fail");
+        reply.WriteInt32(DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL);
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    int32_t result = this->RegisterOpenDlpFileCallback(callback);
+    reply.WriteInt32(result);
+    return DLP_OK;
+}
+
+int32_t DlpPermissionStub::UnRegisterOpenDlpFileCallbackInner(MessageParcel &data, MessageParcel &reply)
+{
+    bool sandboxFlag;
+    if (CheckSandboxFlag(GetCallingTokenID(), sandboxFlag) != DLP_OK) {
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    if (sandboxFlag) {
+        DLP_LOG_ERROR(LABEL, "Forbid called by a sandbox app");
+        return DLP_SERVICE_ERROR_API_NOT_FOR_SANDBOX_ERROR;
+    }
+    sptr<IRemoteObject> callback = data.ReadRemoteObject();
+    if (callback == nullptr) {
+        DLP_LOG_ERROR(LABEL, "read callback fail");
+        reply.WriteInt32(DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL);
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    int32_t result = this->UnRegisterOpenDlpFileCallback(callback);
+    if (!reply.WriteInt32(result)) {
+        DLP_LOG_ERROR(LABEL, "Write un-register open dlp file callback result fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    return DLP_OK;
+}
+
 int32_t DlpPermissionStub::GetDlpGatheringPolicyInner(MessageParcel& data, MessageParcel& reply)
 {
     bool isGathering = false;
@@ -372,6 +436,14 @@ int32_t DlpPermissionStub::GetDlpGatheringPolicyInner(MessageParcel& data, Messa
 
 int32_t DlpPermissionStub::SetRetentionStateInner(MessageParcel& data, MessageParcel& reply)
 {
+    bool sandboxFlag;
+    if (CheckSandboxFlag(GetCallingTokenID(), sandboxFlag) != DLP_OK) {
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    if (!sandboxFlag) {
+        DLP_LOG_ERROR(LABEL, "Forbid called by a non-sandbox app");
+        return DLP_SERVICE_ERROR_API_ONLY_FOR_SANDBOX_ERROR;
+    }
     std::vector<std::string> docUriVec;
     if (!data.ReadStringVector(&docUriVec)) {
         DLP_LOG_ERROR(LABEL, "Read docUriVec id fail");
@@ -390,14 +462,14 @@ int32_t DlpPermissionStub::SetRetentionStateInner(MessageParcel& data, MessagePa
     return DLP_OK;
 }
 
-int32_t DlpPermissionStub::SetNonRetentionStateInner(MessageParcel& data, MessageParcel& reply)
+int32_t DlpPermissionStub::CancelRetentionStateInner(MessageParcel& data, MessageParcel& reply)
 {
     std::vector<std::string> docUriVec;
     if (!data.ReadStringVector(&docUriVec)) {
         DLP_LOG_ERROR(LABEL, "Read token id fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
-    int32_t result = this->SetNonRetentionState(docUriVec);
+    int32_t result = this->CancelRetentionState(docUriVec);
     if (!reply.WriteInt32(result)) {
         DLP_LOG_ERROR(LABEL, "Write sandbox query result fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
@@ -411,6 +483,14 @@ int32_t DlpPermissionStub::SetNonRetentionStateInner(MessageParcel& data, Messag
 
 int32_t DlpPermissionStub::GetRetentionSandboxListInner(MessageParcel& data, MessageParcel& reply)
 {
+    bool sandboxFlag;
+    if (CheckSandboxFlag(GetCallingTokenID(), sandboxFlag) != DLP_OK) {
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    if (sandboxFlag) {
+        DLP_LOG_ERROR(LABEL, "Forbid called by a sandbox app");
+        return DLP_SERVICE_ERROR_API_NOT_FOR_SANDBOX_ERROR;
+    }
     std::string bundleName;
     if (!data.ReadString(bundleName)) {
         DLP_LOG_ERROR(LABEL, "Read bundle name fail");
@@ -442,6 +522,14 @@ int32_t DlpPermissionStub::ClearUnreservedSandboxInner(MessageParcel& data, Mess
 
 int32_t DlpPermissionStub::GetDLPFileVisitRecordInner(MessageParcel& data, MessageParcel& reply)
 {
+    bool sandboxFlag;
+    if (CheckSandboxFlag(GetCallingTokenID(), sandboxFlag) != DLP_OK) {
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    if (sandboxFlag) {
+        DLP_LOG_ERROR(LABEL, "Forbid called by a sandbox app");
+        return DLP_SERVICE_ERROR_API_NOT_FOR_SANDBOX_ERROR;
+    }
     std::vector<VisitedDLPFileInfo> infoVec;
     int32_t res = this->GetDLPFileVisitRecord(infoVec);
     if (!reply.WriteInt32(res)) {
@@ -495,13 +583,17 @@ DlpPermissionStub::DlpPermissionStub()
     requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::SET_RETENTION_STATE)] =
         &DlpPermissionStub::SetRetentionStateInner;
     requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::SET_NOT_RETENTION_STATE)] =
-        &DlpPermissionStub::SetNonRetentionStateInner;
+        &DlpPermissionStub::CancelRetentionStateInner;
     requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_RETETNTION_SANDBOX_LIST)] =
         &DlpPermissionStub::GetRetentionSandboxListInner;
     requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::CLEAR_UNRESERVED_SANDBOX)] =
         &DlpPermissionStub::ClearUnreservedSandboxInner;
     requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_VISTI_FILE_RECORD_LIST)] =
         &DlpPermissionStub::GetDLPFileVisitRecordInner;
+    requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::REGISTER_OPEN_DLP_FILE_CALLBACK)] =
+        &DlpPermissionStub::RegisterOpenDlpFileCallbackInner;
+    requestFuncMap_[static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::UN_REGISTER_OPEN_DLP_FILE_CALLBACK)] =
+        &DlpPermissionStub::UnRegisterOpenDlpFileCallbackInner;
 }
 
 DlpPermissionStub::~DlpPermissionStub()

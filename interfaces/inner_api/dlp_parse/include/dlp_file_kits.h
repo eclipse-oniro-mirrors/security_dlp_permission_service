@@ -40,6 +40,7 @@ static const std::string DEFAULT_STRING = "";
 class DlpFileKits {
 public:
     static bool GetSandboxFlag(AAFwk::Want &want);
+    static bool IsDlpFile(int32_t dlpFd);
 };
 }  // namespace DlpPermission
 }  // namespace Security

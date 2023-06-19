@@ -26,6 +26,7 @@
 #include "dlp_policy.h"
 #include "dlp_sandbox_callback_info.h"
 #include "dlp_sandbox_change_callback_customize.h"
+#include "open_dlp_file_callback_customize.h"
 #include "retention_sandbox_info.h"
 #include "visited_dlp_file_info.h"
 
@@ -42,7 +43,7 @@ constexpr int32_t PARAM_SIZE_TWO = 2;
 constexpr int32_t PARAM_SIZE_THREE = 3;
 constexpr int32_t PARAM_SIZE_FOUR = 4;
 constexpr int32_t PARAM_SIZE_FIVE = 5;
-const std::string ON_OFF_SANDBOX = "uninstallDlpSandbox";
+const std::string ON_OFF_SANDBOX = "uninstallDLPSandbox";
 
 #define NAPI_CALL_BASE_WITH_SCOPE(env, theCall, retVal, scope) \
     do {                                                       \
@@ -107,6 +108,42 @@ struct UnregisterSandboxChangeCallbackAsyncContext : public CommonAsyncContext {
     bool result = false;
     std::string changeType;
 };
+class OpenDlpFileSubscriberPtr : public OpenDlpFileCallbackCustomize {
+public:
+    OpenDlpFileSubscriberPtr();
+    ~OpenDlpFileSubscriberPtr() override;
+    void OnOpenDlpFile(OpenDlpFileCallbackInfo &result) override;
+    void SetEnv(const napi_env &env);
+    void SetCallbackRef(const napi_ref &ref);
+    void SetValid(bool valid);
+
+private:
+    napi_env env_ = nullptr;
+    napi_ref ref_ = nullptr;
+    bool valid_ = true;
+    std::mutex validMutex_;
+};
+
+struct OpenDlpFileSubscriberWorker {
+    napi_env env = nullptr;
+    napi_ref ref = nullptr;
+    OpenDlpFileCallbackInfo result;
+    OpenDlpFileSubscriberPtr *subscriber = nullptr;
+};
+
+struct OpenDlpFileSubscriberContext {
+    virtual ~OpenDlpFileSubscriberContext();
+    napi_env env = nullptr;
+    napi_ref callbackRef = nullptr;
+    int32_t errCode = 0;
+    std::shared_ptr<OpenDlpFileSubscriberPtr> subscriber = nullptr;
+    void DeleteNapiRef();
+};
+
+struct OpenDlpFileUnSubscriberContext : public CommonAsyncContext {
+    explicit OpenDlpFileUnSubscriberContext(napi_env env) : CommonAsyncContext(env) {};
+    bool result = false;
+};
 
 struct GenerateDlpFileAsyncContext : public CommonAsyncContext {
     explicit GenerateDlpFileAsyncContext(napi_env env) : CommonAsyncContext(env){};
@@ -144,20 +181,31 @@ struct CloseDlpFileAsyncContext : public CommonAsyncContext {
 struct DlpSandboxAsyncContext : public CommonAsyncContext {
     explicit DlpSandboxAsyncContext(napi_env env) : CommonAsyncContext(env){};
     std::string bundleName;
-    AuthPermType permType = DEFAULT_PERM;
+    DLPFileAccess dlpFileAccess = NO_PERMISSION;
     int32_t userId = -1;
     int32_t appIndex = -1;
     std::string uri = "";
 };
 
-struct QueryFileAccessAsyncContext : public CommonAsyncContext {
-    explicit QueryFileAccessAsyncContext(napi_env env) : CommonAsyncContext(env){};
+struct GetPermInfoAsyncContext : public CommonAsyncContext {
+    explicit GetPermInfoAsyncContext(napi_env env) : CommonAsyncContext(env){};
     DLPPermissionInfo permInfo;
 };
 
 struct IsInSandboxAsyncContext : public CommonAsyncContext {
     explicit IsInSandboxAsyncContext(napi_env env) : CommonAsyncContext(env){};
     bool inSandbox = false;
+};
+
+struct GetOriginalFileAsyncContext : public CommonAsyncContext {
+    explicit GetOriginalFileAsyncContext(napi_env env) : CommonAsyncContext(env){};
+    std::string dlpFilename = "";
+    std::string oriFilename = "";
+};
+
+struct GetSuffixAsyncContext : public CommonAsyncContext {
+    explicit GetSuffixAsyncContext(napi_env env) : CommonAsyncContext(env){};
+    std::string extension = "";
 };
 
 struct GetDlpSupportFileTypeAsyncContext : public CommonAsyncContext {
@@ -188,12 +236,16 @@ struct GetDLPFileVisitRecordAsyncContext : public CommonAsyncContext {
     std::vector<VisitedDLPFileInfo> visitedDlpFileInfoVec;
 };
 
+void ThrowParamError(const napi_env env, const std::string& param, const std::string& type);
+void DlpNapiThrow(napi_env env, int32_t nativeErrCode);
 void DlpNapiThrow(napi_env env, int32_t jsErrCode, const std::string &jsErrMsg);
 napi_value GenerateBusinessError(napi_env env, int32_t jsErrCode, const std::string &jsErrMsg);
+bool NapiCheckArgc(const napi_env env, int32_t argc, int32_t reqSize);
 
-napi_value CreateEnumAuthPermType(napi_env env, napi_value exports);
-napi_value CreateEnumAccountType(napi_env env, napi_value exports);
-napi_value CreateEnumActionFlags(napi_env env, napi_value exports);
+napi_value CreateEnumDLPFileAccess(napi_env env);
+napi_value CreateEnumAccountType(napi_env env);
+napi_value CreateEnumActionFlags(napi_env env);
+napi_value CreateEnumGatheringPolicy(napi_env env);
 
 void ProcessCallbackOrPromise(napi_env env, const CommonAsyncContext* asyncContext, napi_value data);
 
@@ -223,7 +275,8 @@ bool GetRetentionStateParams(const napi_env env, const napi_callback_info info,
     RetentionStateAsyncContext& asyncContext);
 bool GetRetentionSandboxListParams(const napi_env env, const napi_callback_info info,
     GetRetentionSandboxListAsyncContext& asyncContext);
-
+bool GetOriginalFilenameParams(const napi_env env, const napi_callback_info info,
+    GetOriginalFileAsyncContext& asyncContext);
 bool GetDlpProperty(napi_env env, napi_value object, DlpProperty& property);
 bool ParseCallback(const napi_env& env, const napi_value& value, napi_ref& callbackRef);
 

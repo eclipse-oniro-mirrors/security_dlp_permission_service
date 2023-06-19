@@ -44,10 +44,12 @@ private:
     int32_t GetDlpSupportFileTypeInner(MessageParcel& data, MessageParcel& reply);
     int32_t RegisterDlpSandboxChangeCallbackInner(MessageParcel &data, MessageParcel &reply);
     int32_t UnRegisterDlpSandboxChangeCallbackInner(MessageParcel &data, MessageParcel &reply);
+    int32_t RegisterOpenDlpFileCallbackInner(MessageParcel &data, MessageParcel &reply);
+    int32_t UnRegisterOpenDlpFileCallbackInner(MessageParcel &data, MessageParcel &reply);
 
     int32_t GetDlpGatheringPolicyInner(MessageParcel& data, MessageParcel& reply);
     int32_t SetRetentionStateInner(MessageParcel& data, MessageParcel& reply);
-    int32_t SetNonRetentionStateInner(MessageParcel& data, MessageParcel& reply);
+    int32_t CancelRetentionStateInner(MessageParcel& data, MessageParcel& reply);
     int32_t GetRetentionSandboxListInner(MessageParcel& data, MessageParcel& reply);
     int32_t ClearUnreservedSandboxInner(MessageParcel& data, MessageParcel& reply);
     int32_t GetDLPFileVisitRecordInner(MessageParcel& data, MessageParcel& reply);

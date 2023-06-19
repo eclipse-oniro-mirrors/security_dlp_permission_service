@@ -30,10 +30,10 @@ static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_
 static const fuse_ino_t ROOT_INODE = 1;
 static const int DEFAULT_ATTR_TIMEOUT = 10000;
 static const uint32_t MAX_FUSE_READ_BUFF_SIZE = 10 * 1024 * 1024; // 10M
-static const uint32_t MAX_READ_DIR_BUF_SIZE = 100 * 1024;  // 100K
 static constexpr const char* DEFAULT_DLP_LINK_FILE = "default.dlp";
 
 static int g_fuseReplyErr = 0;
+static struct fuse_file_info g_fuseReplyOpen;
 static struct fuse_entry_param g_fuseReplyEntry;
 static struct stat g_fuseReplyAttr;
 static double g_fuseReplyAttrTimeout = 0.0F;
@@ -44,6 +44,13 @@ static int FuseReplyErrMock(fuse_req_t req, int err)
 {
     (void)req;
     g_fuseReplyErr = err;
+    return 0;
+}
+
+static int FuseReplyOpenMock(fuse_req_t req, const struct fuse_file_info *f)
+{
+    (void)req;
+    g_fuseReplyOpen = *f;
     return 0;
 }
 
@@ -279,6 +286,15 @@ HWTEST_F(FuseDaemonTest, FuseDaemonOpen001, TestSize.Level1)
     FuseDaemon::fuseDaemonOper_.open(req, ino, &fi);
     EXPECT_EQ(EINVAL, g_fuseReplyErr);
     CleanMockConditions();
+
+    fi.flags = O_RDWR;
+    condition.mockSequence = { true };
+    SetMockConditions("fuse_reply_open", condition);
+    SetMockCallback("fuse_reply_open", reinterpret_cast<CommonMockFuncT>(FuseReplyOpenMock));
+    (void)memset_s(&g_fuseReplyOpen, sizeof(g_fuseReplyOpen), 0, sizeof(g_fuseReplyOpen));
+    FuseDaemon::fuseDaemonOper_.open(req, ino, &fi);
+    EXPECT_EQ(O_RDWR, g_fuseReplyOpen.flags);
+    CleanMockConditions();
 }
 
 /**
@@ -478,6 +494,14 @@ HWTEST_F(FuseDaemonTest, FuseDaemonReadDir001, TestSize.Level1)
     g_fuseReplyErr = 0;
     FuseDaemon::fuseDaemonOper_.readdir(req, ROOT_INODE, 10, -1, nullptr);
     EXPECT_EQ(ENOTDIR, g_fuseReplyErr);
+
+    // off > DLP_MAX_CONTENT_SIZE
+    condition.mockSequence = { true };
+    SetMockConditions("fuse_reply_err", condition);
+    SetMockCallback("fuse_reply_err", reinterpret_cast<CommonMockFuncT>(FuseReplyErrMock));
+    g_fuseReplyErr = 0;
+    FuseDaemon::fuseDaemonOper_.readdir(req, ROOT_INODE, 10, DLP_MAX_CONTENT_SIZE + 1, nullptr);
+    EXPECT_EQ(ENOTDIR, g_fuseReplyErr);
     CleanMockConditions();
 
     // ino != ROOT_INODE
@@ -487,15 +511,6 @@ HWTEST_F(FuseDaemonTest, FuseDaemonReadDir001, TestSize.Level1)
     g_fuseReplyErr = 0;
     FuseDaemon::fuseDaemonOper_.readdir(req, 0, 10, 0, nullptr);
     EXPECT_EQ(ENOTDIR, g_fuseReplyErr);
-    CleanMockConditions();
-
-    // size > MAX_READ_DIR_BUF_SIZE
-    condition.mockSequence = { true };
-    SetMockConditions("fuse_reply_err", condition);
-    SetMockCallback("fuse_reply_err", reinterpret_cast<CommonMockFuncT>(FuseReplyErrMock));
-    g_fuseReplyErr = 0;
-    FuseDaemon::fuseDaemonOper_.readdir(req, ROOT_INODE, MAX_READ_DIR_BUF_SIZE + 1, 0, nullptr);
-    EXPECT_EQ(EINVAL, g_fuseReplyErr);
     CleanMockConditions();
 }
 
@@ -613,6 +628,38 @@ HWTEST_F(FuseDaemonTest, FuseDaemonReadDir005, TestSize.Level1)
     g_fuseReplyBufSize = 1;
     FuseDaemon::fuseDaemonOper_.readdir(req, ROOT_INODE, ADD_DIRENTRY_BUFF_LEN, ADD_DIRENTRY_BUFF_LEN + 1, nullptr);
     EXPECT_EQ(static_cast<size_t>(1), g_fuseReplyBufSize);
+    CleanMockConditions();
+}
+
+/**
+ * @tc.name: FuseDaemonReadDir006
+ * @tc.desc: test fuse AddDirentry callback CUR_DIR entry too large
+ * @tc.type: FUNC
+ * @tc.require:AR000GVIGC
+ */
+HWTEST_F(FuseDaemonTest, FuseDaemonReadDir006, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "FuseDaemonReadDir006");
+    fuse_req_t req = nullptr;
+
+    DlpCMockCondition condition;
+    condition.mockSequence = { true };
+    SetMockConditions("fuse_reply_err", condition);
+    SetMockCallback("fuse_reply_err", reinterpret_cast<CommonMockFuncT>(FuseReplyErrMock));
+
+    DlpCMockCondition condition1;
+    condition1.mockSequence = { true };
+    SetMockConditions("fuse_add_direntry", condition1);
+    SetMockCallback("fuse_add_direntry", reinterpret_cast<CommonMockFuncT>(FuseAddDirentryMockCurDirFail));
+
+    DlpCMockCondition condition2;
+    condition2.mockSequence = { true };
+    SetMockConditions("fuse_reply_buf", condition2);
+    SetMockCallback("fuse_reply_buf", reinterpret_cast<CommonMockFuncT>(FuseReplyBufMock));
+
+    g_fuseReplyErr = 0;
+    FuseDaemon::fuseDaemonOper_.readdir(req, ROOT_INODE, ADD_DIRENTRY_BUFF_LEN + 1, DLP_MAX_CONTENT_SIZE, nullptr);
+    EXPECT_EQ(static_cast<size_t>(0), g_fuseReplyBufSize);
     CleanMockConditions();
 }
 
@@ -849,4 +896,8 @@ HWTEST_F(FuseDaemonTest, FuseDaemonInit001, TestSize.Level1)
     DLP_LOG_INFO(LABEL, "FuseDaemonInit001");
 
     FuseDaemon::fuseDaemonOper_.init(nullptr, nullptr);
+
+    fuse_conn_info conn = { 0 };
+    FuseDaemon::fuseDaemonOper_.init(nullptr, &conn);
+    EXPECT_EQ(FUSE_CAP_WRITEBACK_CACHE, conn.want);
 }

@@ -139,7 +139,7 @@ static bool ReadParcel(Parcel& in, DlpPolicyParcel* policyParcel)
         DLP_LOG_ERROR(LABEL, "Write everyonePerm_ fail");
         return false;
     }
-    policyParcel->policyParams_.everyonePerm_ = static_cast<AuthPermType>(perm);
+    policyParcel->policyParams_.everyonePerm_ = static_cast<DLPFileAccess>(perm);
     if (!(in.ReadString(policyParcel->policyParams_.ownerAccount_))) {
         DLP_LOG_ERROR(LABEL, "Read owner account fail");
         return false;

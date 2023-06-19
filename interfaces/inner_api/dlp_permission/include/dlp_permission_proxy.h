@@ -34,8 +34,8 @@ public:
         const sptr<DlpPolicyParcel>& policyParcel, sptr<IDlpPermissionCallback>& callback) override;
     int32_t ParseDlpCertificate(const std::vector<uint8_t>& cert, uint32_t flag,
         sptr<IDlpPermissionCallback>& callback) override;
-    int32_t InstallDlpSandbox(const std::string& bundleName, AuthPermType permType, int32_t userId, int32_t& appIndex,
-        const std::string& uri) override;
+    int32_t InstallDlpSandbox(const std::string& bundleName, DLPFileAccess dlpFileAccess, int32_t userId,
+        int32_t& appIndex, const std::string& uri) override;
     int32_t UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId) override;
     int32_t GetSandboxExternalAuthorization(int sandboxUid, const AAFwk::Want& want,
         SandBoxExternalAuthorType& authType) override;
@@ -43,11 +43,13 @@ public:
     int32_t QueryDlpFileAccess(DLPPermissionInfoParcel& permInfoParcel) override;
     int32_t IsInDlpSandbox(bool& inSandbox) override;
     int32_t GetDlpSupportFileType(std::vector<std::string>& supportFileType) override;
-    int32_t RegisterDlpSandboxChangeCallback(const sptr<IRemoteObject> &callback) override;
-    int32_t UnRegisterDlpSandboxChangeCallback(bool &result) override;
+    int32_t RegisterDlpSandboxChangeCallback(const sptr<IRemoteObject>& callback) override;
+    int32_t UnRegisterDlpSandboxChangeCallback(bool& result) override;
+    int32_t RegisterOpenDlpFileCallback(const sptr<IRemoteObject>& callback) override;
+    int32_t UnRegisterOpenDlpFileCallback(const sptr<IRemoteObject>& callback) override;
     int32_t GetDlpGatheringPolicy(bool& isGathering) override;
     int32_t SetRetentionState(const std::vector<std::string>& docUriVec) override;
-    int32_t SetNonRetentionState(const std::vector<std::string>& docUriVec) override;
+    int32_t CancelRetentionState(const std::vector<std::string>& docUriVec) override;
     int32_t GetRetentionSandboxList(const std::string& bundleName,
         std::vector<RetentionSandBoxInfo>& retentionSandBoxInfoVec) override;
     int32_t ClearUnreservedSandbox() override;

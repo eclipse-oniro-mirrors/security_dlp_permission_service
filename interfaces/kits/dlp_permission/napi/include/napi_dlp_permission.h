@@ -86,13 +86,17 @@ private:
     static void UninstallDlpSandboxComplete(napi_env env, napi_status status, void* data);
     static napi_value UninstallDlpSandbox(napi_env env, napi_callback_info cbInfo);
 
-    static void QueryFileAccessExcute(napi_env env, void* data);
-    static void QueryFileAccessComplete(napi_env env, napi_status status, void* data);
-    static napi_value QueryFileAccess(napi_env env, napi_callback_info cbInfo);
+    static void GetDLPPermissionInfoExcute(napi_env env, void* data);
+    static void GetDLPPermissionInfoComplete(napi_env env, napi_status status, void* data);
+    static napi_value GetDLPPermissionInfo(napi_env env, napi_callback_info cbInfo);
 
     static void IsInSandboxExcute(napi_env env, void* data);
     static void IsInSandboxComplete(napi_env env, napi_status status, void* data);
     static napi_value IsInSandbox(napi_env env, napi_callback_info cbInfo);
+
+    static napi_value GetDLPSuffix(napi_env env, napi_callback_info cbInfo);
+
+    static napi_value GetOriginalFileName(napi_env env, napi_callback_info cbInfo);
 
     static void GetDlpSupportFileTypeExcute(napi_env env, void* data);
     static void GetDlpSupportFileTypeComplete(napi_env env, napi_status status, void* data);
@@ -100,6 +104,11 @@ private:
 
     static napi_value RegisterSandboxChangeCallback(napi_env env, napi_callback_info cbInfo);
     static napi_value UnregisterSandboxChangeCallback(napi_env env, napi_callback_info cbInfo);
+
+    static napi_value Subscribe(napi_env env, napi_callback_info cbInfo);
+    static napi_value UnSubscribe(napi_env env, napi_callback_info cbInfo);
+    static napi_value SubscribeOpenDlpFile(const napi_env env, const napi_value thisVar, napi_ref &callback);
+    static napi_value UnSubscribeOpenDlpFile(const napi_env env, napi_ref &callback);
 
     static void GetDlpGatheringPolicyExcute(napi_env env, void* data);
     static void GetDlpGatheringPolicyComplete(napi_env env, napi_status status, void* data);
@@ -109,9 +118,9 @@ private:
     static void SetRetentionStateComplete(napi_env env, napi_status status, void* data);
     static napi_value SetRetentionState(napi_env env, napi_callback_info cbInfo);
 
-    static void SetNonRetentionStateExcute(napi_env env, void* data);
-    static void SetNonRetentionStateComplete(napi_env env, napi_status status, void* data);
-    static napi_value SetNonRetentionState(napi_env env, napi_callback_info cbInfo);
+    static void CancelRetentionStateExcute(napi_env env, void* data);
+    static void CancelRetentionStateComplete(napi_env env, napi_status status, void* data);
+    static napi_value CancelRetentionState(napi_env env, napi_callback_info cbInfo);
 
     static void GetRetentionSandboxListExcute(napi_env env, void* data);
     static void GetRetentionSandboxListComplete(napi_env env, napi_status status, void* data);

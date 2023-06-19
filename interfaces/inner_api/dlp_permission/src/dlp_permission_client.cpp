@@ -30,7 +30,18 @@ namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionClient"};
 static const int32_t DLP_PERMISSION_LOAD_SA_TIMEOUT_MS = 1000;
+static const uint32_t MAX_CALLBACK_MAP_SIZE = 100;
 static const std::string ALLOW_ABILITY[] = {"com.ohos.permissionmanager"};
+static int32_t CheckSandboxFlag(AccessToken::AccessTokenID tokenId, bool& sandboxFlag)
+{
+    int32_t res = AccessToken::AccessTokenKit::GetHapDlpFlag(tokenId);
+    if (res < 0) {
+        DLP_LOG_ERROR(LABEL, "Invalid tokenId");
+        return res;
+    }
+    sandboxFlag = (res == 1);
+    return DLP_OK;
+}
 }  // namespace
 
 DlpPermissionClient& DlpPermissionClient::GetInstance()
@@ -54,17 +65,6 @@ DlpPermissionClient::~DlpPermissionClient()
     if (serviceDeathObserver_ != nullptr) {
         remoteObj->RemoveDeathRecipient(serviceDeathObserver_);
     }
-}
-
-static int32_t CheckSandboxFlag(AccessToken::AccessTokenID tokenId, bool& sandboxFlag)
-{
-    int32_t res = AccessToken::AccessTokenKit::GetHapDlpFlag(tokenId);
-    if (res < 0) {
-        DLP_LOG_ERROR(LABEL, "Invalid tokenId");
-        return res;
-    }
-    sandboxFlag = (res == 1);
-    return DLP_OK;
 }
 
 int32_t DlpPermissionClient::GenerateDlpCertificate(
@@ -116,10 +116,10 @@ int32_t DlpPermissionClient::ParseDlpCertificate(
     return proxy->ParseDlpCertificate(cert, flag, asyncStub);
 }
 
-int32_t DlpPermissionClient::InstallDlpSandbox(const std::string& bundleName, AuthPermType permType, int32_t userId,
-    int32_t& appIndex, const std::string& uri)
+int32_t DlpPermissionClient::InstallDlpSandbox(const std::string& bundleName, DLPFileAccess dlpFileAccess,
+    int32_t userId, int32_t& appIndex, const std::string& uri)
 {
-    if (bundleName.empty() || permType >= DEFAULT_PERM || permType < READ_ONLY || uri.empty()) {
+    if (bundleName.empty() || dlpFileAccess > FULL_CONTROL || dlpFileAccess <= NO_PERMISSION || uri.empty()) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
     auto proxy = GetProxy(true);
@@ -128,7 +128,7 @@ int32_t DlpPermissionClient::InstallDlpSandbox(const std::string& bundleName, Au
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
 
-    return proxy->InstallDlpSandbox(bundleName, permType, userId, appIndex, uri);
+    return proxy->InstallDlpSandbox(bundleName, dlpFileAccess, userId, appIndex, uri);
 }
 
 int32_t DlpPermissionClient::UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId)
@@ -200,10 +200,9 @@ int32_t DlpPermissionClient::QueryDlpFileAccess(DLPPermissionInfo& permInfo)
     if (CheckSandboxFlag(GetSelfTokenID(), sandboxFlag) != DLP_OK) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
-
     if (!sandboxFlag) {
-        DLP_LOG_INFO(LABEL, "it is not a sandbox app");
-        return DLP_OK;
+        DLP_LOG_ERROR(LABEL, "Forbid called by a non-sandbox app");
+        return DLP_SERVICE_ERROR_API_ONLY_FOR_SANDBOX_ERROR;
     }
 
     auto proxy = GetProxy(false);
@@ -301,6 +300,96 @@ int32_t DlpPermissionClient::UnregisterDlpSandboxChangeCallback(bool &result)
     return proxy->UnRegisterDlpSandboxChangeCallback(result);
 }
 
+int32_t DlpPermissionClient::CreateOpenDlpFileCallback(
+    const std::shared_ptr<OpenDlpFileCallbackCustomize>& customizedCb, sptr<OpenDlpFileCallback>& callback)
+{
+    std::lock_guard<std::mutex> lock(callbackMutex_);
+    if (callbackMap_.size() == MAX_CALLBACK_MAP_SIZE) {
+        DLP_LOG_ERROR(LABEL, "the maximum number of callback has been reached");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+
+    auto goalCallback = callbackMap_.find(customizedCb);
+    if (goalCallback != callbackMap_.end()) {
+        DLP_LOG_ERROR(LABEL, "already has the same callback");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    } else {
+        callback = new (std::nothrow) OpenDlpFileCallback(customizedCb);
+        if (!callback) {
+            DLP_LOG_ERROR(LABEL, "memory allocation for callback failed!");
+            return DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL;
+        }
+    }
+    return DLP_OK;
+}
+
+int32_t DlpPermissionClient::RegisterOpenDlpFileCallback(const std::shared_ptr<OpenDlpFileCallbackCustomize>& callback)
+{
+    bool sandboxFlag;
+    if (CheckSandboxFlag(GetSelfTokenID(), sandboxFlag) != DLP_OK) {
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    if (sandboxFlag) {
+        DLP_LOG_ERROR(LABEL, "Forbid called by a sandbox app");
+        return DLP_SERVICE_ERROR_API_NOT_FOR_SANDBOX_ERROR;
+    }
+    if (callback == nullptr) {
+        DLP_LOG_ERROR(LABEL, "callback is nullptr");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    sptr<OpenDlpFileCallback> cb = nullptr;
+    int32_t result = CreateOpenDlpFileCallback(callback, cb);
+    if (result != DLP_OK) {
+        return result;
+    }
+    auto proxy = GetProxy(true);
+    if (proxy == nullptr) {
+        DLP_LOG_ERROR(LABEL, "proxy is null");
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
+    }
+    result = proxy->RegisterOpenDlpFileCallback(cb->AsObject());
+    if (result == DLP_OK) {
+        std::lock_guard<std::mutex> lock(callbackMutex_);
+        callbackMap_[callback] = cb;
+    }
+    return result;
+}
+
+int32_t DlpPermissionClient::UnRegisterOpenDlpFileCallback(
+    const std::shared_ptr<OpenDlpFileCallbackCustomize>& callback)
+{
+    bool sandboxFlag;
+    if (CheckSandboxFlag(GetSelfTokenID(), sandboxFlag) != DLP_OK) {
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    if (sandboxFlag) {
+        DLP_LOG_ERROR(LABEL, "Forbid called by a sandbox app");
+        return DLP_SERVICE_ERROR_API_NOT_FOR_SANDBOX_ERROR;
+    }
+    if (callback == nullptr) {
+        DLP_LOG_ERROR(LABEL, "callback is nullptr");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    std::lock_guard<std::mutex> lock(callbackMutex_);
+    auto goalCallback = callbackMap_.find(callback);
+    if (goalCallback == callbackMap_.end()) {
+        DLP_LOG_ERROR(LABEL, "goalCallback already is not exist");
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+
+    auto proxy = GetProxy(false);
+    if (proxy == nullptr) {
+        DLP_LOG_ERROR(LABEL, "proxy is null");
+        return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
+    }
+
+    int32_t result = proxy->UnRegisterOpenDlpFileCallback(goalCallback->second->AsObject());
+    if (result == DLP_OK) {
+        callbackMap_.erase(goalCallback);
+    }
+    return result;
+}
+
 int32_t DlpPermissionClient::GetDlpGatheringPolicy(bool& isGathering)
 {
     auto proxy = GetProxy(false);
@@ -314,6 +403,14 @@ int32_t DlpPermissionClient::GetDlpGatheringPolicy(bool& isGathering)
 
 int32_t DlpPermissionClient::SetRetentionState(const std::vector<std::string>& docUriVec)
 {
+    bool sandboxFlag;
+    if (CheckSandboxFlag(GetSelfTokenID(), sandboxFlag) != DLP_OK) {
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    if (!sandboxFlag) {
+        DLP_LOG_ERROR(LABEL, "Forbid called by a non-sandbox app");
+        return DLP_SERVICE_ERROR_API_ONLY_FOR_SANDBOX_ERROR;
+    }
     auto proxy = GetProxy(false);
     if (proxy == nullptr) {
         DLP_LOG_INFO(LABEL, "Proxy is null");
@@ -323,7 +420,7 @@ int32_t DlpPermissionClient::SetRetentionState(const std::vector<std::string>& d
     return proxy->SetRetentionState(docUriVec);
 }
 
-int32_t DlpPermissionClient::SetNonRetentionState(const std::vector<std::string>& docUriVec)
+int32_t DlpPermissionClient::CancelRetentionState(const std::vector<std::string>& docUriVec)
 {
     auto proxy = GetProxy(true);
     if (proxy == nullptr) {
@@ -331,12 +428,20 @@ int32_t DlpPermissionClient::SetNonRetentionState(const std::vector<std::string>
         return DLP_CALLBACK_SA_WORK_ABNORMAL;
     }
 
-    return proxy->SetNonRetentionState(docUriVec);
+    return proxy->CancelRetentionState(docUriVec);
 }
 
 int32_t DlpPermissionClient::GetRetentionSandboxList(const std::string& bundleName,
     std::vector<RetentionSandBoxInfo>& retentionSandBoxInfoVec)
 {
+    bool sandboxFlag;
+    if (CheckSandboxFlag(GetSelfTokenID(), sandboxFlag) != DLP_OK) {
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    if (sandboxFlag) {
+        DLP_LOG_ERROR(LABEL, "Forbid called by a sandbox app");
+        return DLP_SERVICE_ERROR_API_NOT_FOR_SANDBOX_ERROR;
+    }
     auto proxy = GetProxy(true);
     if (proxy == nullptr) {
         DLP_LOG_INFO(LABEL, "Proxy is null");
@@ -359,6 +464,14 @@ int32_t DlpPermissionClient::ClearUnreservedSandbox()
 
 int32_t DlpPermissionClient::GetDLPFileVisitRecord(std::vector<VisitedDLPFileInfo>& infoVec)
 {
+    bool sandboxFlag;
+    if (CheckSandboxFlag(GetSelfTokenID(), sandboxFlag) != DLP_OK) {
+        return DLP_SERVICE_ERROR_VALUE_INVALID;
+    }
+    if (sandboxFlag) {
+        DLP_LOG_ERROR(LABEL, "Forbid called by a sandbox app");
+        return DLP_SERVICE_ERROR_API_NOT_FOR_SANDBOX_ERROR;
+    }
     auto proxy = GetProxy(true);
     if (proxy == nullptr) {
         DLP_LOG_INFO(LABEL, "Proxy is null");

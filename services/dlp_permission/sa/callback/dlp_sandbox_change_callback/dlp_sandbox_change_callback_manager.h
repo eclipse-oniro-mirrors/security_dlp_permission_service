@@ -25,19 +25,19 @@
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
-struct CallbackRecord {
-    CallbackRecord() : callbackObject_(nullptr) {}
-    explicit CallbackRecord(sptr<IRemoteObject> callback) : callbackObject_(callback) {}
+struct DlpSandboxChangeCallbackRecord {
+    DlpSandboxChangeCallbackRecord() : callbackObject_(nullptr) {}
+    explicit DlpSandboxChangeCallbackRecord(sptr<IRemoteObject> callback) : callbackObject_(callback) {}
 
     sptr<IRemoteObject> callbackObject_;
     int32_t pid = 0;
 };
 
-class CallbackManager {
+class DlpSandboxChangeCallbackManager {
 public:
-    virtual ~CallbackManager();
-    CallbackManager();
-    static CallbackManager &GetInstance();
+    virtual ~DlpSandboxChangeCallbackManager();
+    DlpSandboxChangeCallbackManager();
+    static DlpSandboxChangeCallbackManager &GetInstance();
 
     int32_t AddCallback(int32_t pid, const sptr<IRemoteObject> &callback);
     int32_t RemoveCallback(const sptr<IRemoteObject>& callback);
@@ -46,7 +46,7 @@ public:
 
 private:
     std::mutex mutex_;
-    std::map<int32_t, CallbackRecord> callbackInfoMap_;
+    std::map<int32_t, DlpSandboxChangeCallbackRecord> callbackInfoMap_;
     sptr<IRemoteObject::DeathRecipient> callbackDeathRecipient_;
 };
 } // namespace DlpPermission

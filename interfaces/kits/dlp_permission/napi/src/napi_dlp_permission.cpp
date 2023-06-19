@@ -16,6 +16,7 @@
 #include "napi_dlp_permission.h"
 #include "accesstoken_kit.h"
 #include "application_context.h"
+#include "dlp_file_kits.h"
 #include "dlp_link_manager.h"
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
@@ -23,18 +24,22 @@
 #include "dlp_policy.h"
 #include "dlp_file_manager.h"
 #include "ipc_skeleton.h"
+#include "js_native_api_types.h"
 #include "napi_error_msg.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "napi_common.h"
 #include "securec.h"
 #include "tokenid_kit.h"
+#include <string>
 
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionNapi"};
+std::mutex g_lockForOpenDlpFileSubscriber;
+std::set<OpenDlpFileSubscriberContext*> g_openDlpFileSubscribers;
 RegisterDlpSandboxChangeInfo *g_dlpSandboxChangeInfoRegister = nullptr;
 }  // namespace
 
@@ -283,7 +288,7 @@ void NapiDlpPermission::IsDlpFileExcute(napi_env env, void* data)
         return;
     }
 
-    asyncContext->errCode = DlpFileManager::GetInstance().IsDlpFile(asyncContext->cipherTxtFd, asyncContext->isDlpFile);
+    asyncContext->isDlpFile = DlpFileKits::IsDlpFile(asyncContext->cipherTxtFd);
 }
 
 void NapiDlpPermission::IsDlpFileComplete(napi_env env, napi_status status, void* data)
@@ -773,7 +778,7 @@ void NapiDlpPermission::InstallDlpSandboxExcute(napi_env env, void* data)
         return;
     }
 
-    asyncContext->errCode = DlpPermissionKit::InstallDlpSandbox(asyncContext->bundleName, asyncContext->permType,
+    asyncContext->errCode = DlpPermissionKit::InstallDlpSandbox(asyncContext->bundleName, asyncContext->dlpFileAccess,
         asyncContext->userId, asyncContext->appIndex, asyncContext->uri);
 }
 
@@ -855,14 +860,14 @@ void NapiDlpPermission::UninstallDlpSandboxComplete(napi_env env, napi_status st
     ProcessCallbackOrPromise(env, asyncContext, resJs);
 }
 
-napi_value NapiDlpPermission::QueryFileAccess(napi_env env, napi_callback_info cbInfo)
+napi_value NapiDlpPermission::GetDLPPermissionInfo(napi_env env, napi_callback_info cbInfo)
 {
-    auto* asyncContext = new (std::nothrow) QueryFileAccessAsyncContext(env);
+    auto* asyncContext = new (std::nothrow) GetPermInfoAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
         return nullptr;
     }
-    std::unique_ptr<QueryFileAccessAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<GetPermInfoAsyncContext> asyncContextPtr{asyncContext};
 
     if (!GetThirdInterfaceParams(env, cbInfo, *asyncContext)) {
         return nullptr;
@@ -878,18 +883,18 @@ napi_value NapiDlpPermission::QueryFileAccess(napi_env env, napi_callback_info c
     }
 
     napi_value resource = nullptr;
-    NAPI_CALL(env, napi_create_string_utf8(env, "QueryFileAccess", NAPI_AUTO_LENGTH, &resource));
-    NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, QueryFileAccessExcute, QueryFileAccessComplete,
-        static_cast<void*>(asyncContext), &(asyncContext->work)));
+    NAPI_CALL(env, napi_create_string_utf8(env, "GetDLPPermissionInfo", NAPI_AUTO_LENGTH, &resource));
+    NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, GetDLPPermissionInfoExcute,
+        GetDLPPermissionInfoComplete, static_cast<void*>(asyncContext), &(asyncContext->work)));
     NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
     asyncContextPtr.release();
     return result;
 }
 
-void NapiDlpPermission::QueryFileAccessExcute(napi_env env, void* data)
+void NapiDlpPermission::GetDLPPermissionInfoExcute(napi_env env, void* data)
 {
     DLP_LOG_DEBUG(LABEL, "napi_create_async_work running");
-    auto asyncContext = reinterpret_cast<QueryFileAccessAsyncContext*>(data);
+    auto asyncContext = reinterpret_cast<GetPermInfoAsyncContext*>(data);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
         return;
@@ -898,15 +903,15 @@ void NapiDlpPermission::QueryFileAccessExcute(napi_env env, void* data)
     asyncContext->errCode = DlpPermissionKit::QueryDlpFileAccess(asyncContext->permInfo);
 }
 
-void NapiDlpPermission::QueryFileAccessComplete(napi_env env, napi_status status, void* data)
+void NapiDlpPermission::GetDLPPermissionInfoComplete(napi_env env, napi_status status, void* data)
 {
     DLP_LOG_DEBUG(LABEL, "napi_create_async_work complete");
-    auto asyncContext = reinterpret_cast<QueryFileAccessAsyncContext*>(data);
+    auto asyncContext = reinterpret_cast<GetPermInfoAsyncContext*>(data);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
         return;
     }
-    std::unique_ptr<QueryFileAccessAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<GetPermInfoAsyncContext> asyncContextPtr{asyncContext};
     napi_value permInfoJs = nullptr;
     if (asyncContext->errCode == DLP_OK) {
         permInfoJs = DlpPermissionInfoToJs(env, asyncContext->permInfo);
@@ -1046,8 +1051,7 @@ napi_value NapiDlpPermission::RegisterSandboxChangeCallback(napi_env env, napi_c
     int32_t result = DlpPermissionKit::RegisterDlpSandboxChangeCallback(registerDlpSandboxChangeInfo->subscriber);
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "RegisterSandboxChangeCallback failed");
-        registerDlpSandboxChangeInfo->errCode = result;
-        napi_throw(env, GenerateBusinessError(env, ERR_JS_ON_OFF_FAIL, GetJsErrMsg(ERR_JS_ON_OFF_FAIL)));
+        DlpNapiThrow(env, result);
         return nullptr;
     }
     if (g_dlpSandboxChangeInfoRegister != nullptr) {
@@ -1070,20 +1074,197 @@ napi_value NapiDlpPermission::UnregisterSandboxChangeCallback(napi_env env, napi
         return nullptr;
     }
 
-    napi_value jsResult = nullptr;
     int32_t result = DlpPermissionKit::UnregisterDlpSandboxChangeCallback(asyncContext->result);
-    bool isUnregisterSuccess = true;
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "UnregisterSandboxChangeCallback failed");
-        napi_throw(env, GenerateBusinessError(env, ERR_JS_ON_OFF_FAIL, GetJsErrMsg(ERR_JS_ON_OFF_FAIL)));
-        isUnregisterSuccess = false;
+        DlpNapiThrow(env, result);
+        return nullptr;
     }
     if (g_dlpSandboxChangeInfoRegister != nullptr) {
         delete g_dlpSandboxChangeInfoRegister;
         g_dlpSandboxChangeInfoRegister = nullptr;
     }
-    napi_get_boolean(env, isUnregisterSuccess, &jsResult);
-    return jsResult;
+    return nullptr;
+}
+
+bool CompareOnAndOffRef(const napi_env env, napi_ref subscriberRef, napi_ref unsubscriberRef)
+{
+    napi_value subscriberCallback;
+    napi_get_reference_value(env, subscriberRef, &subscriberCallback);
+    napi_value unsubscriberCallback;
+    napi_get_reference_value(env, unsubscriberRef, &unsubscriberCallback);
+    bool result = false;
+    napi_strict_equals(env, subscriberCallback, unsubscriberCallback, &result);
+    return result;
+}
+
+static bool IsSubscribeExist(napi_env env, OpenDlpFileSubscriberContext* subscribeCBInfo)
+{
+    for (const auto& it : g_openDlpFileSubscribers) {
+        if (CompareOnAndOffRef(env, it->callbackRef, subscribeCBInfo->callbackRef)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+napi_value NapiDlpPermission::SubscribeOpenDlpFile(const napi_env env, const napi_value thisVar, napi_ref& callback)
+{
+    DLP_LOG_INFO(LABEL, "Subscribe open dlp file");
+    OpenDlpFileSubscriberContext* syncContext = new (std::nothrow) OpenDlpFileSubscriberContext();
+    if (syncContext == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for syncContext!");
+        return nullptr;
+    }
+    std::unique_ptr<OpenDlpFileSubscriberContext> syncContextPtr{syncContext};
+    syncContextPtr->env = env;
+    syncContextPtr->callbackRef = callback;
+    syncContextPtr->subscriber = std::make_shared<OpenDlpFileSubscriberPtr>();
+    syncContextPtr->subscriber->SetEnv(env);
+    syncContextPtr->subscriber->SetCallbackRef(callback);
+    std::shared_ptr<OpenDlpFileSubscriberPtr>* subscriber =
+        new (std::nothrow) std::shared_ptr<OpenDlpFileSubscriberPtr>(syncContextPtr->subscriber);
+    if (subscriber == nullptr) {
+        DLP_LOG_ERROR(LABEL, "failed to create subscriber");
+        return nullptr;
+    }
+
+    std::lock_guard<std::mutex> lock(g_lockForOpenDlpFileSubscriber);
+    if (IsSubscribeExist(env, syncContext)) {
+        DLP_LOG_ERROR(LABEL, "Subscribe failed. The current subscriber has been existed");
+        return nullptr;
+    }
+    int32_t result = DlpPermissionKit::RegisterOpenDlpFileCallback(syncContextPtr->subscriber);
+    if (result != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "RegisterSandboxChangeCallback failed");
+        DlpNapiThrow(env, result);
+        return nullptr;
+    }
+    napi_wrap(
+        env, thisVar, reinterpret_cast<void*>(subscriber),
+        [](napi_env nev, void* data, void* hint) {
+            DLP_LOG_INFO(LABEL, "OpenDlpFileSubscriberPtr delete");
+            std::shared_ptr<OpenDlpFileSubscriberPtr>* subscriber =
+                static_cast<std::shared_ptr<OpenDlpFileSubscriberPtr>*>(data);
+            if (subscriber != nullptr && *subscriber != nullptr) {
+                (*subscriber)->SetValid(false);
+                delete subscriber;
+            }
+        },
+        nullptr, nullptr);
+    g_openDlpFileSubscribers.emplace(syncContext);
+    DLP_LOG_INFO(LABEL, "Subscribe open dlp file success");
+    syncContextPtr.release();
+    return nullptr;
+}
+
+napi_value NapiDlpPermission::Subscribe(napi_env env, napi_callback_info cbInfo)
+{
+    size_t argc = PARAM_SIZE_TWO;
+    napi_value argv[PARAM_SIZE_TWO] = {nullptr};
+    napi_value thisVar = nullptr;
+    NAPI_CALL(env, napi_get_cb_info(env, cbInfo, &argc, argv, &thisVar, nullptr));
+    if (!NapiCheckArgc(env, argc, PARAM_SIZE_TWO + 1)) {
+        return nullptr;
+    }
+    std::string type;
+    if (!GetStringValue(env, argv[PARAM0], type)) {
+        DLP_LOG_ERROR(LABEL, "event type is invalid");
+        ThrowParamError(env, "type", "string");
+        return nullptr;
+    }
+    napi_ref callback = nullptr;
+    if (!ParseCallback(env, argv[PARAM1], callback)) {
+        DLP_LOG_ERROR(LABEL, "event listener is invalid");
+        ThrowParamError(env, "listener", "function");
+        return nullptr;
+    }
+
+    if (type == "openDLPFile") {
+        return SubscribeOpenDlpFile(env, thisVar, callback);
+    } else if (type == "uninstallDLPSandbox") {
+        return RegisterSandboxChangeCallback(env, cbInfo);
+    } else {
+        NAPI_CALL(env, napi_throw(env, GenerateBusinessError(env, ERR_JS_PARAMETER_ERROR, "event type is wrong")));
+        return nullptr;
+    }
+}
+
+napi_value NapiDlpPermission::UnSubscribeOpenDlpFile(const napi_env env, napi_ref& callback)
+{
+    OpenDlpFileUnSubscriberContext* syncContext = new (std::nothrow) OpenDlpFileUnSubscriberContext(env);
+    if (syncContext == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for syncContext!");
+        return nullptr;
+    }
+    std::unique_ptr<OpenDlpFileUnSubscriberContext> syncContextPtr{syncContext};
+    std::lock_guard<std::mutex> lock(g_lockForOpenDlpFileSubscriber);
+    if (callback == nullptr) {
+        auto iter = g_openDlpFileSubscribers.begin();
+        while (iter != g_openDlpFileSubscribers.end()) {
+            int32_t result = DlpPermissionKit::UnRegisterOpenDlpFileCallback((*iter)->subscriber);
+            if (result != DLP_OK) {
+                DLP_LOG_ERROR(LABEL, "UnSubscribeOpenDlpFile failed");
+                DlpNapiThrow(env, result);
+                return nullptr;
+            }
+            delete *iter;
+            iter = g_openDlpFileSubscribers.erase(iter);
+        }
+    } else {
+        auto iter = g_openDlpFileSubscribers.begin();
+        while (iter != g_openDlpFileSubscribers.end()) {
+            if (!CompareOnAndOffRef(env, (*iter)->callbackRef, callback)) {
+                iter++;
+                continue;
+            }
+            int32_t result = DlpPermissionKit::UnRegisterOpenDlpFileCallback((*iter)->subscriber);
+            if (result != DLP_OK) {
+                DLP_LOG_ERROR(LABEL, "UnSubscribeOpenDlpFile failed");
+                DlpNapiThrow(env, result);
+                return nullptr;
+            }
+            delete *iter;
+            iter = g_openDlpFileSubscribers.erase(iter);
+            break;
+        }
+    }
+    syncContextPtr.release();
+    return nullptr;
+}
+
+napi_value NapiDlpPermission::UnSubscribe(napi_env env, napi_callback_info cbInfo)
+{
+    size_t argc = PARAM_SIZE_TWO;
+    napi_value argv[PARAM_SIZE_TWO] = {nullptr};
+    napi_value thisVar = nullptr;
+    NAPI_CALL(env, napi_get_cb_info(env, cbInfo, &argc, argv, &thisVar, nullptr));
+    if (!NapiCheckArgc(env, argc, PARAM_SIZE_TWO)) {
+        return nullptr;
+    }
+    std::string type;
+    if (!GetStringValue(env, argv[PARAM0], type)) {
+        DLP_LOG_ERROR(LABEL, "event type is invalid");
+        ThrowParamError(env, "type", "string");
+        return nullptr;
+    }
+    napi_ref callback = nullptr;
+    if (argc == PARAM_SIZE_TWO) {
+        if (!ParseCallback(env, argv[PARAM1], callback)) {
+            DLP_LOG_ERROR(LABEL, "event listener is invalid");
+            ThrowParamError(env, "listener", "function");
+            return nullptr;
+        }
+    }
+
+    if (type == "openDLPFile") {
+        return UnSubscribeOpenDlpFile(env, callback);
+    } else if (type == "uninstallDLPSandbox") {
+        return UnregisterSandboxChangeCallback(env, cbInfo);
+    } else {
+        NAPI_CALL(env, napi_throw(env, GenerateBusinessError(env, ERR_JS_PARAMETER_ERROR, "event type is wrong")));
+        return nullptr;
+    }
 }
 
 napi_value NapiDlpPermission::GetDlpGatheringPolicy(napi_env env, napi_callback_info cbInfo)
@@ -1140,7 +1321,8 @@ void NapiDlpPermission::GetDlpGatheringPolicyComplete(napi_env env, napi_status 
     std::unique_ptr<GetGatheringPolicyContext> asyncContextPtr{asyncContext};
     napi_value isGatheringJs = nullptr;
     if (asyncContext->errCode == DLP_OK) {
-        NAPI_CALL_RETURN_VOID(env, napi_get_boolean(env, asyncContext->isGathering, &isGatheringJs));
+        GatheringPolicyType policy = asyncContext->isGathering ? GATHERING : NON_GATHERING;
+        NAPI_CALL_RETURN_VOID(env, napi_create_uint32(env, policy, &isGatheringJs));
     }
     ProcessCallbackOrPromise(env, asyncContext, isGatheringJs);
 }
@@ -1215,7 +1397,7 @@ void NapiDlpPermission::SetRetentionStateComplete(napi_env env, napi_status stat
     ProcessCallbackOrPromise(env, asyncContext, resJs);
 }
 
-napi_value NapiDlpPermission::SetNonRetentionState(napi_env env, napi_callback_info cbInfo)
+napi_value NapiDlpPermission::CancelRetentionState(napi_env env, napi_callback_info cbInfo)
 {
     auto* asyncContext = new (std::nothrow) RetentionStateAsyncContext(env);
     if (asyncContext == nullptr) {
@@ -1238,22 +1420,22 @@ napi_value NapiDlpPermission::SetNonRetentionState(napi_env env, napi_callback_i
     }
 
     napi_value resource = nullptr;
-    NAPI_CALL(env, napi_create_string_utf8(env, "SetNonRetentionState", NAPI_AUTO_LENGTH, &resource));
-    NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, SetNonRetentionStateExcute,
-        SetNonRetentionStateComplete, static_cast<void*>(asyncContext), &(asyncContext->work)));
+    NAPI_CALL(env, napi_create_string_utf8(env, "CancelRetentionState", NAPI_AUTO_LENGTH, &resource));
+    NAPI_CALL(env, napi_create_async_work(env, nullptr, resource, CancelRetentionStateExcute,
+        CancelRetentionStateComplete, static_cast<void*>(asyncContext), &(asyncContext->work)));
     NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
     asyncContextPtr.release();
     return result;
 }
 
-void NapiDlpPermission::SetNonRetentionStateExcute(napi_env env, void* data)
+void NapiDlpPermission::CancelRetentionStateExcute(napi_env env, void* data)
 {
     DLP_LOG_DEBUG(LABEL, "napi_create_async_work running");
     auto asyncContext = reinterpret_cast<RetentionStateAsyncContext*>(data);
-    asyncContext->errCode = DlpPermissionKit::SetNonRetentionState(asyncContext->docUris);
+    asyncContext->errCode = DlpPermissionKit::CancelRetentionState(asyncContext->docUris);
 }
 
-void NapiDlpPermission::SetNonRetentionStateComplete(napi_env env, napi_status status, void* data)
+void NapiDlpPermission::CancelRetentionStateComplete(napi_env env, napi_status status, void* data)
 {
     DLP_LOG_DEBUG(LABEL, "napi_create_async_work complete");
     auto asyncContext = reinterpret_cast<RetentionStateAsyncContext*>(data);
@@ -1368,6 +1550,39 @@ void NapiDlpPermission::GetDLPFileVisitRecordComplete(napi_env env, napi_status 
     ProcessCallbackOrPromise(env, asyncContext, resJs);
 }
 
+napi_value NapiDlpPermission::GetDLPSuffix(napi_env env, napi_callback_info cbInfo)
+{
+    GetSuffixAsyncContext *asyncContext = new (std::nothrow) GetSuffixAsyncContext(env);
+    if (asyncContext == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for GetSuffixAsyncContext!");
+        return nullptr;
+    }
+    std::unique_ptr<GetSuffixAsyncContext> callbackPtr { asyncContext };
+
+    napi_value result = nullptr;
+    NAPI_CALL(env, napi_create_string_utf8(env, DLP_FILE_SUFFIX.c_str(), NAPI_AUTO_LENGTH, &result));
+    return result;
+}
+
+napi_value NapiDlpPermission::GetOriginalFileName(napi_env env, napi_callback_info cbInfo)
+{
+    GetOriginalFileAsyncContext *asyncContext = new (std::nothrow) GetOriginalFileAsyncContext(env);
+    if (asyncContext == nullptr) {
+        DLP_LOG_ERROR(LABEL, "insufficient memory for GetFileNameAsyncContext!");
+        return nullptr;
+    }
+    std::unique_ptr<GetOriginalFileAsyncContext> callbackPtr { asyncContext };
+    if (!GetOriginalFilenameParams(env, cbInfo, *asyncContext)) {
+        return nullptr;
+    }
+
+    std::string resultStr =
+        asyncContext->dlpFilename.substr(0, asyncContext->dlpFilename.size() - DLP_FILE_SUFFIX.size());
+    napi_value resultJs = nullptr;
+    NAPI_CALL(env, napi_create_string_utf8(env, resultStr.c_str(), NAPI_AUTO_LENGTH, &resultJs));
+    return resultJs;
+}
+
 bool NapiDlpPermission::IsSystemApp(napi_env env)
 {
     uint64_t fullTokenId = IPCSkeleton::GetSelfTokenID();
@@ -1383,37 +1598,40 @@ bool NapiDlpPermission::IsSystemApp(napi_env env)
 napi_value NapiDlpPermission::Init(napi_env env, napi_value exports)
 {
     napi_property_descriptor desc[] = {
-        DECLARE_NAPI_FUNCTION("generateDlpFile", GenerateDlpFile),
-        DECLARE_NAPI_FUNCTION("openDlpFile", OpenDlpFile),
-        DECLARE_NAPI_FUNCTION("isDlpFile", IsDlpFile),
-        DECLARE_NAPI_FUNCTION("installDlpSandbox", InstallDlpSandbox),
-        DECLARE_NAPI_FUNCTION("uninstallDlpSandbox", UninstallDlpSandbox),
-        DECLARE_NAPI_FUNCTION("queryFileAccess", QueryFileAccess),
+        DECLARE_NAPI_FUNCTION("isDLPFile", IsDlpFile),
+        DECLARE_NAPI_FUNCTION("getDLPPermissionInfo", GetDLPPermissionInfo),
+        DECLARE_NAPI_FUNCTION("getDLPSuffix", GetDLPSuffix),
+        DECLARE_NAPI_FUNCTION("getOriginalFileName", GetOriginalFileName),
         DECLARE_NAPI_FUNCTION("isInSandbox", IsInSandbox),
         DECLARE_NAPI_FUNCTION("getDlpSupportFileType", GetDlpSupportFileType),
-        DECLARE_NAPI_FUNCTION("on", RegisterSandboxChangeCallback),
-        DECLARE_NAPI_FUNCTION("off", UnregisterSandboxChangeCallback),
-        DECLARE_NAPI_FUNCTION("getDlpGatheringPolicy", GetDlpGatheringPolicy),
         DECLARE_NAPI_FUNCTION("setRetentionState", SetRetentionState),
-        DECLARE_NAPI_FUNCTION("setNonRetentionState", SetNonRetentionState),
+        DECLARE_NAPI_FUNCTION("cancelRetentionState", CancelRetentionState),
         DECLARE_NAPI_FUNCTION("getRetentionSandboxList", GetRetentionSandboxList),
         DECLARE_NAPI_FUNCTION("getDLPFileVisitRecord", GetDLPFileVisitRecord),
+
+        DECLARE_NAPI_FUNCTION("generateDLPFile", GenerateDlpFile),
+        DECLARE_NAPI_FUNCTION("openDLPFile", OpenDlpFile),
+        DECLARE_NAPI_FUNCTION("installDLPSandbox", InstallDlpSandbox),
+        DECLARE_NAPI_FUNCTION("uninstallDLPSandbox", UninstallDlpSandbox),
+        DECLARE_NAPI_FUNCTION("on", Subscribe),
+        DECLARE_NAPI_FUNCTION("off", UnSubscribe),
+        DECLARE_NAPI_FUNCTION("getDLPGatheringPolicy", GetDlpGatheringPolicy),
     };
     NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[PARAM0]), desc));
 
-    napi_property_descriptor descriptor[] = {DECLARE_NAPI_FUNCTION("dlpFile", DlpFile)};
+    napi_property_descriptor descriptor[] = {DECLARE_NAPI_FUNCTION("DLPFile", DlpFile)};
 
     NAPI_CALL(
         env, napi_define_properties(env, exports, sizeof(descriptor) / sizeof(napi_property_descriptor), descriptor));
 
     napi_property_descriptor properties[] = {
-        DECLARE_NAPI_FUNCTION("addDlpLinkFile", AddDlpLinkFile),
-        DECLARE_NAPI_FUNCTION("stopDlpLinkFile", StopDlpLinkFile),
-        DECLARE_NAPI_FUNCTION("restartDlpLinkFile", RestartDlpLinkFile),
-        DECLARE_NAPI_FUNCTION("replaceDlpLinkFile", ReplaceDlpLinkFile),
-        DECLARE_NAPI_FUNCTION("deleteDlpLinkFile", DeleteDlpLinkFile),
-        DECLARE_NAPI_FUNCTION("recoverDlpFile", RecoverDlpFile),
-        DECLARE_NAPI_FUNCTION("closeDlpFile", CloseDlpFile),
+        DECLARE_NAPI_FUNCTION("addDLPLinkFile", AddDlpLinkFile),
+        DECLARE_NAPI_FUNCTION("stopFuseLink", StopDlpLinkFile),
+        DECLARE_NAPI_FUNCTION("resumeFuseLink", RestartDlpLinkFile),
+        DECLARE_NAPI_FUNCTION("replaceDLPLinkFile", ReplaceDlpLinkFile),
+        DECLARE_NAPI_FUNCTION("deleteDLPLinkFile", DeleteDlpLinkFile),
+        DECLARE_NAPI_FUNCTION("recoverDLPFile", RecoverDlpFile),
+        DECLARE_NAPI_FUNCTION("closeDLPFile", CloseDlpFile),
     };
 
     napi_value constructor = nullptr;
@@ -1423,9 +1641,13 @@ napi_value NapiDlpPermission::Init(napi_env env, napi_value exports)
     NAPI_CALL(env, napi_create_reference(env, constructor, 1, &dlpFileRef_));
     NAPI_CALL(env, napi_set_named_property(env, exports, DLP_FILE_CLASS_NAME.c_str(), constructor));
 
-    CreateEnumAuthPermType(env, exports);
-    CreateEnumAccountType(env, exports);
-    CreateEnumActionFlags(env, exports);
+    napi_property_descriptor descriptors[] = {
+        DECLARE_NAPI_PROPERTY("ActionFlagType", CreateEnumActionFlags(env)),
+        DECLARE_NAPI_PROPERTY("DLPFileAccess", CreateEnumDLPFileAccess(env)),
+        DECLARE_NAPI_PROPERTY("AccountType", CreateEnumAccountType(env)),
+        DECLARE_NAPI_PROPERTY("GatheringPolicyType", CreateEnumGatheringPolicy(env)),
+    };
+    napi_define_properties(env, exports, sizeof(descriptors) / sizeof(napi_property_descriptor), descriptors);
 
     return exports;
 }
@@ -1433,8 +1655,8 @@ napi_value NapiDlpPermission::Init(napi_env env, napi_value exports)
 napi_value NapiDlpPermission::JsConstructor(napi_env env, napi_callback_info cbinfo)
 {
     napi_value thisVar = nullptr;
-    size_t argc = 2;
-    napi_value argv[2] = {nullptr};
+    size_t argc = PARAM_SIZE_TWO;
+    napi_value argv[PARAM_SIZE_TWO] = {nullptr};
     NAPI_CALL(env, napi_get_cb_info(env, cbinfo, &argc, argv, &thisVar, nullptr));
     int64_t nativeObjAddr;
     if (!GetInt64Value(env, argv[PARAM0], nativeObjAddr)) {
