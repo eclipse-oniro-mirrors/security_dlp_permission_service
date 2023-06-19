@@ -29,7 +29,7 @@
     "ram": "5102KB",
     "deps": {
       "components": [
-        "hitrace_native",
+        "hitrace",
         "ipc",
         "os_account",
         "access_token",
@@ -40,8 +40,8 @@
         "init",
         "ability_base",
         "ability_runtime",
-        "hiviewdfx_hilog_native",
-        "hisysevent_native",
+        "hilog",
+        "hisysevent",
         "napi",
         "safwk",
         "samgr",

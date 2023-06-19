@@ -69,8 +69,8 @@ ohos_unittest("dlp_parse_test") {
     "access_token:libtoken_setproc",
     "c_utils:utils",
     "dlp_credential_service:dlp_credential_sdk",
-    "hitrace_native:hitrace_meter",
-    "hiviewdfx_hilog_native:libhilog",
+    "hitrace:hitrace_meter",
+    "hilog:libhilog",
     "ipc:ipc_core",
     "os_account:libaccountkits",
   ]

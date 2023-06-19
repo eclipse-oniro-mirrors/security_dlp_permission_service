@@ -72,7 +72,8 @@ int32_t VisitRecordJsonManager::AddVisitRecord(const std::string& bundleName, co
     const std::string& docUri)
 {
     int64_t time =
-        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+        std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch())
+            .count();
     return AddVisitRecord(bundleName, userId, docUri, time);
 }
 

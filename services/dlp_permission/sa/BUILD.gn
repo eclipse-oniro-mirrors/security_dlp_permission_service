@@ -36,7 +36,7 @@ ohos_static_library("dlp_hex_string_static") {
 
   cflags_cc = [ "-DHILOG_ENABLE" ]
 
-  external_deps = [ "hiviewdfx_hilog_native:libhilog" ]
+  external_deps = [ "hilog:libhilog" ]
 }
 
 ohos_static_library("dlp_permission_serializer_static") {
@@ -62,7 +62,7 @@ ohos_static_library("dlp_permission_serializer_static") {
   external_deps = [
     "c_utils:utils",
     "dlp_credential_service:dlp_credential_sdk",
-    "hiviewdfx_hilog_native:libhilog",
+    "hilog:libhilog",
   ]
 }
 
@@ -150,8 +150,8 @@ ohos_shared_library("dlp_permission_service") {
     "common_event_service:cesfwk_innerkits",
     "dlp_credential_service:dlp_credential_sdk",
     "c_utils:utils",
-    "hisysevent_native:libhisysevent",
-    "hiviewdfx_hilog_native:libhilog",
+    "hisysevent:libhisysevent",
+    "hilog:libhilog",
     "init:libbegetutil",
     "ipc:ipc_core",
     "os_account:libaccountkits",

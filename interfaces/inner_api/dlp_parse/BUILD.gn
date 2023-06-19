@@ -43,8 +43,8 @@ ohos_shared_library("libdlpparse") {
   external_deps = [
     "ability_base:want",
     "c_utils:utils",
-    "hitrace_native:hitrace_meter",
-    "hiviewdfx_hilog_native:libhilog",
+    "hitrace:hitrace_meter",
+    "hilog:libhilog",
     "ipc:ipc_core",
   ]
 
@@ -79,8 +79,8 @@ ohos_shared_library("libdlpparse_inner") {
   external_deps = [
     "ability_base:want",
     "c_utils:utils",
-    "hitrace_native:hitrace_meter",
-    "hiviewdfx_hilog_native:libhilog",
+    "hitrace:hitrace_meter",
+    "hilog:libhilog",
     "ipc:ipc_core",
     "os_account:libaccountkits",
   ]
