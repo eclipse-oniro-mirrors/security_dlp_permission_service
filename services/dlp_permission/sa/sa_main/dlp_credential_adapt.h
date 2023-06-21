@@ -29,7 +29,8 @@ public:
     ~DlpCredential(){};
     static DlpCredential& GetInstance();
     int32_t GenerateDlpCertificate(
-        const std::string& policy, DlpAccountType accountType, sptr<IDlpPermissionCallback>& callback);
+        const std::string& policy, const std::string& accountInfo, DlpAccountType accountType,
+        sptr<IDlpPermissionCallback>& callback);
     int32_t ParseDlpCertificate(const std::vector<uint8_t>& cert, uint32_t flag,
         sptr<IDlpPermissionCallback>& callback);
 };

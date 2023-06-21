@@ -108,9 +108,10 @@ HWTEST_F(DlpCredentialTest, DlpCredentialTest002, TestSize.Level1)
 {
     sptr<IDlpPermissionCallback> stub = new (std::nothrow) DlpPermissionAsyncStubTest();
     std::string policy;
+    std::string account;
     DlpAccountType accountType = OHOS::Security::DlpPermission::CLOUD_ACCOUNT;
 
-    int res = DlpCredential::GetInstance().GenerateDlpCertificate(policy, accountType, stub);
+    int res = DlpCredential::GetInstance().GenerateDlpCertificate(policy, account, accountType, stub);
     EXPECT_EQ(DLP_CREDENTIAL_ERROR_COMMON_ERROR, res);
     std::vector<uint8_t> cert;
     uint32_t flag = 0;

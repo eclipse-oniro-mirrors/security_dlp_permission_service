@@ -154,7 +154,8 @@ int32_t DlpPermissionService::GenerateDlpCertificate(
     }
 
     return DlpCredential::GetInstance().GenerateDlpCertificate(
-        jsonObj.dump(), policyParcel->policyParams_.ownerAccountType_, callback);
+        jsonObj.dump(), policyParcel->policyParams_.ownerAccount_,
+        policyParcel->policyParams_.ownerAccountType_, callback);
 }
 
 int32_t DlpPermissionService::ParseDlpCertificate(
