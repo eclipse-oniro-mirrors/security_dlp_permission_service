@@ -88,3 +88,42 @@ HWTEST_F(DlpParcelTest, DlpParcelTest003, TestSize.Level1)
     ASSERT_NE(result, nullptr);
     EXPECT_EQ(0, result->changeInfo.appIndex);
 }
+
+/**
+ * @tc.name: RetentionSandBoxInfo001
+ * @tc.desc: RetentionSandBoxInfo test
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpParcelTest, RetentionSandBoxInfo001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "RetentionSandBoxInfo001");
+    RetentionSandBoxInfo info;
+    info.bundleName_ = "abc";
+    info.appIndex_ = 1;
+    Parcel out;
+
+    EXPECT_EQ(true, info.Marshalling(out));
+    auto result = RetentionSandBoxInfo::Unmarshalling(out);
+    ASSERT_NE(result, nullptr);
+    EXPECT_EQ(0, result->bundleName_.compare("abc"));
+}
+
+/**
+ * @tc.name: VisitedDLPFileInfo001
+ * @tc.desc: VisitedDLPFileInfo test
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpParcelTest, VisitedDLPFileInfo001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "VisitedDLPFileInfo001");
+    VisitedDLPFileInfo info;
+    info.docUri = "abc";
+    Parcel out;
+
+    EXPECT_EQ(true, info.Marshalling(out));
+    auto result = VisitedDLPFileInfo::Unmarshalling(out);
+    ASSERT_NE(result, nullptr);
+    EXPECT_EQ(0, result->docUri.compare("abc"));
+}

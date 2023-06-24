@@ -20,6 +20,8 @@
 #include "auth_user_info_parcel.h"
 #include "dlp_policy_parcel.h"
 #include "dlp_sandbox_callback_info_parcel.h"
+#include "retention_sandbox_info.h"
+#include "visited_dlp_file_info.h"
 
 namespace OHOS {
 namespace Security {

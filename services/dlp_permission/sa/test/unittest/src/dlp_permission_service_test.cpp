@@ -16,6 +16,7 @@
 #include "dlp_permission_service_test.h"
 #include <string>
 #include "accesstoken_kit.h"
+#include "account_adapt.h"
 #include "app_uninstall_observer.h"
 #define private public
 #include "dlp_sandbox_change_callback_manager.h"
@@ -31,6 +32,7 @@
 #include "sandbox_json_manager.h"
 #include "visited_dlp_file_info.h"
 #define private public
+#include "visit_record_file_manager.h"
 #include "visit_record_json_manager.h"
 #undef private
 
@@ -228,6 +230,7 @@ HWTEST_F(DlpPermissionServiceTest, CallbackManager001, TestSize.Level1)
 HWTEST_F(DlpPermissionServiceTest, SandboxJsonManager002, TestSize.Level1)
 {
     std::shared_ptr<SandboxJsonManager> sandboxJsonManager_ = std::make_shared<SandboxJsonManager>();
+    sandboxJsonManager_->FromJson(NULL);
     sandboxJsonManager_->AddSandboxInfo(1, 827878, "testbundle", 100);
     ASSERT_TRUE(!sandboxJsonManager_->HasRetentionSandboxInfo("testbundle1"));
     int32_t uid = getuid();
@@ -433,9 +436,10 @@ HWTEST_F(DlpPermissionServiceTest, VisitRecordJsonManager001, TestSize.Level1)
     ASSERT_EQ(DLP_OK, res);
     res = visitRecordJsonManager_->GetVisitRecordList("test.bundleName1", 1001, infoVec);
     ASSERT_EQ(DLP_FILE_NO_NEED_UPDATE, res);
-    for (int32_t i = 1; i < 1024; i++) {
-        visitRecordJsonManager_->AddVisitRecord("test.bundleName", 100 + i, "testuri");
+    for (int32_t i = 1; i <= 1024; i++) {
+        res = visitRecordJsonManager_->AddVisitRecord("test.bundleName1", 100 + i, "testuri");
     }
+    ASSERT_EQ(DLP_JSON_UPDATE_ERROR, res);
     res = visitRecordJsonManager_->GetVisitRecordList("test.bundleName1", 2000, infoVec);
     ASSERT_EQ(DLP_FILE_NO_NEED_UPDATE, res);
 }
@@ -481,4 +485,83 @@ HWTEST_F(DlpPermissionServiceTest, VisitRecordJsonManager002, TestSize.Level1)
     callbackInfoJson = Json::parse(jsonStr, nullptr, false);
     visitRecordJsonManager_->FromJson(callbackInfoJson);
     ASSERT_EQ(visitRecordJsonManager_->infoList_.size(), 1);
+}
+
+/**
+ * @tc.name: VisitRecordJsonManager003
+ * @tc.desc: VisitRecordJsonManager test
+ * @tc.type: FUNC
+ * @tc.require:SR000I38MU
+ */
+HWTEST_F(DlpPermissionServiceTest, VisitRecordJsonManager003, TestSize.Level1)
+{
+    std::shared_ptr<VisitRecordJsonManager> visitRecordJsonManager_ = std::make_shared<VisitRecordJsonManager>();
+    visitRecordJsonManager_->FromJson(NULL);
+    std::string jsonStr = "{\"recordList\":[{\"bundleName1\":\"\"}]}";
+    Json callbackInfoJson = Json::parse(jsonStr, nullptr, false);
+    visitRecordJsonManager_->FromJson(callbackInfoJson);
+    ASSERT_EQ(visitRecordJsonManager_->infoList_.size(), 0);
+    jsonStr = "{\"recordList\":[{\"bundleName\":1}]}";
+    callbackInfoJson = Json::parse(jsonStr, nullptr, false);
+    visitRecordJsonManager_->FromJson(callbackInfoJson);
+    jsonStr = "{\"recordList\":[{\"bundleName\":\"com.example.ohnotes\",\"docUri1\":\"\",\"userId\":100}]}";
+    callbackInfoJson = Json::parse(jsonStr, nullptr, false);
+    visitRecordJsonManager_->FromJson(callbackInfoJson);
+    jsonStr = "{\"recordList\":[{\"bundleName\":\"com.example.ohnotes\",\"docUri\":1,\"userId\":100}]}";
+    callbackInfoJson = Json::parse(jsonStr, nullptr, false);
+    visitRecordJsonManager_->FromJson(callbackInfoJson);
+    jsonStr = "{\"recordList\":[{\"bundleName\":\"com.example.ohnotes\",\"docUri\":\"\",\"userId1\":100}]}";
+    callbackInfoJson = Json::parse(jsonStr, nullptr, false);
+    visitRecordJsonManager_->FromJson(callbackInfoJson);
+    jsonStr = "{\"recordList\":[{\"bundleName\":\"com.example.ohnotes\",\"docUri\":\"\",\"userId\":\"100\"}]}";
+    callbackInfoJson = Json::parse(jsonStr, nullptr, false);
+    visitRecordJsonManager_->FromJson(callbackInfoJson);
+    jsonStr = "{\"recordList\":[{\"bundleName\":\"com.example.ohnotes\",\"docUri\":\"file://media/file/"
+        "12\",\"userId\":100,\"timestamp1\":1686844687}]}";
+    callbackInfoJson = Json::parse(jsonStr, nullptr, false);
+    visitRecordJsonManager_->FromJson(callbackInfoJson);
+    jsonStr = "{\"recordList\":[{\"bundleName\":\"com.example.ohnotes\",\"docUri\":\"file://media/file/"
+        "12\",\"userId\":100,\"timestamp\":\"1686844687\"}]}";
+    callbackInfoJson = Json::parse(jsonStr, nullptr, false);
+    visitRecordJsonManager_->FromJson(callbackInfoJson);
+    visitRecordJsonManager_->infoList_.clear();
+    ASSERT_EQ("", visitRecordJsonManager_->ToString());
+}
+/**
+ * @tc.name: VisitRecordFileManager001
+ * @tc.desc: VisitRecordFileManager test
+ * @tc.type: FUNC
+ * @tc.require:SR000I38MU
+ */
+HWTEST_F(DlpPermissionServiceTest, VisitRecordFileManager001, TestSize.Level1)
+{
+    std::shared_ptr<VisitRecordFileManager> visitRecordFileManager = std::make_shared<VisitRecordFileManager>();
+    std::vector<VisitedDLPFileInfo> infoVec;
+    int32_t res = visitRecordFileManager->GetVisitRecordList("test.bundleName", 100, infoVec);
+    ASSERT_EQ(DLP_OK, res);
+    visitRecordFileManager->hasInit = true;
+    ASSERT_EQ(true, visitRecordFileManager->Init());
+    visitRecordFileManager->hasInit = false;
+    ASSERT_EQ(true, visitRecordFileManager->Init());
+    ASSERT_EQ(DLP_OK, visitRecordFileManager->UpdateFile(DLP_FILE_NO_NEED_UPDATE));
+    ASSERT_EQ(DLP_JSON_UPDATE_ERROR, visitRecordFileManager->UpdateFile(DLP_JSON_UPDATE_ERROR));
+    visitRecordFileManager->hasInit = false;
+    ASSERT_EQ(DLP_OK, visitRecordFileManager->AddVisitRecord("test.bundleName", 100, "testuri"));
+    visitRecordFileManager->hasInit = false;
+    res = visitRecordFileManager->GetVisitRecordList("test.bundleName", 100, infoVec);
+    ASSERT_EQ(DLP_OK, res);
+}
+
+/**
+ * @tc.name: GetLocalAccountName001
+ * @tc.desc: GetLocalAccountName test
+ * @tc.type: FUNC
+ * @tc.require:SR000I38MU
+ */
+HWTEST_F(DlpPermissionServiceTest, GetLocalAccountName001, TestSize.Level1)
+{
+    char* account = NULL;
+    uint32_t userId = 0;
+    ASSERT_EQ(0, GetLocalAccountName(&account, userId));
+    ASSERT_EQ(-1, GetLocalAccountName(nullptr, userId));
 }
