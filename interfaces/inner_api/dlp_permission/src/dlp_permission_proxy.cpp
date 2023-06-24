@@ -123,7 +123,7 @@ int32_t DlpPermissionProxy::ParseDlpCertificate(
 }
 
 int32_t DlpPermissionProxy::InstallDlpSandbox(const std::string& bundleName, DLPFileAccess dlpFileAccess,
-    int32_t userId, int32_t& appIndex, const std::string& uri)
+    int32_t userId, SandboxInfo& sandboxInfo, const std::string& uri)
 {
     MessageParcel data;
     if (!data.WriteInterfaceToken(DlpPermissionProxy::GetDescriptor())) {
@@ -170,8 +170,13 @@ int32_t DlpPermissionProxy::InstallDlpSandbox(const std::string& bundleName, DLP
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
-    if (!reply.ReadInt32(appIndex)) {
+    if (!reply.ReadInt32(sandboxInfo.appIndex)) {
         DLP_LOG_ERROR(LABEL, "Read int32 fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+
+    if (!reply.ReadUint32(sandboxInfo.tokenId)) {
+        DLP_LOG_ERROR(LABEL, "Read uint32 fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     return res;

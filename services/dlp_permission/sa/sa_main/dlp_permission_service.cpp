@@ -192,7 +192,7 @@ void DlpPermissionService::InsertDlpSandboxInfo(DlpSandboxInfo &sandboxInfo)
 }
 
 int32_t DlpPermissionService::InstallDlpSandbox(const std::string& bundleName, DLPFileAccess dlpFileAccess,
-    int32_t userId, int32_t& appIndex, const std::string& uri)
+    int32_t userId, SandboxInfo &sandboxInfo, const std::string& uri)
 {
     if (bundleName.empty() || dlpFileAccess > FULL_CONTROL || dlpFileAccess <= NO_PERMISSION) {
         DLP_LOG_ERROR(LABEL, "param is invalid");
@@ -206,6 +206,7 @@ int32_t DlpPermissionService::InstallDlpSandbox(const std::string& bundleName, D
         return res;
     }
     bool isNeedInstall = true;
+    int32_t appIndex = -1;
     for (auto iter = infoVec.begin(); iter != infoVec.end(); ++iter) {
         auto setIter = iter->docUriSet_.find(uri);
         if (setIter != iter->docUriSet_.end()) {
@@ -225,16 +226,18 @@ int32_t DlpPermissionService::InstallDlpSandbox(const std::string& bundleName, D
         }
     }
     int32_t pid = IPCSkeleton::GetCallingPid();
-    DlpSandboxInfo sandboxInfo;
-    sandboxInfo.dlpFileAccess = dlpFileAccess;
-    sandboxInfo.bundleName = bundleName;
-    sandboxInfo.userId = userId;
-    sandboxInfo.appIndex = appIndex;
-    sandboxInfo.pid = pid;
-    sandboxInfo.uri = uri;
-    sandboxInfo.timeStamp = static_cast<uint64_t>(
+    DlpSandboxInfo dlpSandboxInfo;
+    dlpSandboxInfo.dlpFileAccess = dlpFileAccess;
+    dlpSandboxInfo.bundleName = bundleName;
+    dlpSandboxInfo.userId = userId;
+    dlpSandboxInfo.appIndex = appIndex;
+    dlpSandboxInfo.pid = pid;
+    dlpSandboxInfo.uri = uri;
+    dlpSandboxInfo.timeStamp = static_cast<uint64_t>(
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    InsertDlpSandboxInfo(sandboxInfo);
+    InsertDlpSandboxInfo(dlpSandboxInfo);
+    sandboxInfo.appIndex = appIndex;
+    sandboxInfo.tokenId = dlpSandboxInfo.tokenId;
     VisitRecordFileManager::GetInstance().AddVisitRecord(bundleName, userId, uri);
     return DLP_OK;
 }

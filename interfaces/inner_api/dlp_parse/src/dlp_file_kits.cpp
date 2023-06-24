@@ -36,6 +36,9 @@ using WantParams = OHOS::AAFwk::WantParams;
 static const std::unordered_map<std::string, std::string> SUFFIX_MIMETYPE_MAP = {
     {"txt", "text/plain"},
     {"doc", "text/plain"},
+    {"docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"},
+    {"xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"},
+    {"pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"},
 };
 
 static std::string GetWantFileName(const WantParams& param)

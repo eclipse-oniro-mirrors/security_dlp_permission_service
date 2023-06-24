@@ -55,7 +55,7 @@ public:
     int32_t ParseDlpCertificate(const std::vector<uint8_t>& cert, uint32_t flag,
         sptr<IDlpPermissionCallback>& callback) override;
     int32_t InstallDlpSandbox(const std::string& bundleName, DLPFileAccess dlpFileAccess, int32_t userId,
-        int32_t& appIndex, const std::string& uri) override;
+        SandboxInfo &sandboxInfo, const std::string& uri) override;
     int32_t UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId) override;
     int32_t GetSandboxExternalAuthorization(
         int sandboxUid, const AAFwk::Want& want, SandBoxExternalAuthorType& authType) override;

@@ -41,7 +41,7 @@ public:
         sptr<IDlpPermissionCallback>& callback) = 0;
 
     virtual int32_t InstallDlpSandbox(const std::string& bundleName, DLPFileAccess dlpFileAccess, int32_t userId,
-        int32_t& appIndex, const std::string& uri) = 0;
+        SandboxInfo& sandboxInfo, const std::string& uri) = 0;
 
     virtual int32_t UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId) = 0;
     virtual int32_t GetSandboxExternalAuthorization(int sandboxUid, const AAFwk::Want& want,

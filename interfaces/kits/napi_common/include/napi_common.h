@@ -183,7 +183,7 @@ struct DlpSandboxAsyncContext : public CommonAsyncContext {
     std::string bundleName;
     DLPFileAccess dlpFileAccess = NO_PERMISSION;
     int32_t userId = -1;
-    int32_t appIndex = -1;
+    SandboxInfo sandboxInfo;
     std::string uri = "";
 };
 
@@ -303,6 +303,7 @@ napi_value VectorAuthUserToJs(napi_env env, const std::vector<AuthUserInfo>& use
 napi_value VectorStringToJs(napi_env env, const std::vector<std::string>& value);
 napi_value SetStringToJs(napi_env env, const std::set<std::string>& value);
 napi_value DlpPermissionInfoToJs(napi_env env, const DLPPermissionInfo& permInfo);
+napi_value SandboxInfoToJs(napi_env env, const SandboxInfo& sandboxInfo);
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS

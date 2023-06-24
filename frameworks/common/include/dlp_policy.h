@@ -79,6 +79,11 @@ typedef struct AuthUserInfo {
     DlpAccountType authAccountType = INVALID_ACCOUNT;
 } AuthUserInfo;
 
+typedef struct SandboxInfo {
+    int32_t appIndex = -1;
+    uint32_t tokenId = 0;
+} SandboxInfo;
+
 struct DlpProperty {
     std::string ownerAccount;
     std::string ownerAccountId;

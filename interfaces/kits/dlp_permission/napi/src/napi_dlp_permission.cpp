@@ -779,7 +779,7 @@ void NapiDlpPermission::InstallDlpSandboxExcute(napi_env env, void* data)
     }
 
     asyncContext->errCode = DlpPermissionKit::InstallDlpSandbox(asyncContext->bundleName, asyncContext->dlpFileAccess,
-        asyncContext->userId, asyncContext->appIndex, asyncContext->uri);
+        asyncContext->userId, asyncContext->sandboxInfo, asyncContext->uri);
 }
 
 void NapiDlpPermission::InstallDlpSandboxComplete(napi_env env, napi_status status, void* data)
@@ -791,11 +791,11 @@ void NapiDlpPermission::InstallDlpSandboxComplete(napi_env env, napi_status stat
         return;
     }
     std::unique_ptr<DlpSandboxAsyncContext> asyncContextPtr{asyncContext};
-    napi_value appIndexJs = nullptr;
+    napi_value sandboxInfoJs = nullptr;
     if (asyncContext->errCode == DLP_OK) {
-        NAPI_CALL_RETURN_VOID(env, napi_create_int64(env, asyncContext->appIndex, &appIndexJs));
+        sandboxInfoJs = SandboxInfoToJs(env, asyncContext->sandboxInfo);
     }
-    ProcessCallbackOrPromise(env, asyncContext, appIndexJs);
+    ProcessCallbackOrPromise(env, asyncContext, sandboxInfoJs);
 }
 
 napi_value NapiDlpPermission::UninstallDlpSandbox(napi_env env, napi_callback_info cbInfo)
@@ -843,7 +843,7 @@ void NapiDlpPermission::UninstallDlpSandboxExcute(napi_env env, void* data)
     }
 
     asyncContext->errCode = DlpPermissionKit::UninstallDlpSandbox(
-        asyncContext->bundleName, asyncContext->appIndex, asyncContext->userId);
+        asyncContext->bundleName, asyncContext->sandboxInfo.appIndex, asyncContext->userId);
 }
 
 void NapiDlpPermission::UninstallDlpSandboxComplete(napi_env env, napi_status status, void* data)
@@ -1604,10 +1604,11 @@ napi_value NapiDlpPermission::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("getOriginalFileName", GetOriginalFileName),
         DECLARE_NAPI_FUNCTION("isInSandbox", IsInSandbox),
         DECLARE_NAPI_FUNCTION("getDlpSupportFileType", GetDlpSupportFileType),
+        DECLARE_NAPI_FUNCTION("getDLPSupportedFileTypes", GetDlpSupportFileType),
         DECLARE_NAPI_FUNCTION("setRetentionState", SetRetentionState),
         DECLARE_NAPI_FUNCTION("cancelRetentionState", CancelRetentionState),
         DECLARE_NAPI_FUNCTION("getRetentionSandboxList", GetRetentionSandboxList),
-        DECLARE_NAPI_FUNCTION("getDLPFileVisitRecord", GetDLPFileVisitRecord),
+        DECLARE_NAPI_FUNCTION("getDLPFileVisitRecords", GetDLPFileVisitRecord),
 
         DECLARE_NAPI_FUNCTION("generateDLPFile", GenerateDlpFile),
         DECLARE_NAPI_FUNCTION("openDLPFile", OpenDlpFile),

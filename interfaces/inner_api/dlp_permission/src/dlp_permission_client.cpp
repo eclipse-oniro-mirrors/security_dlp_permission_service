@@ -117,7 +117,7 @@ int32_t DlpPermissionClient::ParseDlpCertificate(
 }
 
 int32_t DlpPermissionClient::InstallDlpSandbox(const std::string& bundleName, DLPFileAccess dlpFileAccess,
-    int32_t userId, int32_t& appIndex, const std::string& uri)
+    int32_t userId, SandboxInfo& sandboxInfo, const std::string& uri)
 {
     if (bundleName.empty() || dlpFileAccess > FULL_CONTROL || dlpFileAccess <= NO_PERMISSION || uri.empty()) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
@@ -128,7 +128,7 @@ int32_t DlpPermissionClient::InstallDlpSandbox(const std::string& bundleName, DL
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
 
-    return proxy->InstallDlpSandbox(bundleName, dlpFileAccess, userId, appIndex, uri);
+    return proxy->InstallDlpSandbox(bundleName, dlpFileAccess, userId, sandboxInfo, uri);
 }
 
 int32_t DlpPermissionClient::UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId)

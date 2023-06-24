@@ -316,16 +316,16 @@ HWTEST_F(DlpPermissionServiceTest, RetentionFileManager001, TestSize.Level1)
  */
 HWTEST_F(DlpPermissionServiceTest, UninstallDlpSandbox001, TestSize.Level1)
 {
-    int32_t appIndex;
+    SandboxInfo sandboxInfo;
     uint32_t dlpFileAccess = 5;
     int32_t ret = dlpPermissionService_->InstallDlpSandbox(
-        "", static_cast<DLPFileAccess>(dlpFileAccess), 100, appIndex, "testUri");
+        "", static_cast<DLPFileAccess>(dlpFileAccess), 100, sandboxInfo, "testUri");
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, ret);
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, dlpPermissionService_->InstallDlpSandbox("testbundle",
-        static_cast<DLPFileAccess>(dlpFileAccess), 100, appIndex, "testUri"));
+        static_cast<DLPFileAccess>(dlpFileAccess), 100, sandboxInfo, "testUri"));
     dlpFileAccess = 0;
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, dlpPermissionService_->InstallDlpSandbox("testbundle",
-        static_cast<DLPFileAccess>(dlpFileAccess), 100, appIndex, "testUri"));
+        static_cast<DLPFileAccess>(dlpFileAccess), 100, sandboxInfo, "testUri"));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, dlpPermissionService_->UninstallDlpSandbox("", -1, -1));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, dlpPermissionService_->UninstallDlpSandbox("testbundle", -1, -1));
     dlpFileAccess = 0;

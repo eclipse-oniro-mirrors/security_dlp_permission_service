@@ -33,8 +33,8 @@ static void FuzzTest(const uint8_t* data, size_t size)
     std::string bundleName(reinterpret_cast<const char*>(data), size);
     DLPFileAccess dlpFileAccess = static_cast<DLPFileAccess>(size);
     int32_t userId = static_cast<int32_t>(size);
-    int32_t appIndex;
-    DlpPermissionKit::InstallDlpSandbox(bundleName, dlpFileAccess, userId, appIndex, TEST_URI);
+    SandboxInfo sandboxInfo;
+    DlpPermissionKit::InstallDlpSandbox(bundleName, dlpFileAccess, userId, sandboxInfo, TEST_URI);
 }
 
 bool InstallDlpSandboxFuzzTest(const uint8_t* data, size_t size)

@@ -871,7 +871,7 @@ bool GetUninstallDlpSandboxParams(
         ThrowParamError(env, "appIndex", "number");
         return false;
     }
-    asyncContext.appIndex = static_cast<int32_t>(res);
+    asyncContext.sandboxInfo.appIndex = static_cast<int32_t>(res);
 
     if (argc == PARAM_SIZE_FOUR) {
         if (!ParseCallback(env, argv[PARAM3], asyncContext.callbackRef)) {
@@ -881,7 +881,7 @@ bool GetUninstallDlpSandboxParams(
     }
 
     DLP_LOG_DEBUG(LABEL, "bundleName: %{private}s, userId: %{private}d, appIndex: %{private}d",
-        asyncContext.bundleName.c_str(), asyncContext.userId, asyncContext.appIndex);
+        asyncContext.bundleName.c_str(), asyncContext.userId, asyncContext.sandboxInfo.appIndex);
     return true;
 }
 
@@ -1241,6 +1241,22 @@ napi_value DlpPermissionInfoToJs(napi_env env, const DLPPermissionInfo& permInfo
     NAPI_CALL(env, napi_set_named_property(env, dlpPermInfoJs, "flags", flagsJs));
 
     return dlpPermInfoJs;
+}
+
+napi_value SandboxInfoToJs(napi_env env, const SandboxInfo& sandboxInfo)
+{
+    napi_value sandboxInfoJs = nullptr;
+    NAPI_CALL(env, napi_create_object(env, &sandboxInfoJs));
+
+    napi_value appIndexJs;
+    NAPI_CALL(env, napi_create_int64(env, sandboxInfo.appIndex, &appIndexJs));
+    NAPI_CALL(env, napi_set_named_property(env, sandboxInfoJs, "appIndex", appIndexJs));
+
+    napi_value tokenIdJs;
+    NAPI_CALL(env, napi_create_int64(env, sandboxInfo.tokenId, &tokenIdJs));
+    NAPI_CALL(env, napi_set_named_property(env, sandboxInfoJs, "tokenID", tokenIdJs));
+
+    return sandboxInfoJs;
 }
 
 napi_value VectorAuthUserToJs(napi_env env, const std::vector<AuthUserInfo>& users)

@@ -147,9 +147,9 @@ AUTH_RETRY:
 }
 
 int32_t DlpPermissionKit::InstallDlpSandbox(const std::string& bundleName, DLPFileAccess dlpFileAccess, int32_t userId,
-    int32_t& appIndex, const std::string& uri)
+    SandboxInfo& sandboxInfo, const std::string& uri)
 {
-    return DlpPermissionClient::GetInstance().InstallDlpSandbox(bundleName, dlpFileAccess, userId, appIndex, uri);
+    return DlpPermissionClient::GetInstance().InstallDlpSandbox(bundleName, dlpFileAccess, userId, sandboxInfo, uri);
 }
 
 int32_t DlpPermissionKit::UninstallDlpSandbox(const std::string& bundleName, int32_t appIndex, int32_t userId)

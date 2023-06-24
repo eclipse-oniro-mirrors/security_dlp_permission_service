@@ -189,14 +189,18 @@ int32_t DlpPermissionStub::InstallDlpSandboxInner(MessageParcel& data, MessagePa
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
 
-    int32_t appIndex;
-    int32_t res = this->InstallDlpSandbox(bundleName, dlpFileAccess, userId, appIndex, uri);
+    SandboxInfo sandboxInfo;
+    int32_t res = this->InstallDlpSandbox(bundleName, dlpFileAccess, userId, sandboxInfo, uri);
     if (!reply.WriteInt32(res)) {
         DLP_LOG_ERROR(LABEL, "Write install sandbox result fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
-    if (!reply.WriteInt32(appIndex)) {
+    if (!reply.WriteInt32(sandboxInfo.appIndex)) {
         DLP_LOG_ERROR(LABEL, "Write sandbox index fail");
+        return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
+    }
+    if (!reply.WriteUint32(sandboxInfo.tokenId)) {
+        DLP_LOG_ERROR(LABEL, "Write sandbox tokenId fail");
         return DLP_SERVICE_ERROR_PARCEL_OPERATE_FAIL;
     }
     return DLP_OK;
