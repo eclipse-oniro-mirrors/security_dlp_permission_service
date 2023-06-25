@@ -31,7 +31,7 @@ static void FuzzTest(const uint8_t* data, size_t size)
 {
     MessageParcel datas;
     datas.WriteInterfaceToken(IDlpPermissionService::GetDescriptor());
-    uint32_t code = static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::IS_IN_DLP_SANDBOX);
+    uint32_t code = static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::IS_IN_DLP_SANDBOX);
     MessageParcel reply;
     MessageOption option;
     auto service = std::make_shared<DlpPermissionService>(SA_ID_DLP_PERMISSION_SERVICE, true);

@@ -35,7 +35,7 @@ static void FuzzTest(const uint8_t* data, size_t size)
     if (!datas.ReadUint32(tokenId)) {
         return;
     }
-    uint32_t code = static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::QUERY_DLP_FILE_ACCESS_BY_TOKEN_ID);
+    uint32_t code = static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::QUERY_DLP_FILE_ACCESS_BY_TOKEN_ID);
     MessageParcel reply;
     MessageOption option;
     auto service = std::make_shared<DlpPermissionService>(SA_ID_DLP_PERMISSION_SERVICE, true);

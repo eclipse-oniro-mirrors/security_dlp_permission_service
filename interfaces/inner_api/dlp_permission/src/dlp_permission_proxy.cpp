@@ -62,7 +62,7 @@ int32_t DlpPermissionProxy::GenerateDlpCertificate(
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
-        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GENERATE_DLP_CERTIFICATE), data, reply, option);
+        static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::GENERATE_DLP_CERTIFICATE), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
         return requestResult;
@@ -108,7 +108,7 @@ int32_t DlpPermissionProxy::ParseDlpCertificate(
     }
 
     int32_t requestResult = remote->SendRequest(
-        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::PARSE_DLP_CERTIFICATE), data, reply, option);
+        static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::PARSE_DLP_CERTIFICATE), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
         return requestResult;
@@ -159,7 +159,7 @@ int32_t DlpPermissionProxy::InstallDlpSandbox(const std::string& bundleName, DLP
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
-        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::INSTALL_DLP_SANDBOX), data, reply, option);
+        static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::INSTALL_DLP_SANDBOX), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
         return requestResult;
@@ -213,7 +213,7 @@ int32_t DlpPermissionProxy::UninstallDlpSandbox(const std::string& bundleName, i
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
-        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::UNINSTALL_DLP_SANDBOX), data, reply, option);
+        static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::UNINSTALL_DLP_SANDBOX), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
         return requestResult;
@@ -253,7 +253,7 @@ int32_t DlpPermissionProxy::GetSandboxExternalAuthorization(int sandboxUid,
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
-        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_SANDBOX_EXTERNAL_AUTH), data, reply, option);
+        static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::GET_SANDBOX_EXTERNAL_AUTH), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
         return requestResult;
@@ -292,7 +292,7 @@ int32_t DlpPermissionProxy::QueryDlpFileCopyableByTokenId(bool& copyable, uint32
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
-        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::QUERY_DLP_FILE_ACCESS_BY_TOKEN_ID), data, reply,
+        static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::QUERY_DLP_FILE_ACCESS_BY_TOKEN_ID), data, reply,
         option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
@@ -326,7 +326,7 @@ int32_t DlpPermissionProxy::QueryDlpFileAccess(DLPPermissionInfoParcel& permInfo
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
-        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::QUERY_DLP_FILE_ACCESS), data, reply, option);
+        static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::QUERY_DLP_FILE_ACCESS), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
         return requestResult;
@@ -361,7 +361,7 @@ int32_t DlpPermissionProxy::IsInDlpSandbox(bool& inSandbox)
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
-        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::IS_IN_DLP_SANDBOX), data, reply, option);
+        static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::IS_IN_DLP_SANDBOX), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
         return requestResult;
@@ -394,7 +394,7 @@ int32_t DlpPermissionProxy::GetDlpSupportFileType(std::vector<std::string>& supp
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
-        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_DLP_SUPPORT_FILE_TYPE), data, reply, option);
+        static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::GET_DLP_SUPPORT_FILE_TYPE), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
         return requestResult;
@@ -445,7 +445,7 @@ int32_t DlpPermissionProxy::RegisterDlpSandboxChangeCallback(const sptr<IRemoteO
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
-        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::REGISTER_DLP_SANDBOX_CHANGE_CALLBACK), data, reply,
+        static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::REGISTER_DLP_SANDBOX_CHANGE_CALLBACK), data, reply,
         option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
@@ -476,7 +476,7 @@ int32_t DlpPermissionProxy::UnRegisterDlpSandboxChangeCallback(bool &result)
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
-        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::UNREGISTER_DLP_SANDBOX_CHANGE_CALLBACK), data,
+        static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::UNREGISTER_DLP_SANDBOX_CHANGE_CALLBACK), data,
         reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
@@ -515,7 +515,7 @@ int32_t DlpPermissionProxy::RegisterOpenDlpFileCallback(const sptr<IRemoteObject
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
-        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::REGISTER_OPEN_DLP_FILE_CALLBACK), data, reply,
+        static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::REGISTER_OPEN_DLP_FILE_CALLBACK), data, reply,
         option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
@@ -550,7 +550,7 @@ int32_t DlpPermissionProxy::UnRegisterOpenDlpFileCallback(const sptr<IRemoteObje
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
-        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::UN_REGISTER_OPEN_DLP_FILE_CALLBACK), data,
+        static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::UN_REGISTER_OPEN_DLP_FILE_CALLBACK), data,
         reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
@@ -581,7 +581,7 @@ int32_t DlpPermissionProxy::GetDlpGatheringPolicy(bool& isGathering)
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
-        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_DLP_GATHERING_POLICY), data, reply, option);
+        static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::GET_DLP_GATHERING_POLICY), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
         return requestResult;
@@ -619,7 +619,7 @@ int32_t DlpPermissionProxy::SetRetentionState(const std::vector<std::string>& do
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
-        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::SET_RETENTION_STATE), data, reply, option);
+        static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::SET_RETENTION_STATE), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
         return requestResult;
@@ -653,7 +653,7 @@ int32_t DlpPermissionProxy::CancelRetentionState(const std::vector<std::string>&
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
-        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::SET_NOT_RETENTION_STATE), data, reply, option);
+        static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::SET_NOT_RETENTION_STATE), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
         return requestResult;
@@ -688,7 +688,7 @@ int32_t DlpPermissionProxy::GetRetentionSandboxList(const std::string& bundleNam
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
-        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_RETETNTION_SANDBOX_LIST), data, reply, option);
+        static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::GET_RETETNTION_SANDBOX_LIST), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
         return requestResult;
@@ -734,7 +734,7 @@ int32_t DlpPermissionProxy::ClearUnreservedSandbox()
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
-        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::CLEAR_UNRESERVED_SANDBOX), data, reply, option);
+        static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::CLEAR_UNRESERVED_SANDBOX), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
     }
@@ -757,7 +757,7 @@ int32_t DlpPermissionProxy::GetDLPFileVisitRecord(std::vector<VisitedDLPFileInfo
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
     int32_t requestResult = remote->SendRequest(
-        static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GET_VISTI_FILE_RECORD_LIST), data, reply, option);
+        static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::GET_VISTI_FILE_RECORD_LIST), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Request fail, result: %{public}d", requestResult);
         return requestResult;

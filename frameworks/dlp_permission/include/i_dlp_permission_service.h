@@ -18,6 +18,7 @@
 
 #include <string>
 #include "dlp_permission_info_parcel.h"
+#include "dlp_permission_service_ipc_interface_code.h"
 #include "dlp_policy_parcel.h"
 #include "i_dlp_permission_callback.h"
 #include "iremote_broker.h"
@@ -75,28 +76,6 @@ public:
     virtual int32_t ClearUnreservedSandbox() = 0;
 
     virtual int32_t GetDLPFileVisitRecord(std::vector<VisitedDLPFileInfo>& infoVec) = 0;
-
-    enum class InterfaceCode {
-        GENERATE_DLP_CERTIFICATE = 0xff01,
-        PARSE_DLP_CERTIFICATE = 0xff02,
-        INSTALL_DLP_SANDBOX = 0xff03,
-        UNINSTALL_DLP_SANDBOX = 0xff04,
-        GET_SANDBOX_EXTERNAL_AUTH = 0xff05,
-        QUERY_DLP_FILE_ACCESS = 0xff06,
-        IS_IN_DLP_SANDBOX = 0xff07,
-        GET_DLP_SUPPORT_FILE_TYPE = 0xff08,
-        QUERY_DLP_FILE_ACCESS_BY_TOKEN_ID = 0xff09,
-        REGISTER_DLP_SANDBOX_CHANGE_CALLBACK = 0xff0a,
-        UNREGISTER_DLP_SANDBOX_CHANGE_CALLBACK = 0xff0b,
-        GET_DLP_GATHERING_POLICY = 0xff0c,
-        SET_RETENTION_STATE = 0xff0d,
-        SET_NOT_RETENTION_STATE = 0xff0e,
-        GET_RETETNTION_SANDBOX_LIST = 0xff0f,
-        CLEAR_UNRESERVED_SANDBOX = 0xff10,
-        GET_VISTI_FILE_RECORD_LIST = 0xff11,
-        REGISTER_OPEN_DLP_FILE_CALLBACK = 0xff12,
-        UN_REGISTER_OPEN_DLP_FILE_CALLBACK = 0xff13,
-    };
 };
 }  // namespace DlpPermission
 }  // namespace Security

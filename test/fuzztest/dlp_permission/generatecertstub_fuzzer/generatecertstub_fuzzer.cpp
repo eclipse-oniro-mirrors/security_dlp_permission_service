@@ -68,7 +68,7 @@ static void FuzzTest(const uint8_t* data, size_t size)
     if (!datas.WriteRemoteObject(asyncStub->AsObject())) {
         return;
     }
-    uint32_t code = static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::GENERATE_DLP_CERTIFICATE);
+    uint32_t code = static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::GENERATE_DLP_CERTIFICATE);
     MessageParcel reply;
     MessageOption option;
     auto service = std::make_shared<DlpPermissionService>(SA_ID_DLP_PERMISSION_SERVICE, true);

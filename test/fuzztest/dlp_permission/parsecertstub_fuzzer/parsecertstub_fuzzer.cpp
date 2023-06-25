@@ -39,7 +39,7 @@ static void FuzzTest(const uint8_t* data, size_t size)
     if (!datas.WriteUInt8Vector(cert)) {
         return;
     }
-    uint32_t code = static_cast<uint32_t>(IDlpPermissionService::InterfaceCode::PARSE_DLP_CERTIFICATE);
+    uint32_t code = static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::PARSE_DLP_CERTIFICATE);
     MessageParcel reply;
     MessageOption option;
     auto service = std::make_shared<DlpPermissionService>(SA_ID_DLP_PERMISSION_SERVICE, true);
