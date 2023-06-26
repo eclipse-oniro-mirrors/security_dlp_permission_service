@@ -1127,11 +1127,13 @@ napi_value NapiDlpPermission::SubscribeOpenDlpFile(const napi_env env, const nap
     std::lock_guard<std::mutex> lock(g_lockForOpenDlpFileSubscriber);
     if (IsSubscribeExist(env, syncContext)) {
         DLP_LOG_ERROR(LABEL, "Subscribe failed. The current subscriber has been existed");
+        delete subscriber;
         return nullptr;
     }
     int32_t result = DlpPermissionKit::RegisterOpenDlpFileCallback(syncContextPtr->subscriber);
     if (result != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "RegisterSandboxChangeCallback failed");
+        delete subscriber;
         DlpNapiThrow(env, result);
         return nullptr;
     }

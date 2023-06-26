@@ -14,9 +14,11 @@
  */
 
 #include "dlp_permission_kit_test.h"
+#include "gtest/gtest.h"
 #include <chrono>
 #include <thread>
 #include <unistd.h>
+#include <vector>
 #include "accesstoken_kit.h"
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
@@ -25,6 +27,7 @@
 #include "dlp_sandbox_change_callback_customize.h"
 #define private public
 #include "dlp_sandbox_change_callback.h"
+#include "open_dlp_file_callback.h"
 #undef private
 #include "hex_string.h"
 #include "securec.h"
@@ -64,8 +67,7 @@ const int32_t ACTION_SET_FC = 0x7ff;
 static AccessTokenID g_selfTokenId = 0;
 static AccessTokenID g_dlpManagerTokenId = 0;
 static int32_t g_selfUid = 0;
-static int32_t g_dlpUid = 20010031;
-constexpr const char* DLP_MANAGER_APP = "com.ohos.dlpmanager";
+const std::string DLP_MANAGER_APP = "com.ohos.dlpmanager";
 const std::string TEST_URI = "datashare:///media/file/8";
 const std::string TEST_UNEXIST_URI = "datashare:///media/file/1";
 }  // namespace
@@ -316,7 +318,7 @@ HWTEST_F(DlpPermissionKitTest, SetRetentionState01, TestSize.Level1)
     ASSERT_EQ(DLP_SERVICE_ERROR_API_ONLY_FOR_SANDBOX_ERROR, DlpPermissionKit::SetRetentionState(docUriVec));
     ASSERT_TRUE(TestSetSelfTokenId(tokenId));
     ASSERT_EQ(DLP_OK, DlpPermissionKit::SetRetentionState(docUriVec));
-    ASSERT_EQ(DLP_OK, setuid((g_dlpUid)));
+    TestMockApp(DLP_MANAGER_APP, 0, DEFAULT_USERID);
     ASSERT_TRUE(TestSetSelfTokenId(normalTokenId));
     retentionSandBoxInfoVec.clear();
     ASSERT_EQ(DLP_OK, DlpPermissionKit::GetRetentionSandboxList(DLP_MANAGER_APP, retentionSandBoxInfoVec));
@@ -937,6 +939,18 @@ public:
     virtual void DlpSandboxChangeCallback(DlpSandboxCallbackInfo& result) {}
 };
 
+class TestOpenDlpFileCallbackCustomize : public OpenDlpFileCallbackCustomize {
+public:
+    explicit TestOpenDlpFileCallbackCustomize() {}
+    ~TestOpenDlpFileCallbackCustomize() {}
+
+    void OnOpenDlpFile(OpenDlpFileCallbackInfo &result)
+    {
+        called = true;
+    }
+    bool called = false;
+};
+
 /**
  * @tc.name: RegisterDlpSandboxChangeCallback001
  * @tc.desc: RegisterDlpSandboxChangeCallback.
@@ -988,27 +1002,6 @@ HWTEST_F(DlpPermissionKitTest, RegisterDlpSandboxChangeCallback003, TestSize.Lev
 }
 
 /**
- * @tc.name: RegisterDlpSandboxChangeCallback004
- * @tc.desc: RegisterDlpSandboxChangeCallback.
- * @tc.type: FUNC
- * @tc.require: DTS2023040302317
- */
-HWTEST_F(DlpPermissionKitTest, RegisterDlpSandboxChangeCallback004, TestSize.Level1)
-{
-    const std::shared_ptr<DlpSandboxChangeCallbackCustomize> callbackPtr = std::make_shared<CbCustomizeTest>();
-    DlpPermissionKit::RegisterDlpSandboxChangeCallback(callbackPtr);
-    int32_t res = DlpPermissionKit::RegisterDlpSandboxChangeCallback(callbackPtr);
-    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, res);
-    for (int32_t i = 0; i < 1022; i++) {
-        const std::shared_ptr<DlpSandboxChangeCallbackCustomize> callbackPtrTemp = std::make_shared<CbCustomizeTest>();
-        DlpPermissionKit::RegisterDlpSandboxChangeCallback(callbackPtrTemp);
-    }
-    const std::shared_ptr<DlpSandboxChangeCallbackCustomize> callbackPtrTemp = std::make_shared<CbCustomizeTest>();
-    res = DlpPermissionKit::RegisterDlpSandboxChangeCallback(callbackPtrTemp);
-    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, res);
-}
-
-/**
  * @tc.name: DlpSandboxChangeCallback001
  * @tc.desc: DlpSandboxChangeCallback function test.
  * @tc.type: FUNC
@@ -1040,6 +1033,137 @@ HWTEST_F(DlpPermissionKitTest, DlpSandboxChangeCallback002, TestSize.Level1)
     callback->DlpSandboxStateChangeCallback(result);
     ASSERT_NE(callback->customizedCallback_, nullptr);
     callback->Stop();
+}
+
+/**
+ * @tc.name: RegisterOpenDlpFileCallback001
+ * @tc.desc: RegisterOpenDlpFileCallback.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionKitTest, RegisterOpenDlpFileCallback001, TestSize.Level1)
+{
+    int32_t uid = getuid();
+    AccessTokenID tokenId = GetSelfTokenID();
+    TestMockApp(DLP_MANAGER_APP, 0, DEFAULT_USERID);
+
+    const std::shared_ptr<TestOpenDlpFileCallbackCustomize> callbackPtr =
+        std::make_shared<TestOpenDlpFileCallbackCustomize>();
+    ASSERT_NE(callbackPtr, nullptr);
+    EXPECT_EQ(DLP_OK, DlpPermissionKit::RegisterOpenDlpFileCallback(callbackPtr));
+    SandboxInfo sandboxInfo;
+    EXPECT_EQ(DLP_OK,
+        DlpPermissionKit::InstallDlpSandbox(DLP_MANAGER_APP, FULL_CONTROL, DEFAULT_USERID, sandboxInfo, TEST_URI));
+    usleep(50000); // sleep 50ms
+    EXPECT_EQ(true, callbackPtr->called);
+    EXPECT_EQ(DLP_OK, DlpPermissionKit::UninstallDlpSandbox(DLP_MANAGER_APP, sandboxInfo.appIndex, DEFAULT_USERID));
+    EXPECT_EQ(DLP_OK, DlpPermissionKit::UnRegisterOpenDlpFileCallback(callbackPtr));
+
+    TestRecoverProcessInfo(uid, tokenId);
+}
+
+/**
+ * @tc.name: RegisterOpenDlpFileCallback002
+ * @tc.desc: RegisterOpenDlpFileCallback.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionKitTest, RegisterOpenDlpFileCallback002, TestSize.Level1)
+{
+    EXPECT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, DlpPermissionKit::RegisterOpenDlpFileCallback(nullptr));
+    EXPECT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, DlpPermissionKit::UnRegisterOpenDlpFileCallback(nullptr));
+}
+
+/**
+ * @tc.name: RegisterOpenDlpFileCallback003
+ * @tc.desc: RegisterOpenDlpFileCallback.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionKitTest, RegisterOpenDlpFileCallback003, TestSize.Level1)
+{
+    int32_t uid = getuid();
+    AccessTokenID tokenId = GetSelfTokenID();
+    TestMockApp(DLP_MANAGER_APP, 0, DEFAULT_USERID);
+
+    const std::shared_ptr<TestOpenDlpFileCallbackCustomize> callbackPtr =
+        std::make_shared<TestOpenDlpFileCallbackCustomize>();
+    ASSERT_NE(callbackPtr, nullptr);
+    EXPECT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, DlpPermissionKit::UnRegisterOpenDlpFileCallback(callbackPtr));
+
+    TestRecoverProcessInfo(uid, tokenId);
+}
+
+/**
+ * @tc.name: RegisterOpenDlpFileCallback004
+ * @tc.desc: RegisterOpenDlpFileCallback.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionKitTest, RegisterOpenDlpFileCallback004, TestSize.Level1)
+{
+    int32_t uid = getuid();
+    AccessTokenID tokenId = GetSelfTokenID();
+    TestMockApp(DLP_MANAGER_APP, 0, DEFAULT_USERID);
+
+    std::vector<std::shared_ptr<TestOpenDlpFileCallbackCustomize>> ptrList;
+    const std::shared_ptr<TestOpenDlpFileCallbackCustomize> callbackPtr =
+        std::make_shared<TestOpenDlpFileCallbackCustomize>();
+    ASSERT_NE(callbackPtr, nullptr);
+    EXPECT_EQ(DLP_OK, DlpPermissionKit::RegisterOpenDlpFileCallback(callbackPtr));
+    ptrList.emplace_back(callbackPtr);
+    EXPECT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, DlpPermissionKit::RegisterOpenDlpFileCallback(callbackPtr));
+    for (int32_t i = 0; i < 99; i++) {
+        const std::shared_ptr<TestOpenDlpFileCallbackCustomize> callback =
+            std::make_shared<TestOpenDlpFileCallbackCustomize>();
+        ASSERT_NE(callback, nullptr);
+        EXPECT_EQ(DLP_OK, DlpPermissionKit::RegisterOpenDlpFileCallback(callback));
+        ptrList.emplace_back(callback);
+    }
+    const std::shared_ptr<TestOpenDlpFileCallbackCustomize> callback =
+        std::make_shared<TestOpenDlpFileCallbackCustomize>();
+    ASSERT_NE(callback, nullptr);
+    EXPECT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, DlpPermissionKit::RegisterOpenDlpFileCallback(callback));
+    ptrList.emplace_back(callback);
+    for (auto& iter : ptrList) {
+        DlpPermissionKit::UnRegisterOpenDlpFileCallback(iter);
+    }
+
+    TestRecoverProcessInfo(uid, tokenId);
+}
+
+/**
+ * @tc.name: OpenDlpFileCallback001
+ * @tc.desc: OpenDlpFileCallback function test.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionKitTest, OpenDlpFileCallback001, TestSize.Level1)
+{
+    std::shared_ptr<TestOpenDlpFileCallbackCustomize> callbackPtr = nullptr;
+    std::shared_ptr<OpenDlpFileCallback> callback = std::make_shared<OpenDlpFileCallback>(callbackPtr);
+    ASSERT_NE(callback, nullptr);
+    OpenDlpFileCallbackInfo result;
+    callback->OnOpenDlpFile(result);
+    ASSERT_EQ(callback->customizedCallback_, nullptr);
+}
+
+/**
+ * @tc.name: OpenDlpFileCallback002
+ * @tc.desc: OpenDlpFileCallback function test.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionKitTest, OpenDlpFileCallback002, TestSize.Level1)
+{
+    std::shared_ptr<TestOpenDlpFileCallbackCustomize> callbackPtr =
+        std::make_shared<TestOpenDlpFileCallbackCustomize>();
+    std::shared_ptr<OpenDlpFileCallback> callback = std::make_shared<OpenDlpFileCallback>(callbackPtr);
+    ASSERT_NE(callback, nullptr);
+    OpenDlpFileCallbackInfo result;
+    callback->OnOpenDlpFile(result);
+    EXPECT_EQ(true, callbackPtr->called);
+    ASSERT_NE(callback->customizedCallback_, nullptr);
 }
 
 /**
@@ -1111,7 +1235,7 @@ HWTEST_F(DlpPermissionKitTest, GetDLPFileVisitRecord001, TestSize.Level1)
     ASSERT_EQ(DLP_OK,
         DlpPermissionKit::InstallDlpSandbox(DLP_MANAGER_APP, FULL_CONTROL, DEFAULT_USERID, sandboxInfo, TEST_URI));
     ASSERT_TRUE(sandboxInfo.appIndex != 0);
-    setuid(g_dlpUid);
+    TestMockApp(DLP_MANAGER_APP, 0, DEFAULT_USERID);
     ASSERT_TRUE(TestSetSelfTokenId(g_dlpManagerTokenId));
     ASSERT_EQ(DLP_OK, DlpPermissionKit::GetDLPFileVisitRecord(infoVec));
     DLP_LOG_INFO(LABEL, "GetDLPFileVisitRecord size:%{public}zu", infoVec.size());

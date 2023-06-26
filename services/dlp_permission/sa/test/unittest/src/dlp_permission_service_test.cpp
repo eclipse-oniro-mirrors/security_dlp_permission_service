@@ -20,6 +20,7 @@
 #include "app_uninstall_observer.h"
 #define private public
 #include "dlp_sandbox_change_callback_manager.h"
+#include "open_dlp_file_callback_manager.h"
 #undef private
 #include "dlp_permission.h"
 #include "dlp_permission_async_stub.h"
@@ -30,6 +31,9 @@
 #include "dlp_sandbox_change_callback_proxy.h"
 #include "dlp_sandbox_change_callback_stub.h"
 #include "dlp_sandbox_change_callback_death_recipient.h"
+#include "open_dlp_file_callback_proxy.h"
+#include "open_dlp_file_callback_stub.h"
+#include "open_dlp_file_callback_death_recipient.h"
 #include "file_operator.h"
 #include "retention_file_manager.h"
 #include "sandbox_json_manager.h"
@@ -265,6 +269,46 @@ HWTEST_F(DlpPermissionServiceTest, DlpSandboxChangeCallbackDeathRecipient001, Te
     bool result;
     int32_t res = dlpPermissionService_->UnRegisterDlpSandboxChangeCallback(result);
     ASSERT_EQ(DLP_CALLBACK_PARAM_INVALID, res);
+    recipient->OnRemoteDied(remote);
+}
+
+class TestOpenDlpFileCallback : public OpenDlpFileCallbackStub {
+public:
+    TestOpenDlpFileCallback() {}
+    ~TestOpenDlpFileCallback() {}
+
+    void OnOpenDlpFile(OpenDlpFileCallbackInfo& result) override
+    {
+        called_ = true;
+    }
+    bool called_ = false;
+};
+
+/**
+ * @tc.name: OpenDlpFileCallbackDeathRecipient001
+ * @tc.desc: OpenDlpFileCallbackDeathRecipient test
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionServiceTest, OpenDlpFileCallbackDeathRecipient001, TestSize.Level1)
+{
+    auto recipient = std::make_shared<OpenDlpFileCallbackDeathRecipient>();
+    ASSERT_NE(nullptr, recipient);
+
+    recipient->OnRemoteDied(nullptr); // remote is nullptr
+
+    // backup
+    OpenDlpFileCallbackManager::GetInstance().openDlpFileCallbackMap_.clear();
+    wptr<IRemoteObject> remote = new (std::nothrow) TestOpenDlpFileCallback();
+    sptr<IRemoteObject> callback = remote.promote();
+    int32_t res = OpenDlpFileCallbackManager::GetInstance().AddCallback(
+        getpid(), DEFAULT_USERID, DLP_MANAGER_APP, callback);
+    EXPECT_EQ(DLP_OK, res);
+    EXPECT_EQ(static_cast<uint32_t>(1), OpenDlpFileCallbackManager::GetInstance().openDlpFileCallbackMap_.size());
+    recipient->OnRemoteDied(remote); // remote is not nullptr
+    EXPECT_EQ(static_cast<uint32_t>(0), OpenDlpFileCallbackManager::GetInstance().openDlpFileCallbackMap_.size());
+    res = dlpPermissionService_->UnRegisterOpenDlpFileCallback(callback);
+    EXPECT_EQ(DLP_CALLBACK_PARAM_INVALID, res);
     recipient->OnRemoteDied(remote);
 }
 

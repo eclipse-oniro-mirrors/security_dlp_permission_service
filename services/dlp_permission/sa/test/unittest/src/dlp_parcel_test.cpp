@@ -90,6 +90,26 @@ HWTEST_F(DlpParcelTest, DlpParcelTest003, TestSize.Level1)
 }
 
 /**
+ * @tc.name: DlpParcelTest004
+ * @tc.desc: OpenDlpFileCallbackInfoParcel test
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpParcelTest, DlpParcelTest004, TestSize.Level1)
+{
+    OpenDlpFileCallbackInfoParcel info;
+    info.fileInfo.uri = "test";
+    info.fileInfo.timeStamp = 1;
+    Parcel out;
+
+    EXPECT_EQ(true, info.Marshalling(out));
+    auto result = OpenDlpFileCallbackInfoParcel::Unmarshalling(out);
+    ASSERT_NE(result, nullptr);
+    EXPECT_EQ("test", result->fileInfo.uri);
+    EXPECT_EQ(1, result->fileInfo.timeStamp);
+}
+
+/**
  * @tc.name: RetentionSandBoxInfo001
  * @tc.desc: RetentionSandBoxInfo test
  * @tc.type: FUNC

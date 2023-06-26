@@ -22,6 +22,8 @@
 #include "dlp_sandbox_change_callback_customize.h"
 #include "dlp_sandbox_change_callback_death_recipient.h"
 #include "dlp_sandbox_change_callback_proxy.h"
+#include "open_dlp_file_callback_proxy.h"
+#include "open_dlp_file_callback.h"
 
 namespace OHOS {
 namespace Security {
