@@ -405,7 +405,10 @@ std::vector<std::string> DlpPermissionService::InitConfig()
 int32_t DlpPermissionService::GetDlpSupportFileType(std::vector<std::string>& supportFileType)
 {
     supportFileType = InitConfig();
+#ifndef DLP_FUZZ_TEST
+    DLP_LOG_DEBUG(LABEL, "enter StartTimer");
     StartTimer();
+#endif
     return DLP_OK;
 }
 
