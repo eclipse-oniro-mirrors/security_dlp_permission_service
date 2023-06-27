@@ -22,6 +22,8 @@
 #include "dlp_sandbox_change_callback_manager.h"
 #undef private
 #include "dlp_permission.h"
+#include "dlp_permission_async_stub.h"
+#include "dlp_permission_kit.h"
 #include "dlp_permission_log.h"
 #include "dlp_policy.h"
 #include "dlp_sandbox_change_callback_proxy.h"
@@ -40,11 +42,20 @@ using namespace testing::ext;
 using namespace OHOS;
 using namespace OHOS::Security::DlpPermission;
 using namespace OHOS::Security::AccessToken;
+using namespace std::chrono;
 
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {
     LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionServiceTest"};
-const std::string TEST_URI = "/data/service/el1/public/dlp_permission_service1/retention_sandbox_info.json";
+const std::string TEST_URI = "/data/service/el1/public/dlp_permission_service1/retention_sandbox_info_test.json";
+static const int32_t DEFAULT_USERID = 100;
+static const std::string DLP_MANAGER_APP = "com.ohos.dlpmanager";
+const uint32_t ACCOUNT_LENGTH = 20;
+const uint32_t USER_NUM = 1;
+const int AUTH_PERM = 1;
+const int64_t DELTA_EXPIRY_TIME = 200;
+const uint64_t EXPIRY_TEN_MINUTE = 60 * 10;
+const uint32_t AESKEY_LEN = 32;
 }
 
 void DlpPermissionServiceTest::SetUpTestCase()
@@ -71,6 +82,81 @@ void DlpPermissionServiceTest::TearDown()
         dlpPermissionService_->appStateObserver_ = nullptr;
     }
     dlpPermissionService_ = nullptr;
+}
+
+uint64_t GetCurrentTimeSec(void)
+{
+    return static_cast<uint64_t>(duration_cast<seconds>(system_clock::now().time_since_epoch()).count());
+}
+
+void NewUserSample(AuthUserInfo& user)
+{
+    user.authAccount = "allowAccountA";
+    user.authPerm = FULL_CONTROL;
+    user.permExpiryTime = GetCurrentTimeSec() + EXPIRY_TEN_MINUTE;
+    user.authAccountType = CLOUD_ACCOUNT;
+}
+
+static uint8_t* GenerateRandArray(uint32_t len)
+{
+    uint8_t* str = new (std::nothrow) uint8_t[len];
+    if (str == nullptr) {
+        DLP_LOG_ERROR(LABEL, "New memory fail");
+        return nullptr;
+    }
+    for (uint32_t i = 0; i < len; i++) {
+        str[i] = rand() % 255; // uint8_t range 0 ~ 255
+    }
+    return str;
+}
+
+static std::string GenerateRandStr(uint32_t len)
+{
+    char* str = new (std::nothrow) char[len + 1];
+    if (str == nullptr) {
+        DLP_LOG_ERROR(LABEL, "New memory fail");
+        return "";
+    }
+    for (uint32_t i = 0; i < len; i++) {
+        str[i] = 33 + rand() % (126 - 33); // Visible Character Range 33 - 126
+    }
+    str[len] = '\0';
+    std::string res = str;
+    delete[] str;
+    return res;
+}
+
+void GeneratePolicy(PermissionPolicy& encPolicy, uint32_t ownerAccountLen, uint32_t aeskeyLen, uint32_t ivLen,
+    uint32_t userNum, uint32_t authAccountLen, uint32_t authPerm, int64_t deltaTime)
+{
+    uint64_t curTime = static_cast<uint64_t>(
+        std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    auto seed = std::time(nullptr);
+    std::srand(seed);
+    encPolicy.ownerAccount_ = GenerateRandStr(ownerAccountLen);
+    encPolicy.ownerAccountId_ = encPolicy.ownerAccount_;
+    encPolicy.ownerAccountType_ = DOMAIN_ACCOUNT;
+    uint8_t* key = GenerateRandArray(aeskeyLen);
+    encPolicy.SetAeskey(key, aeskeyLen);
+    if (key != nullptr) {
+        delete[] key;
+        key = nullptr;
+    }
+    uint8_t* iv = GenerateRandArray(ivLen);
+    encPolicy.SetIv(iv, ivLen);
+    if (iv != nullptr) {
+        delete[] iv;
+        iv = nullptr;
+    }
+    for (uint32_t user = 0; user < userNum; ++user) {
+        AuthUserInfo perminfo = {
+            .authAccount = GenerateRandStr(authAccountLen),
+            .authPerm = static_cast<DLPFileAccess>(authPerm),
+            .permExpiryTime = curTime + deltaTime,
+            .authAccountType = DOMAIN_ACCOUNT
+        };
+        encPolicy.authUsers_.emplace_back(perminfo);
+    }
 }
 
 /**
@@ -455,35 +541,35 @@ HWTEST_F(DlpPermissionServiceTest, VisitRecordJsonManager002, TestSize.Level1)
     std::string jsonStr = "{\"test\":[]}";
     Json callbackInfoJson = Json::parse(jsonStr, nullptr, false);
     visitRecordJsonManager_->FromJson(callbackInfoJson);
-    ASSERT_EQ(visitRecordJsonManager_->infoList_.size(), 0);
+    ASSERT_TRUE(visitRecordJsonManager_->infoList_.size() == 0);
     jsonStr = "{\"recordList\":[{\"bundleName\":\"\",\"docUri\":\"file://media/file/12\",\"userId\":100}]}";
     callbackInfoJson = Json::parse(jsonStr, nullptr, false);
     visitRecordJsonManager_->FromJson(callbackInfoJson);
-    ASSERT_EQ(visitRecordJsonManager_->infoList_.size(), 0);
+    ASSERT_TRUE(visitRecordJsonManager_->infoList_.size() == 0);
     jsonStr = "{\"recordList\":[{\"bundleName\":\"com.example.ohnotes\",\"docUri\":\"\",\"userId\":100}]}";
     callbackInfoJson = Json::parse(jsonStr, nullptr, false);
     visitRecordJsonManager_->FromJson(callbackInfoJson);
-    ASSERT_EQ(visitRecordJsonManager_->infoList_.size(), 0);
+    ASSERT_TRUE(visitRecordJsonManager_->infoList_.size() == 0);
     jsonStr =
         "{\"recordList\":[{\"bundleName\":\"com.example.ohnotes\",\"docUri\":\"file://media/file/12\",\"userId\":-1}]}";
     callbackInfoJson = Json::parse(jsonStr, nullptr, false);
     visitRecordJsonManager_->FromJson(callbackInfoJson);
-    ASSERT_EQ(visitRecordJsonManager_->infoList_.size(), 0);
+    ASSERT_TRUE(visitRecordJsonManager_->infoList_.size() == 0);
     jsonStr = "{\"recordList\":[{\"bundleName\":\"com.example.ohnotes\",\"docUri\":\"file://media/file/"
         "12\",\"userId\":100}]}";
     callbackInfoJson = Json::parse(jsonStr, nullptr, false);
     visitRecordJsonManager_->FromJson(callbackInfoJson);
-    ASSERT_EQ(visitRecordJsonManager_->infoList_.size(), 0);
+    ASSERT_TRUE(visitRecordJsonManager_->infoList_.size() == 0);
     jsonStr = "{\"recordList\":[{\"bundleName\":\"com.example.ohnotes\",\"docUri\":\"file://media/file/"
         "12\",\"userId\":100,\"timestamp\":-1}]}";
     callbackInfoJson = Json::parse(jsonStr, nullptr, false);
     visitRecordJsonManager_->FromJson(callbackInfoJson);
-    ASSERT_EQ(visitRecordJsonManager_->infoList_.size(), 0);
+    ASSERT_TRUE(visitRecordJsonManager_->infoList_.size() == 0);
     jsonStr = "{\"recordList\":[{\"bundleName\":\"com.example.ohnotes\",\"docUri\":\"file://media/file/"
         "12\",\"userId\":100,\"timestamp\":1686844687}]}";
     callbackInfoJson = Json::parse(jsonStr, nullptr, false);
     visitRecordJsonManager_->FromJson(callbackInfoJson);
-    ASSERT_EQ(visitRecordJsonManager_->infoList_.size(), 1);
+    ASSERT_TRUE(visitRecordJsonManager_->infoList_.size() == 1);
 }
 
 /**
@@ -499,7 +585,7 @@ HWTEST_F(DlpPermissionServiceTest, VisitRecordJsonManager003, TestSize.Level1)
     std::string jsonStr = "{\"recordList\":[{\"bundleName1\":\"\"}]}";
     Json callbackInfoJson = Json::parse(jsonStr, nullptr, false);
     visitRecordJsonManager_->FromJson(callbackInfoJson);
-    ASSERT_EQ(visitRecordJsonManager_->infoList_.size(), 0);
+    ASSERT_TRUE(visitRecordJsonManager_->infoList_.size() == 0);
     jsonStr = "{\"recordList\":[{\"bundleName\":1}]}";
     callbackInfoJson = Json::parse(jsonStr, nullptr, false);
     visitRecordJsonManager_->FromJson(callbackInfoJson);
@@ -563,4 +649,92 @@ HWTEST_F(DlpPermissionServiceTest, GetLocalAccountName001, TestSize.Level1)
     uint32_t userId = 0;
     ASSERT_EQ(0, GetLocalAccountName(&account, userId));
     ASSERT_EQ(-1, GetLocalAccountName(nullptr, userId));
+}
+
+/**
+ * @tc.name: OnStart001
+ * @tc.desc: OnStart test
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionServiceTest, OnStart001, TestSize.Level1)
+{
+    auto state = dlpPermissionService_->state_;
+    dlpPermissionService_->state_ = ServiceRunningState::STATE_RUNNING;
+    dlpPermissionService_->OnStart();
+    dlpPermissionService_->state_ = state;
+    ASSERT_EQ(true, dlpPermissionService_->RegisterAppStateObserver());
+}
+
+/**
+ * @tc.name: ParseDlpCertificate001
+ * @tc.desc: ParseDlpCertificate test
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionServiceTest, ParseDlpCertificate001, TestSize.Level1)
+{
+    std::vector<uint8_t> cert;
+    uint32_t flag = 0;
+    sptr<IDlpPermissionCallback> callback = nullptr;
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, dlpPermissionService_->ParseDlpCertificate(cert, flag, callback));
+}
+
+/**
+ * @tc.name: InsertDlpSandboxInfo001
+ * @tc.desc: InsertDlpSandboxInfo test
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionServiceTest, InsertDlpSandboxInfo001, TestSize.Level1)
+{
+    auto appStateObserver = dlpPermissionService_->appStateObserver_;
+    DlpSandboxInfo sandboxInfo;
+    dlpPermissionService_->InsertDlpSandboxInfo(sandboxInfo);
+    std::string bundleName;
+    int32_t appIndex = 111;
+    int32_t userId = 111;
+    ASSERT_TRUE(0 == dlpPermissionService_->DeleteDlpSandboxInfo(bundleName, appIndex, userId));
+    dlpPermissionService_->appStateObserver_ = appStateObserver;
+}
+
+/**
+ * @tc.name: GenerateDlpCertificate001
+ * @tc.desc: GenerateDlpCertificate test
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionServiceTest, GenerateDlpCertificate001, TestSize.Level1)
+{
+    DLP_LOG_ERROR(LABEL, "GenerateDlpCertificate001");
+    sptr<DlpPolicyParcel> policyParcel = new (std::nothrow) DlpPolicyParcel();
+    std::shared_ptr<GenerateDlpCertificateCallback> callback1 =
+        std::make_shared<ClientGenerateDlpCertificateCallback>();
+    sptr<IDlpPermissionCallback> callback = new (std::nothrow) DlpPermissionAsyncStub(callback1);
+
+    int32_t res = dlpPermissionService_->GenerateDlpCertificate(policyParcel, callback);
+    DLP_LOG_ERROR(LABEL, "GenerateDlpCertificate001 1");
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, res);
+    PermissionPolicy policy;
+    policy.ownerAccount_ = "testAccount";
+    policy.ownerAccountId_ = "testAccountId";
+    policy.ownerAccountType_ = CLOUD_ACCOUNT;
+
+    AuthUserInfo user;
+    NewUserSample(user);
+    policy.authUsers_.emplace_back(user);
+    policyParcel->policyParams_ = policy;
+    res = dlpPermissionService_->GenerateDlpCertificate(policyParcel, callback);
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, res);
+
+    GeneratePolicy(policy, ACCOUNT_LENGTH, AESKEY_LEN, AESKEY_LEN, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM,
+        DELTA_EXPIRY_TIME);
+    policyParcel->policyParams_ = policy;
+    res = dlpPermissionService_->GenerateDlpCertificate(policyParcel, callback);
+    ASSERT_EQ(DLP_OK, res);
+
+    delete callback;
+    callback = nullptr;
+    delete policyParcel;
+    policyParcel = nullptr;
 }
