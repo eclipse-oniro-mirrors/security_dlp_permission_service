@@ -163,7 +163,7 @@ void VisitRecordJsonManager::FromJson(const Json& jsonObject)
         DLP_LOG_ERROR(LABEL, "jsonObject not contains RECORDLIST");
         return;
     }
-    for (auto& json : jsonObject[RECORDLIST]) {
+    for (const auto& json : jsonObject[RECORDLIST]) {
         VisitRecordInfo info;
         if (VisitRecordInfoFromJson(json, info)) {
             AddVisitRecord(info.bundleName, info.userId, info.docUri);

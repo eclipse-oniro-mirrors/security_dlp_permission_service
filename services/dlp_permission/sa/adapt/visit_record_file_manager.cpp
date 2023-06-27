@@ -28,11 +28,10 @@ const std::string DLP_VISIT_RECORD_JSON_PATH = USER_INFO_BASE + PATH_SEPARATOR +
 }
 
 VisitRecordFileManager::VisitRecordFileManager()
+    : hasInit(false),
+      fileOperator_(std::make_shared<FileOperator>()),
+      visitRecordJsonManager_(std::make_shared<VisitRecordJsonManager>())
 {
-    hasInit = false;
-    fileOperator_ = std::make_shared<FileOperator>();
-    visitRecordJsonManager_ = std::make_shared<VisitRecordJsonManager>();
-
     Init();
 }
 

@@ -73,11 +73,11 @@ int32_t OpenDlpFileCallbackManager::AddCallback(
             DLP_LOG_ERROR(LABEL, "callbacks in %{public}d has reached limitation", pid);
             return DLP_SERVICE_ERROR_VALUE_INVALID;
         }
-        for (auto& callbackRecord : callbackList) {
-            if (callbackRecord.callbackObject == callback) {
-                DLP_LOG_ERROR(LABEL, "same callback already in %{public}d", pid);
-                return DLP_OK;
-            }
+        bool findCallBack = std::any_of(callbackList.begin(), callbackList.end(),
+            [callback](const auto& callbackRecord) { return callbackRecord.callbackObject == callback; });
+        if (findCallBack) {
+            DLP_LOG_ERROR(LABEL, "same callback already in %{public}d", pid);
+            return DLP_OK;
         }
     }
     OpenDlpFileCallbackRecord recordInstance;
@@ -177,7 +177,7 @@ void OpenDlpFileCallbackManager::ExecuteCallbackAsync(const DlpSandboxInfo& dlpS
     std::vector<sptr<IRemoteObject>> callbackList;
     {
         std::lock_guard<std::mutex> lock(mutex_);
-        for (auto& iter : openDlpFileCallbackMap_) {
+        for (const auto& iter : openDlpFileCallbackMap_) {
             auto list = iter.second;
             for (auto& it : list) {
                 if ((it.bundleName == dlpSandboxInfo.bundleName) && (it.userId == dlpSandboxInfo.userId)) {

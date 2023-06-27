@@ -331,7 +331,6 @@ HWTEST_F(DlpPermissionServiceTest, UninstallDlpSandbox001, TestSize.Level1)
         static_cast<DLPFileAccess>(dlpFileAccess), 100, sandboxInfo, "testUri"));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, dlpPermissionService_->UninstallDlpSandbox("", -1, -1));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, dlpPermissionService_->UninstallDlpSandbox("testbundle", -1, -1));
-    dlpFileAccess = 0;
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, dlpPermissionService_->UninstallDlpSandbox("testbundle", 1, -1));
 }
 

@@ -45,11 +45,9 @@ static void FuzzTest(const uint8_t* data, size_t size)
         return;
     }
     uint32_t type = static_cast<uint32_t>(dlpFileAccess);
-    type = 2;
     if (!datas.WriteUint32(type)) {
         return;
     }
-    userId = 100;
     if (!datas.WriteInt32(userId)) {
         return;
     }

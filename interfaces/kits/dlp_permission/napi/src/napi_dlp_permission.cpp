@@ -1100,12 +1100,10 @@ bool CompareOnAndOffRef(const napi_env env, napi_ref subscriberRef, napi_ref uns
 
 static bool IsSubscribeExist(napi_env env, OpenDlpFileSubscriberContext* subscribeCBInfo)
 {
-    for (const auto& it : g_openDlpFileSubscribers) {
-        if (CompareOnAndOffRef(env, it->callbackRef, subscribeCBInfo->callbackRef)) {
-            return true;
-        }
-    }
-    return false;
+    return std::any_of(g_openDlpFileSubscribers.begin(), g_openDlpFileSubscribers.end(),
+        [env, subscribeCBInfo](const auto& it) {
+            return CompareOnAndOffRef(env, it->callbackRef, subscribeCBInfo->callbackRef);
+        });
 }
 
 napi_value NapiDlpPermission::SubscribeOpenDlpFile(const napi_env env, const napi_value thisVar, napi_ref& callback)
@@ -1225,7 +1223,7 @@ napi_value NapiDlpPermission::UnSubscribeOpenDlpFile(const napi_env env, napi_re
                 return nullptr;
             }
             delete *iter;
-            iter = g_openDlpFileSubscribers.erase(iter);
+            g_openDlpFileSubscribers.erase(iter);
             break;
         }
     }

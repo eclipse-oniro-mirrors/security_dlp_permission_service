@@ -321,7 +321,7 @@ HWTEST_F(DlpFuseTest, OpenDlpFile002, TestSize.Level1)
     ASSERT_EQ(policy.ownerAccount_, prop.ownerAccount);
     ASSERT_EQ(policy.supportEveryone_, prop.supportEveryone);
     ASSERT_EQ(policy.everyonePerm_, prop.everyonePerm);
-    std::vector<AuthUserInfo>& authUsers = policy.authUsers_;
+    const std::vector<AuthUserInfo>& authUsers = policy.authUsers_;
     ASSERT_EQ(authUsers.size(), prop.authUsers.size());
 
     std::string contactAccount;

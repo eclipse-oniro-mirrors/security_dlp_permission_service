@@ -29,11 +29,10 @@ const std::string DLP_RETENTION_JSON_PATH = USER_INFO_BASE + PATH_SEPARATOR + "r
 }
 
 RetentionFileManager::RetentionFileManager()
+    : hasInit(false),
+      fileOperator_(std::make_shared<FileOperator>()),
+      sandboxJsonManager_(std::make_shared<SandboxJsonManager>())
 {
-    hasInit = false;
-    fileOperator_ = std::make_shared<FileOperator>();
-    sandboxJsonManager_ = std::make_shared<SandboxJsonManager>();
-
     EventFwk::MatchingSkills matchingSkills;
     matchingSkills.AddEvent(EventFwk::CommonEventSupport::COMMON_EVENT_PACKAGE_REMOVED);
     matchingSkills.AddEvent(EventFwk::CommonEventSupport::COMMON_EVENT_PACKAGE_FULLY_REMOVED);
