@@ -25,6 +25,7 @@
 #include "dlp_permission_async_stub.h"
 #include "dlp_permission_kit.h"
 #include "dlp_permission_log.h"
+#include "dlp_permission_serializer.h"
 #include "dlp_policy.h"
 #include "dlp_sandbox_change_callback_proxy.h"
 #include "dlp_sandbox_change_callback_stub.h"
@@ -56,6 +57,36 @@ const int AUTH_PERM = 1;
 const int64_t DELTA_EXPIRY_TIME = 200;
 const uint64_t EXPIRY_TEN_MINUTE = 60 * 10;
 const uint32_t AESKEY_LEN = 32;
+const std::string ENC_ACCOUNT_TYPE = "accountType";
+
+static const std::string POLICY_CIPHER = "8B6696A5DD160005C9DCAF43025CB240958D1E53D8E54D70DBED8C191411FA60C9B5D491B"
+    "AE3F34F124DBA805736FCBBC175D881818A93A0E07C844E9DF9503641BF2A98EC49BE0BB2"
+    "E75397187D6A3DC9DEED05A341BFBB761C39C906A9E1344E2CB25432B9C190E1948334A3E"
+    "CDB49C4340A7A8977685E4FDB6EB9E329AB5EEB1EEEBAEF158B0442F98C342714553E50477"
+    "040A52AD79068E6BC68A2F0E2E500DA721927EFF985BDDAF7BCF78FA3BEF2730B25EC05458"
+    "0FDB5BB4EBE7294737E8BF53C6F69C93D00FF41581F80DEA67BB5EBD253BC43729CB8B560B"
+    "893154240AC355CDF8381C84A093B39E5CD6CFF5746FD068F8AA1DEDF2C3C2A12AE2A5CDE9"
+    "075C8AE86654AE4C696C7BE8EB4AB67E25008DE09A5218EFA13B59BAFDFB11FFBB6AD637B9"
+    "B02F598FE511910A9C9F614AF0EA8312F62DAA6C2DA9DCAF973321C45139669E2482C2CB09"
+    "4E60361ED2BA908A4C07443251DFD70762E2180FA5E92DA1CE6D9AAF70761382FC1591BF57"
+    "554693AC55F7121757AA3A4827C9016E1FF5A84FB367047EA7BB28B8E19521BA72AE0BB7C3"
+    "192F5B6D6887034C85A08659850DABD211CD18D5295DD60EEB98FB27C3161134D984665658"
+    "3E29E7C166EB1475647889B62448145D146A8A7A777B346AB7476A10209ED8543965EF3ED3"
+    "C3F96C1CBEDA994243E3064975C23F32F4412F42753668E2CC447E88D6D73534B9F8DD4221"
+    "1074D2D819CA235343D012283F30368DE7C3FBC3A90128EF8CFA86C80C5D7167A3CA60B1F5"
+    "93DDAD90BFF1987C9243ACD4463B11B61A87B9953A0CAE8FD93ACC1E0B0140410451E5CD3A"
+    "E6BB61CF5B1004F46782D924D79CE5615084102A19604BF99D38BFA8B837210022B6AB21E4"
+    "33B5D4E23E278C8CB5EC79DAFEF2A39E3175A0FC6921C37345CAF8D0976677924775A620C5"
+    "E63418C6339525433182D8D127816B36B348B781E02DA65ACCBEAE950CFF8579586B18B77A"
+    "9960ADF484881811D6044E3CC68577599194439E43263E4095CD5399679B548CDFD7430CFB"
+    "F67A1AE23B4136931E10032E4CEACC278584B45337CF7C3E4FEA6D0F1424E3CBC490E4C1DF"
+    "FC2927AA3BC5F57471EAA7D12C65064015A25A11D98E25AFCDB1A1DD876A03EADA9CDD015C"
+    "1265A7FDFA9A766BA832F4B9A2B55B73A361D2A7BD68572EB2ABE1B1DC93904CB5ACD09807"
+    "6FE5089AD8DB2F38DF7D0A76C2C87E36C6F6A5E8190EA76F1F8F0B2493F1FDF38B220BEBC5"
+    "554B3038FE83FD7D10C35034CB3D9409AC9F8F762149A4B19CD0B18B87F4251722EFEFB601"
+    "6DDFACBB8E6F9BAFD48FCFE5370B5661EC4218A65246337E1E24B14CE14EB82CE3B553B560"
+    "8A9A94B1E2E7BAC7CC0B315228E870DF25DFBB8F77A916B8B08692A92D9CB5540DCF4AA4CF"
+    "9B196026908";
 }
 
 void DlpPermissionServiceTest::SetUpTestCase()
@@ -94,7 +125,7 @@ void NewUserSample(AuthUserInfo& user)
     user.authAccount = "allowAccountA";
     user.authPerm = FULL_CONTROL;
     user.permExpiryTime = GetCurrentTimeSec() + EXPIRY_TEN_MINUTE;
-    user.authAccountType = CLOUD_ACCOUNT;
+    user.authAccountType = OHOS::Security::DlpPermission::DlpAccountType::CLOUD_ACCOUNT;
 }
 
 static uint8_t* GenerateRandArray(uint32_t len)
@@ -135,7 +166,7 @@ void GeneratePolicy(PermissionPolicy& encPolicy, uint32_t ownerAccountLen, uint3
     std::srand(seed);
     encPolicy.ownerAccount_ = GenerateRandStr(ownerAccountLen);
     encPolicy.ownerAccountId_ = encPolicy.ownerAccount_;
-    encPolicy.ownerAccountType_ = DOMAIN_ACCOUNT;
+    encPolicy.ownerAccountType_ = OHOS::Security::DlpPermission::DlpAccountType::DOMAIN_ACCOUNT;
     uint8_t* key = GenerateRandArray(aeskeyLen);
     encPolicy.SetAeskey(key, aeskeyLen);
     if (key != nullptr) {
@@ -153,7 +184,7 @@ void GeneratePolicy(PermissionPolicy& encPolicy, uint32_t ownerAccountLen, uint3
             .authAccount = GenerateRandStr(authAccountLen),
             .authPerm = static_cast<DLPFileAccess>(authPerm),
             .permExpiryTime = curTime + deltaTime,
-            .authAccountType = DOMAIN_ACCOUNT
+            .authAccountType = OHOS::Security::DlpPermission::DlpAccountType::DOMAIN_ACCOUNT
         };
         encPolicy.authUsers_.emplace_back(perminfo);
     }
@@ -718,7 +749,7 @@ HWTEST_F(DlpPermissionServiceTest, GenerateDlpCertificate001, TestSize.Level1)
     PermissionPolicy policy;
     policy.ownerAccount_ = "testAccount";
     policy.ownerAccountId_ = "testAccountId";
-    policy.ownerAccountType_ = CLOUD_ACCOUNT;
+    policy.ownerAccountType_ = OHOS::Security::DlpPermission::DlpAccountType::CLOUD_ACCOUNT;
 
     AuthUserInfo user;
     NewUserSample(user);
@@ -737,4 +768,59 @@ HWTEST_F(DlpPermissionServiceTest, GenerateDlpCertificate001, TestSize.Level1)
     callback = nullptr;
     delete policyParcel;
     policyParcel = nullptr;
+}
+
+/**
+ * @tc.name: SerializeEncPolicyData001
+ * @tc.desc: SerializeEncPolicyData test
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionServiceTest, SerializeEncPolicyData001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "SerializeEncPolicyData001");
+    uint8_t* encPolicy = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(POLICY_CIPHER.c_str()));
+    const char* exInfo = "DlpRestorePolicyTest_NormalInput_ExtraInfo";
+    EncAndDecOptions encAndDecOptions = {
+        .opt = ALLOW_RECEIVER_DECRYPT_WITHOUT_USE_CLOUD,
+        .extraInfo = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(exInfo)),
+        .extraInfoLen = strlen(exInfo)
+    };
+    DLP_EncPolicyData encPolicyData = {
+        .dataLen = 0
+    };
+    nlohmann::json encDataJson;
+    int32_t res = DlpPermissionSerializer::GetInstance().SerializeEncPolicyData(encPolicyData, encDataJson);
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, res);
+    encPolicyData.dataLen = DLP_MAX_CERT_SIZE + 1;
+    res = DlpPermissionSerializer::GetInstance().SerializeEncPolicyData(encPolicyData, encDataJson);
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, res);
+    encPolicyData.dataLen = POLICY_CIPHER.size();
+    DLP_LOG_INFO(LABEL, "SerializeEncPolicyData001 encData.options.extraInfoLen %{public}d",
+        encAndDecOptions.extraInfoLen);
+    encPolicyData.options = encAndDecOptions;
+    res = DlpPermissionSerializer::GetInstance().SerializeEncPolicyData(encPolicyData, encDataJson);
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, res);
+    encPolicyData.data = encPolicy;
+    res = DlpPermissionSerializer::GetInstance().SerializeEncPolicyData(encPolicyData, encDataJson);
+    ASSERT_EQ(DLP_OK, res);
+    nlohmann::json decDataJson = encDataJson;
+    encAndDecOptions.extraInfoLen = 0;
+    encPolicyData.options = encAndDecOptions;
+    res = DlpPermissionSerializer::GetInstance().SerializeEncPolicyData(encPolicyData, encDataJson);
+    ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, res);
+    DLP_EncPolicyData decPolicyData;
+    res = DlpPermissionSerializer::GetInstance().DeserializeEncPolicyData(decDataJson, decPolicyData, true);
+    ASSERT_EQ(DLP_OK, res);
+    AccountType tempType;
+    encDataJson.at(ENC_ACCOUNT_TYPE).get_to(tempType);
+    decDataJson[ENC_ACCOUNT_TYPE] = "test";
+    res = DlpPermissionSerializer::GetInstance().DeserializeEncPolicyData(decDataJson, decPolicyData, true);
+    ASSERT_EQ(DLP_OK, res);
+    decDataJson.erase(ENC_ACCOUNT_TYPE);
+    res = DlpPermissionSerializer::GetInstance().DeserializeEncPolicyData(decDataJson, decPolicyData, true);
+    ASSERT_EQ(DLP_OK, res);
+    decDataJson[ENC_ACCOUNT_TYPE] = tempType;
+    res = DlpPermissionSerializer::GetInstance().DeserializeEncPolicyData(decDataJson, decPolicyData, true);
+    ASSERT_EQ(DLP_OK, res);
 }
