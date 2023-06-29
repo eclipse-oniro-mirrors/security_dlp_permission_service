@@ -4,7 +4,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -40,6 +40,11 @@ enum DlpPermissionServiceInterfaceCode {
     GET_VISTI_FILE_RECORD_LIST,
     REGISTER_OPEN_DLP_FILE_CALLBACK,
     UN_REGISTER_OPEN_DLP_FILE_CALLBACK,
+};
+
+enum DlpPermissionCallbackInterfaceCode {
+    ON_GENERATE_DLP_CERTIFICATE = 0,
+    ON_PARSE_DLP_CERTIFICATE,
 };
 } // namespace DlpPermission
 } // namespace Security

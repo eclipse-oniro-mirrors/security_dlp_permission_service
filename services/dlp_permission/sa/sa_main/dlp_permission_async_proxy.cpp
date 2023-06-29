@@ -16,6 +16,7 @@
 #include "dlp_permission_async_proxy.h"
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
+#include "dlp_permission_service_ipc_interface_code.h"
 #include "dlp_policy_parcel.h"
 
 namespace OHOS {
@@ -52,7 +53,7 @@ void DlpPermissionAsyncProxy::OnGenerateDlpCertificate(int32_t result, const std
         return;
     }
     int32_t requestResult = remote->SendRequest(
-        static_cast<uint32_t>(IDlpPermissionCallback::InterfaceCode::ON_GENERATE_DLP_CERTIFICATE), data, reply, option);
+        static_cast<uint32_t>(DlpPermissionCallbackInterfaceCode::ON_GENERATE_DLP_CERTIFICATE), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "SendRequest fail, result: %{public}d", requestResult);
         return;
@@ -95,7 +96,7 @@ void DlpPermissionAsyncProxy::OnParseDlpCertificate(int32_t result, const Permis
         return;
     }
     int32_t requestResult = remote->SendRequest(
-        static_cast<uint32_t>(IDlpPermissionCallback::InterfaceCode::ON_PARSE_DLP_CERTIFICATE), data, reply, option);
+        static_cast<uint32_t>(DlpPermissionCallbackInterfaceCode::ON_PARSE_DLP_CERTIFICATE), data, reply, option);
     if (requestResult != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "SendRequest fail, result: %{public}d", requestResult);
         return;

@@ -16,6 +16,7 @@
 #include "dlp_permission_async_stub.h"
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
+#include "dlp_permission_service_ipc_interface_code.h"
 #include "dlp_policy.h"
 #include "dlp_policy_parcel.h"
 #include "ipc_skeleton.h"
@@ -49,9 +50,9 @@ int32_t DlpPermissionAsyncStub::OnRemoteRequest(
     }
 
     switch (code) {
-        case static_cast<int32_t>(IDlpPermissionCallback::InterfaceCode::ON_GENERATE_DLP_CERTIFICATE):
+        case static_cast<int32_t>(DlpPermissionCallbackInterfaceCode::ON_GENERATE_DLP_CERTIFICATE):
             return OnGenerateDlpCertificateStub(data, reply);
-        case static_cast<int32_t>(IDlpPermissionCallback::InterfaceCode::ON_PARSE_DLP_CERTIFICATE):
+        case static_cast<int32_t>(DlpPermissionCallbackInterfaceCode::ON_PARSE_DLP_CERTIFICATE):
             return OnParseDlpCertificateStub(data, reply);
         default:
             return IPCObjectStub::OnRemoteRequest(code, data, reply, option);
