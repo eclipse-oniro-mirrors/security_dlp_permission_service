@@ -645,7 +645,7 @@ HWTEST_F(DlpPermissionServiceTest, VisitRecordFileManager001, TestSize.Level1)
  */
 HWTEST_F(DlpPermissionServiceTest, GetLocalAccountName001, TestSize.Level1)
 {
-    char* account = NULL;
+    char* account = nullptr;
     uint32_t userId = 0;
     ASSERT_EQ(0, GetLocalAccountName(&account, userId));
     ASSERT_EQ(-1, GetLocalAccountName(nullptr, userId));
