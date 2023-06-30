@@ -47,6 +47,7 @@ using namespace OHOS::AppExecFwk;
 namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionService" };
 static const std::string ALLOW_ABILITY[] = {"com.ohos.dlpmanager"};
+static const std::string ALLOW_ACTION[] = {"ohos.want.action.CREATE_FILE"};
 static const std::string DLP_MANAGER = "com.ohos.dlpmanager";
 static const std::chrono::seconds SLEEP_TIME(120);
 static const int REPEAT_TIME = 5;
@@ -291,10 +292,16 @@ int32_t DlpPermissionService::UninstallDlpSandbox(const std::string& bundleName,
     return DLP_OK;
 }
 
-static bool CheckAllowAbilityList(const std::string& bundleName)
+static bool CheckAllowAbilityList(const AAFwk::Want& want)
 {
-    return std::any_of(std::begin(ALLOW_ABILITY), std::end(ALLOW_ABILITY),
+    std::string bundleName = want.GetBundle();
+    std::string actionName = want.GetAction();
+    DLP_LOG_DEBUG(LABEL, "CheckAllowAbilityList %{public}s %{public}s", bundleName.c_str(), actionName.c_str());
+    bool bundleCheck = std::any_of(std::begin(ALLOW_ABILITY), std::end(ALLOW_ABILITY),
         [bundleName](const std::string& bundle) { return bundle == bundleName; });
+    bool actionCheck = std::any_of(std::begin(ALLOW_ACTION), std::end(ALLOW_ACTION),
+        [actionName](const std::string& action) { return action == actionName; });
+    return actionCheck || bundleCheck;
 }
 
 int32_t DlpPermissionService::GetSandboxExternalAuthorization(
@@ -311,12 +318,14 @@ int32_t DlpPermissionService::GetSandboxExternalAuthorization(
     }
 
     bool isSandbox = false;
+
     appStateObserver_->IsInDlpSandbox(isSandbox, sandboxUid);
-    if (isSandbox && !CheckAllowAbilityList(want.GetBundle())) {
+    if (isSandbox && !CheckAllowAbilityList(want)) {
         authType = DENY_START_ABILITY;
     } else {
         authType = ALLOW_START_ABILITY;
     }
+
     return DLP_OK;
 }
 
