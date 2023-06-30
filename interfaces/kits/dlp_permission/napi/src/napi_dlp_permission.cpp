@@ -247,9 +247,6 @@ void NapiDlpPermission::OpenDlpFileComplete(napi_env env, napi_status status, vo
 
 napi_value NapiDlpPermission::IsDlpFile(napi_env env, napi_callback_info cbInfo)
 {
-    if (!IsSystemApp(env)) {
-        return nullptr;
-    }
     auto* asyncContext = new (std::nothrow) DlpFileAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
