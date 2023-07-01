@@ -124,6 +124,11 @@ bool DlpFileKits::IsDlpFile(int32_t dlpFd)
         DLP_LOG_ERROR(LABEL, "dlp file fd is invalid");
         return false;
     }
+    off_t curPos = lseek(dlpFd, 0, SEEK_CUR);
+    if (curPos < 0) {
+        DLP_LOG_ERROR(LABEL, "seek dlp file current failed, %{public}s", strerror(errno));
+        return false;
+    }
 
     if (lseek(dlpFd, 0, SEEK_SET) == static_cast<off_t>(-1)) {
         DLP_LOG_ERROR(LABEL, "seek dlp file start failed, %{public}s", strerror(errno));
@@ -132,6 +137,11 @@ bool DlpFileKits::IsDlpFile(int32_t dlpFd)
     struct DlpHeader head;
     if (read(dlpFd, &head, sizeof(struct DlpHeader)) != sizeof(struct DlpHeader)) {
         DLP_LOG_ERROR(LABEL, "can not read dlp file head, %{public}s", strerror(errno));
+        return false;
+    }
+
+    if (lseek(dlpFd, curPos, SEEK_SET) < 0) {
+        DLP_LOG_ERROR(LABEL, "seek dlp file back failed, %{public}s", strerror(errno));
         return false;
     }
 
