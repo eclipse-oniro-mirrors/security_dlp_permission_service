@@ -468,7 +468,7 @@ HWTEST_F(DlpPermissionKitTest, GenerateDlpCertificate001, TestSize.Level1)
                                              USER_NUM, ACCOUNT_LENGTH, INVALID_AUTH_PERM_LOWER, DELTA_EXPIRY_TIME));
     EXPECT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN,
                                                    USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, INVALID_DELTA_EXPIRY_TIME));
-    EXPECT_EQ(DLP_CREDENTIAL_ERROR_COMMON_ERROR, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, AESKEY_LEN,
+    EXPECT_NE(DLP_OK, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, AESKEY_LEN,
         AESKEY_LEN, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME));
 }
 

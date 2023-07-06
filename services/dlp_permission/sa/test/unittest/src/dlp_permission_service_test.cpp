@@ -91,33 +91,6 @@ static const std::string POLICY_CIPHER = "8B6696A5DD160005C9DCAF43025CB240958D1E
     "6DDFACBB8E6F9BAFD48FCFE5370B5661EC4218A65246337E1E24B14CE14EB82CE3B553B560"
     "8A9A94B1E2E7BAC7CC0B315228E870DF25DFBB8F77A916B8B08692A92D9CB5540DCF4AA4CF"
     "9B196026908";
-}
-
-void DlpPermissionServiceTest::SetUpTestCase()
-{}
-
-void DlpPermissionServiceTest::TearDownTestCase()
-{}
-
-void DlpPermissionServiceTest::SetUp()
-{
-    DLP_LOG_INFO(LABEL, "setup");
-    if (dlpPermissionService_ != nullptr) {
-        return;
-    }
-    dlpPermissionService_ = std::make_shared<DlpPermissionService>(3521, true);
-    ASSERT_NE(nullptr, dlpPermissionService_);
-    dlpPermissionService_->appStateObserver_ = new (std::nothrow) AppStateObserver();
-    ASSERT_TRUE(dlpPermissionService_->appStateObserver_ != nullptr);
-}
-
-void DlpPermissionServiceTest::TearDown()
-{
-    if (dlpPermissionService_ != nullptr) {
-        dlpPermissionService_->appStateObserver_ = nullptr;
-    }
-    dlpPermissionService_ = nullptr;
-}
 
 uint64_t GetCurrentTimeSec(void)
 {
@@ -132,7 +105,7 @@ void NewUserSample(AuthUserInfo& user)
     user.authAccountType = OHOS::Security::DlpPermission::DlpAccountType::CLOUD_ACCOUNT;
 }
 
-static uint8_t* GenerateRandArray(uint32_t len)
+uint8_t* GenerateRandArray(uint32_t len)
 {
     uint8_t* str = new (std::nothrow) uint8_t[len];
     if (str == nullptr) {
@@ -145,7 +118,7 @@ static uint8_t* GenerateRandArray(uint32_t len)
     return str;
 }
 
-static std::string GenerateRandStr(uint32_t len)
+std::string GenerateRandStr(uint32_t len)
 {
     char* str = new (std::nothrow) char[len + 1];
     if (str == nullptr) {
@@ -192,6 +165,33 @@ void GeneratePolicy(PermissionPolicy& encPolicy, uint32_t ownerAccountLen, uint3
         };
         encPolicy.authUsers_.emplace_back(perminfo);
     }
+}
+}
+
+void DlpPermissionServiceTest::SetUpTestCase()
+{}
+
+void DlpPermissionServiceTest::TearDownTestCase()
+{}
+
+void DlpPermissionServiceTest::SetUp()
+{
+    DLP_LOG_INFO(LABEL, "setup");
+    if (dlpPermissionService_ != nullptr) {
+        return;
+    }
+    dlpPermissionService_ = std::make_shared<DlpPermissionService>(SA_ID_DLP_PERMISSION_SERVICE, true);
+    ASSERT_NE(nullptr, dlpPermissionService_);
+    dlpPermissionService_->appStateObserver_ = new (std::nothrow) AppStateObserver();
+    ASSERT_TRUE(dlpPermissionService_->appStateObserver_ != nullptr);
+}
+
+void DlpPermissionServiceTest::TearDown()
+{
+    if (dlpPermissionService_ != nullptr) {
+        dlpPermissionService_->appStateObserver_ = nullptr;
+    }
+    dlpPermissionService_ = nullptr;
 }
 
 /**
@@ -781,14 +781,14 @@ HWTEST_F(DlpPermissionServiceTest, InsertDlpSandboxInfo001, TestSize.Level1)
  */
 HWTEST_F(DlpPermissionServiceTest, GenerateDlpCertificate001, TestSize.Level1)
 {
-    DLP_LOG_ERROR(LABEL, "GenerateDlpCertificate001");
+    DLP_LOG_DEBUG(LABEL, "GenerateDlpCertificate001");
     sptr<DlpPolicyParcel> policyParcel = new (std::nothrow) DlpPolicyParcel();
     std::shared_ptr<GenerateDlpCertificateCallback> callback1 =
         std::make_shared<ClientGenerateDlpCertificateCallback>();
     sptr<IDlpPermissionCallback> callback = new (std::nothrow) DlpPermissionAsyncStub(callback1);
 
     int32_t res = dlpPermissionService_->GenerateDlpCertificate(policyParcel, callback);
-    DLP_LOG_ERROR(LABEL, "GenerateDlpCertificate001 1");
+    DLP_LOG_DEBUG(LABEL, "GenerateDlpCertificate001 1");
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, res);
     PermissionPolicy policy;
     policy.ownerAccount_ = "testAccount";
@@ -801,17 +801,28 @@ HWTEST_F(DlpPermissionServiceTest, GenerateDlpCertificate001, TestSize.Level1)
     policyParcel->policyParams_ = policy;
     res = dlpPermissionService_->GenerateDlpCertificate(policyParcel, callback);
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, res);
+}
 
+/**
+ * @tc.name: GenerateDlpCertificate002
+ * @tc.desc: GenerateDlpCertificate test
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionServiceTest, GenerateDlpCertificate002, TestSize.Level1)
+{
+    DLP_LOG_DEBUG(LABEL, "GenerateDlpCertificate002");
+    sptr<DlpPolicyParcel> policyParcel = new (std::nothrow) DlpPolicyParcel();
+    std::shared_ptr<GenerateDlpCertificateCallback> callback1 =
+        std::make_shared<ClientGenerateDlpCertificateCallback>();
+    sptr<IDlpPermissionCallback> callback = new (std::nothrow) DlpPermissionAsyncStub(callback1);
+
+    PermissionPolicy policy;
     GeneratePolicy(policy, ACCOUNT_LENGTH, AESKEY_LEN, AESKEY_LEN, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM,
         DELTA_EXPIRY_TIME);
-    policyParcel->policyParams_ = policy;
-    res = dlpPermissionService_->GenerateDlpCertificate(policyParcel, callback);
+    policyParcel->policyParams_.CopyPermissionPolicy(policy);
+    int32_t res = dlpPermissionService_->GenerateDlpCertificate(policyParcel, callback);
     ASSERT_EQ(DLP_OK, res);
-
-    delete callback;
-    callback = nullptr;
-    delete policyParcel;
-    policyParcel = nullptr;
 }
 
 /**
@@ -822,7 +833,7 @@ HWTEST_F(DlpPermissionServiceTest, GenerateDlpCertificate001, TestSize.Level1)
  */
 HWTEST_F(DlpPermissionServiceTest, SerializeEncPolicyData001, TestSize.Level1)
 {
-    DLP_LOG_INFO(LABEL, "SerializeEncPolicyData001");
+    DLP_LOG_DEBUG(LABEL, "SerializeEncPolicyData001");
     uint8_t* encPolicy = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(POLICY_CIPHER.c_str()));
     const char* exInfo = "DlpRestorePolicyTest_NormalInput_ExtraInfo";
     EncAndDecOptions encAndDecOptions = {
@@ -840,7 +851,7 @@ HWTEST_F(DlpPermissionServiceTest, SerializeEncPolicyData001, TestSize.Level1)
     res = DlpPermissionSerializer::GetInstance().SerializeEncPolicyData(encPolicyData, encDataJson);
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, res);
     encPolicyData.dataLen = POLICY_CIPHER.size();
-    DLP_LOG_INFO(LABEL, "SerializeEncPolicyData001 encData.options.extraInfoLen %{public}d",
+    DLP_LOG_DEBUG(LABEL, "SerializeEncPolicyData001 encData.options.extraInfoLen %{public}d",
         encAndDecOptions.extraInfoLen);
     encPolicyData.options = encAndDecOptions;
     res = DlpPermissionSerializer::GetInstance().SerializeEncPolicyData(encPolicyData, encDataJson);
