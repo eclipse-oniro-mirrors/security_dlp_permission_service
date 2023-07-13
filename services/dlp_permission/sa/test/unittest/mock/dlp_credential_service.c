@@ -226,11 +226,11 @@ err:
 }
 
 int DLP_PackPolicy(
-    uint32_t userId, const DLP_PackPolicyParams* packParams, DLP_PackPolicyCallback callback, uint64_t* requestId)
+    uint32_t osAccountId, const DLP_PackPolicyParams* params, DLP_PackPolicyCallback callback, uint64_t* requestId)
 {
-    (void)userId;
-    if (packParams == NULL || packParams->data == NULL || packParams->featureName == NULL || callback == NULL ||
-        requestId == NULL || packParams->dataLen == 0 || packParams->dataLen > MAX_CERT_LEN) {
+    (void)osAccountId;
+    if (params == NULL || params->data == NULL || params->featureName == NULL || callback == NULL ||
+        requestId == NULL || params->dataLen == 0 || params->dataLen > MAX_CERT_LEN) {
         DLP_LOG_ERROR("Callback or params is null");
         return DLP_ERROR;
     }
@@ -240,7 +240,7 @@ int DLP_PackPolicy(
     pthread_mutex_unlock(&g_mutex);
     *requestId = id;
 
-    PackPolicyCallbackTaskPara* taskParams = TransPackPolicyParams(packParams, callback, *requestId);
+    PackPolicyCallbackTaskPara* taskParams = TransPackPolicyParams(params, callback, *requestId);
     if (taskParams == NULL) {
         return DLP_ERROR;
     }
@@ -298,10 +298,10 @@ err:
 }
 
 int DLP_RestorePolicy(
-    uint32_t userId, const DLP_EncPolicyData* encData, DLP_RestorePolicyCallback callback, uint64_t* requestId)
+    uint32_t osAccountId, const DLP_EncPolicyData* params, DLP_RestorePolicyCallback callback, uint64_t* requestId)
 {
-    if (encData == NULL || encData->data == NULL || encData->featureName == NULL || callback == NULL ||
-        requestId == NULL || encData->dataLen == 0 || encData->dataLen > MAX_CERT_LEN) {
+    if (params == NULL || params->data == NULL || params->featureName == NULL || callback == NULL ||
+        requestId == NULL || params->dataLen == 0 || params->dataLen > MAX_CERT_LEN) {
         DLP_LOG_ERROR("Callback or params is null");
         return DLP_ERROR;
     }
@@ -311,7 +311,7 @@ int DLP_RestorePolicy(
     pthread_mutex_unlock(&g_mutex);
     *requestId = id;
 
-    RestorePolicyCallbackTaskPara* taskParams = TransEncPolicyData(encData, callback, *requestId, userId);
+    RestorePolicyCallbackTaskPara* taskParams = TransEncPolicyData(params, callback, *requestId, osAccountId);
     if (taskParams == NULL) {
         return DLP_ERROR;
     }
