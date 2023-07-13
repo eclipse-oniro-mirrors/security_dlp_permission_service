@@ -82,7 +82,7 @@ public:
 private:
     bool Initialize() const;
 
-    void InsertDlpSandboxInfo(DlpSandboxInfo &sandboxInfo);
+    bool InsertDlpSandboxInfo(DlpSandboxInfo& sandboxInfo, bool hasRetention);
     uint32_t DeleteDlpSandboxInfo(const std::string& bundleName, int32_t appIndex, int32_t userId);
     bool GetCallerBundleName(const uint32_t tokenId, std::string& bundleName);
     bool RemoveRetentionInfo(std::vector<RetentionSandBoxInfo>& retentionSandBoxInfoVec, RetentionInfo& info);

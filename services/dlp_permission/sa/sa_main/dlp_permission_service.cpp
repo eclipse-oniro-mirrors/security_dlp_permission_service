@@ -170,11 +170,11 @@ int32_t DlpPermissionService::ParseDlpCertificate(
     return DlpCredential::GetInstance().ParseDlpCertificate(cert, flag, callback);
 }
 
-void DlpPermissionService::InsertDlpSandboxInfo(DlpSandboxInfo &sandboxInfo)
+bool DlpPermissionService::InsertDlpSandboxInfo(DlpSandboxInfo& sandboxInfo, bool hasRetention)
 {
     if (appStateObserver_ == nullptr) {
         DLP_LOG_WARN(LABEL, "Failed to get app state observer instance");
-        return;
+        return false;
     }
 
     AppExecFwk::BundleInfo info;
@@ -182,14 +182,17 @@ void DlpPermissionService::InsertDlpSandboxInfo(DlpSandboxInfo &sandboxInfo)
     if (bundleMgrClient.GetSandboxBundleInfo(sandboxInfo.bundleName, sandboxInfo.appIndex, sandboxInfo.userId, info) !=
         DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Get sandbox bundle info fail");
-        return;
+        if (hasRetention) {
+            RetentionFileManager::GetInstance().ClearUnreservedSandbox();
+        }
+        return false;
     } else {
         sandboxInfo.uid = info.uid;
     }
     sandboxInfo.tokenId = AccessToken::AccessTokenKit::GetHapTokenID(sandboxInfo.userId, sandboxInfo.bundleName,
         sandboxInfo.appIndex);
     appStateObserver_->AddDlpSandboxInfo(sandboxInfo);
-    return;
+    return true;
 }
 
 int32_t DlpPermissionService::InstallDlpSandbox(const std::string& bundleName, DLPFileAccess dlpFileAccess,
@@ -236,7 +239,9 @@ int32_t DlpPermissionService::InstallDlpSandbox(const std::string& bundleName, D
     dlpSandboxInfo.uri = uri;
     dlpSandboxInfo.timeStamp = static_cast<uint64_t>(
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    InsertDlpSandboxInfo(dlpSandboxInfo);
+    if (!InsertDlpSandboxInfo(dlpSandboxInfo, !isNeedInstall)) {
+        return DLP_SERVICE_ERROR_INSTALL_SANDBOX_FAIL;
+    }
     sandboxInfo.appIndex = appIndex;
     sandboxInfo.tokenId = dlpSandboxInfo.tokenId;
     VisitRecordFileManager::GetInstance().AddVisitRecord(bundleName, userId, uri);

@@ -765,7 +765,7 @@ HWTEST_F(DlpPermissionServiceTest, InsertDlpSandboxInfo001, TestSize.Level1)
 {
     auto appStateObserver = dlpPermissionService_->appStateObserver_;
     DlpSandboxInfo sandboxInfo;
-    dlpPermissionService_->InsertDlpSandboxInfo(sandboxInfo);
+    dlpPermissionService_->InsertDlpSandboxInfo(sandboxInfo, false);
     std::string bundleName;
     int32_t appIndex = 111;
     int32_t userId = 111;
