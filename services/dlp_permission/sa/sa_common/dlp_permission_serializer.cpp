@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -18,6 +18,7 @@
 #include "dlp_permission_log.h"
 #include "dlp_policy.h"
 #include "hex_string.h"
+
 #include "securec.h"
 
 namespace OHOS {
@@ -62,7 +63,7 @@ DlpPermissionSerializer& DlpPermissionSerializer::GetInstance()
     return instance;
 }
 
-static int32_t ReadUint8ArrayFromJson(const nlohmann::json& permJson, uint8_t** buff, uint32_t& buffLen,
+static int32_t ReadUint8ArrayFromJson(const unordered_json& permJson, uint8_t** buff, uint32_t& buffLen,
     const std::string& keyName, const std::string& lenName)
 {
     if (!lenName.empty() && permJson.find(lenName) != permJson.end() && permJson.at(lenName).is_number()) {
@@ -117,7 +118,7 @@ static void TransHexStringToByte(std::string& outer, const std::string& input)
     delete[] buff;
 }
 
-static void SerializeAuthUserInfo(nlohmann::json& authUsersJson,
+static void SerializeAuthUserInfo(unordered_json& authUsersJson,
     const AuthUserInfo& userInfo)
 {
     bool read = false;
@@ -143,20 +144,20 @@ static void SerializeAuthUserInfo(nlohmann::json& authUsersJson,
             break;
     }
 
-    nlohmann::json rightInfoJson;
+    unordered_json rightInfoJson;
     rightInfoJson[READ_INDEX] = read;
     rightInfoJson[EDIT_INDEX] = edit;
     rightInfoJson[FC_INDEX] = fullCtrl;
-    nlohmann::json accountRight;
+    unordered_json accountRight;
     accountRight[RIGHT_INDEX] = rightInfoJson;
     authUsersJson[userInfo.authAccount.c_str()] = accountRight;
     return;
 }
 
-static int32_t DeserializeAuthUserInfo(const nlohmann::json& accountInfoJson,
+static int32_t DeserializeAuthUserInfo(const unordered_json& accountInfoJson,
     AuthUserInfo& userInfo)
 {
-    nlohmann::json rightInfoJson;
+    unordered_json rightInfoJson;
     if (accountInfoJson.find(RIGHT_INDEX) != accountInfoJson.end() && accountInfoJson.at(RIGHT_INDEX).is_object()) {
         accountInfoJson.at(RIGHT_INDEX).get_to(rightInfoJson);
     }
@@ -186,9 +187,9 @@ static int32_t DeserializeAuthUserInfo(const nlohmann::json& accountInfoJson,
     return DLP_OK;
 }
 
-static nlohmann::json SerializeAuthUserList(const std::vector<AuthUserInfo>& authUsers)
+static unordered_json SerializeAuthUserList(const std::vector<AuthUserInfo>& authUsers)
 {
-    nlohmann::json authUsersJson;
+    unordered_json authUsersJson;
     for (auto it = authUsers.begin(); it != authUsers.end(); ++it) {
         SerializeAuthUserInfo(authUsersJson, *it);
     }
@@ -196,13 +197,13 @@ static nlohmann::json SerializeAuthUserList(const std::vector<AuthUserInfo>& aut
 }
 
 static int32_t DeserializeAuthUserList(
-    const nlohmann::json& authUsersJson, std::vector<AuthUserInfo>& userList)
+    const unordered_json& authUsersJson, std::vector<AuthUserInfo>& userList)
 {
     for (auto iter = authUsersJson.begin(); iter != authUsersJson.end(); ++iter) {
         AuthUserInfo authInfo;
         std::string name = iter.key();
         authInfo.authAccount = name;
-        nlohmann::json accountInfo = iter.value();
+        unordered_json accountInfo = iter.value();
         int32_t res = DeserializeAuthUserInfo(accountInfo, authInfo);
         if (res == DLP_OK) {
             userList.emplace_back(authInfo);
@@ -214,7 +215,7 @@ static int32_t DeserializeAuthUserList(
     return DLP_OK;
 }
 
-static void SerializeEveryoneInfo(const PermissionPolicy& policy, nlohmann::json& permInfoJson)
+static void SerializeEveryoneInfo(const PermissionPolicy& policy, unordered_json& permInfoJson)
 {
     if (policy.supportEveryone_) {
         bool read = false;
@@ -240,20 +241,20 @@ static void SerializeEveryoneInfo(const PermissionPolicy& policy, nlohmann::json
                 break;
         }
 
-        nlohmann::json rightInfoJson;
+        unordered_json rightInfoJson;
         rightInfoJson[READ_INDEX] = read;
         rightInfoJson[EDIT_INDEX] = edit;
         rightInfoJson[FC_INDEX] = fullCtrl;
-        nlohmann::json everyoneJson;
+        unordered_json everyoneJson;
         everyoneJson[RIGHT_INDEX] = rightInfoJson;
         permInfoJson[EVERYONE_INDEX] = everyoneJson;
         return;
     }
 }
 
-int32_t DlpPermissionSerializer::SerializeDlpPermission(const PermissionPolicy& policy, nlohmann::json& permInfoJson)
+int32_t DlpPermissionSerializer::SerializeDlpPermission(const PermissionPolicy& policy, unordered_json& permInfoJson)
 {
-    nlohmann::json authUsersJson = SerializeAuthUserList(policy.authUsers_);
+    unordered_json authUsersJson = SerializeAuthUserList(policy.authUsers_);
 
     uint32_t keyHexLen = policy.GetAeskeyLen() * BYTE_TO_HEX_OPER_LENGTH + 1;
     char* keyHex = new (std::nothrow) char[keyHexLen];
@@ -282,7 +283,7 @@ int32_t DlpPermissionSerializer::SerializeDlpPermission(const PermissionPolicy& 
         return res;
     }
 
-    nlohmann::json policyJson;
+    unordered_json policyJson;
     policyJson[KIA_INDEX] = "";
     policyJson[OWNER_ACCOUNT_NAME] = policy.ownerAccount_;
     policyJson[OWNER_ACCOUNT_ID] = policy.ownerAccountId_;
@@ -292,7 +293,7 @@ int32_t DlpPermissionSerializer::SerializeDlpPermission(const PermissionPolicy& 
     policyJson[ACCOUNT_INDEX] = authUsersJson;
     SerializeEveryoneInfo(policy, policyJson);
 
-    nlohmann::json fileEnc;
+    unordered_json fileEnc;
     fileEnc[AESKEY] = keyHex;
     fileEnc[AESKEY_LEN] = policy.GetAeskeyLen();
     fileEnc[IV] = ivHex;
@@ -307,14 +308,14 @@ int32_t DlpPermissionSerializer::SerializeDlpPermission(const PermissionPolicy& 
     return DLP_OK;
 }
 
-static void GetPolicyJson(const nlohmann::json& permJson, nlohmann::json& plainPolicyJson)
+static void GetPolicyJson(const unordered_json& permJson, unordered_json& plainPolicyJson)
 {
     if (permJson.find(ONLINE_POLICY_CONTENT) != permJson.end() && permJson.at(ONLINE_POLICY_CONTENT).is_string()) {
         std::string plainHexPolicy;
         permJson.at(ONLINE_POLICY_CONTENT).get_to(plainHexPolicy);
         std::string plainPolicy;
         TransHexStringToByte(plainPolicy, plainHexPolicy);
-        plainPolicyJson = nlohmann::json::parse(plainPolicy);
+        plainPolicyJson = unordered_json::parse(plainPolicy);
         if (plainPolicyJson.is_discarded() || (!plainPolicyJson.is_object())) {
             DLP_LOG_ERROR(LABEL, "JsonObj is discarded");
             return;
@@ -324,17 +325,17 @@ static void GetPolicyJson(const nlohmann::json& permJson, nlohmann::json& plainP
     }
 }
 
-static void DeserializeEveryoneInfo(const nlohmann::json& policyJson, PermissionPolicy& policy)
+static void DeserializeEveryoneInfo(const unordered_json& policyJson, PermissionPolicy& policy)
 {
     if (policyJson.find(EVERYONE_INDEX) == policyJson.end() || !policyJson.at(EVERYONE_INDEX).is_object()) {
         return;
     }
 
     policy.supportEveryone_ = true;
-    nlohmann::json everyoneInfoJson;
+    unordered_json everyoneInfoJson;
     policyJson.at(EVERYONE_INDEX).get_to(everyoneInfoJson);
 
-    nlohmann::json rightInfoJson;
+    unordered_json rightInfoJson;
     if (everyoneInfoJson.find(RIGHT_INDEX) == everyoneInfoJson.end() ||
         !everyoneInfoJson.at(RIGHT_INDEX).is_object()) {
         return;
@@ -361,17 +362,17 @@ static void DeserializeEveryoneInfo(const nlohmann::json& policyJson, Permission
     }
 }
 
-int32_t DlpPermissionSerializer::DeserializeDlpPermission(const nlohmann::json& permJson, PermissionPolicy& policy)
+int32_t DlpPermissionSerializer::DeserializeDlpPermission(const unordered_json& permJson, PermissionPolicy& policy)
 {
-    nlohmann::json plainPolicyJson;
+    unordered_json plainPolicyJson;
     GetPolicyJson(permJson, plainPolicyJson);
 
-    nlohmann::json policyJson;
+    unordered_json policyJson;
     if (plainPolicyJson.find(POLICY_INDEX) != plainPolicyJson.end() && plainPolicyJson.at(POLICY_INDEX).is_object()) {
         plainPolicyJson.at(POLICY_INDEX).get_to(policyJson);
     }
 
-    nlohmann::json accountListJson;
+    unordered_json accountListJson;
     if (policyJson.find(ACCOUNT_INDEX) != policyJson.end() && policyJson.at(ACCOUNT_INDEX).is_object()) {
         policyJson.at(ACCOUNT_INDEX).get_to(accountListJson);
     }
@@ -394,7 +395,7 @@ int32_t DlpPermissionSerializer::DeserializeDlpPermission(const nlohmann::json& 
     }
     policy.ownerAccountType_ = CLOUD_ACCOUNT;
 
-    nlohmann::json fileEncJson;
+    unordered_json fileEncJson;
     if (plainPolicyJson.find(FILE_INDEX) != plainPolicyJson.end() && plainPolicyJson.at(FILE_INDEX).is_object()) {
         plainPolicyJson.at(FILE_INDEX).get_to(fileEncJson);
     }
@@ -423,7 +424,7 @@ int32_t DlpPermissionSerializer::DeserializeDlpPermission(const nlohmann::json& 
     return DLP_OK;
 }
 
-int32_t DlpPermissionSerializer::SerializeEncPolicyData(const DLP_EncPolicyData& encData, nlohmann::json& encDataJson)
+int32_t DlpPermissionSerializer::SerializeEncPolicyData(const DLP_EncPolicyData& encData, unordered_json& encDataJson)
 {
     if (encData.dataLen == 0 || encData.dataLen > DLP_MAX_CERT_SIZE) {
         DLP_LOG_ERROR(LABEL, "Cert lenth %{public}d is invalid", encData.dataLen);
@@ -474,7 +475,7 @@ int32_t DlpPermissionSerializer::SerializeEncPolicyData(const DLP_EncPolicyData&
     return DLP_OK;
 }
 
-int32_t DlpPermissionSerializer::DeserializeEncPolicyData(const nlohmann::json &encDataJson, DLP_EncPolicyData &encData,
+int32_t DlpPermissionSerializer::DeserializeEncPolicyData(const unordered_json &encDataJson, DLP_EncPolicyData &encData,
     bool isOff)
 {
     if (encDataJson.find(ENC_ACCOUNT_TYPE) != encDataJson.end() && encDataJson.at(ENC_ACCOUNT_TYPE).is_number()) {

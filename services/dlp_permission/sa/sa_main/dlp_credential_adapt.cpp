@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -155,7 +155,7 @@ static void DlpPackPolicyCallback(uint64_t requestId, int errorCode, DLP_EncPoli
         callback->OnGenerateDlpCertificate(DLP_SERVICE_ERROR_VALUE_INVALID, std::vector<uint8_t>());
         return;
     }
-    nlohmann::json encDataJson;
+    unordered_json encDataJson;
     int32_t res = DlpPermissionSerializer::GetInstance().SerializeEncPolicyData(*outParams, encDataJson);
     if (res != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "Serialize fail");
@@ -166,9 +166,9 @@ static void DlpPackPolicyCallback(uint64_t requestId, int errorCode, DLP_EncPoli
     callback->OnGenerateDlpCertificate(errorCode, cert);
 }
 
-static std::vector<uint8_t> GetOfflineCert(const nlohmann::json& jsonObj)
+static std::vector<uint8_t> GetOfflineCert(const unordered_json& jsonObj)
 {
-    nlohmann::json encPolicyJson;
+    unordered_json encPolicyJson;
     if (jsonObj.find(LOCAL_ENCRYPTED_CERT) != jsonObj.end() && jsonObj.at(LOCAL_ENCRYPTED_CERT).is_object()) {
         jsonObj.at(LOCAL_ENCRYPTED_CERT).get_to(encPolicyJson);
     }
@@ -211,7 +211,7 @@ static void DlpRestorePolicyCallback(uint64_t requestId, int errorCode, DLP_Rest
         return;
     }
     policyStr[outParams->dataLen] = '\0';
-    auto jsonObj = nlohmann::json::parse(policyStr, policyStr + outParams->dataLen + 1, nullptr, false);
+    auto jsonObj = unordered_json::parse(policyStr, policyStr + outParams->dataLen + 1, nullptr, false);
     if (jsonObj.is_discarded() || (!jsonObj.is_object())) {
         DLP_LOG_ERROR(LABEL, "JsonObj is discarded");
         delete[] policyStr;
@@ -407,7 +407,7 @@ int32_t DlpCredential::ParseDlpCertificate(const std::vector<uint8_t>& cert, uin
     sptr<IDlpPermissionCallback>& callback)
 {
     std::string encDataJsonStr(cert.begin(), cert.end());
-    auto jsonObj = nlohmann::json::parse(encDataJsonStr, nullptr, false);
+    auto jsonObj = unordered_json::parse(encDataJsonStr, nullptr, false);
     if (jsonObj.is_discarded() || (!jsonObj.is_object())) {
         DLP_LOG_ERROR(LABEL, "JsonObj is discarded");
         return DLP_SERVICE_ERROR_JSON_OPERATE_FAIL;

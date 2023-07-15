@@ -844,7 +844,7 @@ HWTEST_F(DlpPermissionServiceTest, SerializeEncPolicyData001, TestSize.Level1)
     DLP_EncPolicyData encPolicyData = {
         .dataLen = 0
     };
-    nlohmann::json encDataJson;
+    unordered_json encDataJson;
     int32_t res = DlpPermissionSerializer::GetInstance().SerializeEncPolicyData(encPolicyData, encDataJson);
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, res);
     encPolicyData.dataLen = DLP_MAX_CERT_SIZE + 1;
@@ -859,7 +859,7 @@ HWTEST_F(DlpPermissionServiceTest, SerializeEncPolicyData001, TestSize.Level1)
     encPolicyData.data = encPolicy;
     res = DlpPermissionSerializer::GetInstance().SerializeEncPolicyData(encPolicyData, encDataJson);
     ASSERT_EQ(DLP_OK, res);
-    nlohmann::json decDataJson = encDataJson;
+    unordered_json decDataJson = encDataJson;
     encAndDecOptions.extraInfoLen = 0;
     encPolicyData.options = encAndDecOptions;
     res = DlpPermissionSerializer::GetInstance().SerializeEncPolicyData(encPolicyData, encDataJson);

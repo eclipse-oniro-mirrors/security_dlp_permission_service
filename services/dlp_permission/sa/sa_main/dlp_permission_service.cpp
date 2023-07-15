@@ -148,7 +148,7 @@ int32_t DlpPermissionService::GenerateDlpCertificate(
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
-    nlohmann::json jsonObj;
+    unordered_json jsonObj;
     int32_t res = DlpPermissionSerializer::GetInstance().SerializeDlpPermission(policyParcel->policyParams_, jsonObj);
     if (res != DLP_OK) {
         return res;
