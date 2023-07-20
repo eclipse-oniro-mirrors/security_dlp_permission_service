@@ -31,8 +31,12 @@ static void FuzzTest(const uint8_t* data, size_t size)
 {
     MessageParcel datas;
     datas.WriteInterfaceToken(IDlpPermissionService::GetDescriptor());
-    uint32_t tokenId = static_cast<uint32_t>(size);
-    if (!datas.ReadUint32(tokenId)) {
+    if (size <= sizeof(uint32_t)) {
+        return;
+    }
+    const uint32_t* temp = reinterpret_cast<const uint32_t*>(data);
+    uint32_t tokenId = temp[0];
+    if (!datas.WriteUint32(tokenId)) {
         return;
     }
     uint32_t code = static_cast<uint32_t>(DlpPermissionServiceInterfaceCode::QUERY_DLP_FILE_ACCESS_BY_TOKEN_ID);
