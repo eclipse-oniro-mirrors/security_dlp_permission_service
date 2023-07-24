@@ -475,7 +475,10 @@ int32_t DlpPermissionService::UnRegisterOpenDlpFileCallback(const sptr<IRemoteOb
     int32_t pid = IPCSkeleton::GetCallingPid();
     int32_t res = OpenDlpFileCallbackManager::GetInstance().RemoveCallback(pid, callback);
     appStateObserver_->RemoveCallbackListener(pid);
+#ifndef DLP_FUZZ_TEST
+    DLP_LOG_DEBUG(LABEL, "enter StartTimer");
     StartTimer();
+#endif
     return res;
 }
 
@@ -554,7 +557,10 @@ int32_t DlpPermissionService::CancelRetentionState(const std::vector<std::string
             }
         }
     }
+#ifndef DLP_FUZZ_TEST
+    DLP_LOG_DEBUG(LABEL, "enter StartTimer");
     StartTimer();
+#endif
     return res;
 }
 
@@ -672,7 +678,10 @@ int32_t DlpPermissionService::GetDLPFileVisitRecord(std::vector<VisitedDLPFileIn
         std::lock_guard<std::mutex> lock(terminalMutex_);
         result = VisitRecordFileManager::GetInstance().GetVisitRecordList(callerBundleName, userId, infoVec);
     }
+#ifndef DLP_FUZZ_TEST
+    DLP_LOG_DEBUG(LABEL, "enter StartTimer");
     StartTimer();
+#endif
     return result;
 }
 
