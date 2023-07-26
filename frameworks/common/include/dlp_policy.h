@@ -88,7 +88,7 @@ struct DlpProperty {
     std::string ownerAccount;
     std::string ownerAccountId;
     std::vector<AuthUserInfo> authUsers;
-    std::string contractAccount;
+    std::string contactAccount;
     DlpAccountType ownerAccountType = INVALID_ACCOUNT;
     bool offlineAccess = false;
     bool supportEveryone = false;

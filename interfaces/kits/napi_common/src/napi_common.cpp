@@ -14,6 +14,7 @@
  */
 
 #include "napi_common.h"
+#include <algorithm>
 #include <unistd.h>
 #include "dlp_file_kits.h"
 #include "dlp_permission.h"
@@ -85,7 +86,7 @@ static bool ConvertOpenDlpFileCallbackInfo(napi_env env, napi_value value, const
     NAPI_CALL_BASE(env, napi_set_named_property(env, value, "uri", element), false);
     element = nullptr;
     NAPI_CALL_BASE(env, napi_create_bigint_uint64(env, result.timeStamp, &element), false);
-    NAPI_CALL_BASE(env, napi_set_named_property(env, value, "recentOpenTime", element), false);
+    NAPI_CALL_BASE(env, napi_set_named_property(env, value, "lastOpenTime", element), false);
     return true;
 };
 
@@ -599,14 +600,14 @@ bool GetGenerateDlpFileParams(
         return false;
     }
 
-    if (!GetInt64Value(env, argv[PARAM0], asyncContext.plainTxtFd)) {
+    if (!GetInt64Value(env, argv[PARAM0], asyncContext.plaintextFd)) {
         DLP_LOG_ERROR(LABEL, "js get plain fd fail");
-        ThrowParamError(env, "plainTxtFd", "number");
+        ThrowParamError(env, "plaintextFd", "number");
         return false;
     }
-    if (!GetInt64Value(env, argv[PARAM1], asyncContext.cipherTxtFd)) {
+    if (!GetInt64Value(env, argv[PARAM1], asyncContext.ciphertextFd)) {
         DLP_LOG_ERROR(LABEL, "js get cipher fd fail");
-        ThrowParamError(env, "cipherTxtFd", "number");
+        ThrowParamError(env, "ciphertextFd", "number");
         return false;
     }
 
@@ -625,10 +626,10 @@ bool GetGenerateDlpFileParams(
 
     DLP_LOG_DEBUG(LABEL,
         "Fd: %{private}ld, ownerAccount: %{private}s,ownerAccountId: %{private}s, ownerAccountType: %{private}d, "
-        "contractAccount: %{private}s, size: %{private}zu",
-        asyncContext.plainTxtFd, asyncContext.property.ownerAccount.c_str(),
+        "contactAccount: %{private}s, size: %{private}zu",
+        asyncContext.plaintextFd, asyncContext.property.ownerAccount.c_str(),
         asyncContext.property.ownerAccountId.c_str(), asyncContext.property.ownerAccountType,
-        asyncContext.property.contractAccount.c_str(), asyncContext.property.authUsers.size());
+        asyncContext.property.contactAccount.c_str(), asyncContext.property.authUsers.size());
     return true;
 }
 
@@ -642,9 +643,9 @@ bool GetOpenDlpFileParams(const napi_env env, const napi_callback_info info, Dlp
         return false;
     }
 
-    if (!GetInt64Value(env, argv[PARAM0], asyncContext.cipherTxtFd)) {
+    if (!GetInt64Value(env, argv[PARAM0], asyncContext.ciphertextFd)) {
         DLP_LOG_ERROR(LABEL, "js get cipher fd fail");
-        ThrowParamError(env, "cipherTxtFd", "number");
+        ThrowParamError(env, "ciphertextFd", "number");
         return false;
     }
 
@@ -655,7 +656,7 @@ bool GetOpenDlpFileParams(const napi_env env, const napi_callback_info info, Dlp
         }
     }
 
-    DLP_LOG_DEBUG(LABEL, "Fd: %{private}ld", asyncContext.cipherTxtFd);
+    DLP_LOG_DEBUG(LABEL, "Fd: %{private}ld", asyncContext.ciphertextFd);
     return true;
 }
 
@@ -669,13 +670,13 @@ bool GetIsDlpFileParams(const napi_env env, const napi_callback_info info, DlpFi
         return false;
     }
 
-    if (!GetInt64Value(env, argv[PARAM0], asyncContext.cipherTxtFd)) {
+    if (!GetInt64Value(env, argv[PARAM0], asyncContext.ciphertextFd)) {
         DLP_LOG_ERROR(LABEL, "js get cipher fd fail");
         ThrowParamError(env, "fd", "number");
         return false;
     }
 
-    if (asyncContext.cipherTxtFd < 0) {
+    if (asyncContext.ciphertextFd < 0) {
         DlpNapiThrow(env, ERR_JS_INVALID_PARAMETER, GetJsErrMsg(ERR_JS_INVALID_PARAMETER));
         return false;
     }
@@ -687,7 +688,7 @@ bool GetIsDlpFileParams(const napi_env env, const napi_callback_info info, DlpFi
         }
     }
 
-    DLP_LOG_DEBUG(LABEL, "Fd: %{private}ld", asyncContext.cipherTxtFd);
+    DLP_LOG_DEBUG(LABEL, "Fd: %{private}ld", asyncContext.ciphertextFd);
     return true;
 }
 
@@ -729,6 +730,37 @@ bool GetDlpLinkFileParams(const napi_env env, const napi_callback_info info, Dlp
     return true;
 }
 
+bool GetLinkFileStatusParams(const napi_env env, const napi_callback_info info, DlpLinkFileAsyncContext& asyncContext)
+{
+    napi_value thisVar = nullptr;
+    size_t argc = PARAM_SIZE_ONE;
+    napi_value argv[PARAM_SIZE_ONE] = {nullptr};
+    NAPI_CALL_BASE(env, napi_get_cb_info(env, info, &argc, argv, &thisVar, nullptr), false);
+    if (thisVar == nullptr) {
+        DLP_LOG_ERROR(LABEL, "This var is null");
+        return false;
+    }
+
+    if (!NapiCheckArgc(env, argc, PARAM_SIZE_ONE)) {
+        return false;
+    }
+
+    NAPI_CALL_BASE(env, napi_unwrap(env, thisVar, reinterpret_cast<void**>(&asyncContext.dlpFileNative)), false);
+    if (asyncContext.dlpFileNative == nullptr) {
+        DLP_LOG_ERROR(LABEL, "cannot get native object");
+        return false;
+    }
+
+    if (argc == PARAM_SIZE_ONE) {
+        if (!ParseCallback(env, argv[PARAM0], asyncContext.callbackRef)) {
+            ThrowParamError(env, "callback", "function");
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool GetRecoverDlpFileParams(
     const napi_env env, const napi_callback_info info, RecoverDlpFileAsyncContext& asyncContext)
 {
@@ -751,9 +783,9 @@ bool GetRecoverDlpFileParams(
         return false;
     }
 
-    if (!GetInt64Value(env, argv[PARAM0], asyncContext.plainFd)) {
+    if (!GetInt64Value(env, argv[PARAM0], asyncContext.plaintextFd)) {
         DLP_LOG_ERROR(LABEL, "js get cipher fd fail");
-        ThrowParamError(env, "plainFd", "number");
+        ThrowParamError(env, "plaintextFd", "number");
         return false;
     }
 
@@ -764,7 +796,7 @@ bool GetRecoverDlpFileParams(
         }
     }
 
-    DLP_LOG_DEBUG(LABEL, "plainFd: %{private}ld", asyncContext.plainFd);
+    DLP_LOG_DEBUG(LABEL, "plaintextFd: %{private}ld", asyncContext.plaintextFd);
     return true;
 }
 
@@ -1106,11 +1138,14 @@ bool GetDlpProperty(napi_env env, napi_value jsObject, DlpProperty& property)
         return false;
     }
     property.ownerAccountType = static_cast<DlpAccountType>(type);
-    if (!GetVectorAuthUserByKey(env, jsObject, "authUserList", property.authUsers)) {
-        DLP_LOG_ERROR(LABEL, "js get auth users fail");
-        return false;
+    napi_value authUserListObj = GetNapiValue(env, jsObject, "authUserList");
+    if (authUserListObj != nullptr) {
+        if (!GetVectorAuthUser(env, authUserListObj, property.authUsers)) {
+            DLP_LOG_ERROR(LABEL, "js get auth users fail");
+            return false;
+        }
     }
-    if (!GetStringValueByKey(env, jsObject, "contractAccount", property.contractAccount)) {
+    if (!GetStringValueByKey(env, jsObject, "contactAccount", property.contactAccount)) {
         DLP_LOG_ERROR(LABEL, "js get contact account fail");
         return false;
     }
@@ -1118,23 +1153,20 @@ bool GetDlpProperty(napi_env env, napi_value jsObject, DlpProperty& property)
         DLP_LOG_ERROR(LABEL, "js get offline access flag fail");
         return false;
     }
-    if (!GetBoolValueByKey(env, jsObject, "supportEveryone", property.supportEveryone)) {
-        DLP_LOG_ERROR(LABEL, "js get supportEveryone flag fail");
-        return false;
-    }
 
-    int64_t perm;
-    if (!GetInt64ValueByKey(env, jsObject, "everyonePerm", perm)) {
-        DLP_LOG_ERROR(LABEL, "js get auth perm fail");
-        return false;
+    napi_value everyoneAccessListObj = GetNapiValue(env, jsObject, "everyoneAccessList");
+    if (everyoneAccessListObj != nullptr) {
+        std::vector<uint32_t> permList = {};
+        if (!GetVectorUint32(env, everyoneAccessListObj, permList)) {
+            DLP_LOG_ERROR(LABEL, "js get everyoneAccessList fail");
+            return false;
+        }
+        if (permList.size() > 0) {
+            uint32_t perm = *(std::max_element(permList.begin(), permList.end()));
+            property.everyonePerm = static_cast<DLPFileAccess>(perm);
+            property.supportEveryone = true;
+        }
     }
-    property.everyonePerm = static_cast<DLPFileAccess>(perm);
-
-    DLP_LOG_DEBUG(LABEL,
-        "ownerAccount: %{private}s, authUserList size: %{private}zu, contractAccount: %{private}s, ownerAccountType: "
-        "%{private}d, offlineAccess: %{private}d",
-        property.ownerAccount.c_str(), property.authUsers.size(), property.contractAccount.c_str(),
-        property.ownerAccountType, property.offlineAccess);
     return true;
 }
 
@@ -1175,7 +1207,7 @@ napi_value VisitInfoToJs(napi_env env, const std::vector<VisitedDLPFileInfo>& in
 
         napi_value timestampJs;
         NAPI_CALL(env, napi_create_int64(env, item.visitTimestamp, &timestampJs));
-        NAPI_CALL(env, napi_set_named_property(env, objInfo, "recentOpenTime", timestampJs));
+        NAPI_CALL(env, napi_set_named_property(env, objInfo, "lastOpenTime", timestampJs));
         DLP_LOG_DEBUG(LABEL, "Get visitTimestamp %{public}ld", item.visitTimestamp);
         napi_value uriJs;
         NAPI_CALL(env, napi_create_string_utf8(env, item.docUri.c_str(), NAPI_AUTO_LENGTH, &uriJs));
@@ -1192,13 +1224,13 @@ napi_value DlpPropertyToJs(napi_env env, const DlpProperty& property)
     napi_value dlpPropertyJs = nullptr;
     NAPI_CALL(env, napi_create_object(env, &dlpPropertyJs));
 
-    napi_value everyonePermJs;
-    NAPI_CALL(env, napi_create_int64(env, property.everyonePerm, &everyonePermJs));
-    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "everyonePerm", everyonePermJs));
-
-    napi_value supportEveryoneJs;
-    napi_get_boolean(env, property.supportEveryone, &supportEveryoneJs);
-    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "supportEveryone", supportEveryoneJs));
+    napi_value everyoneAccessListJs = nullptr;
+    if (property.supportEveryone) {
+        everyoneAccessListJs = VectorUint32ToJs(env, {property.everyonePerm});
+    } else {
+        everyoneAccessListJs = VectorUint32ToJs(env, {});
+    }
+    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "everyoneAccessList", everyoneAccessListJs));
 
     napi_value offlineAccessJs;
     napi_get_boolean(env, property.offlineAccess, &offlineAccessJs);
@@ -1217,8 +1249,8 @@ napi_value DlpPropertyToJs(napi_env env, const DlpProperty& property)
 
     napi_value contractAccountJs;
     NAPI_CALL(
-        env, napi_create_string_utf8(env, property.contractAccount.c_str(), NAPI_AUTO_LENGTH, &contractAccountJs));
-    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "contractAccount", contractAccountJs));
+        env, napi_create_string_utf8(env, property.contactAccount.c_str(), NAPI_AUTO_LENGTH, &contractAccountJs));
+    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "contactAccount", contractAccountJs));
 
     napi_value ownerAccountTypeJs;
     NAPI_CALL(env, napi_create_int64(env, property.ownerAccountType, &ownerAccountTypeJs));
@@ -1298,6 +1330,22 @@ napi_value VectorStringToJs(napi_env env, const std::vector<std::string>& value)
     for (const auto& iter : value) {
         napi_value jsValue = nullptr;
         if (napi_create_string_utf8(env, iter.c_str(), NAPI_AUTO_LENGTH, &jsValue) == napi_ok) {
+            if (napi_set_element(env, jsArray, index, jsValue) == napi_ok) {
+                index++;
+            }
+        }
+    }
+    return jsArray;
+}
+
+napi_value VectorUint32ToJs(napi_env env, const std::vector<uint32_t>& value)
+{
+    napi_value jsArray = nullptr;
+    uint32_t index = 0;
+    NAPI_CALL(env, napi_create_array(env, &jsArray));
+    for (const auto& iter : value) {
+        napi_value jsValue = nullptr;
+        if (napi_create_int64(env, iter, &jsValue) == napi_ok) {
             if (napi_set_element(env, jsArray, index, jsValue) == napi_ok) {
                 index++;
             }
@@ -1547,6 +1595,32 @@ bool GetVectorDocUriByKey(napi_env env, napi_value jsObject, const std::string& 
             return false;
         }
         docUriVec.push_back(docUri);
+    }
+    return true;
+}
+
+bool GetVectorUint32(napi_env env, napi_value jsObject, std::vector<uint32_t>& resultVec)
+{
+    bool isArray = false;
+    NAPI_CALL_BASE(env, napi_is_array(env, jsObject, &isArray), false);
+    if (!isArray) {
+        DLP_LOG_ERROR(LABEL, "value is not array");
+        return false;
+    }
+    uint32_t size = 0;
+    if (napi_get_array_length(env, jsObject, &size) != napi_ok) {
+        DLP_LOG_ERROR(LABEL, "js get array size fail");
+        return false;
+    }
+    for (uint32_t i = 0; i < size; i++) {
+        napi_value obj;
+        NAPI_CALL_BASE(env, napi_get_element(env, jsObject, i, &obj), false);
+        uint32_t num;
+        if (!GetUint32Value(env, obj, num)) {
+            DLP_LOG_ERROR(LABEL, "js get num fail");
+            return false;
+        }
+        resultVec.emplace_back(num);
     }
     return true;
 }

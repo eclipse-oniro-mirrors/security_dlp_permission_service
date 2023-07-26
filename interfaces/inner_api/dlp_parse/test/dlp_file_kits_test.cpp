@@ -61,7 +61,7 @@ void CreateDlpFileFd()
     prop.ownerAccount = "ohosAnonymousName";
     prop.ownerAccountId = "ohosAnonymousName";
     prop.ownerAccountType = CLOUD_ACCOUNT;
-    prop.contractAccount = "test@test.com";
+    prop.contactAccount = "test@test.com";
 
     std::shared_ptr<DlpFile> filePtr;
     int ret = DlpFileManager::GetInstance().GenerateDlpFile(plainFileFd, g_dlpFileFd, prop, filePtr);

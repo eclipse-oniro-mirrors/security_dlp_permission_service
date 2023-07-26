@@ -61,6 +61,14 @@ int32_t DlpLinkManager::AddDlpLinkFile(std::shared_ptr<DlpFile>& filePtr, const 
         return DLP_FUSE_ERROR_LINKFILE_EXIST;
     }
 
+    for (auto iter = g_DlpLinkFileNameMap_.begin(); iter != g_DlpLinkFileNameMap_.end(); iter++) {
+        DlpLinkFile* linkFileNode = iter->second;
+        if ((linkFileNode != nullptr) && (filePtr == linkFileNode->GetDlpFilePtr())) {
+            DLP_LOG_ERROR(LABEL, "Add link file fail, this dlp file already has link file");
+            return DLP_FUSE_ERROR_LINKFILE_EXIST;
+        }
+    }
+
     DlpLinkFile *node = new (std::nothrow) DlpLinkFile(dlpLinkName, filePtr);
     if (node == nullptr) {
         DLP_LOG_ERROR(LABEL, "Add link file fail, alloc link file %{public}s fail", dlpLinkName.c_str());
@@ -73,63 +81,53 @@ int32_t DlpLinkManager::AddDlpLinkFile(std::shared_ptr<DlpFile>& filePtr, const 
     return DLP_OK;
 }
 
-int32_t DlpLinkManager::StopDlpLinkFile(std::shared_ptr<DlpFile> &filePtr, const std::string &dlpLinkName)
+int32_t DlpLinkManager::StopDlpLinkFile(std::shared_ptr<DlpFile> &filePtr)
 {
     if (filePtr == nullptr) {
         DLP_LOG_ERROR(LABEL, "Stop link file fail, dlp file is null");
         return DLP_FUSE_ERROR_DLP_FILE_NULL;
     }
-    if (!IsLinkNameValid(dlpLinkName)) {
-        DLP_LOG_ERROR(LABEL, "Stop link file fail, link file name %{private}s invalid", dlpLinkName.c_str());
-        return DLP_FUSE_ERROR_VALUE_INVALID;
-    }
 
     Utils::UniqueWriteGuard<Utils::RWLock> infoGuard(g_DlpLinkMapLock_);
     for (auto iter = g_DlpLinkFileNameMap_.begin(); iter != g_DlpLinkFileNameMap_.end(); iter++) {
-        if (dlpLinkName == iter->first) {
-            DlpLinkFile *node = iter->second;
-            if (node == nullptr) {
-                DLP_LOG_ERROR(
-                    LABEL, "Stop link file fail, file %{public}s found but file ptr is null", dlpLinkName.c_str());
-                return DLP_FUSE_ERROR_DLP_FILE_NULL;
-            }
+        DlpLinkFile* node = iter->second;
+        if (node == nullptr) {
+            DLP_LOG_ERROR(LABEL, "Stop link file fail, file ptr is null");
+            return DLP_FUSE_ERROR_DLP_FILE_NULL;
+        }
+        if (filePtr == node->GetDlpFilePtr()) {
             node->stopLink();
             filePtr->RemoveLinkStatus();
-            DLP_LOG_INFO(LABEL, "Stop link file success, file name %{public}s", dlpLinkName.c_str());
+            DLP_LOG_INFO(LABEL, "Stop link file success, file name %{public}s", node->GetLinkName().c_str());
             return DLP_OK;
         }
     }
-    DLP_LOG_ERROR(LABEL, "Stop link file fail, file %{public}s not exist", dlpLinkName.c_str());
+    DLP_LOG_ERROR(LABEL, "Stop link file fail, link file not exist");
     return DLP_FUSE_ERROR_LINKFILE_NOT_EXIST;
 }
 
-int32_t DlpLinkManager::RestartDlpLinkFile(std::shared_ptr<DlpFile> &filePtr, const std::string &dlpLinkName)
+int32_t DlpLinkManager::RestartDlpLinkFile(std::shared_ptr<DlpFile> &filePtr)
 {
     if (filePtr == nullptr) {
         DLP_LOG_ERROR(LABEL, "Restart link file fail, dlp file is null");
         return DLP_FUSE_ERROR_DLP_FILE_NULL;
     }
-    if (!IsLinkNameValid(dlpLinkName)) {
-        DLP_LOG_ERROR(LABEL, "Restart link file fail, link file name %{private}s invalid", dlpLinkName.c_str());
-        return DLP_FUSE_ERROR_VALUE_INVALID;
-    }
 
     Utils::UniqueWriteGuard<Utils::RWLock> infoGuard(g_DlpLinkMapLock_);
     for (auto iter = g_DlpLinkFileNameMap_.begin(); iter != g_DlpLinkFileNameMap_.end(); iter++) {
-        if (dlpLinkName == iter->first) {
-            DlpLinkFile *node = iter->second;
-            if (node == nullptr) {
-                DLP_LOG_ERROR(
-                    LABEL, "Restart link file fail, file %{public}s found but file ptr is null", dlpLinkName.c_str());
-                return DLP_FUSE_ERROR_DLP_FILE_NULL;
-            }
+        DlpLinkFile* node = iter->second;
+        if (node == nullptr) {
+            DLP_LOG_ERROR(LABEL, "Restart link file fail, file ptr is null");
+            return DLP_FUSE_ERROR_DLP_FILE_NULL;
+        }
+        if (filePtr == node->GetDlpFilePtr()) {
             node->restartLink();
             filePtr->SetLinkStatus();
-            DLP_LOG_INFO(LABEL, "Restart link file success, file name %{public}s", dlpLinkName.c_str());
+            DLP_LOG_INFO(LABEL, "Restart link file success, file name %{public}s", node->GetLinkName().c_str());
             return DLP_OK;
         }
     }
-    DLP_LOG_ERROR(LABEL, "Restart link file fail, file %{public}s not exist", dlpLinkName.c_str());
+    DLP_LOG_ERROR(LABEL, "Restart link file fail, link file not exist");
     return DLP_FUSE_ERROR_LINKFILE_NOT_EXIST;
 }
 

@@ -390,7 +390,7 @@ HWTEST_F(DlpFileManagerTest, SetDlpFileParams001, TestSize.Level1)
     // SetCipher fail
     property.ownerAccount = "owner";
     property.ownerAccountId = "owner";
-    property.contractAccount = "owner";
+    property.contactAccount = "owner";
     property.ownerAccountType = DOMAIN_ACCOUNT;
 
     condition.mockSequence = { false, false, true};
@@ -416,7 +416,7 @@ HWTEST_F(DlpFileManagerTest, SetDlpFileParams002, TestSize.Level1)
     // SetPolicy fail
     property.ownerAccount = "";
     property.ownerAccountId = "";
-    property.contractAccount = "owner";
+    property.contactAccount = "owner";
     property.ownerAccountType = DOMAIN_ACCOUNT;
 
     EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID,
@@ -439,7 +439,7 @@ HWTEST_F(DlpFileManagerTest, SetDlpFileParams003, TestSize.Level1)
     // SetPolicy fail
     property.ownerAccount = "owner";
     property.ownerAccountId = "owner";
-    property.contractAccount = "account";
+    property.contactAccount = "account";
     property.ownerAccountType = CLOUD_ACCOUNT;
 
     DlpCMockCondition condition;
@@ -469,7 +469,7 @@ HWTEST_F(DlpFileManagerTest, SetDlpFileParams004, TestSize.Level1)
     // SetPolicy fail
     property.ownerAccount = "owner";
     property.ownerAccountId = "owner";
-    property.contractAccount = "";
+    property.contactAccount = "";
     property.ownerAccountType = DOMAIN_ACCOUNT;
 
     EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID,
@@ -491,7 +491,7 @@ HWTEST_F(DlpFileManagerTest, GenerateDlpFile001, TestSize.Level1)
     DlpProperty property;
     property.ownerAccount = "owner";
     property.ownerAccountId = "owner";
-    property.contractAccount = "owner";
+    property.contactAccount = "owner";
     property.ownerAccountType = DOMAIN_ACCOUNT;
 
     EXPECT_EQ(DLP_PARSE_ERROR_FD_ERROR,
@@ -519,7 +519,7 @@ HWTEST_F(DlpFileManagerTest, GenerateDlpFile002, TestSize.Level1)
     DlpProperty property;
     property.ownerAccount = "";
     property.ownerAccountId = "";
-    property.contractAccount = "owner";
+    property.contactAccount = "owner";
     property.ownerAccountType = DOMAIN_ACCOUNT;
 
     EXPECT_EQ(DLP_PARSE_ERROR_VALUE_INVALID,
@@ -539,7 +539,7 @@ HWTEST_F(DlpFileManagerTest, GenerateDlpFile003, TestSize.Level1)
     DlpProperty property;
     property.ownerAccount = "owner";
     property.ownerAccountId = "owner";
-    property.contractAccount = "owner";
+    property.contactAccount = "owner";
     property.ownerAccountType = DOMAIN_ACCOUNT;
 
     EXPECT_EQ(DLP_PARSE_ERROR_FILE_OPERATE_FAIL,
@@ -559,7 +559,7 @@ HWTEST_F(DlpFileManagerTest, OpenDlpFile001, TestSize.Level1)
     DlpProperty property;
     property.ownerAccount = "owner";
     property.ownerAccountId = "owner";
-    property.contractAccount = "owner";
+    property.contactAccount = "owner";
     property.ownerAccountType = DOMAIN_ACCOUNT;
 
     EXPECT_EQ(DLP_PARSE_ERROR_FD_ERROR,

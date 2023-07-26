@@ -102,7 +102,7 @@ void NapiDlpPermission::GenerateDlpFileExcute(napi_env env, void* data)
     }
 
     asyncContext->errCode = DlpFileManager::GetInstance().GenerateDlpFile(
-        asyncContext->plainTxtFd, asyncContext->cipherTxtFd, asyncContext->property, asyncContext->dlpFileNative);
+        asyncContext->plaintextFd, asyncContext->ciphertextFd, asyncContext->property, asyncContext->dlpFileNative);
 }
 
 void NapiDlpPermission::GenerateDlpFileComplete(napi_env env, napi_status status, void* data)
@@ -190,7 +190,7 @@ void NapiDlpPermission::OpenDlpFileExcute(napi_env env, void* data)
     }
 
     asyncContext->errCode =
-        DlpFileManager::GetInstance().OpenDlpFile(asyncContext->cipherTxtFd, asyncContext->dlpFileNative, workDir);
+        DlpFileManager::GetInstance().OpenDlpFile(asyncContext->ciphertextFd, asyncContext->dlpFileNative, workDir);
 }
 
 void NapiDlpPermission::OpenDlpFileComplete(napi_env env, napi_status status, void* data)
@@ -218,7 +218,7 @@ void NapiDlpPermission::OpenDlpFileComplete(napi_env env, napi_status status, vo
             .ownerAccount = policy.ownerAccount_,
             .ownerAccountId = policy.ownerAccountId_,
             .authUsers = policy.authUsers_,
-            .contractAccount = contactAccount,
+            .contactAccount = contactAccount,
             .ownerAccountType = policy.ownerAccountType_,
             .offlineAccess = asyncContext->dlpFileNative->GetOfflineAccess(),
             .supportEveryone = policy.supportEveryone_,
@@ -285,7 +285,7 @@ void NapiDlpPermission::IsDlpFileExcute(napi_env env, void* data)
         return;
     }
 
-    asyncContext->isDlpFile = DlpFileKits::IsDlpFile(asyncContext->cipherTxtFd);
+    asyncContext->isDlpFile = DlpFileKits::IsDlpFile(asyncContext->ciphertextFd);
 }
 
 void NapiDlpPermission::IsDlpFileComplete(napi_env env, napi_status status, void* data)
@@ -379,7 +379,7 @@ napi_value NapiDlpPermission::StopDlpLinkFile(napi_env env, napi_callback_info c
     }
     std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
 
-    if (!GetDlpLinkFileParams(env, cbInfo, *asyncContext)) {
+    if (!GetLinkFileStatusParams(env, cbInfo, *asyncContext)) {
         return nullptr;
     }
 
@@ -410,8 +410,7 @@ void NapiDlpPermission::StopDlpLinkFileExcute(napi_env env, void* data)
         return;
     }
 
-    asyncContext->errCode =
-        DlpLinkManager::GetInstance().StopDlpLinkFile(asyncContext->dlpFileNative, asyncContext->linkFileName);
+    asyncContext->errCode = DlpLinkManager::GetInstance().StopDlpLinkFile(asyncContext->dlpFileNative);
 }
 
 void NapiDlpPermission::StopDlpLinkFileComplete(napi_env env, napi_status status, void* data)
@@ -440,7 +439,7 @@ napi_value NapiDlpPermission::RestartDlpLinkFile(napi_env env, napi_callback_inf
     }
     std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
 
-    if (!GetDlpLinkFileParams(env, cbInfo, *asyncContext)) {
+    if (!GetLinkFileStatusParams(env, cbInfo, *asyncContext)) {
         return nullptr;
     }
 
@@ -471,8 +470,7 @@ void NapiDlpPermission::RestartDlpLinkFileExcute(napi_env env, void* data)
         return;
     }
 
-    asyncContext->errCode =
-        DlpLinkManager::GetInstance().RestartDlpLinkFile(asyncContext->dlpFileNative, asyncContext->linkFileName);
+    asyncContext->errCode = DlpLinkManager::GetInstance().RestartDlpLinkFile(asyncContext->dlpFileNative);
 }
 
 void NapiDlpPermission::RestartDlpLinkFileComplete(napi_env env, napi_status status, void* data)
@@ -654,7 +652,7 @@ void NapiDlpPermission::RecoverDlpFileExcute(napi_env env, void* data)
     }
 
     asyncContext->errCode =
-        DlpFileManager::GetInstance().RecoverDlpFile(asyncContext->dlpFileNative, asyncContext->plainFd);
+        DlpFileManager::GetInstance().RecoverDlpFile(asyncContext->dlpFileNative, asyncContext->plaintextFd);
 }
 
 void NapiDlpPermission::RecoverDlpFileComplete(napi_env env, napi_status status, void* data)
@@ -1605,7 +1603,7 @@ napi_value NapiDlpPermission::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_FUNCTION("setRetentionState", SetRetentionState),
         DECLARE_NAPI_FUNCTION("cancelRetentionState", CancelRetentionState),
         DECLARE_NAPI_FUNCTION("getRetentionSandboxList", GetRetentionSandboxList),
-        DECLARE_NAPI_FUNCTION("getDLPFileVisitRecords", GetDLPFileVisitRecord),
+        DECLARE_NAPI_FUNCTION("getDLPFileAccessRecords", GetDLPFileVisitRecord),
 
         DECLARE_NAPI_FUNCTION("generateDLPFile", GenerateDlpFile),
         DECLARE_NAPI_FUNCTION("openDLPFile", OpenDlpFile),

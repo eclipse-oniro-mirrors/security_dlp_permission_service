@@ -267,7 +267,7 @@ int32_t DlpFileManager::SetDlpFileParams(std::shared_ptr<DlpFile>& filePtr, cons
         return result;
     }
 
-    result = filePtr->SetContactAccount(property.contractAccount);
+    result = filePtr->SetContactAccount(property.contactAccount);
     if (result != DLP_OK) {
         DLP_LOG_WARN(LABEL, "Set dlp obj params fail, set contact account error, errno=%{public}d", result);
     }

@@ -147,15 +147,15 @@ struct OpenDlpFileUnSubscriberContext : public CommonAsyncContext {
 
 struct GenerateDlpFileAsyncContext : public CommonAsyncContext {
     explicit GenerateDlpFileAsyncContext(napi_env env) : CommonAsyncContext(env){};
-    int64_t plainTxtFd = -1;
-    int64_t cipherTxtFd = -1;
+    int64_t plaintextFd = -1;
+    int64_t ciphertextFd = -1;
     DlpProperty property;
     std::shared_ptr<DlpFile> dlpFileNative = nullptr;
 };
 
 struct DlpFileAsyncContext : public CommonAsyncContext {
     explicit DlpFileAsyncContext(napi_env env) : CommonAsyncContext(env){};
-    int64_t cipherTxtFd = -1;
+    int64_t ciphertextFd = -1;
     DlpProperty property;
     bool isDlpFile = false;
     std::shared_ptr<DlpFile> dlpFileNative = nullptr;
@@ -169,7 +169,7 @@ struct DlpLinkFileAsyncContext : public CommonAsyncContext {
 
 struct RecoverDlpFileAsyncContext : public CommonAsyncContext {
     explicit RecoverDlpFileAsyncContext(napi_env env) : CommonAsyncContext(env){};
-    int64_t plainFd = -1;
+    int64_t plaintextFd = -1;
     std::shared_ptr<DlpFile> dlpFileNative = nullptr;
 };
 
@@ -255,6 +255,7 @@ bool GetOpenDlpFileParams(const napi_env env, const napi_callback_info info, Dlp
 bool GetIsDlpFileParams(const napi_env env, const napi_callback_info info, DlpFileAsyncContext& asyncContext);
 
 bool GetDlpLinkFileParams(const napi_env env, const napi_callback_info info, DlpLinkFileAsyncContext& asyncContext);
+bool GetLinkFileStatusParams(const napi_env env, const napi_callback_info info, DlpLinkFileAsyncContext& asyncContext);
 bool GetRecoverDlpFileParams(
     const napi_env env, const napi_callback_info info, RecoverDlpFileAsyncContext& asyncContext);
 bool GetCloseDlpFileParams(const napi_env env, const napi_callback_info info, CloseDlpFileAsyncContext& asyncContext);
@@ -295,6 +296,8 @@ bool GetVectorAuthUserByKey(
     napi_env env, napi_value jsObject, const std::string& key, std::vector<AuthUserInfo>& resultVec);
 bool GetVectorDocUriByKey(napi_env env, napi_value jsObject, const std::string& key,
     std::vector<std::string>& docUriVec);
+napi_value VectorUint32ToJs(napi_env env, const std::vector<uint32_t>& value);
+bool GetVectorUint32(napi_env env, napi_value jsObject, std::vector<uint32_t>& resultVec);
 
 napi_value RetentionSandboxInfoToJs(napi_env env, const std::vector<RetentionSandBoxInfo>& infoVec);
 napi_value VisitInfoToJs(napi_env env, const std::vector<VisitedDLPFileInfo>& infoVec);
