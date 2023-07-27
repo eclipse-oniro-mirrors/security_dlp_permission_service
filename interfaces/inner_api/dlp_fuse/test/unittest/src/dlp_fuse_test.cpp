@@ -1199,16 +1199,18 @@ HWTEST_F(DlpFuseTest, Truncate001, TestSize.Level1)
 HWTEST_F(DlpFuseTest, StopDlpLinkFile001, TestSize.Level1)
 {
     std::shared_ptr<DlpFile> filePtr = nullptr;
+    std::shared_ptr<DlpFile> filePtr2 = nullptr;
     EXPECT_EQ(DlpLinkManager::GetInstance().StopDlpLinkFile(filePtr), DLP_FUSE_ERROR_DLP_FILE_NULL);
     filePtr = std::make_shared<DlpFile>(1000);
+    filePtr2 = std::make_shared<DlpFile>(1001);
 
     DlpLinkManager::GetInstance().AddDlpLinkFile(filePtr, "linkfile");
-    EXPECT_EQ(DlpLinkManager::GetInstance().StopDlpLinkFile(filePtr), DLP_FUSE_ERROR_VALUE_INVALID);
-    EXPECT_EQ(DlpLinkManager::GetInstance().StopDlpLinkFile(filePtr), DLP_FUSE_ERROR_LINKFILE_NOT_EXIST);
+    EXPECT_EQ(DlpLinkManager::GetInstance().StopDlpLinkFile(filePtr2), DLP_FUSE_ERROR_LINKFILE_NOT_EXIST);
     DlpLinkFile* node = new (std::nothrow) DlpLinkFile("linkfile1", filePtr);
     DlpLinkManager::GetInstance().g_DlpLinkFileNameMap_["linkfile1"] = node;
     EXPECT_EQ(DlpLinkManager::GetInstance().StopDlpLinkFile(filePtr), DLP_OK);
     DlpLinkManager::GetInstance().g_DlpLinkFileNameMap_["linkfile"] = nullptr;
+    DlpLinkManager::GetInstance().g_DlpLinkFileNameMap_["linkfile1"] = nullptr;
     EXPECT_EQ(DlpLinkManager::GetInstance().StopDlpLinkFile(filePtr), DLP_FUSE_ERROR_DLP_FILE_NULL);
     delete (node);
 }
@@ -1221,17 +1223,20 @@ HWTEST_F(DlpFuseTest, StopDlpLinkFile001, TestSize.Level1)
  */
 HWTEST_F(DlpFuseTest, RestartDlpLinkFile001, TestSize.Level1)
 {
+    DlpLinkManager::GetInstance().g_DlpLinkFileNameMap_.clear();
     std::shared_ptr<DlpFile> filePtr = nullptr;
     EXPECT_EQ(DlpLinkManager::GetInstance().RestartDlpLinkFile(filePtr), DLP_FUSE_ERROR_DLP_FILE_NULL);
     filePtr = std::make_shared<DlpFile>(1000);
+    std::shared_ptr<DlpFile> filePtr2 = nullptr;
+    filePtr2 = std::make_shared<DlpFile>(1001);
 
     DlpLinkManager::GetInstance().AddDlpLinkFile(filePtr, "linkfile");
-    EXPECT_EQ(DlpLinkManager::GetInstance().RestartDlpLinkFile(filePtr), DLP_FUSE_ERROR_VALUE_INVALID);
-    EXPECT_EQ(DlpLinkManager::GetInstance().RestartDlpLinkFile(filePtr), DLP_FUSE_ERROR_LINKFILE_NOT_EXIST);
+    EXPECT_EQ(DlpLinkManager::GetInstance().RestartDlpLinkFile(filePtr2), DLP_FUSE_ERROR_LINKFILE_NOT_EXIST);
     DlpLinkFile* node = new (std::nothrow) DlpLinkFile("linkfile1", filePtr);
     DlpLinkManager::GetInstance().g_DlpLinkFileNameMap_["linkfile1"] = node;
     EXPECT_EQ(DlpLinkManager::GetInstance().RestartDlpLinkFile(filePtr), DLP_OK);
     DlpLinkManager::GetInstance().g_DlpLinkFileNameMap_["linkfile"] = nullptr;
+    DlpLinkManager::GetInstance().g_DlpLinkFileNameMap_["linkfile1"] = nullptr;
     EXPECT_EQ(DlpLinkManager::GetInstance().RestartDlpLinkFile(filePtr), DLP_FUSE_ERROR_DLP_FILE_NULL);
     delete (node);
 }

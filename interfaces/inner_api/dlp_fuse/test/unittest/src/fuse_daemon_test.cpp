@@ -16,7 +16,9 @@
 #include <gtest/gtest.h>
 #include <securec.h>
 #include "c_mock_common.h"
+#define private public
 #include "dlp_link_manager.h"
+#undef private
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
 #include "fuse_daemon.h"
@@ -580,6 +582,7 @@ HWTEST_F(FuseDaemonTest, FuseDaemonReadDir004, TestSize.Level1)
     fuse_req_t req = nullptr;
     std::shared_ptr<DlpFile> filePtr = std::make_shared<DlpFile>(-1);
     ASSERT_NE(filePtr, nullptr);
+    DlpLinkManager::GetInstance().g_DlpLinkFileNameMap_.clear();
     DlpLinkManager::GetInstance().AddDlpLinkFile(filePtr, "test");
 
     DlpCMockCondition condition;
@@ -609,7 +612,8 @@ HWTEST_F(FuseDaemonTest, FuseDaemonReadDir005, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "FuseDaemonReadDir005");
     fuse_req_t req = nullptr;
-
+    std::shared_ptr<DlpFile> filePtr = std::make_shared<DlpFile>(-1);
+    DlpLinkManager::GetInstance().AddDlpLinkFile(filePtr, "test");
     DlpCMockCondition condition;
     condition.mockSequence = { true };
     SetMockConditions("fuse_reply_err", condition);
@@ -629,6 +633,7 @@ HWTEST_F(FuseDaemonTest, FuseDaemonReadDir005, TestSize.Level1)
     FuseDaemon::fuseDaemonOper_.readdir(req, ROOT_INODE, ADD_DIRENTRY_BUFF_LEN, ADD_DIRENTRY_BUFF_LEN + 1, nullptr);
     EXPECT_EQ(static_cast<size_t>(1), g_fuseReplyBufSize);
     CleanMockConditions();
+    DlpLinkManager::GetInstance().DeleteDlpLinkFile(filePtr);
 }
 
 /**
