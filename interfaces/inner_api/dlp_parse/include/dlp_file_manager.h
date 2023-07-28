@@ -49,10 +49,10 @@ private:
     int32_t GenerateCertData(const PermissionPolicy& policy, struct DlpBlob& certData) const;
     int32_t PrepareDlpEncryptParms(
         PermissionPolicy& policy, struct DlpBlob& key, struct DlpUsageSpec& usage, struct DlpBlob& certData) const;
-    int32_t ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr, const std::string& workDir) const;
+    int32_t ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr, const std::string& workDir);
     void FreeChiperBlob(struct DlpBlob& key, struct DlpBlob& certData, struct DlpUsageSpec& usage) const;
     int32_t SetDlpFileParams(std::shared_ptr<DlpFile>& filePtr, const DlpProperty& property) const;
-
+    std::mutex g_offlineLock_;
     OHOS::Utils::RWLock g_DlpMapLock_;
     std::unordered_map<int32_t, std::shared_ptr<DlpFile>> g_DlpFileMap_;
 };

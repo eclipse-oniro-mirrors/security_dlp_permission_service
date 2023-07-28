@@ -154,7 +154,7 @@ int32_t DlpFileManager::PrepareDlpEncryptParms(
     return DLP_OK;
 }
 
-int32_t DlpFileManager::ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr, const std::string& workDir) const
+int32_t DlpFileManager::ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr, const std::string& workDir)
 {
     int32_t result = filePtr->ParseDlpHeader();
     if (result != DLP_OK) {
@@ -197,17 +197,17 @@ int32_t DlpFileManager::ParseDlpFileFormat(std::shared_ptr<DlpFile>& filePtr, co
     };
     result = filePtr->SetCipher(key, usage);
     if (result != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Parse file header fail, set cipher error, errno=%{public}d", result);
+        return result;
     }
 
-    // only add offline cert when first time open the file.
     if (flag == DLP_CERT_UPDATED) {
-        DLP_LOG_DEBUG(LABEL, "update offline cert");
-        result = filePtr->AddOfflineCert(offlineCertBuf, workDir);
+        std::lock_guard<std::mutex> lock(g_offlineLock_);
+        DLP_LOG_DEBUG(LABEL, "enter %{public}s", workDir.c_str());
+        result = filePtr->CheckDlpFile();
         if (result != DLP_OK) {
-            DLP_LOG_ERROR(LABEL, "Add offline cert fail, errno=%{public}d", result);
             return result;
         }
+        result = filePtr->AddOfflineCert(offlineCertBuf, workDir);
     }
 
     return result;

@@ -454,40 +454,43 @@ int32_t DlpFile::AddOfflineCert(std::vector<uint8_t>& offlineCert, const std::st
 
     uint32_t oldTxtOffset = head_.txtOffset;
     head_.txtOffset = head_.offlineCertOffset + head_.offlineCertSize;
+    if (WriteHeadAndCert(tmpFile, offlineCert) != DLP_OK) {
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+    (void)lseek(dlpFd_, oldTxtOffset, SEEK_SET);
+    DoDlpContentCopyOperation(dlpFd_, tmpFile, 0, head_.txtSize);
+    int fileSize = lseek(tmpFile, 0, SEEK_CUR);
+    (void)lseek(tmpFile, 0, SEEK_SET);
+    (void)lseek(dlpFd_, 0, SEEK_SET);
+    DoDlpContentCopyOperation(tmpFile, dlpFd_, 0, fileSize);
+    if (ftruncate(dlpFd_, fileSize) == -1) {
+        DLP_LOG_ERROR(LABEL, "truncate plain file to zero failed, %{public}s", strerror(errno));
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+    (void)fsync(dlpFd_);
+    return DLP_OK;
+}
 
+int32_t DlpFile::WriteHeadAndCert(int tmpFile, std::vector<uint8_t>& offlineCert)
+{
     if (write(tmpFile, &head_, sizeof(struct DlpHeader)) != sizeof(struct DlpHeader)) {
         DLP_LOG_ERROR(LABEL, "write dlp head failed, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
-
     if (write(tmpFile, cert_.data, head_.certSize) != head_.certSize) {
         DLP_LOG_ERROR(LABEL, "write dlp cert data failed, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
-
     if (write(tmpFile, contactAccount_.c_str(), contactAccount_.size()) !=
         static_cast<int32_t>(contactAccount_.size())) {
         DLP_LOG_ERROR(LABEL, "write dlp contact data failed, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
-
     if (write(tmpFile, &offlineCert[0], offlineCert.size()) !=
         static_cast<int32_t>(offlineCert.size())) {
         DLP_LOG_ERROR(LABEL, "write offlineCert data failed, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
-
-    (void)lseek(dlpFd_, oldTxtOffset, SEEK_SET);
-    DoDlpContentCopyOperation(dlpFd_, tmpFile, 0, head_.txtSize);
-
-    int fileSize = lseek(tmpFile, 0, SEEK_CUR);
-
-    (void)lseek(tmpFile, 0, SEEK_SET);
-    (void)lseek(dlpFd_, 0, SEEK_SET);
-    DoDlpContentCopyOperation(tmpFile, dlpFd_, 0, fileSize);
-
-    (void)fsync(dlpFd_);
-
     return DLP_OK;
 }
 
