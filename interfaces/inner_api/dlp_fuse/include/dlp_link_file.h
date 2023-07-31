@@ -71,6 +71,11 @@ public:
         stopLinkFlag_ = false;
     };
 
+    struct stat GetFileStat()
+    {
+        return fileStat_;
+    };
+
 private:
     std::string dlpLinkName_;
     std::shared_ptr<DlpFile> dlpFile_;

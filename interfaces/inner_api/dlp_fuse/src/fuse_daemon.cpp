@@ -352,6 +352,30 @@ static void FuseDaemonReadDir(fuse_req_t req, fuse_ino_t ino, size_t size, off_t
     free(readBuf);
 }
 
+bool FuseDaemonUpdateTime(fuse_req_t req, int toSet, DlpLinkFile* dlpLink)
+{
+    DLP_LOG_DEBUG(LABEL, "Set link file update time, type %{public}d", toSet);
+    bool isUpdateTime = false;
+    struct stat fileStat = dlpLink->GetFileStat();
+    if ((static_cast<uint32_t>(toSet) & FUSE_SET_ATTR_MTIME) != 0) {
+        UpdateCurrTimeStat(&fileStat.st_mtim);
+        isUpdateTime = true;
+    }
+    if ((static_cast<uint32_t>(toSet) & FUSE_SET_ATTR_CTIME) != 0) {
+        UpdateCurrTimeStat(&fileStat.st_ctim);
+        isUpdateTime = true;
+    }
+    if ((static_cast<uint32_t>(toSet) & FUSE_SET_ATTR_ATIME) != 0) {
+        UpdateCurrTimeStat(&fileStat.st_atim);
+        isUpdateTime = true;
+    }
+    if (isUpdateTime && (static_cast<uint32_t>(toSet) & FUSE_SET_ATTR_SIZE) == 0) {
+        fuse_reply_attr(req, &fileStat, DEFAULT_ATTR_TIMEOUT);
+        return false;
+    }
+    return true;
+}
+
 void FuseDaemonSetAttr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int toSet, struct fuse_file_info *fi)
 {
     (void)fi;
@@ -371,6 +395,10 @@ void FuseDaemonSetAttr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to
     if (dlpLink == nullptr) {
         DLP_LOG_ERROR(LABEL, "Set link file attr fail, wrong ino");
         fuse_reply_err(req, ENOENT);
+        return;
+    }
+
+    if (!FuseDaemonUpdateTime(req, toSet, dlpLink)) {
         return;
     }
 
