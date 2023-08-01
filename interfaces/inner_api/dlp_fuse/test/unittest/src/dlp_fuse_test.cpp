@@ -929,12 +929,14 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile010, TestSize.Level1)
     ASSERT_NE(filePtr, nullptr);
     for (int i = 0; i < 1000; i++) {
         std::string linkName = "AddDlpLinkFile010-" + std::to_string(i);
+        std::shared_ptr<DlpFile> filePtr = std::make_shared<DlpFile>(-i);
         DlpLinkManager::GetInstance().AddDlpLinkFile(filePtr, linkName);
     }
     EXPECT_EQ(DlpLinkManager::GetInstance().AddDlpLinkFile(filePtr, "linkfile"), DLP_FUSE_ERROR_TOO_MANY_LINK_FILE);
     for (int i = 0; i < 1000; i++) {
         DlpLinkManager::GetInstance().DeleteDlpLinkFile(filePtr);
     }
+    DlpLinkManager::GetInstance().g_DlpLinkFileNameMap_.clear();
 }
 
 /**
