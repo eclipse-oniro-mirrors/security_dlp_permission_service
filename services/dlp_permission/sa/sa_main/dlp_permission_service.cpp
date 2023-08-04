@@ -622,7 +622,7 @@ int32_t DlpPermissionService::GetRetentionSandboxList(const std::string& bundleN
         callerBundleName = bundleName;
         isNeedTimer = false;
     }
-    if (bundleName.empty()) {
+    if (callerBundleName.empty()) {
         DLP_LOG_ERROR(LABEL, "get bundleName error");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
