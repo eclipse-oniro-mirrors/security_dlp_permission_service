@@ -273,6 +273,7 @@ int32_t DlpPermissionSerializer::SerializeDlpPermission(const PermissionPolicy& 
     char* ivHex = new (std::nothrow) char[ivHexLen];
     if (ivHex == nullptr) {
         DLP_LOG_ERROR(LABEL, "New memory fail");
+        FreeCharBuffer(keyHex, keyHexLen);
         return DLP_SERVICE_ERROR_MEMORY_OPERATE_FAIL;
     }
     res = ByteToHexString(policy.GetIv(), policy.GetIvLen(), ivHex, ivHexLen);
