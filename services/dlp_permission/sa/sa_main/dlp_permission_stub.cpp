@@ -351,6 +351,9 @@ int32_t DlpPermissionStub::GetDlpSupportFileTypeInner(MessageParcel& data, Messa
 
 int32_t DlpPermissionStub::RegisterDlpSandboxChangeCallbackInner(MessageParcel &data, MessageParcel &reply)
 {
+    if (!CheckPermission(PERMISSION_ACCESS_DLP_FILE)) {
+        return DLP_SERVICE_ERROR_PERMISSION_DENY;
+    }
     sptr<IRemoteObject> callback = data.ReadRemoteObject();
     if (callback == nullptr) {
         DLP_LOG_ERROR(LABEL, "read callback fail");
@@ -364,6 +367,9 @@ int32_t DlpPermissionStub::RegisterDlpSandboxChangeCallbackInner(MessageParcel &
 
 int32_t DlpPermissionStub::UnRegisterDlpSandboxChangeCallbackInner(MessageParcel &data, MessageParcel &reply)
 {
+    if (!CheckPermission(PERMISSION_ACCESS_DLP_FILE)) {
+        return DLP_SERVICE_ERROR_PERMISSION_DENY;
+    }
     bool res = false;
     int32_t result = this->UnRegisterDlpSandboxChangeCallback(res);
     if (!reply.WriteInt32(result)) {
@@ -424,6 +430,9 @@ int32_t DlpPermissionStub::UnRegisterOpenDlpFileCallbackInner(MessageParcel &dat
 
 int32_t DlpPermissionStub::GetDlpGatheringPolicyInner(MessageParcel& data, MessageParcel& reply)
 {
+    if (!CheckPermission(PERMISSION_ACCESS_DLP_FILE)) {
+        return DLP_SERVICE_ERROR_PERMISSION_DENY;
+    }
     bool isGathering = false;
     int32_t res = this->GetDlpGatheringPolicy(isGathering);
     if (!reply.WriteInt32(res)) {
