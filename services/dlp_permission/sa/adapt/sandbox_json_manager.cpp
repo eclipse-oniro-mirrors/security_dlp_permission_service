@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <iterator>
 #include "appexecfwk_errors.h"
+#include "bundle_mgr_client.h"
 #include "dlp_permission_log.h"
 #include "dlp_permission.h"
 #include "ipc_skeleton.h"
@@ -262,9 +263,16 @@ int32_t SandboxJsonManager::ClearUnreservedSandbox()
     }
     std::lock_guard<std::mutex> lock(mutex_);
     bool isChanged = false;
+    AppExecFwk::BundleMgrClient bundleMgrClient;
     for (auto iter = infoVec_.begin(); iter != infoVec_.end();) {
         if (!iter->docUriSet.empty() || iter->userId != userId) {
             ++iter;
+            continue;
+        }
+        int32_t res = bundleMgrClient.UninstallSandboxApp(iter->bundleName, iter->appIndex, iter->userId);
+        if (res != DLP_OK) {
+            DLP_LOG_ERROR(LABEL, "uninstall sandbox %{public}s fail, index=%{public}d, error=%{public}d",
+                iter->bundleName.c_str(), iter->appIndex, res);
             continue;
         }
         iter = infoVec_.erase(iter);
