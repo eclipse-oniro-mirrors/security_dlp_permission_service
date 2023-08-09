@@ -31,6 +31,7 @@
 #include "napi_common.h"
 #include "securec.h"
 #include "tokenid_kit.h"
+#include "token_setproc.h"
 #include <string>
 
 namespace OHOS {
@@ -41,7 +42,22 @@ static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_
 std::mutex g_lockForOpenDlpFileSubscriber;
 std::set<OpenDlpFileSubscriberContext*> g_openDlpFileSubscribers;
 RegisterDlpSandboxChangeInfo *g_dlpSandboxChangeInfoRegister = nullptr;
+const std::string PERMISSION_ACCESS_DLP_FILE = "ohos.permission.ACCESS_DLP_FILE";
 }  // namespace
+
+static bool CheckPermission(napi_env env, const std::string& permission)
+{
+    Security::AccessToken::AccessTokenID selfToken = GetSelfTokenID();
+    int res = Security::AccessToken::AccessTokenKit::VerifyAccessToken(selfToken, permission);
+    if (res == Security::AccessToken::PermissionState::PERMISSION_GRANTED) {
+        DLP_LOG_INFO(LABEL, "Check permission %{public}s pass", permission.c_str());
+        return true;
+    }
+    DLP_LOG_ERROR(LABEL, "Check permission %{public}s fail", permission.c_str());
+    int32_t jsErrCode = ERR_JS_PERMISSION_DENIED;
+    NAPI_CALL_BASE(env, napi_throw(env, GenerateBusinessError(env, jsErrCode, GetJsErrMsg(jsErrCode))), false);
+    return false;
+}
 
 static napi_value BindingJsWithNative(napi_env env, napi_value* argv, size_t argc)
 {
@@ -311,6 +327,9 @@ napi_value NapiDlpPermission::AddDlpLinkFile(napi_env env, napi_callback_info cb
     if (!IsSystemApp(env)) {
         return nullptr;
     }
+    if (!CheckPermission(env, PERMISSION_ACCESS_DLP_FILE)) {
+        return nullptr;
+    }
     auto* asyncContext = new (std::nothrow) DlpLinkFileAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
@@ -370,6 +389,9 @@ void NapiDlpPermission::AddDlpLinkFileComplete(napi_env env, napi_status status,
 napi_value NapiDlpPermission::StopDlpLinkFile(napi_env env, napi_callback_info cbInfo)
 {
     if (!IsSystemApp(env)) {
+        return nullptr;
+    }
+    if (!CheckPermission(env, PERMISSION_ACCESS_DLP_FILE)) {
         return nullptr;
     }
     auto* asyncContext = new (std::nothrow) DlpLinkFileAsyncContext(env);
@@ -432,6 +454,9 @@ napi_value NapiDlpPermission::RestartDlpLinkFile(napi_env env, napi_callback_inf
     if (!IsSystemApp(env)) {
         return nullptr;
     }
+    if (!CheckPermission(env, PERMISSION_ACCESS_DLP_FILE)) {
+        return nullptr;
+    }
     auto* asyncContext = new (std::nothrow) DlpLinkFileAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
@@ -490,6 +515,9 @@ void NapiDlpPermission::RestartDlpLinkFileComplete(napi_env env, napi_status sta
 napi_value NapiDlpPermission::ReplaceDlpLinkFile(napi_env env, napi_callback_info cbInfo)
 {
     if (!IsSystemApp(env)) {
+        return nullptr;
+    }
+    if (!CheckPermission(env, PERMISSION_ACCESS_DLP_FILE)) {
         return nullptr;
     }
     auto* asyncContext = new (std::nothrow) DlpLinkFileAsyncContext(env);
@@ -553,6 +581,9 @@ napi_value NapiDlpPermission::DeleteDlpLinkFile(napi_env env, napi_callback_info
     if (!IsSystemApp(env)) {
         return nullptr;
     }
+    if (!CheckPermission(env, PERMISSION_ACCESS_DLP_FILE)) {
+        return nullptr;
+    }
     auto* asyncContext = new (std::nothrow) DlpLinkFileAsyncContext(env);
     if (asyncContext == nullptr) {
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
@@ -611,6 +642,9 @@ void NapiDlpPermission::DeleteDlpLinkFileComplete(napi_env env, napi_status stat
 napi_value NapiDlpPermission::RecoverDlpFile(napi_env env, napi_callback_info cbInfo)
 {
     if (!IsSystemApp(env)) {
+        return nullptr;
+    }
+    if (!CheckPermission(env, PERMISSION_ACCESS_DLP_FILE)) {
         return nullptr;
     }
     auto* asyncContext = new (std::nothrow) RecoverDlpFileAsyncContext(env);
@@ -672,6 +706,9 @@ void NapiDlpPermission::RecoverDlpFileComplete(napi_env env, napi_status status,
 napi_value NapiDlpPermission::CloseDlpFile(napi_env env, napi_callback_info cbInfo)
 {
     if (!IsSystemApp(env)) {
+        return nullptr;
+    }
+    if (!CheckPermission(env, PERMISSION_ACCESS_DLP_FILE)) {
         return nullptr;
     }
     auto* asyncContext = new (std::nothrow) CloseDlpFileAsyncContext(env);
