@@ -270,11 +270,14 @@ int32_t SandboxJsonManager::ClearUnreservedSandbox()
             continue;
         }
         int32_t res = bundleMgrClient.UninstallSandboxApp(iter->bundleName, iter->appIndex, iter->userId);
-        if (res != DLP_OK) {
+        if (res != DLP_OK && res != ERR_APPEXECFWK_SANDBOX_INSTALL_NO_SANDBOX_APP_INFO) {
             DLP_LOG_ERROR(LABEL, "uninstall sandbox %{public}s fail, index=%{public}d, error=%{public}d",
                 iter->bundleName.c_str(), iter->appIndex, res);
+            ++iter;
             continue;
         }
+        DLP_LOG_DEBUG(LABEL, "uninstall sandbox %{public}s success, index=%{public}d, error=%{public}d",
+            iter->bundleName.c_str(), iter->appIndex, res);
         iter = infoVec_.erase(iter);
         isChanged = true;
     }
