@@ -209,6 +209,24 @@ void NapiDlpPermission::OpenDlpFileExcute(napi_env env, void* data)
         DlpFileManager::GetInstance().OpenDlpFile(asyncContext->ciphertextFd, asyncContext->dlpFileNative, workDir);
 }
 
+static void GetDlpProperty(std::shared_ptr<DlpFile>& dlpFileNative, DlpProperty& property)
+{
+    PermissionPolicy policy;
+    dlpFileNative->GetPolicy(policy);
+    std::string contactAccount;
+    dlpFileNative->GetContactAccount(contactAccount);
+    property = {
+        .ownerAccount = policy.ownerAccount_,
+        .ownerAccountId = policy.ownerAccountId_,
+        .authUsers = policy.authUsers_,
+        .contactAccount = contactAccount,
+        .ownerAccountType = policy.ownerAccountType_,
+        .offlineAccess = dlpFileNative->GetOfflineAccess(),
+        .supportEveryone = policy.supportEveryone_,
+        .everyonePerm = policy.everyonePerm_,
+    };
+}
+
 void NapiDlpPermission::OpenDlpFileComplete(napi_env env, napi_status status, void* data)
 {
     auto asyncContext = reinterpret_cast<DlpFileAsyncContext*>(data);
@@ -226,20 +244,8 @@ void NapiDlpPermission::OpenDlpFileComplete(napi_env env, napi_status status, vo
         }
         NAPI_CALL_RETURN_VOID(
             env, napi_create_int64(env, reinterpret_cast<int64_t>(asyncContext->dlpFileNative.get()), &nativeObjJs));
-        PermissionPolicy policy;
-        asyncContext->dlpFileNative->GetPolicy(policy);
-        std::string contactAccount;
-        asyncContext->dlpFileNative->GetContactAccount(contactAccount);
-        DlpProperty property = {
-            .ownerAccount = policy.ownerAccount_,
-            .ownerAccountId = policy.ownerAccountId_,
-            .authUsers = policy.authUsers_,
-            .contactAccount = contactAccount,
-            .ownerAccountType = policy.ownerAccountType_,
-            .offlineAccess = asyncContext->dlpFileNative->GetOfflineAccess(),
-            .supportEveryone = policy.supportEveryone_,
-            .everyonePerm = policy.everyonePerm_,
-        };
+        DlpProperty property;
+        GetDlpProperty(asyncContext->dlpFileNative, property);
         napi_value dlpPropertyJs = DlpPropertyToJs(env, property);
         napi_value argv[PARAM_SIZE_TWO] = {nativeObjJs, dlpPropertyJs};
         napi_value instance = BindingJsWithNative(env, argv, PARAM_SIZE_TWO);
@@ -249,7 +255,8 @@ void NapiDlpPermission::OpenDlpFileComplete(napi_env env, napi_status status, vo
             resJs = instance;
         }
     } else {
-        if (asyncContext->dlpFileNative != nullptr) {
+        if (asyncContext->dlpFileNative != nullptr &&
+            asyncContext->errCode == DLP_CREDENTIAL_ERROR_NO_PERMISSION_ERROR) {
             std::string contactAccount = "";
             asyncContext->dlpFileNative->GetContactAccount(contactAccount);
             if (!contactAccount.empty()) {

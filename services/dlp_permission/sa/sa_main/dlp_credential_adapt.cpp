@@ -42,23 +42,43 @@ std::mutex g_lockRequest;
 
 static bool IsDlpCredentialHuksError(int errorCode)
 {
-    return ((errorCode >= DLP_ERR_INVALID_KEY_ATTESTATION) && (errorCode <= DLP_ERR_IMPORT_KEY_FAILED));
+    return ((errorCode >= DLP_ERR_GENERATE_KEY_FAILED) && (errorCode < DLP_ERR_IPC_INTERNAL_FAILED));
 }
 
 static bool IsDlpCredentialIpcError(int errorCode)
 {
-    return ((errorCode >= DLP_ERR_IPC_INTERNAL_FAILED) && (errorCode <= DLP_ERR_CHECK_PERMISSION));
+    return ((errorCode >= DLP_ERR_IPC_INTERNAL_FAILED) && (errorCode < DLP_ERR_CONNECTION_TIME_OUT));
 }
 
 static bool IsDlpCredentialServerError(int errorCode)
 {
-    return ((errorCode >= DLP_ERR_CONNECTION_TIME_OUT) && (errorCode <= DLP_ERR_CONNECTION_ERROR_TOKEN));
+    return ((errorCode >= DLP_ERR_CONNECTION_TIME_OUT) && (errorCode < DLP_ERR_FILE_PATH));
+}
+
+static bool IsNoPermissionError(int errorCode)
+{
+    return ((errorCode == DLP_ERR_CONNECTION_VIP_RIGHT_EXPIRED) || (errorCode == DLP_ERR_CONNECTION_NO_PERMISSION) ||
+            (errorCode == DLP_ERR_CONNECTION_POLICY_PERMISSION_EXPIRED));
+}
+
+static bool IsNoAccountError(int errorCode)
+{
+    return ((errorCode == DLP_ERR_CREDENTIAL_NOT_EXIST) || (errorCode == DLP_ERR_ACCOUNT_NOT_LOG_IN));
 }
 
 static int32_t ConvertCredentialError(int errorCode)
 {
     if (errorCode == DLP_SUCCESS) {
         return DLP_OK;
+    }
+    if (errorCode == DLP_ERR_CONNECTION_TIME_OUT) {
+        return DLP_CREDENTIAL_ERROR_SERVER_TIME_OUT_ERROR;
+    }
+    if (IsNoPermissionError(errorCode)) {
+        return DLP_CREDENTIAL_ERROR_NO_PERMISSION_ERROR;
+    }
+    if (IsNoAccountError(errorCode)) {
+        return DLP_CREDENTIAL_ERROR_NO_ACCOUNT_ERROR;
     }
     if (IsDlpCredentialHuksError(errorCode)) {
         return DLP_CREDENTIAL_ERROR_HUKS_ERROR;

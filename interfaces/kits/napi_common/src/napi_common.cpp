@@ -553,7 +553,7 @@ void ProcessCallbackOrPromise(napi_env env, const CommonAsyncContext* asyncConte
     } else {
         int32_t jsErrCode = NativeCodeToJsCode(asyncContext->errCode);
         napi_value errObj = GenerateBusinessError(env, jsErrCode, GetJsErrMsg(jsErrCode));
-        if (data != nullptr) {
+        if (data != nullptr && asyncContext->errCode == DLP_CREDENTIAL_ERROR_NO_PERMISSION_ERROR) {
             NAPI_CALL_RETURN_VOID(env, napi_set_named_property(env, errObj, "extra", data));
         }
         args[PARAM0] = errObj;
