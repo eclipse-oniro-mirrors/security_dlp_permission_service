@@ -122,15 +122,18 @@ bool DlpFile::IsValidCipher(const struct DlpBlob& key, const struct DlpUsageSpec
 int32_t DlpFile::CopyBlobParam(const struct DlpBlob& src, struct DlpBlob& dst) const
 {
     if (src.data == nullptr || src.size == 0 || src.size > DLP_MAX_CERT_SIZE) {
+        DLP_LOG_ERROR(LABEL, "src data null");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
     uint8_t* blobData = new (std::nothrow)uint8_t[src.size];
     if (blobData == nullptr) {
+        DLP_LOG_ERROR(LABEL, "blobData null");
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
     if (memcpy_s(blobData, src.size, src.data, src.size) != EOK) {
+        DLP_LOG_ERROR(LABEL, "memcpy_s error");
         delete[] blobData;
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
@@ -143,6 +146,7 @@ int32_t DlpFile::CopyBlobParam(const struct DlpBlob& src, struct DlpBlob& dst) c
 int32_t DlpFile::CleanBlobParam(struct DlpBlob& blob) const
 {
     if (blob.data == nullptr || blob.size == 0) {
+        DLP_LOG_ERROR(LABEL, "blobData null");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
@@ -161,6 +165,7 @@ int32_t DlpFile::GetLocalAccountName(std::string& account) const
         account = accountInfo.second.name_;
         return DLP_OK;
     }
+    DLP_LOG_ERROR(LABEL, "QueryOhosAccountInfo accountInfo error");
     return DLP_PARSE_ERROR_ACCOUNT_INVALID;
 }
 
@@ -262,6 +267,7 @@ int32_t DlpFile::SetCipher(const struct DlpBlob& key, const struct DlpUsageSpec&
 int32_t DlpFile::SetContactAccount(const std::string& contactAccount)
 {
     if (contactAccount.size() == 0 || contactAccount.size() > DLP_MAX_CERT_SIZE) {
+        DLP_LOG_ERROR(LABEL, "contactAccount param failed");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
     contactAccount_ = contactAccount;
@@ -302,6 +308,7 @@ bool DlpFile::IsValidDlpHeader(const struct DlpHeader& head) const
         head.contactAccountOffset != (sizeof(struct DlpHeader) + head.certSize) ||
         head.txtOffset != (sizeof(struct DlpHeader) + head.certSize + head.contactAccountSize + head.offlineCertSize) ||
         head.txtSize > DLP_MAX_CONTENT_SIZE || head.offlineCertSize > DLP_MAX_CERT_SIZE) {
+        DLP_LOG_ERROR(LABEL, "IsValidDlpHeader error");
         return false;
     }
     return true;
@@ -499,12 +506,14 @@ int32_t DlpFile::PrepareBuff(struct DlpBlob& message1, struct DlpBlob& message2)
     message1.size = DLP_BUFF_LEN;
     message1.data = new (std::nothrow) uint8_t[DLP_BUFF_LEN];
     if (message1.data == nullptr) {
+        DLP_LOG_ERROR(LABEL, "message1.data null");
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
     message2.size = DLP_BUFF_LEN;
     message2.data = new (std::nothrow) uint8_t[DLP_BUFF_LEN];
     if (message2.data == nullptr) {
+        DLP_LOG_ERROR(LABEL, "message2.data null");
         delete[] message1.data;
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
@@ -928,10 +937,16 @@ uint32_t DlpFile::GetFsContentSize() const
     struct stat fileStat;
     int32_t ret = fstat(dlpFd_, &fileStat);
     if (ret != 0) {
+        DLP_LOG_ERROR(LABEL, "fstat error %{public}d , errno %{public}d", ret, errno);
         return INVALID_FILE_SIZE;
     }
     if (head_.txtOffset > fileStat.st_size || fileStat.st_size >= static_cast<off_t>(INVALID_FILE_SIZE)) {
+        DLP_LOG_ERROR(LABEL, "size error %{public}d %{public}ld", head_.txtOffset, fileStat.st_size);
         return INVALID_FILE_SIZE;
+    }
+    if (static_cast<uint32_t>(fileStat.st_size) - head_.txtOffset == 0) {
+        DLP_LOG_ERROR(LABEL, "linkFile size %{public}d %{public}d", static_cast<uint32_t>(fileStat.st_size),
+            head_.txtOffset);
     }
     return static_cast<uint32_t>(fileStat.st_size) - head_.txtOffset;
 }
