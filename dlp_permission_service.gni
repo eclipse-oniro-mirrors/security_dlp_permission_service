@@ -21,5 +21,11 @@ declare_args() {
   } else {
     dlp_parse_inner = false
   }
-   print("dlp_parse_inner = " + "$dlp_parse_inner")
+
+  if (!defined(global_parts_info) ||
+    defined(global_parts_info.security_dlp_credential_service)) {
+    dlp_credential_enable = true
+  } else {
+    dlp_credential_enable = false
+  }
 }

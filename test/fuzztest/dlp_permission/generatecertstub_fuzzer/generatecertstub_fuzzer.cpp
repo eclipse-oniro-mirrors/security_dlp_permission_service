@@ -41,7 +41,7 @@ static void FuzzTest(const uint8_t* data, size_t size)
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     PermissionPolicy encPolicy;
     encPolicy.ownerAccount_ = name;
-    encPolicy.ownerAccountType_ = DOMAIN_ACCOUNT;
+    encPolicy.ownerAccountType_ = DlpAccountType::DOMAIN_ACCOUNT;
     encPolicy.SetIv(nullptr, 0);
     encPolicy.SetAeskey(nullptr, 0);
     int userNum = rand() % (size + 1) + 1;
@@ -51,7 +51,7 @@ static void FuzzTest(const uint8_t* data, size_t size)
         perminfo.authAccount = name;
         perminfo.authPerm = static_cast<DLPFileAccess>(1 + rand() % 3); // perm type 1 to 3
         perminfo.permExpiryTime = curTime + rand() % 200;              // time range 0 to 200
-        perminfo.authAccountType = DOMAIN_ACCOUNT;
+        perminfo.authAccountType = DlpAccountType::DOMAIN_ACCOUNT;
         encPolicy.authUsers_.emplace_back(perminfo);
     }
     DlpPolicyParcel parcel;

@@ -14,7 +14,9 @@
  */
 
 #include "account_adapt.h"
+#include "dlp_permission.h"
 #include "dlp_permission_log.h"
+#include "domain_account_client.h"
 #include "ipc_skeleton.h"
 #include "ohos_account_kits.h"
 #include "os_account_manager.h"
@@ -23,6 +25,14 @@ namespace {
 constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "AccountAdapt"};
 constexpr static int UID_TRANSFORM_DIVISOR = 200000;
 }
+using OHOS::Security::DlpPermission::DLP_PARSE_ERROR_ACCOUNT_INVALID;
+using OHOS::Security::DlpPermission::DLP_OK;
+using OHOS::AccountSA::OhosAccountInfo;
+using OHOS::AccountSA::OhosAccountKits;
+using OHOS::AccountSA::ACCOUNT_STATE_UNBOUND;
+using OHOS::AccountSA::DomainAccountClient;
+using OHOS::AccountSA::DomainAccountStatus;
+using OHOS::AccountSA::DomainAccountInfo;
 
 int32_t GetCallingUserId(void)
 {
@@ -63,4 +73,74 @@ int8_t GetUserIdFromUid(int32_t uid, int32_t* userId)
         return -1;
     }
     return 0;
+}
+
+bool IsAccountLogIn(uint32_t osAccountId, AccountType accountType, const DlpBlob* accountId)
+{
+    if (accountId == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Invalid input params.");
+        return DLP_ERR_INVALID_PARAMS;
+    }
+
+    int32_t res;
+    if (accountType == CLOUD_ACCOUNT) {
+        OhosAccountInfo accountInfo;
+        res = OhosAccountKits::GetInstance().GetOhosAccountInfoByUserId(osAccountId, accountInfo);
+        if (res != DLP_SUCCESS) {
+            DLP_LOG_ERROR(LABEL, "GetOhosAccountInfoByUserId from OhosAccountKits failed, res:%{public}d.", res);
+            return false;
+        }
+        if (accountInfo.status_ == ACCOUNT_STATE_UNBOUND) {
+            DLP_LOG_ERROR(LABEL, "GetOhosAccountInfoByUserId from OhosAccountKits is not login.");
+            return false;
+        }
+        return true;
+    }
+    if (accountType == DOMAIN_ACCOUNT) {
+        DomainAccountInfo info;
+        std::string account(reinterpret_cast<char*>(accountId->data), accountId->size);
+        info.accountName_ = account;
+        info.domain_ = "china";
+        DLP_LOG_DEBUG(LABEL, "accountName:%{public}s", info.accountName_.c_str());
+        DomainAccountStatus status;
+        res = DomainAccountClient::GetInstance().GetAccountStatus(info, status);
+        if (res != OHOS::ERR_OK) {
+            DLP_LOG_ERROR(LABEL, "GetAccountStatus from OsAccountKits failed, res:%{public}d.", res);
+            return false;
+        }
+        if (status != DomainAccountStatus::LOGIN) {
+            DLP_LOG_ERROR(LABEL, "Domain account status is not login.");
+            return false;
+        }
+        return true;
+    }
+    // app account status default value is true
+    return true;
+}
+
+int32_t GetDomainAccountName(char** account)
+{
+    std::vector<int32_t> ids;
+    if (OHOS::AccountSA::OsAccountManager::QueryActiveOsAccountIds(ids) != 0) {
+        DLP_LOG_ERROR(LABEL, "QueryActiveOsAccountIds return not 0");
+        return DLP_PARSE_ERROR_ACCOUNT_INVALID;
+    }
+    if (ids.size() != 1) {
+        DLP_LOG_ERROR(LABEL, "QueryActiveOsAccountIds size not 1");
+        return DLP_PARSE_ERROR_ACCOUNT_INVALID;
+    }
+    int32_t userId = ids[0];
+    OHOS::AccountSA::OsAccountInfo osAccountInfo;
+    if (OHOS::AccountSA::OsAccountManager::QueryOsAccountById(userId, osAccountInfo) != 0) {
+        DLP_LOG_ERROR(LABEL, "GetOsAccountLocalIdFromDomain return not 0");
+        return DLP_PARSE_ERROR_ACCOUNT_INVALID;
+    }
+    DomainAccountInfo domainInfo;
+    osAccountInfo.GetDomainInfo(domainInfo);
+    if (domainInfo.accountName_.empty()) {
+        DLP_LOG_ERROR(LABEL, "accountName_ empty");
+        return DLP_PARSE_ERROR_ACCOUNT_INVALID;
+    }
+    *account = strdup(domainInfo.accountName_.c_str());
+    return DLP_OK;
 }

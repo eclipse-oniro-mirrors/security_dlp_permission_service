@@ -15,6 +15,7 @@
 
 #include "dlp_credential_client.h"
 #include <pthread.h>
+#include "stdint.h"
 #include <unistd.h>
 #include "account_adapt.h"
 #include "dlp_permission_log.h"
@@ -32,6 +33,7 @@ static pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct PackPolicyCallbackTaskPara {
     DLP_PackPolicyCallback callback;
+    uint32_t userId;
     uint64_t requestId;
     int errorCode;
     DLP_PackPolicyParams* packParams;
@@ -89,6 +91,72 @@ static void FreeRestorePolicyCallbackTaskPara(RestorePolicyCallbackTaskPara* tas
     free(taskParams);
 }
 
+bool GetAccountName(uint32_t accountType, uint32_t userId, char** account)
+{
+    DLP_LOG_INFO("accountName form  accountType:%{public}d DOMAIN_ACCOUNT:%{public}d", accountType, DOMAIN_ACCOUNT);
+    if (accountType != DOMAIN_ACCOUNT) {
+        if (GetLocalAccountName(account, userId) != 0) {
+            DLP_LOG_ERROR("Get local account fail");
+            return false;
+        }
+    } else {
+        if (GetDomainAccountName(account) != 0) {
+            DLP_LOG_ERROR("Get local account fail");
+            return false;
+        }
+    }
+    return true;
+}
+
+static int CheckAccount(const uint8_t* data, uint32_t len, uint32_t accountType, uint32_t userId, bool isNeedCheckList)
+{
+    int res = DLP_SUCCESS;
+    char owner[STRING_LEN];
+    char* account = NULL;
+    char user[STRING_LEN];
+    char everyone[STRING_LEN];
+    char* policy = (char*)malloc(len + 1);
+    if (policy == NULL) {
+        DLP_LOG_ERROR("policy == NULL");
+        return DLP_ERROR;
+    }
+    if (memcpy_s(policy, len + 1, data, len) != EOK) {
+        DLP_LOG_ERROR("memcpy_s error");
+        res = DLP_ERROR;
+        goto end;
+    }
+    policy[len] = '\0';
+    if (!GetAccountName(accountType, userId, &account)) {
+        res = DLP_ERROR;
+        goto end;
+    }
+    if (sprintf_s(owner, STRING_LEN, "\"ownerAccountName\":\"%s\"", account) <= 0 ||
+        sprintf_s(user, STRING_LEN, "\"%s\":{", account) <= 0 ||
+        sprintf_s(everyone, STRING_LEN, "\"%s\":{", "everyone") <= 0) {
+        DLP_LOG_ERROR("sprintf_s owner error");
+        res = DLP_ERROR;
+        goto end;
+    }
+    DLP_LOG_INFO("policy:%{public}s ownerAccountName:%{public}s user %{public}s", policy, owner, user);
+    if (!isNeedCheckList) {
+        if (strstr(policy, owner) == NULL) {
+            DLP_LOG_ERROR("policy owner check error");
+            res = DLP_ERROR;
+        }
+        goto end;
+    }
+    if (strstr(policy, owner) != NULL || strstr(policy, user) != NULL || strstr(policy, everyone) != NULL) {
+        res = DLP_SUCCESS;
+    } else {
+        DLP_LOG_ERROR("No permission to parse policy");
+        res = DLP_ERROR;
+    }
+end:
+    free(account);
+    free(policy);
+    return res;
+}
+
 static void* PackPolicyCallbackTask(void* inputTaskParams)
 {
     if (inputTaskParams == NULL) {
@@ -101,64 +169,28 @@ static void* PackPolicyCallbackTask(void* inputTaskParams)
         FreePackPolicyCallbackTaskPara(taskParams);
         return NULL;
     }
-
+    const char* exInfo = "DlpRestorePolicyTest_NormalInput_ExtraInfo";
+    EncAndDecOptions encAndDecOptions = {
+        .opt = ALLOW_RECEIVER_DECRYPT_WITHOUT_USE_CLOUD,
+        .extraInfo = (uint8_t*)(exInfo),
+        .extraInfoLen = strlen(exInfo)
+    };
     DLP_EncPolicyData outParams = {
         .featureName = taskParams->packParams->featureName,
         .data = taskParams->packParams->data,
         .dataLen = taskParams->packParams->dataLen,
+        .options = encAndDecOptions,
+        .accountType = taskParams->packParams->accountType,
     };
-
+    if (CheckAccount(taskParams->packParams->data, taskParams->packParams->dataLen, taskParams->packParams->accountType,
+        taskParams->userId, false) != DLP_SUCCESS) {
+        taskParams->errorCode = DLP_ERR_CONNECTION_NO_PERMISSION;
+        DLP_LOG_ERROR("get ownerAccount error");
+    }
     taskParams->callback(taskParams->requestId, taskParams->errorCode, &outParams);
     DLP_LOG_INFO("End thread, requestId: %{public}llu", (unsigned long long)taskParams->requestId);
     FreePackPolicyCallbackTaskPara(taskParams);
     return NULL;
-}
-
-static int CheckAccountInList(const uint8_t* data, uint32_t len, uint32_t userId)
-{
-    char owner[STRING_LEN];
-    char user[STRING_LEN];
-    if (data == NULL || len == 0) {
-        return DLP_ERROR;
-    }
-    char* account = NULL;
-    if (GetLocalAccountName(&account, userId) != 0) {
-        DLP_LOG_ERROR("Get local account fail");
-        return DLP_ERROR;
-    }
-    DLP_LOG_DEBUG("Get local account: %{public}s", account);
-
-    char* policy = (char*)malloc(len + 1);
-    if (policy == NULL) {
-        free(account);
-        return DLP_ERROR;
-    }
-    int res;
-    if (memcpy_s(policy, len + 1, data, len) != EOK) {
-        res = DLP_ERROR;
-        goto end;
-    }
-    policy[len] = '\0';
-    if (sprintf_s(owner, STRING_LEN, "\"ownerAccount\":\"%s\"", account) <= 0) {
-        res = DLP_ERROR;
-        goto end;
-    }
-
-    if (sprintf_s(user, STRING_LEN, "\"authAccount\":\"%s\"", account) <= 0) {
-        res = DLP_ERROR;
-        goto end;
-    }
-
-    if (strstr(policy, owner) != NULL || strstr(policy, user) != NULL) {
-        res = DLP_SUCCESS;
-    } else {
-        DLP_LOG_ERROR("No permission to parse policy");
-        res = DLP_ERROR;
-    }
-end:
-    free(policy);
-    free(account);
-    return res;
 }
 
 static void* RestorePolicyCallbackTask(void* inputTaskParams)
@@ -175,30 +207,43 @@ static void* RestorePolicyCallbackTask(void* inputTaskParams)
     }
 
     DLP_RestorePolicyData outParams;
-    taskParams->errorCode =
-        CheckAccountInList(taskParams->encData->data, taskParams->encData->dataLen, taskParams->userId);
-    if (taskParams->errorCode != DLP_ERROR) {
-        outParams.data = NULL;
-        outParams.dataLen = 0;
-    } else {
-        outParams.data = taskParams->encData->data;
-        outParams.dataLen = taskParams->encData->dataLen;
+    taskParams->errorCode = DLP_SUCCESS;
+    outParams.data = NULL;
+    outParams.dataLen = 0;
+    DlpBlob accountIdBlob = { taskParams->encData->receiverAccountInfo.accountIdLen,
+                              taskParams->encData->receiverAccountInfo.accountId };
+    bool accountStatus = IsAccountLogIn(taskParams->userId, taskParams->encData->accountType, &accountIdBlob);
+    if (!accountStatus) {
+        taskParams->errorCode = DLP_ERR_ACCOUNT_NOT_LOG_IN;
+        DLP_LOG_ERROR("Check accountStatus failed.");
+        goto end;
     }
+    if (CheckAccount(taskParams->encData->data, taskParams->encData->dataLen, taskParams->encData->accountType,
+        taskParams->userId, true) != DLP_SUCCESS) {
+        taskParams->errorCode = DLP_ERR_CONNECTION_NO_PERMISSION;
+        DLP_LOG_ERROR("get ownerAccount error");
+        FreeRestorePolicyCallbackTaskPara(taskParams);
+        goto end;
+    }
+    outParams.data = taskParams->encData->data;
+    outParams.dataLen = taskParams->encData->dataLen;
 
+end:
     taskParams->callback(taskParams->requestId, taskParams->errorCode, &outParams);
     DLP_LOG_INFO("End thread, requestId: %{public}llu", (unsigned long long)taskParams->requestId);
     FreeRestorePolicyCallbackTaskPara(taskParams);
     return NULL;
 }
 
-static PackPolicyCallbackTaskPara* TransPackPolicyParams(
-    const DLP_PackPolicyParams* params, DLP_PackPolicyCallback callback, uint64_t requestId)
+static PackPolicyCallbackTaskPara* TransPackPolicyParams(const DLP_PackPolicyParams* params,
+    DLP_PackPolicyCallback callback, uint64_t requestId, uint32_t userId)
 {
     PackPolicyCallbackTaskPara* taskParams = (PackPolicyCallbackTaskPara*)calloc(1, sizeof(PackPolicyCallbackTaskPara));
     if (taskParams == NULL) {
         goto err;
     }
     taskParams->callback = callback;
+    taskParams->userId = userId;
     taskParams->requestId = requestId;
     taskParams->errorCode = 0;
     taskParams->packParams = (DLP_PackPolicyParams*)calloc(1, sizeof(DLP_PackPolicyParams));
@@ -218,6 +263,8 @@ static PackPolicyCallbackTaskPara* TransPackPolicyParams(
     }
     taskParams->packParams->dataLen = params->dataLen;
     taskParams->packParams->accountType = params->accountType;
+    taskParams->packParams->options = params->options;
+    taskParams->packParams->senderAccountInfo = params->senderAccountInfo;
     return taskParams;
 err:
     DLP_LOG_ERROR("Memory operate fail");
@@ -240,7 +287,7 @@ int DLP_PackPolicy(
     pthread_mutex_unlock(&g_mutex);
     *requestId = id;
 
-    PackPolicyCallbackTaskPara* taskParams = TransPackPolicyParams(params, callback, *requestId);
+    PackPolicyCallbackTaskPara* taskParams = TransPackPolicyParams(params, callback, *requestId, osAccountId);
     if (taskParams == NULL) {
         return DLP_ERROR;
     }
@@ -290,6 +337,9 @@ static RestorePolicyCallbackTaskPara* TransEncPolicyData(
         goto err;
     }
     taskParams->encData->dataLen = params->dataLen;
+    taskParams->encData->accountType = params->accountType;
+    taskParams->encData->options = params->options;
+    taskParams->encData->receiverAccountInfo = params->receiverAccountInfo;
     return taskParams;
 err:
     DLP_LOG_ERROR("Memory operate fail");
@@ -300,6 +350,7 @@ err:
 int DLP_RestorePolicy(
     uint32_t osAccountId, const DLP_EncPolicyData* params, DLP_RestorePolicyCallback callback, uint64_t* requestId)
 {
+    DLP_LOG_DEBUG("DLP enter mock");
     if (params == NULL || params->data == NULL || params->featureName == NULL || callback == NULL ||
         requestId == NULL || params->dataLen == 0 || params->dataLen > MAX_CERT_LEN) {
         DLP_LOG_ERROR("Callback or params is null");

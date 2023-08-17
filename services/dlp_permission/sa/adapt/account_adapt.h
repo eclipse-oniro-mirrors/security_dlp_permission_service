@@ -16,18 +16,28 @@
 #ifndef ACCOUNT_ADAPT_H
 #define ACCOUNT_ADAPT_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 #ifdef __cplusplus
 
 #include <string>
+#include "dlp_credential_client_defines.h"
+
 int32_t GetLocalAccountUid(std::string& accountUid);
 
 extern "C" {
 #endif
+typedef struct {
+    uint32_t size;
+    uint8_t* data;
+} DlpBlob;
+
 int32_t GetCallingUserId(void);
 int8_t GetLocalAccountName(char** account, uint32_t userId);
 int8_t GetUserIdFromUid(int32_t uid, int32_t* userId);
+int32_t GetDomainAccountName(char** account);
+bool IsAccountLogIn(uint32_t osAccountId, AccountType accountType, const DlpBlob* accountId);
 #ifdef __cplusplus
 }
 #endif

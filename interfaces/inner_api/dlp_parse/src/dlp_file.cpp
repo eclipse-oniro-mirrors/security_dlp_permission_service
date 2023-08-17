@@ -946,7 +946,7 @@ uint32_t DlpFile::GetFsContentSize() const
     struct stat fileStat;
     int32_t ret = fstat(dlpFd_, &fileStat);
     if (ret != 0) {
-        DLP_LOG_ERROR(LABEL, "fstat error %{public}d , errno %{public}d", ret, errno);
+        DLP_LOG_ERROR(LABEL, "fstat error %{public}d , errno %{public}d dlpfd: %{public}d ", ret, errno, dlpFd_);
         return INVALID_FILE_SIZE;
     }
     if (head_.txtOffset > fileStat.st_size || fileStat.st_size >= static_cast<off_t>(INVALID_FILE_SIZE)) {

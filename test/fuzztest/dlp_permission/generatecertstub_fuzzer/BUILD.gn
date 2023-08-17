@@ -30,6 +30,7 @@ ohos_fuzztest("GenerateCertStubFuzzTest") {
     "${dlp_root_dir}/services/dlp_permission/sa/adapt",
     "${dlp_root_dir}/services/dlp_permission/sa/callback/dlp_sandbox_change_callback/",
     "${dlp_root_dir}/services/dlp_permission/sa/callback/open_dlp_file_callback/",
+    "${dlp_root_dir}/services/dlp_permission/sa/mock",
     "${dlp_root_dir}/services/dlp_permission/sa/sa_common",
     "${dlp_root_dir}/services/dlp_permission/sa/sa_main",
   ]
@@ -61,7 +62,6 @@ ohos_fuzztest("GenerateCertStubFuzzTest") {
     "bundle_framework:appexecfwk_core",
     "common_event_service:cesfwk_core",
     "common_event_service:cesfwk_innerkits",
-    "dlp_credential_service:dlp_credential_sdk",
     "c_utils:utils",
     "hisysevent:libhisysevent",
     "hilog:libhilog",
