@@ -186,9 +186,8 @@ bool DlpPermissionService::InsertDlpSandboxInfo(DlpSandboxInfo& sandboxInfo, boo
             RetentionFileManager::GetInstance().ClearUnreservedSandbox();
         }
         return false;
-    } else {
-        sandboxInfo.uid = info.uid;
     }
+    sandboxInfo.uid = info.uid;
     sandboxInfo.tokenId = AccessToken::AccessTokenKit::GetHapTokenID(sandboxInfo.userId, sandboxInfo.bundleName,
         sandboxInfo.appIndex);
     appStateObserver_->AddDlpSandboxInfo(sandboxInfo);

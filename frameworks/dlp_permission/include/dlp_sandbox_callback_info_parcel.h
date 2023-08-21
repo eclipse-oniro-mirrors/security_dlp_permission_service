@@ -28,9 +28,9 @@ public:
 
     ~DlpSandboxCallbackInfoParcel() override = default;
 
-    bool Marshalling(Parcel &out) const override;
+    bool Marshalling(Parcel& out) const override;
 
-    static DlpSandboxCallbackInfoParcel *Unmarshalling(Parcel &in);
+    static DlpSandboxCallbackInfoParcel* Unmarshalling(Parcel& in);
 
     DlpSandboxCallbackInfo changeInfo;
 };

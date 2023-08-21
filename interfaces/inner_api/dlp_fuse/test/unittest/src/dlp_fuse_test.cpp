@@ -42,7 +42,7 @@ using namespace OHOS::Security::AccessToken;
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpFuseTest"};
 // using for clean all link file
-static const int32_t LINK_FD_ARRY_SIZE = 4;
+static const uint32_t LINK_FD_ARRY_SIZE = 4;
 static int32_t g_linkFdArry[LINK_FD_ARRY_SIZE] = {-1};
 static const std::string MOUNT_POINT_DIR = "/data/fuse/";
 static const std::string FUSE_DEV = "/dev/fuse";
@@ -86,7 +86,7 @@ void DlpFuseTest::SetUp()
 void DlpFuseTest::TearDown()
 {
     DLP_LOG_INFO(LABEL, "TearDown");
-    for (int32_t i = 0; i < LINK_FD_ARRY_SIZE; i++) {
+    for (uint32_t i = 0; i < LINK_FD_ARRY_SIZE; i++) {
         if (g_linkFdArry[i] != -1) {
             close(g_linkFdArry[i]);
             g_linkFdArry[i] = -1;
@@ -153,7 +153,7 @@ void PrepareDlpFuseFsMount()
     struct stat fstat;
     if (stat(MOUNT_POINT_DIR.c_str(), &fstat) != 0) {
         if (errno == ENOENT) {
-            int32_t ret = mkdir(MOUNT_POINT_DIR.c_str(), 0x777);
+            int32_t ret = mkdir(MOUNT_POINT_DIR.c_str(), S_IRWXU | S_IRWXG | S_IRWXO);
             if (ret < 0) {
                 DLP_LOG_ERROR(LABEL, "mkdir mount point failed errno %{public}d", errno);
                 return;
@@ -185,7 +185,7 @@ void PrepareDlpFuseFsMount()
         "fd=%d,rootmode=40000,user_id=%u,group_id=%u", g_mountFd, getuid(), getgid());
     DLP_LOG_INFO(LABEL, "kernelOpts %{public}s", kernelOpts);
 
-    int32_t res = mount(source.c_str(), mnt.c_str(), type.c_str(), 6, kernelOpts);
+    int32_t res = mount(source.c_str(), mnt.c_str(), type.c_str(), MS_NOSUID | MS_NODEV, kernelOpts);
     if (res != 0) {
         DLP_LOG_ERROR(LABEL, "mount failed, errno %{public}d", errno);
     }
@@ -201,8 +201,8 @@ HWTEST_F(DlpFuseTest, GenerateDlpFile001, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "GenerateDlpFile001");
 
-    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
-    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
+    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
     ASSERT_GE(g_plainFileFd, 0);
     ASSERT_GE(g_dlpFileFd, 0);
 
@@ -215,7 +215,7 @@ HWTEST_F(DlpFuseTest, GenerateDlpFile001, TestSize.Level1)
     ASSERT_EQ(result, 0);
     ASSERT_NE(g_Dlpfile, nullptr);
 
-    g_recoveryFileFd = open("/data/fuse_test.txt.recovery", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    g_recoveryFileFd = open("/data/fuse_test.txt.recovery", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
     ASSERT_GE(g_recoveryFileFd, 0);
 
     result = DlpFileManager::GetInstance().RecoverDlpFile(g_Dlpfile, g_recoveryFileFd);
@@ -240,8 +240,8 @@ HWTEST_F(DlpFuseTest, GenerateDlpFile001, TestSize.Level1)
  */
 HWTEST_F(DlpFuseTest, OpenDlpFile001, TestSize.Level1)
 {
-    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
-    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
+    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
     ASSERT_GE(g_plainFileFd, 0);
     ASSERT_GE(g_dlpFileFd, 0);
     char buffer[] = "123456";
@@ -276,7 +276,7 @@ HWTEST_F(DlpFuseTest, OpenDlpFile001, TestSize.Level1)
     std::string contactAccount;
     g_Dlpfile->GetContactAccount(contactAccount);
     ASSERT_EQ(contactAccount, prop.contactAccount);
-    g_recoveryFileFd = open("/data/fuse_test.txt.recovery", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    g_recoveryFileFd = open("/data/fuse_test.txt.recovery", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
     ASSERT_GE(g_recoveryFileFd, 0);
     ASSERT_EQ(DlpFileManager::GetInstance().RecoverDlpFile(g_Dlpfile, g_recoveryFileFd), 0);
     lseek(g_recoveryFileFd, 0, SEEK_SET);
@@ -297,8 +297,8 @@ HWTEST_F(DlpFuseTest, OpenDlpFile001, TestSize.Level1)
  */
 HWTEST_F(DlpFuseTest, OpenDlpFile002, TestSize.Level1)
 {
-    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
-    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
+    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
     ASSERT_GE(g_plainFileFd, 0);
     ASSERT_GE(g_dlpFileFd, 0);
     char buffer[] = "123456";
@@ -327,7 +327,7 @@ HWTEST_F(DlpFuseTest, OpenDlpFile002, TestSize.Level1)
     std::string contactAccount;
     g_Dlpfile->GetContactAccount(contactAccount);
     ASSERT_EQ(contactAccount, prop.contactAccount);
-    g_recoveryFileFd = open("/data/fuse_test.txt.recovery", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    g_recoveryFileFd = open("/data/fuse_test.txt.recovery", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
     ASSERT_GE(g_recoveryFileFd, 0);
     ASSERT_EQ(DlpFileManager::GetInstance().RecoverDlpFile(g_Dlpfile, g_recoveryFileFd), 0);
     lseek(g_recoveryFileFd, 0, SEEK_SET);
@@ -350,8 +350,8 @@ HWTEST_F(DlpFuseTest, testIsDlpFile001, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "testIsDlpFile001");
 
-    int32_t plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
-    int32_t dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    int32_t plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
+    int32_t dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
     ASSERT_GE(plainFileFd, 0);
     ASSERT_GE(dlpFileFd, 0);
 
@@ -392,8 +392,8 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile001, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "AddDlpLinkFile001");
     PrepareDlpFuseFsMount();
-    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
-    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
+    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
     ASSERT_GE(g_plainFileFd, 0);
     ASSERT_GE(g_dlpFileFd, 0);
 
@@ -449,8 +449,8 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile001, TestSize.Level1)
 HWTEST_F(DlpFuseTest, AddDlpLinkFile002, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "AddDlpLinkFile002");
-    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
-    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
+    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
     ASSERT_GE(g_plainFileFd, 0);
     ASSERT_GE(g_dlpFileFd, 0);
 
@@ -495,7 +495,7 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile002, TestSize.Level1)
 
     ASSERT_EQ(DlpLinkManager::GetInstance().DeleteDlpLinkFile(g_Dlpfile), 0);
 
-    g_recoveryFileFd = open("/data/fuse_test.txt.recovery", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    g_recoveryFileFd = open("/data/fuse_test.txt.recovery", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
     ASSERT_GE(g_dlpFileFd, 0);
     ASSERT_EQ(DlpFileManager::GetInstance().RecoverDlpFile(g_Dlpfile, g_recoveryFileFd), 0);
     ASSERT_EQ(DlpFileManager::GetInstance().CloseDlpFile(g_Dlpfile), 0);
@@ -554,8 +554,8 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile002, TestSize.Level1)
 HWTEST_F(DlpFuseTest, AddDlpLinkFile003, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "AddDlpLinkFile003");
-    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
-    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
+    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
     ASSERT_GE(g_plainFileFd, 0);
     ASSERT_GE(g_dlpFileFd, 0);
 
@@ -661,8 +661,8 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile003, TestSize.Level1)
 HWTEST_F(DlpFuseTest, AddDlpLinkFile004, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "AddDlpLinkFile004");
-    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
-    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
+    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
     ASSERT_GE(g_plainFileFd, 0);
     ASSERT_GE(g_dlpFileFd, 0);
 
@@ -702,8 +702,8 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile004, TestSize.Level1)
 HWTEST_F(DlpFuseTest, AddDlpLinkFile005, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "AddDlpLinkFile005");
-    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
-    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
+    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
     ASSERT_GE(g_plainFileFd, 0);
     ASSERT_GE(g_dlpFileFd, 0);
 
@@ -743,8 +743,8 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile005, TestSize.Level1)
 HWTEST_F(DlpFuseTest, AddDlpLinkFile006, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "AddDlpLinkFile006");
-    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
-    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
+    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
     ASSERT_GE(g_plainFileFd, 0);
     ASSERT_GE(g_dlpFileFd, 0);
 
@@ -771,7 +771,7 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile006, TestSize.Level1)
     g_linkFdArry[0] = 0;
     ASSERT_EQ(DlpLinkManager::GetInstance().DeleteDlpLinkFile(g_Dlpfile), 0);
 
-    g_recoveryFileFd = open("/data/fuse_test.txt.recovery", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    g_recoveryFileFd = open("/data/fuse_test.txt.recovery", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
     ASSERT_GE(g_dlpFileFd, 0);
     ASSERT_EQ(DlpFileManager::GetInstance().RecoverDlpFile(g_Dlpfile, g_recoveryFileFd), 0);
     ASSERT_EQ(DlpFileManager::GetInstance().CloseDlpFile(g_Dlpfile), 0);
@@ -792,8 +792,8 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile006, TestSize.Level1)
 HWTEST_F(DlpFuseTest, AddDlpLinkFile007, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "AddDlpLinkFile007");
-    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
-    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
+    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
     ASSERT_GE(g_plainFileFd, 0);
     ASSERT_GE(g_dlpFileFd, 0);
 
@@ -823,7 +823,7 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile007, TestSize.Level1)
     g_linkFdArry[0] = 0;
     ASSERT_EQ(DlpLinkManager::GetInstance().DeleteDlpLinkFile(g_Dlpfile), 0);
 
-    g_recoveryFileFd = open("/data/fuse_test.txt.recovery", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    g_recoveryFileFd = open("/data/fuse_test.txt.recovery", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
     ASSERT_GE(g_dlpFileFd, 0);
     ASSERT_EQ(DlpFileManager::GetInstance().RecoverDlpFile(g_Dlpfile, g_recoveryFileFd), 0);
     ASSERT_EQ(DlpFileManager::GetInstance().CloseDlpFile(g_Dlpfile), 0);
@@ -849,8 +849,8 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile007, TestSize.Level1)
 HWTEST_F(DlpFuseTest, AddDlpLinkFile008, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "AddDlpLinkFile008");
-    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
-    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
+    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
     ASSERT_GE(g_plainFileFd, 0);
     ASSERT_GE(g_dlpFileFd, 0);
 
@@ -1018,8 +1018,8 @@ HWTEST_F(DlpFuseTest, DumpDlpLinkFile001, TestSize.Level1)
 HWTEST_F(DlpFuseTest, ReadFuseDir001, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "ReadFuseDir001");
-    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, 0777);
-    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, 0777);
+    g_plainFileFd = open("/data/fuse_test.txt", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
+    g_dlpFileFd = open("/data/fuse_test.txt.dlp", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
     ASSERT_GE(g_plainFileFd, 0);
     ASSERT_GE(g_dlpFileFd, 0);
 

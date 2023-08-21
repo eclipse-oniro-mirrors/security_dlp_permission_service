@@ -440,14 +440,14 @@ int32_t DlpFile::AddOfflineCert(std::vector<uint8_t>& offlineCert, const std::st
 
     char realPath[PATH_MAX] = {0};
     if ((realpath(workDir.c_str(), realPath) == nullptr) && (errno != ENOENT)) {
-        DLP_LOG_ERROR(LABEL, "realpath, %{public}s, workDir %{public}s", strerror(errno), workDir.c_str());
+        DLP_LOG_ERROR(LABEL, "realpath, %{public}s, workDir %{private}s", strerror(errno), workDir.c_str());
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
     std::string rPath(realPath);
     std::string path = rPath + "/dlp" + std::to_string(count++) + ".txt";
     int tmpFile = open(path.c_str(), O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
     if (tmpFile < 0) {
-        DLP_LOG_ERROR(LABEL, "open file fail, %{public}s, realPath %{public}s", strerror(errno), path.c_str());
+        DLP_LOG_ERROR(LABEL, "open file fail, %{public}s, realPath %{private}s", strerror(errno), path.c_str());
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
 
@@ -465,11 +465,17 @@ int32_t DlpFile::AddOfflineCert(std::vector<uint8_t>& offlineCert, const std::st
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
     (void)lseek(dlpFd_, oldTxtOffset, SEEK_SET);
-    DoDlpContentCopyOperation(dlpFd_, tmpFile, 0, head_.txtSize);
+    int32_t ret = DoDlpContentCopyOperation(dlpFd_, tmpFile, 0, head_.txtSize);
+    if (ret != DLP_OK) {
+        return ret;
+    }
     int fileSize = lseek(tmpFile, 0, SEEK_CUR);
     (void)lseek(tmpFile, 0, SEEK_SET);
     (void)lseek(dlpFd_, 0, SEEK_SET);
-    DoDlpContentCopyOperation(tmpFile, dlpFd_, 0, fileSize);
+    ret = DoDlpContentCopyOperation(tmpFile, dlpFd_, 0, fileSize);
+    if (ret != DLP_OK) {
+        return ret;
+    }
     if (ftruncate(dlpFd_, fileSize) == -1) {
         DLP_LOG_ERROR(LABEL, "truncate plain file to zero failed, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
@@ -633,7 +639,10 @@ int32_t DlpFile::DoDlpContentCopyOperation(int32_t inFd, int32_t outFd, uint32_t
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
-    int32_t ret = DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    if (inOffset >= inFileLen) {
+        return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
+    }
+    int32_t ret = DLP_OK;
     while (inOffset < inFileLen) {
         uint32_t readLen = ((inFileLen - inOffset) < DLP_BUFF_LEN) ? (inFileLen - inOffset) : DLP_BUFF_LEN;
         (void)memset_s(data, DLP_BUFF_LEN, 0, DLP_BUFF_LEN);
@@ -1024,7 +1033,7 @@ int32_t DlpFile::DlpFileWrite(uint32_t offset, void* buf, uint32_t size)
 
 int32_t DlpFile::Truncate(uint32_t size)
 {
-    DLP_LOG_INFO(LABEL, "Truncate file size %{public}d", size);
+    DLP_LOG_INFO(LABEL, "Truncate file size %{public}u", size);
 
     if (authPerm_ == READ_ONLY) {
         DLP_LOG_ERROR(LABEL, "Dlp file is readonly, truncate failed");
@@ -1049,7 +1058,7 @@ int32_t DlpFile::Truncate(uint32_t size)
     }
 
     if (res != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Truncate file size %{public}d failed, %{public}s", size, strerror(errno));
+        DLP_LOG_ERROR(LABEL, "Truncate file size %{public}u failed, %{public}s", size, strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
     return DLP_OK;

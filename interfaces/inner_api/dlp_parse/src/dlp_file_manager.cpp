@@ -87,6 +87,10 @@ int32_t DlpFileManager::GenerateCertData(const PermissionPolicy& policy, struct 
         DLP_LOG_ERROR(LABEL, "Check dlp cert fail, cert is too large, size=%{public}zu", certSize);
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
+    if (certSize == 0) {
+        DLP_LOG_ERROR(LABEL, "Check dlp cert fail, cert is zero, size=%{public}zu", certSize);
+        return DLP_PARSE_ERROR_VALUE_INVALID;
+    }
 
     uint8_t* certBuffer = new (std::nothrow) uint8_t[certSize];
     if (certBuffer == nullptr) {

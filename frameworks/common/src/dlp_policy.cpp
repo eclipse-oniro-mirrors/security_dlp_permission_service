@@ -37,7 +37,7 @@ static bool CheckAesParam(const uint8_t* buff, uint32_t len)
         return false;
     }
     if (!CheckAesParamLen(len)) {
-        DLP_LOG_ERROR(LABEL, "Aes key or iv len invalid, len=%{public}d", len);
+        DLP_LOG_ERROR(LABEL, "Aes key or iv len invalid, len=%{public}u", len);
         return false;
     }
     return true;
@@ -47,7 +47,7 @@ static bool CheckAccount(const std::string& account)
 {
     uint32_t accountSize = account.size();
     if (accountSize == 0 || accountSize > MAX_ACCOUNT_SIZE) {
-        DLP_LOG_ERROR(LABEL, "Account len invalid, len=%{public}d", accountSize);
+        DLP_LOG_ERROR(LABEL, "Account len invalid, len=%{public}u", accountSize);
         return false;
     }
     return true;
@@ -56,7 +56,7 @@ static bool CheckAccount(const std::string& account)
 static bool CheckPerm(uint32_t perm)
 {
     if (perm <= NO_PERMISSION || perm > FULL_CONTROL) {
-        DLP_LOG_ERROR(LABEL, "Auth Perm invalid, perm=%{public}d", perm);
+        DLP_LOG_ERROR(LABEL, "Auth Perm invalid, perm=%{public}u", perm);
         return false;
     }
     return true;
@@ -68,7 +68,7 @@ static bool CheckTime(uint64_t time)
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     if (time < curTime) {
         DLP_LOG_ERROR(LABEL,
-            "Perm expiry time is earlier than current time, cur=%{public}" PRId64 ", set=%{public}" PRId64 "", curTime,
+            "Perm expiry time is earlier than current time, cur=%{public}" PRIu64 ", set=%{public}" PRIu64 "", curTime,
             time);
         return false;
     }
@@ -85,7 +85,7 @@ static bool CheckAuthUserInfoList(const std::vector<AuthUserInfo>& authUsers_)
 {
     uint32_t userNum = authUsers_.size();
     if (userNum > MAX_ACCOUNT_NUM) {
-        DLP_LOG_ERROR(LABEL, "Auth users number exceeds %{public}d, total=%{public}d", MAX_ACCOUNT_NUM, userNum);
+        DLP_LOG_ERROR(LABEL, "Auth users number exceeds %{public}u, total=%{public}u", MAX_ACCOUNT_NUM, userNum);
         return false;
     }
     return (std::none_of(authUsers_.begin(), authUsers_.end(),
@@ -158,13 +158,13 @@ void PermissionPolicy::SetAeskey(const uint8_t* key, uint32_t keyLen)
         return;
     }
     if (!CheckAesParamLen(keyLen)) {
-        DLP_LOG_ERROR(LABEL, "Aes key len invalid, len=%{public}d", keyLen);
+        DLP_LOG_ERROR(LABEL, "Aes key len invalid, len=%{public}u", keyLen);
         return;
     }
     FreeUint8Buffer(&aeskey_, aeskeyLen_);
     aeskey_ = new (std::nothrow) uint8_t[keyLen];
     if (aeskey_ == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Alloc %{public}d buff for aes key fail", keyLen);
+        DLP_LOG_ERROR(LABEL, "Alloc %{public}u buff for aes key fail", keyLen);
         return;
     }
     aeskeyLen_ = keyLen;
@@ -193,13 +193,13 @@ void PermissionPolicy::SetIv(const uint8_t* iv, uint32_t ivLen)
         return;
     }
     if (!CheckAesParamLen(ivLen)) {
-        DLP_LOG_ERROR(LABEL, "Iv len invalid, len=%{public}d", ivLen);
+        DLP_LOG_ERROR(LABEL, "Iv len invalid, len=%{public}u", ivLen);
         return;
     }
     FreeUint8Buffer(&iv_, ivLen_);
     iv_ = new (std::nothrow) uint8_t[ivLen];
     if (iv_ == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Alloc %{public}d buff for iv fail", ivLen);
+        DLP_LOG_ERROR(LABEL, "Alloc %{public}u buff for iv fail", ivLen);
         return;
     }
     ivLen_ = ivLen;
@@ -225,7 +225,7 @@ void PermissionPolicy::CopyPermissionPolicy(const PermissionPolicy& srcPolicy)
     if (!srcPolicy.IsValid()) {
         return;
     }
-    DLP_LOG_DEBUG(LABEL, "ownerAccount_ %{private}s ownerAccountId %{private}s accountType %{public}d",
+    DLP_LOG_DEBUG(LABEL, "ownerAccount_ %{private}s ownerAccountId %{private}s accountType %{public}u",
         srcPolicy.ownerAccount_.c_str(), srcPolicy.ownerAccountId_.c_str(), srcPolicy.ownerAccountType_);
     ownerAccount_ = srcPolicy.ownerAccount_;
     ownerAccountId_ = srcPolicy.ownerAccountId_;
@@ -236,7 +236,7 @@ void PermissionPolicy::CopyPermissionPolicy(const PermissionPolicy& srcPolicy)
     aeskeyLen_ = srcPolicy.aeskeyLen_;
     aeskey_ = new (std::nothrow) uint8_t[aeskeyLen_];
     if (aeskey_ == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Alloc %{public}d buff for aes key fail", aeskeyLen_);
+        DLP_LOG_ERROR(LABEL, "Alloc %{public}u buff for aes key fail", aeskeyLen_);
         return;
     }
     if (memcpy_s(aeskey_, aeskeyLen_, srcPolicy.aeskey_, srcPolicy.aeskeyLen_) != EOK) {
@@ -247,7 +247,7 @@ void PermissionPolicy::CopyPermissionPolicy(const PermissionPolicy& srcPolicy)
     ivLen_ = srcPolicy.ivLen_;
     iv_ = new (std::nothrow) uint8_t[ivLen_];
     if (iv_ == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Alloc %{public}d buff for iv fail", ivLen_);
+        DLP_LOG_ERROR(LABEL, "Alloc %{public}u buff for iv fail", ivLen_);
         FreePermissionPolicyMem();
         return;
     }
@@ -260,7 +260,7 @@ void PermissionPolicy::CopyPermissionPolicy(const PermissionPolicy& srcPolicy)
 
 bool CheckAccountType(DlpAccountType accountType)
 {
-    if (accountType > APPLICATION_ACCOUNT || accountType < CLOUD_ACCOUNT) {
+    if (accountType != CLOUD_ACCOUNT && accountType != DOMAIN_ACCOUNT && accountType != APPLICATION_ACCOUNT) {
         DLP_LOG_ERROR(LABEL, "Account type is invalid, type=%{public}d", accountType);
         return false;
     }

@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef INTERFACES_INNER_API_DLP_FILE_DLP_FILE_H
-#define INTERFACES_INNER_API_DLP_FILE_DLP_FILE_H
+#ifndef INTERFACES_INNER_API_DLP_FILE_H
+#define INTERFACES_INNER_API_DLP_FILE_H
 
 #include <string>
 #include "dlp_crypt.h"
@@ -155,4 +155,4 @@ private:
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS
-#endif /*  INTERFACES_INNER_API_DLP_FILE_DLP_FILE_H */
+#endif /*  INTERFACES_INNER_API_DLP_FILE_H */

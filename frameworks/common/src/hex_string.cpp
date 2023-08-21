@@ -14,9 +14,9 @@
  */
 
 #include "hex_string.h"
-#include "dlp_permission.h"
 #include <cstdio>
 #include <cstring>
+#include "dlp_permission.h"
 
 namespace OHOS {
 namespace Security {
@@ -26,7 +26,7 @@ static char HexToChar(uint8_t hex)
     return (hex > 9) ? (hex + 0x37) : (hex + 0x30);  // numbers greater than 9 are represented by letters in hex.
 }
 
-int32_t ByteToHexString(const uint8_t* byte, uint32_t byteLen, char* hexStr, uint32_t hexLen)
+int32_t ByteToHexString(const uint8_t *byte, uint32_t byteLen, char *hexStr, uint32_t hexLen)
 {
     if (byte == nullptr || hexStr == nullptr) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
@@ -58,7 +58,7 @@ static uint8_t CharToHex(char c)
     }
 }
 
-int32_t HexStringToByte(const char* hexStr, uint8_t* byte, uint32_t byteLen)
+int32_t HexStringToByte(const char *hexStr, uint8_t *byte, uint32_t byteLen)
 {
     if (byte == nullptr || hexStr == nullptr) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;

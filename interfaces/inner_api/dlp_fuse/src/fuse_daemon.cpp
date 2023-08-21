@@ -246,7 +246,7 @@ static void FuseDaemonForget(fuse_req_t req, fuse_ino_t ino, uint64_t nlookup)
         fuse_reply_err(req, EBADF);
         return;
     }
-    DLP_LOG_DEBUG(LABEL, "Forget link file name %{private}s nlookup %{public}d",
+    DLP_LOG_DEBUG(LABEL, "Forget link file name %{private}s nlookup %{public}u",
         dlp->GetLinkName().c_str(), static_cast<uint32_t>(nlookup));
     if (dlp->SubAndCheckZeroRef(nlookup)) {
         DLP_LOG_INFO(LABEL, "Link file reference is less than 0, delete link file ok");
@@ -559,7 +559,7 @@ int FuseDaemon::NotifyKernelNoFlush(void)
     }
 
     // we need kernel to know that fs has no flush interface, close will trigger kernel flush
-    close(defaultFd);
+    (void)close(defaultFd);
     DlpLinkManager::GetInstance().DeleteDlpLinkFile(defaultfilePtr);
     DLP_LOG_INFO(LABEL, "Notify kernel no flush succ");
     return 0;

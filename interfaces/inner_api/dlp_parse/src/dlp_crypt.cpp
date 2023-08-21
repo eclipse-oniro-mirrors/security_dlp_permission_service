@@ -53,19 +53,19 @@ inline bool DlpOpensslCheckBlobZero(const struct DlpBlob* blob)
     return true;
 }
 
-static bool AesGenKeyCheckParam(const uint32_t keySize)
+static bool AesGenKeyCheckParam(uint32_t keySize)
 {
     return (keySize == DLP_AES_KEY_SIZE_128) || (keySize == DLP_AES_KEY_SIZE_192) || (keySize == DLP_AES_KEY_SIZE_256);
 }
 
-int32_t DlpOpensslGenerateRandomKey(const uint32_t keySize, struct DlpBlob* key)
+int32_t DlpOpensslGenerateRandomKey(uint32_t keySize, struct DlpBlob* key)
 {
     if (key == nullptr) {
         DLP_LOG_ERROR(LABEL, "Generate key fail, blob is nullptr");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
     if (!AesGenKeyCheckParam(keySize)) {
-        DLP_LOG_ERROR(LABEL, "Generate key fail, key size %{public}d is invalid", keySize);
+        DLP_LOG_ERROR(LABEL, "Generate key fail, key size %{public}u is invalid", keySize);
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
     uint32_t keySizeByte = keySize / BIT_NUM_OF_UINT8;
@@ -567,7 +567,7 @@ int32_t DlpOpensslAesDecryptUpdate(void* cryptoCtx, const struct DlpBlob* messag
     return ret;
 }
 
-int32_t DlpOpensslAesDecryptFinal(void** cryptoCtx, const struct DlpBlob* message, struct DlpBlob* cipherText)
+int32_t DlpOpensslAesDecryptFinal(void** cryptoCtx, const struct DlpBlob* message, struct DlpBlob* plainText)
 {
     if (cryptoCtx == nullptr || *cryptoCtx == nullptr) {
         DLP_LOG_ERROR(LABEL, "Aes decrypt final fail, ctx is null");
@@ -577,8 +577,8 @@ int32_t DlpOpensslAesDecryptFinal(void** cryptoCtx, const struct DlpBlob* messag
         DLP_LOG_ERROR(LABEL, "Aes decrypt final fail, msg is invalid");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
-    if (!DlpOpensslCheckBlob(cipherText)) {
-        DLP_LOG_ERROR(LABEL, "Aes decrypt final fail, cipher text is invalid");
+    if (!DlpOpensslCheckBlob(plainText)) {
+        DLP_LOG_ERROR(LABEL, "Aes decrypt final fail, plain text is invalid");
         return DLP_PARSE_ERROR_VALUE_INVALID;
     }
 
@@ -588,7 +588,7 @@ int32_t DlpOpensslAesDecryptFinal(void** cryptoCtx, const struct DlpBlob* messag
     int32_t ret;
     switch (mode) {
         case DLP_MODE_CTR:
-            ret = OpensslAesCipherDecryptFinalThree(cryptoCtx, message, cipherText);
+            ret = OpensslAesCipherDecryptFinalThree(cryptoCtx, message, plainText);
             if (ret != DLP_OK) {
                 DLP_LOG_ERROR(LABEL, "Aes decrypt final fail, errno=%{public}d", ret);
                 return ret;

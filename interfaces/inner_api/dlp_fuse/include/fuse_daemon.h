@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef FUSE_FS_DAEMON_H
-#define FUSE_FS_DAEMON_H
+#ifndef FUSE_DAEMON_H
+#define FUSE_DAEMON_H
 
 #include <condition_variable>
 #include <fuse_lowlevel.h>

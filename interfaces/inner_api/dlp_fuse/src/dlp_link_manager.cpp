@@ -46,7 +46,7 @@ int32_t DlpLinkManager::AddDlpLinkFile(std::shared_ptr<DlpFile>& filePtr, const 
         return DLP_FUSE_ERROR_DLP_FILE_NULL;
     }
     if (!IsLinkNameValid(dlpLinkName)) {
-        DLP_LOG_ERROR(LABEL, "Add link file fail, link file name %{private}s invalid", dlpLinkName.c_str());
+        DLP_LOG_ERROR(LABEL, "Add link file fail, link file name %{public}s invalid", dlpLinkName.c_str());
         return DLP_FUSE_ERROR_VALUE_INVALID;
     }
 
@@ -138,7 +138,7 @@ int32_t DlpLinkManager::ReplaceDlpLinkFile(std::shared_ptr<DlpFile> &filePtr, co
         return DLP_FUSE_ERROR_DLP_FILE_NULL;
     }
     if (!IsLinkNameValid(dlpLinkName)) {
-        DLP_LOG_ERROR(LABEL, "Replace link file fail, link file name %{private}s invalid", dlpLinkName.c_str());
+        DLP_LOG_ERROR(LABEL, "Replace link file fail, link file name %{public}s invalid", dlpLinkName.c_str());
         return DLP_FUSE_ERROR_VALUE_INVALID;
     }
 

@@ -84,7 +84,7 @@ static bool ReadAesParam(PermissionPolicy& policy, Parcel& in)
         return false;
     }
     if (!CheckAesParamLen(len)) {
-        DLP_LOG_ERROR(LABEL, "Aes key len is invalid, len=%{public}d", len);
+        DLP_LOG_ERROR(LABEL, "Aes key len is invalid, len=%{public}u", len);
         return false;
     }
     const uint8_t* key = in.ReadUnpadBuffer(len);
@@ -99,7 +99,7 @@ static bool ReadAesParam(PermissionPolicy& policy, Parcel& in)
         return false;
     }
     if (!CheckAesParamLen(len)) {
-        DLP_LOG_ERROR(LABEL, "Iv len is invalid, len=%{public}d", len);
+        DLP_LOG_ERROR(LABEL, "Iv len is invalid, len=%{public}u", len);
         return false;
     }
     const uint8_t* iv = in.ReadUnpadBuffer(len);
@@ -119,7 +119,7 @@ static bool ReadParcel(Parcel& in, DlpPolicyParcel* policyParcel)
         return false;
     }
     if (listSize > MAX_ACCOUNT_NUM) {
-        DLP_LOG_ERROR(LABEL, "Auth users number exceeds %{public}d, total=%{public}d", MAX_ACCOUNT_NUM, listSize);
+        DLP_LOG_ERROR(LABEL, "Auth users number exceeds %{public}u, total=%{public}u", MAX_ACCOUNT_NUM, listSize);
         return false;
     }
     for (uint32_t i = 0; i < listSize; i++) {

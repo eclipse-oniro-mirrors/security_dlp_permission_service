@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef DLP_CYP_TOOL_H
-#define DLP_CYP_TOOL_H
+#ifndef DLP_CRYPT_H
+#define DLP_CRYPT_H
 
 #include <stdint.h>
 
@@ -96,7 +96,7 @@ enum DlpKeyPadding {
 
 #define DLP_FREE_PTR(p) SELF_FREE_PTR(p, free)
 
-int32_t DlpOpensslGenerateRandomKey(const uint32_t keySize, struct DlpBlob* key);
+int32_t DlpOpensslGenerateRandomKey(uint32_t keySize, struct DlpBlob* key);
 
 int32_t DlpOpensslAesEncrypt(const struct DlpBlob* key, const struct DlpUsageSpec* usageSpec,
     const struct DlpBlob* message, struct DlpBlob* cipherText);
@@ -114,7 +114,7 @@ int32_t DlpOpensslAesDecryptInit(void** cryptoCtx, const struct DlpBlob* key, co
 
 int32_t DlpOpensslAesDecryptUpdate(void* cryptoCtx, const struct DlpBlob* message, struct DlpBlob* plainText);
 
-int32_t DlpOpensslAesDecryptFinal(void** cryptoCtx, const struct DlpBlob* message, struct DlpBlob* cipherText);
+int32_t DlpOpensslAesDecryptFinal(void** cryptoCtx, const struct DlpBlob* message, struct DlpBlob* plainText);
 
 void DlpOpensslAesHalFreeCtx(void** cryptoCtx);
 

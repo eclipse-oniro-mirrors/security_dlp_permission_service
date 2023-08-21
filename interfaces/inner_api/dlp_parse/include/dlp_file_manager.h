@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef INTERFACES_INNER_API_DLP_FILE_DLP_FILE_MANAGER_H
-#define INTERFACES_INNER_API_DLP_FILE_DLP_FILE_MANAGER_H
+#ifndef INTERFACES_INNER_API_DLP_FILE_MANAGER_H
+#define INTERFACES_INNER_API_DLP_FILE_MANAGER_H
 
 #include <mutex>
 #include <unordered_map>
@@ -59,4 +59,4 @@ private:
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS
-#endif /*  INTERFACES_INNER_API_DLP_FILE_DLP_FILE_MANAGER_H */
+#endif /*  INTERFACES_INNER_API_DLP_FILE_MANAGER_H */
