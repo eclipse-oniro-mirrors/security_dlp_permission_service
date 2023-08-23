@@ -81,6 +81,8 @@ typedef enum {
     DLP_ERR_CONNECTION_NO_PERMISSION = 0x0000300C,
     DLP_ERR_CREDENTIAL_NOT_EXIST = 0x00005001,
     DLP_ERR_ACCOUNT_NOT_LOG_IN = 0x00006001,
+    DLP_ERR_TOKEN_CONNECTION_FAIL = 0x00006006,
+    DLP_ERR_TOKEN_CONNECTION_TIME_OUT = 0x00006007,
 } DLP_ErrorCode;
 
 typedef void (*DLP_PackPolicyCallback)(uint64_t requestId, int errorCode, DLP_EncPolicyData *outParams);

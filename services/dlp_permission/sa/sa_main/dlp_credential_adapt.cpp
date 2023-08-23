@@ -71,7 +71,7 @@ static int32_t ConvertCredentialError(int errorCode)
     if (errorCode == DLP_SUCCESS) {
         return DLP_OK;
     }
-    if (errorCode == DLP_ERR_CONNECTION_TIME_OUT) {
+    if (errorCode == DLP_ERR_CONNECTION_TIME_OUT || errorCode == DLP_ERR_TOKEN_CONNECTION_TIME_OUT) {
         return DLP_CREDENTIAL_ERROR_SERVER_TIME_OUT_ERROR;
     }
     if (IsNoPermissionError(errorCode)) {
@@ -86,7 +86,7 @@ static int32_t ConvertCredentialError(int errorCode)
     if (IsDlpCredentialIpcError(errorCode)) {
         return DLP_CREDENTIAL_ERROR_IPC_ERROR;
     }
-    if (IsDlpCredentialServerError(errorCode)) {
+    if (errorCode == DLP_ERR_TOKEN_CONNECTION_FAIL || IsDlpCredentialServerError(errorCode)) {
         return DLP_CREDENTIAL_ERROR_SERVER_ERROR;
     }
     return DLP_CREDENTIAL_ERROR_COMMON_ERROR;
