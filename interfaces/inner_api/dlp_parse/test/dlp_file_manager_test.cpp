@@ -124,9 +124,10 @@ HWTEST_F(DlpFileManagerTest, GenerateCertData001, TestSize.Level1)
     policy.ownerAccount_ = "test";
     policy.ownerAccountId_ = "test";
     DlpCMockCondition condition;
-    condition.mockSequence = { true };
+    condition.mockSequence = { false, false, true, false, false };
     SetMockConditions("memcpy_s", condition);
     EXPECT_EQ(DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL, DlpFileManager::GetInstance().GenerateCertData(policy, certData));
+    DLP_LOG_INFO(LABEL, "GenerateCertData001-------------------7  %{public}d", GetMockConditionCounts("memcpy_s"));
     CleanMockConditions();
 }
 
@@ -170,10 +171,12 @@ HWTEST_F(DlpFileManagerTest, PrepareDlpEncryptParms001, TestSize.Level1)
     CleanMockConditions();
 
     // create cert data failed with memcpy_s fail
-    condition.mockSequence = { false, false, true };
+    condition.mockSequence = { false, false, false, false, false, false, false, false, false, false, true };
     SetMockConditions("memcpy_s", condition);
     EXPECT_EQ(DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL,
         DlpFileManager::GetInstance().PrepareDlpEncryptParms(policy, key, usage, certData));
+    DLP_LOG_INFO(LABEL, "PrepareDlpEncryptParms001-------------------2  %{public}d",
+        GetMockConditionCounts("memcpy_s"));
     CleanMockConditions();
 }
 
@@ -393,10 +396,12 @@ HWTEST_F(DlpFileManagerTest, SetDlpFileParams001, TestSize.Level1)
     property.contactAccount = "owner";
     property.ownerAccountType = DOMAIN_ACCOUNT;
 
-    condition.mockSequence = { false, false, true};
+    condition.mockSequence = { false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, true };
     SetMockConditions("memcpy_s", condition);
-    EXPECT_EQ(DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL,
-        DlpFileManager::GetInstance().SetDlpFileParams(filePtr, property));
+    EXPECT_EQ(DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL, DlpFileManager::GetInstance().SetDlpFileParams(filePtr, property));
+    DLP_LOG_INFO(LABEL, "SetDlpFileParams001-------------------2  %{public}d", GetMockConditionCounts("memcpy_s"));
     CleanMockConditions();
 }
 
