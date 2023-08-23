@@ -61,6 +61,9 @@ static int g_recoveryFileFd = -1;
 static std::shared_ptr<DlpFile> g_Dlpfile = nullptr;
 static const int32_t DEFAULT_USERID = 100;
 static AccessTokenID g_selfTokenId = 0;
+constexpr int SIX = 6;
+constexpr int SIXTEEN = 16;
+constexpr int EIGHTEEN = 18;
 }
 
 void DlpFuseTest::SetUpTestCase()
@@ -189,6 +192,102 @@ void PrepareDlpFuseFsMount()
     if (res != 0) {
         DLP_LOG_ERROR(LABEL, "mount failed, errno %{public}d", errno);
     }
+}
+
+void CheckLinkFd()
+{
+    DLP_LOG_INFO(LABEL, "CheckLinkFd");
+    // another link fd to write
+    int32_t linkfd1 = open(TEST_LINK_FILE_PATH.c_str(), O_RDWR);
+    ASSERT_GE(linkfd1, 0);
+    g_linkFdArry[1] = linkfd1;
+    ASSERT_NE(lseek(linkfd1, 0, SEEK_SET), -1);
+    // offset 0 size 6
+    char readBuf[64] = {0};
+    ASSERT_NE(lseek(linkfd1, 0, SEEK_SET), -1);
+    ASSERT_EQ(read(linkfd1, readBuf, SIX), SIX);
+    ASSERT_EQ(strcmp(readBuf, "123456"), 0);
+    // read hole data, offset 0x1000 size 6
+    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
+    ASSERT_NE(lseek(linkfd1, 0x1000, SEEK_SET), -1);
+    ASSERT_GE(read(linkfd1, readBuf, SIX), SIX);
+    char zeroBuf[6] = { 0 };
+    ASSERT_EQ(memcmp(readBuf, zeroBuf, SIX), 0);
+    // offset 1M size 6
+    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
+    ASSERT_NE(lseek(linkfd1, 0x100000, SEEK_SET), -1);
+    ASSERT_EQ(read(linkfd1, readBuf, SIX), SIX);
+    ASSERT_EQ(strcmp(readBuf, "123456"), 0);
+    // offset 1m+16 size 16
+    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
+    ASSERT_NE(lseek(linkfd1, 0x100010, SEEK_SET), -1);
+    ASSERT_EQ(read(linkfd1, readBuf, SIXTEEN), SIXTEEN);
+    ASSERT_EQ(strcmp(readBuf, "1234567890123456"), 0);
+    // offset 1m+34 size 6
+    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
+    ASSERT_NE(lseek(linkfd1, 0x100022, SEEK_SET), -1);
+    ASSERT_EQ(read(linkfd1, readBuf, SIX), SIX);
+    ASSERT_EQ(strcmp(readBuf, "123456"), 0);
+    // offset 1m+47 size 6
+    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
+    ASSERT_NE(lseek(linkfd1, 0x10002f, SEEK_SET), -1);
+    ASSERT_EQ(read(linkfd1, readBuf, SIX), SIX);
+    ASSERT_EQ(strcmp(readBuf, "123456"), 0);
+    // offset 1m+63 size 18
+    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
+    ASSERT_NE(lseek(linkfd1, 0x10003f, SEEK_SET), -1);
+    ASSERT_EQ(read(linkfd1, readBuf, EIGHTEEN), EIGHTEEN);
+    ASSERT_EQ(strcmp(readBuf, "1234567890abcdefgh"), 0);
+    close(linkfd1);
+    g_linkFdArry[0] = 0;
+    g_linkFdArry[1] = 0;
+}
+
+void CheckRecoverFd()
+{
+    DLP_LOG_INFO(LABEL, "CheckRecoverFd");
+    // offset 0 size 6
+    char readBuf[64] = {0};
+    ASSERT_NE(lseek(g_recoveryFileFd, 0, SEEK_SET), -1);
+    ASSERT_EQ(read(g_recoveryFileFd, readBuf, SIX), SIX);
+    ASSERT_EQ(strcmp(readBuf, "123456"), 0);
+
+    // read hole data, offset 0x1000 size 6
+    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
+    ASSERT_NE(lseek(g_recoveryFileFd, 0x1000, SEEK_SET), -1);
+    ASSERT_GE(read(g_recoveryFileFd, readBuf, SIX), SIX);
+    char zeroBuf[6] = { 0 };
+    ASSERT_EQ(memcmp(readBuf, zeroBuf, SIX), 0);
+
+    // offset 1M size 6
+    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
+    ASSERT_NE(lseek(g_recoveryFileFd, 0x100000, SEEK_SET), -1);
+    ASSERT_EQ(read(g_recoveryFileFd, readBuf, SIX), SIX);
+    ASSERT_EQ(strcmp(readBuf, "123456"), 0);
+
+    // offset 1m+16 size 16
+    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
+    ASSERT_NE(lseek(g_recoveryFileFd, 0x100010, SEEK_SET), -1);
+    ASSERT_EQ(read(g_recoveryFileFd, readBuf, SIXTEEN), SIXTEEN);
+    ASSERT_EQ(strcmp(readBuf, "1234567890123456"), 0);
+
+    // offset 1m+34 size 6
+    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
+    ASSERT_NE(lseek(g_recoveryFileFd, 0x100022, SEEK_SET), -1);
+    ASSERT_EQ(read(g_recoveryFileFd, readBuf, SIX), SIX);
+    ASSERT_EQ(strcmp(readBuf, "123456"), 0);
+
+    // offset 1m+47 size 6
+    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
+    ASSERT_NE(lseek(g_recoveryFileFd, 0x10002f, SEEK_SET), -1);
+    ASSERT_EQ(read(g_recoveryFileFd, readBuf, SIX), SIX);
+    ASSERT_EQ(strcmp(readBuf, "123456"), 0);
+
+    // offset 1m+63 size 18
+    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
+    ASSERT_NE(lseek(g_recoveryFileFd, 0x10003f, SEEK_SET), -1);
+    ASSERT_EQ(read(g_recoveryFileFd, readBuf, EIGHTEEN), EIGHTEEN);
+    ASSERT_EQ(strcmp(readBuf, "1234567890abcdefgh"), 0);
 }
 }
 /**
@@ -467,32 +566,25 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile002, TestSize.Level1)
     int32_t linkfd = open(TEST_LINK_FILE_PATH.c_str(), O_RDWR);
     ASSERT_GE(linkfd, 0);
     g_linkFdArry[0] = linkfd;
-
     // offset 0 size 6
     ASSERT_NE(write(linkfd, "123456", strlen("123456")), -1);
-
     // offset 1M size 6
     ASSERT_NE(lseek(linkfd, 0x100000, SEEK_SET), -1);
     ASSERT_NE(write(linkfd, "123456", strlen("123456")), -1);
-
     // offset 1m+16 size 16
     ASSERT_NE(lseek(linkfd, 0x100010, SEEK_SET), -1);
     ASSERT_NE(write(linkfd, "1234567890123456", strlen("1234567890123456")), -1);
-
     // offset 1m+34 size 6
     ASSERT_NE(lseek(linkfd, 0x100022, SEEK_SET), -1);
     ASSERT_NE(write(linkfd, "123456", strlen("123456")), -1);
-
     // offset 1m+47 size 6
     ASSERT_NE(lseek(linkfd, 0x10002f, SEEK_SET), -1);
     ASSERT_NE(write(linkfd, "123456", strlen("123456")), -1);
-
     // offset 1m+63 size 18
     ASSERT_NE(lseek(linkfd, 0x10003f, SEEK_SET), -1);
     ASSERT_NE(write(linkfd, "1234567890abcdefgh", strlen("1234567890abcdefgh")), -1);
     close(linkfd);
     g_linkFdArry[0] = 0;
-
     ASSERT_EQ(DlpLinkManager::GetInstance().DeleteDlpLinkFile(g_Dlpfile), 0);
 
     g_recoveryFileFd = open("/data/fuse_test.txt.recovery", O_CREAT | O_RDWR | O_TRUNC, S_IRWXU | S_IRWXG | S_IRWXO);
@@ -500,49 +592,7 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile002, TestSize.Level1)
     ASSERT_EQ(DlpFileManager::GetInstance().RecoverDlpFile(g_Dlpfile, g_recoveryFileFd), 0);
     ASSERT_EQ(DlpFileManager::GetInstance().CloseDlpFile(g_Dlpfile), 0);
     g_Dlpfile = nullptr;
-
-    // offset 0 size 6
-    char readBuf[64] = {0};
-    ASSERT_NE(lseek(g_recoveryFileFd, 0, SEEK_SET), -1);
-    ASSERT_EQ(read(g_recoveryFileFd, readBuf, 6), 6);
-    ASSERT_EQ(strcmp(readBuf, "123456"), 0);
-
-    // read hole data, offset 0x1000 size 6
-    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
-    ASSERT_NE(lseek(g_recoveryFileFd, 0x1000, SEEK_SET), -1);
-    ASSERT_GE(read(g_recoveryFileFd, readBuf, 6), 6);
-    char zeroBuf[6] = { 0 };
-    ASSERT_EQ(memcmp(readBuf, zeroBuf, 6), 0);
-
-    // offset 1M size 6
-    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
-    ASSERT_NE(lseek(g_recoveryFileFd, 0x100000, SEEK_SET), -1);
-    ASSERT_EQ(read(g_recoveryFileFd, readBuf, 6), 6);
-    ASSERT_EQ(strcmp(readBuf, "123456"), 0);
-
-    // offset 1m+16 size 16
-    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
-    ASSERT_NE(lseek(g_recoveryFileFd, 0x100010, SEEK_SET), -1);
-    ASSERT_EQ(read(g_recoveryFileFd, readBuf, 16), 16);
-    ASSERT_EQ(strcmp(readBuf, "1234567890123456"), 0);
-
-    // offset 1m+34 size 6
-    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
-    ASSERT_NE(lseek(g_recoveryFileFd, 0x100022, SEEK_SET), -1);
-    ASSERT_EQ(read(g_recoveryFileFd, readBuf, 6), 6);
-    ASSERT_EQ(strcmp(readBuf, "123456"), 0);
-
-    // offset 1m+47 size 6
-    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
-    ASSERT_NE(lseek(g_recoveryFileFd, 0x10002f, SEEK_SET), -1);
-    ASSERT_EQ(read(g_recoveryFileFd, readBuf, 6), 6);
-    ASSERT_EQ(strcmp(readBuf, "123456"), 0);
-
-    // offset 1m+63 size 18
-    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
-    ASSERT_NE(lseek(g_recoveryFileFd, 0x10003f, SEEK_SET), -1);
-    ASSERT_EQ(read(g_recoveryFileFd, readBuf, 18), 18);
-    ASSERT_EQ(strcmp(readBuf, "1234567890abcdefgh"), 0);
+    CheckRecoverFd();
 }
 
 /**
@@ -594,59 +644,8 @@ HWTEST_F(DlpFuseTest, AddDlpLinkFile003, TestSize.Level1)
     ASSERT_NE(lseek(linkfd, 0x10003f, SEEK_SET), -1);
     ASSERT_NE(write(linkfd, "1234567890abcdefgh", strlen("1234567890abcdefgh")), -1);
 
-     // another link fd to write
-    int32_t linkfd1 = open(TEST_LINK_FILE_PATH.c_str(), O_RDWR);
-    ASSERT_GE(linkfd1, 0);
-    g_linkFdArry[1] = linkfd1;
-
-    ASSERT_NE(lseek(linkfd1, 0, SEEK_SET), -1);
-    // offset 0 size 6
-    char readBuf[64] = {0};
-    ASSERT_NE(lseek(linkfd1, 0, SEEK_SET), -1);
-    ASSERT_EQ(read(linkfd1, readBuf, 6), 6);
-    ASSERT_EQ(strcmp(readBuf, "123456"), 0);
-
-    // read hole data, offset 0x1000 size 6
-    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
-    ASSERT_NE(lseek(linkfd1, 0x1000, SEEK_SET), -1);
-    ASSERT_GE(read(linkfd1, readBuf, 6), 6);
-    char zeroBuf[6] = { 0 };
-    ASSERT_EQ(memcmp(readBuf, zeroBuf, 6), 0);
-
-    // offset 1M size 6
-    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
-    ASSERT_NE(lseek(linkfd1, 0x100000, SEEK_SET), -1);
-    ASSERT_EQ(read(linkfd1, readBuf, 6), 6);
-    ASSERT_EQ(strcmp(readBuf, "123456"), 0);
-
-    // offset 1m+16 size 16
-    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
-    ASSERT_NE(lseek(linkfd1, 0x100010, SEEK_SET), -1);
-    ASSERT_EQ(read(linkfd1, readBuf, 16), 16);
-    ASSERT_EQ(strcmp(readBuf, "1234567890123456"), 0);
-
-    // offset 1m+34 size 6
-    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
-    ASSERT_NE(lseek(linkfd1, 0x100022, SEEK_SET), -1);
-    ASSERT_EQ(read(linkfd1, readBuf, 6), 6);
-    ASSERT_EQ(strcmp(readBuf, "123456"), 0);
-
-    // offset 1m+47 size 6
-    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
-    ASSERT_NE(lseek(linkfd1, 0x10002f, SEEK_SET), -1);
-    ASSERT_EQ(read(linkfd1, readBuf, 6), 6);
-    ASSERT_EQ(strcmp(readBuf, "123456"), 0);
-
-    // offset 1m+63 size 18
-    memset_s(readBuf, sizeof(readBuf), 0, sizeof(readBuf));
-    ASSERT_NE(lseek(linkfd1, 0x10003f, SEEK_SET), -1);
-    ASSERT_EQ(read(linkfd1, readBuf, 18), 18);
-    ASSERT_EQ(strcmp(readBuf, "1234567890abcdefgh"), 0);
+    CheckLinkFd();
     close(linkfd);
-    close(linkfd1);
-    g_linkFdArry[0] = 0;
-    g_linkFdArry[1] = 0;
-
     ASSERT_EQ(DlpLinkManager::GetInstance().DeleteDlpLinkFile(g_Dlpfile), 0);
     ASSERT_EQ(DlpFileManager::GetInstance().CloseDlpFile(g_Dlpfile), 0);
     g_Dlpfile = nullptr;

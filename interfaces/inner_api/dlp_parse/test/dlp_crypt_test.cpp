@@ -42,7 +42,10 @@ static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_
 static const int32_t DEFAULT_USERID = 100;
 static AccessTokenID g_selfTokenId = 0;
 static long USEC_PER_SEC = 1000000L;
-
+constexpr int THOUSAND = 1000;
+constexpr int SIXTEEN = 16;
+constexpr int TWENTYFOUR = 24;
+constexpr int TWENTYFIVE = 25;
 uint8_t g_key[32] = { 0xdc, 0x7c, 0x8d, 0xe, 0xeb, 0x41, 0x4b, 0xb0, 0x8e, 0x24, 0x8, 0x32, 0xc7, 0x88, 0x96, 0xb6,
     0x2, 0x69, 0x65, 0x49, 0xaf, 0x3c, 0xa7, 0x8f, 0x38, 0x3d, 0xe3, 0xf1, 0x23, 0xb6, 0x22, 0xfb };
 uint8_t g_iv[16] = { 0x90, 0xd5, 0xe2, 0x45, 0xaa, 0xeb, 0xa0, 0x9, 0x61, 0x45, 0xd1, 0x48, 0x4a, 0xaf, 0xc9, 0xf9 };
@@ -74,6 +77,23 @@ void DlpCryptTest::TearDownTestCase()
 void DlpCryptTest::SetUp() {}
 
 void DlpCryptTest::TearDown() {}
+
+void CheckParams(DlpUsageSpec* usage, DlpBlob* key, DlpBlob* mIn, DlpBlob* mEnc)
+{
+    DLP_LOG_INFO(LABEL, "CheckParams");
+    usage->mode = THOUSAND;
+    ASSERT_EQ(DLP_PARSE_ERROR_OPERATION_UNSUPPORTED, DlpOpensslAesEncrypt(key, usage, mIn, mEnc));
+    usage->mode = DLP_MODE_CTR;
+    // key len 16 when DlpOpensslAesEncrypt
+    key->size = SIXTEEN;
+    ASSERT_EQ(DLP_OK, DlpOpensslAesEncrypt(key, usage, mIn, mEnc));
+    // key len 24 when DlpOpensslAesEncrypt
+    key->size = TWENTYFOUR;
+    ASSERT_EQ(DLP_OK, DlpOpensslAesEncrypt(key, usage, mIn, mEnc));
+    // key len invalid when DlpOpensslAesEncrypt
+    key->size = TWENTYFIVE;
+    ASSERT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, DlpOpensslAesEncrypt(key, usage, mIn, mEnc));
+}
 
 /**
  * @tc.name: DlpOpensslAesEncrypt001
@@ -1089,40 +1109,20 @@ HWTEST_F(DlpCryptTest, DlpOpensslAesEncryptAndDecrypt002, TestSize.Level1)
     DLP_LOG_INFO(LABEL, "DlpOpensslAesEncryptAndDecrypt002");
     struct DlpBlob key = { 32, nullptr };
     key.data = g_key;
-
     struct DlpCipherParam tagIv = { .iv = { .data = nullptr, .size = 16}};
     tagIv.iv.data = g_iv;
-    struct DlpUsageSpec usage = {
-        .mode = DLP_MODE_CTR,
-        .algParam = &tagIv
-    };
-
+    struct DlpUsageSpec usage = { .mode = DLP_MODE_CTR, .algParam = &tagIv};
     uint8_t input[16] = "aaaaaaaaaaaaaaa";
     uint8_t enc[16] = {0};
     uint8_t dec[16] = {0};
-    struct DlpBlob mIn = {
-        .data = input,
-        .size = 15
-    };
-    struct DlpBlob mEnc = {
-        .data = enc,
-        .size = 15
-    };
-    struct DlpBlob mDec = {
-        .data = dec,
-        .size = 15
-    };
-
-    struct DlpBlob mNull = {
-        .data = nullptr,
-        .size = 0
-    };
+    struct DlpBlob mIn = { .data = input, .size = 15};
+    struct DlpBlob mEnc = { .data = enc, .size = 15};
+    struct DlpBlob mDec = { .data = dec, .size = 15};
+    struct DlpBlob mNull = { .data = nullptr, .size = 0};
     void *ctx;
     int i = 0;
-
     DlpOpensslAesEncryptInit(&ctx, &key, &usage);
-    mIn.size = 1;
-    mEnc.size = 1;
+    mIn.size = mEnc.size = 1;
     while (i < 15) {
         DlpOpensslAesEncryptUpdate(ctx, &mIn, &mEnc);
         mIn.data = mIn.data + 1;
@@ -1131,12 +1131,10 @@ HWTEST_F(DlpCryptTest, DlpOpensslAesEncryptAndDecrypt002, TestSize.Level1)
     }
     DlpOpensslAesEncryptFinal(&ctx, &mNull, &mEnc);
     DlpOpensslAesHalFreeCtx(&ctx);
-
     DlpOpensslAesDecryptInit(&ctx, &key, &usage);
     i = 0;
     mEnc.data = enc;
-    mEnc.size = 1;
-    mDec.size = 1;
+    mEnc.size = mDec.size = 1;
     while (i < 15) {
         DlpOpensslAesDecryptUpdate(ctx, &mEnc, &mDec);
         mEnc.data = mEnc.data + 1;
@@ -1342,17 +1340,14 @@ HWTEST_F(DlpCryptTest, DlpOpensslAesEncryptAndDecrypt006, TestSize.Level1)
 HWTEST_F(DlpCryptTest, DlpOpensslAesEncryptAndDecrypt007, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "DlpOpensslAesEncryptAndDecrypt007");
-
     struct DlpBlob key = { 32, nullptr };
     key.data = g_key;
-
     struct DlpCipherParam tagIv = { .iv = { .data = nullptr, .size = 16}};
     tagIv.iv.data = g_iv;
     struct DlpUsageSpec usage = {
         .mode = DLP_MODE_CTR,
         .algParam = &tagIv
     };
-
     uint8_t input[16] = "aaaaaaaaaaaaaaa";
     uint8_t enc[16] = {0};
     uint8_t dec[16] = {0};
@@ -1368,44 +1363,25 @@ HWTEST_F(DlpCryptTest, DlpOpensslAesEncryptAndDecrypt007, TestSize.Level1)
         .data = dec,
         .size = 15
     };
-
     DlpCMockCondition condition;
     // usage.mode is not DLP_MODE_CTR when DlpOpensslAesEncrypt
-    usage.mode = 1000;
-    ASSERT_EQ(DLP_PARSE_ERROR_OPERATION_UNSUPPORTED, DlpOpensslAesEncrypt(&key, &usage, &mIn, &mEnc));
-    usage.mode = DLP_MODE_CTR;
-
-    // key len 16 when DlpOpensslAesEncrypt
-    key.size = 16;
-    ASSERT_EQ(DLP_OK, DlpOpensslAesEncrypt(&key, &usage, &mIn, &mEnc));
-
-    // key len 24 when DlpOpensslAesEncrypt
+    CheckParams(&usage, &key, &mIn, &mEnc);
     key.size = 24;
-    ASSERT_EQ(DLP_OK, DlpOpensslAesEncrypt(&key, &usage, &mIn, &mEnc));
-
-    // key len invalid when DlpOpensslAesEncrypt
-    key.size = 25;
-    ASSERT_EQ(DLP_PARSE_ERROR_VALUE_INVALID, DlpOpensslAesEncrypt(&key, &usage, &mIn, &mEnc));
-    key.size = 24;
-
     // OpensslAesCipherInit failed when DlpOpensslAesDecrypt
     condition.mockSequence = { true };
     SetMockConditions("EVP_CIPHER_CTX_new", condition);
     ASSERT_EQ(DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR, DlpOpensslAesDecrypt(&key, &usage, &mEnc, &mDec));
     CleanMockConditions();
-
     // OpensslAesCipherEncryptFinal failed when DlpOpensslAesDecrypt
     condition.mockSequence = { true };
     SetMockConditions("EVP_DecryptUpdate", condition);
     ASSERT_EQ(DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR, DlpOpensslAesDecrypt(&key, &usage, &mEnc, &mDec));
     CleanMockConditions();
-
     // EVP_DecryptFinal_ex failed when DlpOpensslAesDecrypt
     condition.mockSequence = { true };
     SetMockConditions("EVP_DecryptFinal_ex", condition);
     ASSERT_EQ(DLP_PARSE_ERROR_CRYPTO_ENGINE_ERROR, DlpOpensslAesDecrypt(&key, &usage, &mEnc, &mDec));
     CleanMockConditions();
-
     // usage.mode is not DLP_MODE_CTR when DlpOpensslAesDecrypt
     usage.mode = 1000;
     ASSERT_EQ(DLP_PARSE_ERROR_OPERATION_UNSUPPORTED, DlpOpensslAesDecrypt(&key, &usage, &mEnc, &mDec));
