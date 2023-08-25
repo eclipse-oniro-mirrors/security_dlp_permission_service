@@ -78,7 +78,7 @@ void DlpCryptTest::SetUp() {}
 
 void DlpCryptTest::TearDown() {}
 
-void CheckParams(DlpUsageSpec* usage, DlpBlob* key, DlpBlob* mIn, DlpBlob* mEnc)
+static void CheckParams(DlpUsageSpec* usage, DlpBlob* key, DlpBlob* mIn, DlpBlob* mEnc)
 {
     DLP_LOG_INFO(LABEL, "CheckParams");
     usage->mode = THOUSAND;
