@@ -1090,7 +1090,7 @@ export default function dlpTest() {
     /**
      * @tc.number Test_getDLPPermissionInfo_006
      * @tc.name Test dlpPermission.getDLPPermissionInfo.
-     * @tc.desc test getDLPPermissionInfo in read only sandbox (Promise)
+     * @tc.desc test getDLPPermissionInfo in content edit sandbox (Promise)
      */
     it('Test_getDLPPermissionInfo_006', 0, async function () {
       var curTag = TAG + "Test_getDLPPermissionInfo_006";
@@ -1115,13 +1115,13 @@ export default function dlpTest() {
         return;
       }
       expect(result.want.parameters.info.flags & dlpPermission.ActionFlagType.ACTION_VIEW).assertEqual(dlpPermission.ActionFlagType.ACTION_VIEW);
-      expect(result.want.parameters.info.flags & dlpPermission.ActionFlagType.ACTION_SAVE).assertEqual(0);
-      expect(result.want.parameters.info.flags & dlpPermission.ActionFlagType.ACTION_SAVE_AS).assertEqual(0);
-      expect(result.want.parameters.info.flags & dlpPermission.ActionFlagType.ACTION_EDIT).assertEqual(0);
-      expect(result.want.parameters.info.flags & dlpPermission.ActionFlagType.ACTION_SCREEN_CAPTURE).assertEqual(0);
-      expect(result.want.parameters.info.flags & dlpPermission.ActionFlagType.ACTION_SCREEN_SHARE).assertEqual(0);
-      expect(result.want.parameters.info.flags & dlpPermission.ActionFlagType.ACTION_SCREEN_RECORD).assertEqual(0);
-      expect(result.want.parameters.info.flags & dlpPermission.ActionFlagType.ACTION_COPY).assertEqual(0);
+      expect(result.want.parameters.info.flags & dlpPermission.ActionFlagType.ACTION_SAVE).assertEqual(dlpPermission.ActionFlagType.ACTION_SAVE);
+      expect(result.want.parameters.info.flags & dlpPermission.ActionFlagType.ACTION_SAVE_AS).assertEqual(dlpPermission.ActionFlagType.ACTION_SAVE_AS);
+      expect(result.want.parameters.info.flags & dlpPermission.ActionFlagType.ACTION_EDIT).assertEqual(dlpPermission.ActionFlagType.ACTION_EDIT);
+      expect(result.want.parameters.info.flags & dlpPermission.ActionFlagType.ACTION_SCREEN_CAPTURE).assertEqual(dlpPermission.ActionFlagType.ACTION_SCREEN_CAPTURE);
+      expect(result.want.parameters.info.flags & dlpPermission.ActionFlagType.ACTION_SCREEN_SHARE).assertEqual(dlpPermission.ActionFlagType.ACTION_SCREEN_SHARE);
+      expect(result.want.parameters.info.flags & dlpPermission.ActionFlagType.ACTION_SCREEN_RECORD).assertEqual(dlpPermission.ActionFlagType.ACTION_SCREEN_RECORD);
+      expect(result.want.parameters.info.flags & dlpPermission.ActionFlagType.ACTION_COPY).assertEqual(dlpPermission.ActionFlagType.ACTION_COPY);
       expect(result.want.parameters.info.flags & dlpPermission.ActionFlagType.ACTION_PRINT).assertEqual(0);
       expect(result.want.parameters.info.flags & dlpPermission.ActionFlagType.ACTION_EXPORT).assertEqual(0);
       expect(result.want.parameters.info.flags & dlpPermission.ActionFlagType.ACTION_PERMISSION_CHANGE).assertEqual(0);
