@@ -625,7 +625,7 @@ bool GetGenerateDlpFileParams(
     }
 
     DLP_LOG_DEBUG(LABEL,
-        "Fd: %{private}" PRId64 ", ownerAccount: %{private}s,ownerAccountId: %{private}s, ownerAccountType: %{private}d, "
+        "Fd: %{private}" PRId64 ",ownerAccount:%{private}s,ownerAccountId: %{private}s, ownerAccountType: %{private}d,"
         "contactAccount: %{private}s, size: %{private}zu",
         asyncContext.plaintextFd, asyncContext.property.ownerAccount.c_str(),
         asyncContext.property.ownerAccountId.c_str(), asyncContext.property.ownerAccountType,
