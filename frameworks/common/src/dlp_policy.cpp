@@ -68,7 +68,7 @@ static bool CheckTime(uint64_t time)
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     if (time < curTime) {
         DLP_LOG_ERROR(LABEL,
-            "Perm expiry time is earlier than current time, cur=%{public}" PRIu64 ", set=%{public}" PRIu64 "", curTime,
+            "Perm expiry time is earlier than current time, cur=%{public}" PRIu64", set=%{public}" PRIu64"", curTime,
             time);
         return false;
     }
