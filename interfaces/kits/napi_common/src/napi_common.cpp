@@ -286,7 +286,7 @@ void OpenDlpFileSubscriberPtr::OnOpenDlpFile(OpenDlpFileCallbackInfo &result)
     openDlpFileWorker->env = env_;
     openDlpFileWorker->ref = ref_;
     openDlpFileWorker->result = result;
-    DLP_LOG_DEBUG(LABEL, "result uri = %{public}s, openTime = %{public}lu", result.uri.c_str(),
+    DLP_LOG_DEBUG(LABEL, "result uri = %{public}s, openTime = %{public}" PRIu64, result.uri.c_str(),
         result.timeStamp);
     openDlpFileWorker->subscriber = this;
     work->data = reinterpret_cast<void *>(openDlpFileWorker);
@@ -625,7 +625,7 @@ bool GetGenerateDlpFileParams(
     }
 
     DLP_LOG_DEBUG(LABEL,
-        "Fd: %{private}ld, ownerAccount: %{private}s,ownerAccountId: %{private}s, ownerAccountType: %{private}d, "
+        "Fd: %{private}" PRId64 ", ownerAccount: %{private}s,ownerAccountId: %{private}s, ownerAccountType: %{private}d, "
         "contactAccount: %{private}s, size: %{private}zu",
         asyncContext.plaintextFd, asyncContext.property.ownerAccount.c_str(),
         asyncContext.property.ownerAccountId.c_str(), asyncContext.property.ownerAccountType,
@@ -656,7 +656,7 @@ bool GetOpenDlpFileParams(const napi_env env, const napi_callback_info info, Dlp
         }
     }
 
-    DLP_LOG_DEBUG(LABEL, "Fd: %{private}ld", asyncContext.ciphertextFd);
+    DLP_LOG_DEBUG(LABEL, "Fd: %{private}" PRId64, asyncContext.ciphertextFd);
     return true;
 }
 
@@ -688,7 +688,7 @@ bool GetIsDlpFileParams(const napi_env env, const napi_callback_info info, DlpFi
         }
     }
 
-    DLP_LOG_DEBUG(LABEL, "Fd: %{private}ld", asyncContext.ciphertextFd);
+    DLP_LOG_DEBUG(LABEL, "Fd: %{private}" PRId64, asyncContext.ciphertextFd);
     return true;
 }
 
@@ -796,7 +796,7 @@ bool GetRecoverDlpFileParams(
         }
     }
 
-    DLP_LOG_DEBUG(LABEL, "plaintextFd: %{private}ld", asyncContext.plaintextFd);
+    DLP_LOG_DEBUG(LABEL, "plaintextFd: %{private}" PRId64, asyncContext.plaintextFd);
     return true;
 }
 
@@ -1208,7 +1208,7 @@ napi_value VisitInfoToJs(napi_env env, const std::vector<VisitedDLPFileInfo>& in
         napi_value timestampJs;
         NAPI_CALL(env, napi_create_int64(env, item.visitTimestamp, &timestampJs));
         NAPI_CALL(env, napi_set_named_property(env, objInfo, "lastOpenTime", timestampJs));
-        DLP_LOG_DEBUG(LABEL, "Get visitTimestamp %{public}ld", item.visitTimestamp);
+        DLP_LOG_DEBUG(LABEL, "Get visitTimestamp %{public}" PRId64, item.visitTimestamp);
         napi_value uriJs;
         NAPI_CALL(env, napi_create_string_utf8(env, item.docUri.c_str(), NAPI_AUTO_LENGTH, &uriJs));
         NAPI_CALL(env, napi_set_named_property(env, objInfo, "uri", uriJs));

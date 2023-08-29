@@ -678,7 +678,7 @@ int32_t DlpFile::GenFile(int32_t inPlainFileFd)
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
     head_.txtSize = static_cast<uint32_t>(fileLen);
-    DLP_LOG_DEBUG(LABEL, "fileLen %{private}ld", fileLen);
+    DLP_LOG_DEBUG(LABEL, "fileLen %{private}" PRId64, fileLen);
 
     // clean dlpFile
     if (ftruncate(dlpFd_, 0) == -1) {
@@ -950,7 +950,7 @@ uint32_t DlpFile::GetFsContentSize() const
         return INVALID_FILE_SIZE;
     }
     if (head_.txtOffset > fileStat.st_size || fileStat.st_size >= static_cast<off_t>(INVALID_FILE_SIZE)) {
-        DLP_LOG_ERROR(LABEL, "size error %{public}d %{public}ld", head_.txtOffset, fileStat.st_size);
+        DLP_LOG_ERROR(LABEL, "size error %{public}d %{public}" PRId64, head_.txtOffset, fileStat.st_size);
         return INVALID_FILE_SIZE;
     }
     if (static_cast<uint32_t>(fileStat.st_size) - head_.txtOffset == 0) {

@@ -91,7 +91,7 @@ static bool TestSetSelfTokenId(AccessTokenID tokenId)
         return false;
     }
 
-    DLP_LOG_INFO(LABEL, "set self tokenId from %{public}lu to %{public}d", GetSelfTokenID(), tokenId);
+    DLP_LOG_INFO(LABEL, "set self tokenId from %{public}" PRIu64 " to %{public}d", GetSelfTokenID(), tokenId);
     if (SetSelfTokenID(tokenId) != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "set self tokenId fail");
         if (setuid(uid) != 0) {
@@ -340,7 +340,7 @@ HWTEST_F(DlpPermissionKitTest, SetRetentionState02, TestSize.Level1)
 {
     int32_t uid = getuid();
     AccessTokenID tokenId = GetSelfTokenID();
-    DLP_LOG_INFO(LABEL, "SetRetentionState02  tokenId from %{public}lu ", GetSelfTokenID());
+    DLP_LOG_INFO(LABEL, "SetRetentionState02  tokenId from %{public}" PRIu64, GetSelfTokenID());
     std::vector<std::string> docUriVec;
     std::vector<RetentionSandBoxInfo> retentionSandBoxInfoVec;
     SandboxInfo sandboxInfo;
@@ -374,7 +374,7 @@ HWTEST_F(DlpPermissionKitTest, SetRetentionState03, TestSize.Level1)
     int32_t uid = getuid();
     SandboxInfo sandboxInfo;
     AccessTokenID tokenId = GetSelfTokenID();
-    DLP_LOG_INFO(LABEL, "SetRetentionState03  tokenId from %{public}lu ", GetSelfTokenID());
+    DLP_LOG_INFO(LABEL, "SetRetentionState03  tokenId from %{public}" PRIu64, GetSelfTokenID());
 
     ASSERT_EQ(DLP_OK,
         DlpPermissionKit::InstallDlpSandbox(DLP_MANAGER_APP, FULL_CONTROL, DEFAULT_USERID, sandboxInfo, TEST_URI));
