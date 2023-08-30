@@ -17,7 +17,6 @@
 #define DLP_FILE_OPERATOR_H
 
 #include <string>
-#include <vector>
 
 namespace OHOS {
 namespace Security {

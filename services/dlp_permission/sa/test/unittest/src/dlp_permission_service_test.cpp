@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -35,6 +35,7 @@
 #include "open_dlp_file_callback_stub.h"
 #include "open_dlp_file_callback_death_recipient.h"
 #include "file_operator.h"
+#include "random.h"
 #include "retention_file_manager.h"
 #include "sandbox_json_manager.h"
 #include "visited_dlp_file_info.h"
@@ -107,13 +108,17 @@ void NewUserSample(AuthUserInfo& user)
 
 uint8_t* GenerateRandArray(uint32_t len)
 {
+    if (len < 1) {
+        DLP_LOG_ERROR(LABEL, "len error");
+        return nullptr;
+    }
     uint8_t* str = new (std::nothrow) uint8_t[len];
     if (str == nullptr) {
         DLP_LOG_ERROR(LABEL, "New memory fail");
         return nullptr;
     }
     for (uint32_t i = 0; i < len; i++) {
-        str[i] = rand() % 255; // uint8_t range 0 ~ 255
+        str[i] = GetRandomUint32() % 255; // uint8_t range 0 ~ 255
     }
     return str;
 }
@@ -126,7 +131,7 @@ std::string GenerateRandStr(uint32_t len)
         return "";
     }
     for (uint32_t i = 0; i < len; i++) {
-        str[i] = 33 + rand() % (126 - 33); // Visible Character Range 33 - 126
+        str[i] = 33 + GetRandomUint32() % (126 - 33); // Visible Character Range 33 - 126
     }
     str[len] = '\0';
     std::string res = str;

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -115,6 +115,10 @@ static int CheckAccount(const uint8_t* data, uint32_t len, uint32_t accountType,
     char* account = NULL;
     char user[STRING_LEN];
     char everyone[STRING_LEN];
+    if (len < 0) {
+        DLP_LOG_ERROR("len error");
+        return DLP_ERROR;
+    }
     char* policy = (char*)malloc(len + 1);
     if (policy == NULL) {
         DLP_LOG_ERROR("policy == NULL");

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -33,6 +33,7 @@
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
 #include "fuse_daemon.h"
+#include "random.h"
 #include "token_setproc.h"
 
 using namespace testing::ext;
@@ -124,7 +125,7 @@ static std::string GenerateRandStr(uint32_t len)
         return "";
     }
     for (uint32_t i = 0; i < len; i++) {
-        str[i] = 33 + rand() % (126 - 33);  // Visible Character Range 33 - 126
+        str[i] = 33 + GetRandomUint32() % (126 - 33);  // Visible Character Range 33 - 126
     }
     str[len] = '\0';
     std::string res = str;

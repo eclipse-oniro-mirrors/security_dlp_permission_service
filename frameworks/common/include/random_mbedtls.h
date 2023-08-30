@@ -12,16 +12,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "dlp_permission_death_recipient.h"
-#include "dlp_permission_client.h"
+
+#ifndef DLP_RANDOM_MBEDTLS
+#define DLP_RANDOM_MBEDTLS
+
+#include "rwlock.h"
+#include "mbedtls/ctr_drbg.h"
+#include "mbedtls/entropy.h"
 
 namespace OHOS {
 namespace Security {
 namespace DlpPermission {
-void DlpPermissionDeathRecipient::OnRemoteDied(const wptr<IRemoteObject>& object)
-{
-    DlpPermissionClient::GetInstance().OnRemoteDiedHandle();
-}
+class RandomMbedtls {
+public:
+    static RandomMbedtls& GetInstance();
+    int GenerateRandomArray(unsigned char *randStr, unsigned int len);
+    ~RandomMbedtls() {}
+    static unsigned int GetRandomUint32();
+
+private:
+    RandomMbedtls() : initFlag_(false) {}
+    mbedtls_entropy_context entropy_;
+    mbedtls_ctr_drbg_context ctrDrbg_;
+    OHOS::Utils::RWLock randomLock_;
+    bool initFlag_;
+};
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS
+#endif // ACCESS_TOKEN_RANDOM_MBEDTLS

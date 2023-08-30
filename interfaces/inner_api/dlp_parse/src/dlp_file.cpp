@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -357,7 +357,7 @@ int32_t DlpFile::ParseDlpHeader()
         DLP_LOG_WARN(LABEL, "alloc buffer failed.");
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
-    if (read(dlpFd_, buf, head_.certSize) != head_.certSize) {
+    if (read(dlpFd_, buf, head_.certSize) != (ssize_t)head_.certSize) {
         delete[] buf;
         DLP_LOG_ERROR(LABEL, "can not read dlp file cert, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_FORMAT_ERROR;
@@ -371,7 +371,7 @@ int32_t DlpFile::ParseDlpHeader()
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }
 
-    if (read(dlpFd_, tmpBuf, head_.contactAccountSize) != head_.contactAccountSize) {
+    if (read(dlpFd_, tmpBuf, head_.contactAccountSize) != (ssize_t)head_.contactAccountSize) {
         delete[] tmpBuf;
         DLP_LOG_ERROR(LABEL, "can not read dlp contact account, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_FORMAT_ERROR;
@@ -387,7 +387,7 @@ int32_t DlpFile::ParseDlpHeader()
             return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
         }
 
-        if (read(dlpFd_, tmpBuf, head_.offlineCertSize) != head_.offlineCertSize) {
+        if (read(dlpFd_, tmpBuf, head_.offlineCertSize) != (ssize_t)head_.offlineCertSize) {
             delete[] tmpBuf;
             DLP_LOG_ERROR(LABEL, "can not read dlp contact account, %{public}s", strerror(errno));
             return DLP_PARSE_ERROR_FILE_FORMAT_ERROR;
@@ -490,7 +490,7 @@ int32_t DlpFile::WriteHeadAndCert(int tmpFile, std::vector<uint8_t>& offlineCert
         DLP_LOG_ERROR(LABEL, "write dlp head failed, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
-    if (write(tmpFile, cert_.data, head_.certSize) != head_.certSize) {
+    if (write(tmpFile, cert_.data, head_.certSize) != (ssize_t)head_.certSize) {
         DLP_LOG_ERROR(LABEL, "write dlp cert data failed, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
@@ -603,7 +603,7 @@ int32_t DlpFile::DoDlpContentCryptyOperation(int32_t inFd, int32_t outFd, uint32
         uint32_t readLen = ((inFileLen - inOffset) < DLP_BUFF_LEN) ? (inFileLen - inOffset) : DLP_BUFF_LEN;
         (void)memset_s(message.data, DLP_BUFF_LEN, 0, DLP_BUFF_LEN);
         (void)memset_s(outMessage.data, DLP_BUFF_LEN, 0, DLP_BUFF_LEN);
-        if (read(inFd, message.data, readLen) != readLen) {
+        if (read(inFd, message.data, readLen) != (ssize_t)readLen) {
             DLP_LOG_ERROR(LABEL, "Read size do not equal readLen");
             ret = DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
             break;
@@ -618,7 +618,7 @@ int32_t DlpFile::DoDlpContentCryptyOperation(int32_t inFd, int32_t outFd, uint32
             break;
         }
 
-        if (write(outFd, outMessage.data, readLen) != readLen) {
+        if (write(outFd, outMessage.data, readLen) != (ssize_t)readLen) {
             DLP_LOG_ERROR(LABEL, "write fd failed, %{public}s", strerror(errno));
             ret = DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
             break;
@@ -647,13 +647,13 @@ int32_t DlpFile::DoDlpContentCopyOperation(int32_t inFd, int32_t outFd, uint32_t
         uint32_t readLen = ((inFileLen - inOffset) < DLP_BUFF_LEN) ? (inFileLen - inOffset) : DLP_BUFF_LEN;
         (void)memset_s(data, DLP_BUFF_LEN, 0, DLP_BUFF_LEN);
 
-        if (read(inFd, data, readLen) != readLen) {
+        if (read(inFd, data, readLen) != (ssize_t)readLen) {
             DLP_LOG_ERROR(LABEL, "Read size do not equal readLen");
             ret = DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
             break;
         }
 
-        if (write(outFd, data, readLen) != readLen) {
+        if (write(outFd, data, readLen) != (ssize_t)readLen) {
             DLP_LOG_ERROR(LABEL, "write fd failed, %{public}s", strerror(errno));
             ret = DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
             break;
@@ -678,7 +678,7 @@ int32_t DlpFile::GenFile(int32_t inPlainFileFd)
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
     head_.txtSize = static_cast<uint32_t>(fileLen);
-    DLP_LOG_DEBUG(LABEL, "fileLen %{private}" PRId64, fileLen);
+    DLP_LOG_DEBUG(LABEL, "fileLen %{private}u", head_.txtSize);
 
     // clean dlpFile
     if (ftruncate(dlpFd_, 0) == -1) {
@@ -701,7 +701,7 @@ int32_t DlpFile::GenFile(int32_t inPlainFileFd)
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
 
-    if (write(dlpFd_, cert_.data, head_.certSize) != head_.certSize) {
+    if (write(dlpFd_, cert_.data, head_.certSize) != (ssize_t)head_.certSize) {
         DLP_LOG_ERROR(LABEL, "write dlp cert data failed, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
@@ -886,7 +886,7 @@ int32_t DlpFile::WriteFirstBlockData(uint32_t offset, void* buf, uint32_t size)
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
 
-    if (write(dlpFd_, enBuf, writtenSize) != writtenSize) {
+    if (write(dlpFd_, enBuf, writtenSize) != (ssize_t)writtenSize) {
         DLP_LOG_ERROR(LABEL, "write failed, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
@@ -950,7 +950,8 @@ uint32_t DlpFile::GetFsContentSize() const
         return INVALID_FILE_SIZE;
     }
     if (head_.txtOffset > fileStat.st_size || fileStat.st_size >= static_cast<off_t>(INVALID_FILE_SIZE)) {
-        DLP_LOG_ERROR(LABEL, "size error %{public}d %{public}" PRId64, head_.txtOffset, fileStat.st_size);
+        DLP_LOG_ERROR(LABEL, "size error %{public}d %{public}d", head_.txtOffset,
+            static_cast<uint32_t>(fileStat.st_size));
         return INVALID_FILE_SIZE;
     }
     if (static_cast<uint32_t>(fileStat.st_size) - head_.txtOffset == 0) {

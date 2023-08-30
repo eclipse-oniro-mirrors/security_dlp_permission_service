@@ -23,6 +23,7 @@
 #include "dlp_permission_async_stub.h"
 #include "dlp_permission_kit.h"
 #include "dlp_permission_log.h"
+#include "random.h"
 #include "securec.h"
 #include "token_setproc.h"
 
@@ -35,8 +36,6 @@ static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = { LOG_CORE, SECURITY_DOMAIN
 static void FuzzTest(const uint8_t* data, size_t size)
 {
     std::string name(reinterpret_cast<const char*>(data), size);
-    auto seed = std::time(nullptr);
-    std::srand(seed);
     uint64_t curTime = static_cast<uint64_t>(
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     PermissionPolicy encPolicy;
@@ -44,13 +43,13 @@ static void FuzzTest(const uint8_t* data, size_t size)
     encPolicy.ownerAccountType_ = DlpAccountType::DOMAIN_ACCOUNT;
     encPolicy.SetIv(nullptr, 0);
     encPolicy.SetAeskey(nullptr, 0);
-    int userNum = rand() % (size + 1) + 1;
+    int userNum = GetRandomUint32() % (size + 1) + 1;
     DLP_LOG_INFO(LABEL, "before for:%{public}d,%{public}zu", userNum, size);
     for (int user = 0; user < userNum; ++user) {
         AuthUserInfo perminfo;
         perminfo.authAccount = name;
-        perminfo.authPerm = static_cast<DLPFileAccess>(1 + rand() % 3); // perm type 1 to 3
-        perminfo.permExpiryTime = curTime + rand() % 200;              // time range 0 to 200
+        perminfo.authPerm = static_cast<DLPFileAccess>(1 + GetRandomUint32() % 3); // perm type 1 to 3
+        perminfo.permExpiryTime = curTime + GetRandomUint32() % 200;              // time range 0 to 200
         perminfo.authAccountType = DlpAccountType::DOMAIN_ACCOUNT;
         encPolicy.authUsers_.emplace_back(perminfo);
     }

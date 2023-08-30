@@ -50,6 +50,7 @@ using namespace OHOS::Security::DlpPermission;
 using namespace OHOS::Security::AccessToken;
 using namespace std;
 namespace OHOS {
+static const uint32_t BUFFERSIZE = 40;
 static void FuzzTest(const uint8_t* data, size_t size)
 {
     int fd = open("/data/fuse_test.txt", O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
@@ -70,8 +71,8 @@ static void FuzzTest(const uint8_t* data, size_t size)
         .offlineCertSize = 0,
     };
     write(fd, &header, sizeof(header));
-    uint8_t buffer[40] = {0};
-    write(fd, buffer, 40);
+    uint8_t buffer[BUFFERSIZE] = {0};
+    write(fd, buffer, BUFFERSIZE);
     testFile.ParseDlpHeader();
 }
 

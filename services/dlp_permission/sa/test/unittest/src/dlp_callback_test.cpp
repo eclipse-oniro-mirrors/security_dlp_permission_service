@@ -14,6 +14,7 @@
  */
 
 #include "dlp_callback_test.h"
+#include <string>
 #include "gtest/gtest.h"
 #define  private public
 #include "dlp_sandbox_change_callback_manager.h"
@@ -22,7 +23,6 @@
 #include "dlp_permission_log.h"
 #include "dlp_permission.h"
 #include "iremote_broker.h"
-#include <string>
 
 using namespace testing::ext;
 using namespace OHOS;

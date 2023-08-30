@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -21,6 +21,7 @@
 #include "accesstoken_kit.h"
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
+#include "random.h"
 #include "securec.h"
 #include "token_setproc.h"
 
@@ -47,12 +48,12 @@ static void FuzzTest(const uint8_t* data, size_t size)
     encPolicy.ownerAccountType_ = DOMAIN_ACCOUNT;
     encPolicy.SetAeskey(data, size);
     encPolicy.SetIv(data, size);
-    int userNum = rand() % (size + 1);
+    int userNum = GetRandomUint32() % (size + 1);
     for (int user = 0; user < userNum; ++user) {
         AuthUserInfo perminfo;
         perminfo.authAccount = Uint8ArrayToString(data, size);
-        perminfo.authPerm = static_cast<DLPFileAccess>(1 + rand() % 3);  // perm type 1 to 3
-        perminfo.permExpiryTime = curTime + rand() % 200;               // time range 0 to 200
+        perminfo.authPerm = static_cast<DLPFileAccess>(1 + GetRandomUint32() % 3);  // perm type 1 to 3
+        perminfo.permExpiryTime = curTime + GetRandomUint32() % 200;               // time range 0 to 200
         perminfo.authAccountType = DOMAIN_ACCOUNT;
         encPolicy.authUsers_.emplace_back(perminfo);
     }

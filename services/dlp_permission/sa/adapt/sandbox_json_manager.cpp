@@ -15,8 +15,6 @@
 
 #include "sandbox_json_manager.h"
 
-#include <algorithm>
-#include <iterator>
 #include "appexecfwk_errors.h"
 #include "bundle_mgr_client.h"
 #include "dlp_permission_log.h"

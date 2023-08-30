@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -67,9 +67,8 @@ static bool CheckTime(uint64_t time)
     uint64_t curTime = static_cast<uint64_t>(
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     if (time < curTime) {
-        DLP_LOG_ERROR(LABEL,
-            "Perm expiry time is earlier than current time, cur=%{public}" PRIu64", set=%{public}" PRIu64"", curTime,
-            time);
+        DLP_LOG_ERROR(LABEL, "Perm expiry time is earlier than current time, cur=%{public}s, set=%{public}s",
+            std::to_string(curTime).c_str(), std::to_string(time).c_str());
         return false;
     }
     return true;
@@ -162,6 +161,10 @@ void PermissionPolicy::SetAeskey(const uint8_t* key, uint32_t keyLen)
         return;
     }
     FreeUint8Buffer(&aeskey_, aeskeyLen_);
+    if (keyLen < 1) {
+        DLP_LOG_ERROR(LABEL, "keyLen error");
+        return;
+    }
     aeskey_ = new (std::nothrow) uint8_t[keyLen];
     if (aeskey_ == nullptr) {
         DLP_LOG_ERROR(LABEL, "Alloc %{public}u buff for aes key fail", keyLen);
@@ -197,6 +200,10 @@ void PermissionPolicy::SetIv(const uint8_t* iv, uint32_t ivLen)
         return;
     }
     FreeUint8Buffer(&iv_, ivLen_);
+    if (ivLen < 1) {
+        DLP_LOG_ERROR(LABEL, "ivLen error %{public}u", ivLen);
+        return;
+    }
     iv_ = new (std::nothrow) uint8_t[ivLen];
     if (iv_ == nullptr) {
         DLP_LOG_ERROR(LABEL, "Alloc %{public}u buff for iv fail", ivLen);

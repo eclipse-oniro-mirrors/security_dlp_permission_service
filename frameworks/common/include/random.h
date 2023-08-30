@@ -13,11 +13,20 @@
  * limitations under the License.
  */
 
-#ifndef TEST_FUZZTEST_GENERATE_CERT_FUZZER_H
-#define TEST_FUZZTEST_GENERATE_CERT_FUZZER_H
+#ifndef DLP_RANDOM_H
+#define DLP_RANDOM_H
 
-#define FUZZ_PROJECT_NAME "generatecert_fuzzer"
+#ifdef __cplusplus
+#if __cplusplus
+extern "C" {
+#endif
+#endif
 
-#include "dlp_permission_kit.h"
+unsigned int GetRandomUint32(void);
 
-#endif  // TEST_FUZZTEST_GENERATE_CERT_FUZZER_H
+#ifdef __cplusplus
+#if __cplusplus
+}
+#endif /* __cplusplus */
+#endif /* __cplusplus */
+#endif /* ACCESSTOKEN_RANDOM_H */

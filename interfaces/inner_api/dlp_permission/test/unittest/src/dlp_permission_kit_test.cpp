@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022-2023 Huawei Device Co., Ltd.
+ * Copyright (c) 2023 Huawei Device Co., Ltd.
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
@@ -30,6 +30,7 @@
 #include "open_dlp_file_callback.h"
 #undef private
 #include "hex_string.h"
+#include "random.h"
 #include "securec.h"
 #include "token_setproc.h"
 #include "visited_dlp_file_info.h"
@@ -91,7 +92,8 @@ static bool TestSetSelfTokenId(AccessTokenID tokenId)
         return false;
     }
 
-    DLP_LOG_INFO(LABEL, "set self tokenId from %{public}" PRIu64 " to %{public}d", GetSelfTokenID(), tokenId);
+    DLP_LOG_INFO(LABEL, "set self tokenId from %{public}u to %{public}d",
+        static_cast<unsigned int>(GetSelfTokenID()), tokenId);
     if (SetSelfTokenID(tokenId) != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "set self tokenId fail");
         if (setuid(uid) != 0) {
@@ -217,13 +219,17 @@ void DlpPermissionKitTest::TearDown()
 
 static uint8_t* GenerateRandArray(uint32_t len)
 {
+    if (len < 1) {
+        DLP_LOG_ERROR(LABEL, "len error");
+        return nullptr;
+    }
     uint8_t* str = new (std::nothrow) uint8_t[len];
     if (str == nullptr) {
         DLP_LOG_ERROR(LABEL, "New memory fail");
         return nullptr;
     }
     for (uint32_t i = 0; i < len; i++) {
-        str[i] = rand() % 255;  // uint8_t range 0 ~ 255
+        str[i] = GetRandomUint32() % 255;  // uint8_t range 0 ~ 255
     }
     return str;
 }
@@ -236,7 +242,7 @@ static std::string GenerateRandStr(uint32_t len)
         return "";
     }
     for (uint32_t i = 0; i < len; i++) {
-        str[i] = 33 + rand() % (126 - 33);  // Visible Character Range 33 - 126
+        str[i] = 33 + GetRandomUint32() % (126 - 33);  // Visible Character Range 33 - 126
     }
     str[len] = '\0';
     std::string res = str;
@@ -340,7 +346,7 @@ HWTEST_F(DlpPermissionKitTest, SetRetentionState02, TestSize.Level1)
 {
     int32_t uid = getuid();
     AccessTokenID tokenId = GetSelfTokenID();
-    DLP_LOG_INFO(LABEL, "SetRetentionState02  tokenId from %{public}" PRIu64, GetSelfTokenID());
+    DLP_LOG_INFO(LABEL, "SetRetentionState02  tokenId from %{public}u", static_cast<unsigned int>(GetSelfTokenID()));
     std::vector<std::string> docUriVec;
     std::vector<RetentionSandBoxInfo> retentionSandBoxInfoVec;
     SandboxInfo sandboxInfo;
@@ -374,7 +380,7 @@ HWTEST_F(DlpPermissionKitTest, SetRetentionState03, TestSize.Level1)
     int32_t uid = getuid();
     SandboxInfo sandboxInfo;
     AccessTokenID tokenId = GetSelfTokenID();
-    DLP_LOG_INFO(LABEL, "SetRetentionState03  tokenId from %{public}" PRIu64, GetSelfTokenID());
+    DLP_LOG_INFO(LABEL, "SetRetentionState03  tokenId from %{public}u", static_cast<unsigned int>(GetSelfTokenID()));
 
     ASSERT_EQ(DLP_OK,
         DlpPermissionKit::InstallDlpSandbox(DLP_MANAGER_APP, FULL_CONTROL, DEFAULT_USERID, sandboxInfo, TEST_URI));
