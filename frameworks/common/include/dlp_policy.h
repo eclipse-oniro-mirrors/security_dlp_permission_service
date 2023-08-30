@@ -46,7 +46,7 @@ enum GatheringPolicyType : uint32_t {
     NON_GATHERING = 2
 };
 
-enum DlpAuthType : uint32_t {
+enum class DlpAuthType : uint32_t {
     ONLINE_AUTH_ONLY = 0,
     ONLINE_AUTH_FOR_OFFLINE_CERT = 1,
     OFFLINE_AUTH_ONLY = 2,

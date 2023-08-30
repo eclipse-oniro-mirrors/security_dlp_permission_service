@@ -18,6 +18,9 @@
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
 
+namespace OHOS {
+namespace Security {
+namespace DlpPermission {
 using namespace testing::ext;
 using namespace OHOS;
 using namespace OHOS::Security::DlpPermission;
@@ -106,3 +109,6 @@ HWTEST_F(HexStringTest, HexStringToByte002, TestSize.Level1)
     EXPECT_EQ(HexStringToByte("gd2c4f", byteBuffer, sizeof(byteBuffer)), DLP_SERVICE_ERROR_VALUE_INVALID);
     EXPECT_EQ(HexStringToByte("1g2c4f", byteBuffer, sizeof(byteBuffer)), DLP_SERVICE_ERROR_VALUE_INVALID);
 }
+}  // namespace DlpPermission
+}  // namespace Security
+}  // namespace OHOS

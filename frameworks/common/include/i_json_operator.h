@@ -24,9 +24,9 @@ namespace Security {
 namespace DlpPermission {
 using Json = nlohmann::json;
 
-class IJsonInfo {
+class IJsonOperator {
 public:
-    virtual ~IJsonInfo() {};
+    virtual ~IJsonOperator() {};
     virtual Json ToJson() const = 0;
     virtual void FromJson(const Json& jsonObject) = 0;
     virtual std::string ToString() const = 0;

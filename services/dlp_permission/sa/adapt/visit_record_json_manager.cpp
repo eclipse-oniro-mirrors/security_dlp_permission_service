@@ -15,7 +15,6 @@
 
 #include "visit_record_json_manager.h"
 
-#include <iterator>
 #include "dlp_permission_log.h"
 #include "dlp_permission.h"
 

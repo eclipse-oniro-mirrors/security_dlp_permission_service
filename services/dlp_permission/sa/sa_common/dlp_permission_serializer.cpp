@@ -51,7 +51,7 @@ const std::string RIGHT_INDEX = "right";
 const std::string EVERYONE_INDEX = "everyone";
 const std::string ENC_POLICY_INDEX = "encPolicy";
 
-#define VALID_TIME_STAMP (2147483647)
+constexpr uint64_t  VALID_TIME_STAMP = 2147483647;
 
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {
     LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionSerializer"};

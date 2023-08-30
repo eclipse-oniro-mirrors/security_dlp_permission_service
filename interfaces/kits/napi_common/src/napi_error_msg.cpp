@@ -13,9 +13,9 @@
  * limitations under the License.
  */
 
+#include <unordered_map>
 #include "dlp_permission.h"
 #include "napi_error_msg.h"
-#include <unordered_map>
 
 namespace OHOS {
 namespace Security {

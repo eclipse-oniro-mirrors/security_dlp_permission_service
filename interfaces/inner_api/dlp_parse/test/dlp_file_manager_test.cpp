@@ -18,11 +18,11 @@
 #define private public
 #include "dlp_file_manager.h"
 #undef private
-#include "dlp_permission.h"
-#include "dlp_permission_log.h"
 #include <cstdio>
 #include <cstring>
 #include <fcntl.h>
+#include "dlp_permission.h"
+#include "dlp_permission_log.h"
 
 using namespace testing::ext;
 using namespace OHOS::Security::DlpPermission;

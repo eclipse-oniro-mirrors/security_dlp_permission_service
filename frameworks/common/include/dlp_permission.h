@@ -16,7 +16,6 @@
 #ifndef FRAMEWORKS_COMMON_DLP_PERMISSION_H
 #define FRAMEWORKS_COMMON_DLP_PERMISSION_H
 
-#include <inttypes.h>
 #include <string>
 namespace OHOS {
 namespace Security {

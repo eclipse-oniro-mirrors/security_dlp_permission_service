@@ -33,6 +33,9 @@
 #include "iremote_stub.h"
 #include "securec.h"
 
+namespace OHOS {
+namespace Security {
+namespace DlpPermission {
 using namespace testing::ext;
 using namespace OHOS;
 using namespace OHOS::Security::DlpPermission;
@@ -126,4 +129,6 @@ HWTEST_F(DlpCredentialTest, DlpCredentialTest002, TestSize.Level1)
     res = DlpCredential::GetInstance().ParseDlpCertificate(cert2, flag, stub);
     EXPECT_EQ(DLP_CREDENTIAL_ERROR_COMMON_ERROR, res);
 }
-
+}  // namespace DlpPermission
+}  // namespace Security
+}  // namespace OHOS

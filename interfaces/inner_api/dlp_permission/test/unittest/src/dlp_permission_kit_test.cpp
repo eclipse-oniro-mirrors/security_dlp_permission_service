@@ -14,11 +14,11 @@
  */
 
 #include "dlp_permission_kit_test.h"
-#include "gtest/gtest.h"
 #include <chrono>
 #include <thread>
 #include <unistd.h>
 #include <vector>
+#include "gtest/gtest.h"
 #include "accesstoken_kit.h"
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"

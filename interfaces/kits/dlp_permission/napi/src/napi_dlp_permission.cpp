@@ -14,6 +14,7 @@
  */
 
 #include "napi_dlp_permission.h"
+#include <string>
 #include "accesstoken_kit.h"
 #include "application_context.h"
 #include "dlp_file_kits.h"
@@ -32,7 +33,6 @@
 #include "securec.h"
 #include "tokenid_kit.h"
 #include "token_setproc.h"
-#include <string>
 
 namespace OHOS {
 namespace Security {

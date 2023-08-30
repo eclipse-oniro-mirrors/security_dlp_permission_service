@@ -41,7 +41,7 @@ struct RetentionInfo {
     int32_t userId = -1;
 };
 
-class SandboxJsonManager : public IJsonInfo {
+class SandboxJsonManager : public IJsonOperator {
 public:
     SandboxJsonManager();
     ~SandboxJsonManager();

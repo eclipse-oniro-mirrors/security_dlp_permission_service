@@ -18,6 +18,9 @@
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
 
+namespace OHOS {
+namespace Security {
+namespace DlpPermission {
 using namespace testing::ext;
 using namespace OHOS;
 using namespace OHOS::Security::DlpPermission;
@@ -349,3 +352,6 @@ HWTEST_F(PermissionPolicyTest, CopyPermissionPolicy001, TestSize.Level1)
     policyDest->CopyPermissionPolicy(*policySrc);
     ASSERT_NE(policyDest->aeskey_, nullptr);
 }
+}  // namespace DlpPermission
+}  // namespace Security
+}  // namespace OHOS

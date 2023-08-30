@@ -13,10 +13,12 @@
  * limitations under the License.
  */
 #include "dlp_parcel_test.h"
-
-#include "dlp_permission_log.h"
 #include <string>
+#include "dlp_permission_log.h"
 
+namespace OHOS {
+namespace Security {
+namespace DlpPermission {
 using namespace testing::ext;
 using namespace OHOS;
 using namespace OHOS::Security::DlpPermission;
@@ -147,3 +149,6 @@ HWTEST_F(DlpParcelTest, VisitedDLPFileInfo001, TestSize.Level1)
     ASSERT_NE(result, nullptr);
     EXPECT_EQ(0, result->docUri.compare("abc"));
 }
+}  // namespace DlpPermission
+}  // namespace Security
+}  // namespace OHOS

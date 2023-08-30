@@ -33,7 +33,7 @@ struct VisitRecordInfo {
     int64_t timestamp = -1;
 };
 
-class VisitRecordJsonManager : public IJsonInfo {
+class VisitRecordJsonManager : public IJsonOperator {
 public:
     VisitRecordJsonManager();
     ~VisitRecordJsonManager();
