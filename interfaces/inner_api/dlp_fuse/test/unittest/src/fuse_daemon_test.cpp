@@ -23,8 +23,10 @@
 #include "dlp_permission_log.h"
 #include "fuse_daemon.h"
 
+namespace OHOS {
+namespace Security {
+namespace DlpPermission {
 using namespace testing::ext;
-using namespace OHOS::Security::DlpPermission;
 
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "FuseDaemonTest"};
@@ -906,3 +908,6 @@ HWTEST_F(FuseDaemonTest, FuseDaemonInit001, TestSize.Level1)
     FuseDaemon::fuseDaemonOper_.init(nullptr, &conn);
     EXPECT_EQ(FUSE_CAP_WRITEBACK_CACHE, conn.want);
 }
+}  // namespace DlpPermission
+}  // namespace Security
+}  // namespace OHOS

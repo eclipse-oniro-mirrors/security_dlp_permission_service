@@ -146,7 +146,7 @@ struct OpenDlpFileUnSubscriberContext : public CommonAsyncContext {
 };
 
 struct GenerateDlpFileAsyncContext : public CommonAsyncContext {
-    explicit GenerateDlpFileAsyncContext(napi_env env) : CommonAsyncContext(env){};
+    explicit GenerateDlpFileAsyncContext(napi_env env) : CommonAsyncContext(env) {};
     int64_t plaintextFd = -1;
     int64_t ciphertextFd = -1;
     DlpProperty property;
@@ -154,7 +154,7 @@ struct GenerateDlpFileAsyncContext : public CommonAsyncContext {
 };
 
 struct DlpFileAsyncContext : public CommonAsyncContext {
-    explicit DlpFileAsyncContext(napi_env env) : CommonAsyncContext(env){};
+    explicit DlpFileAsyncContext(napi_env env) : CommonAsyncContext(env) {};
     int64_t ciphertextFd = -1;
     DlpProperty property;
     bool isDlpFile = false;
@@ -162,24 +162,24 @@ struct DlpFileAsyncContext : public CommonAsyncContext {
 };
 
 struct DlpLinkFileAsyncContext : public CommonAsyncContext {
-    explicit DlpLinkFileAsyncContext(napi_env env) : CommonAsyncContext(env){};
+    explicit DlpLinkFileAsyncContext(napi_env env) : CommonAsyncContext(env) {};
     std::string linkFileName = "";
     std::shared_ptr<DlpFile> dlpFileNative = nullptr;
 };
 
 struct RecoverDlpFileAsyncContext : public CommonAsyncContext {
-    explicit RecoverDlpFileAsyncContext(napi_env env) : CommonAsyncContext(env){};
+    explicit RecoverDlpFileAsyncContext(napi_env env) : CommonAsyncContext(env) {};
     int64_t plaintextFd = -1;
     std::shared_ptr<DlpFile> dlpFileNative = nullptr;
 };
 
 struct CloseDlpFileAsyncContext : public CommonAsyncContext {
-    explicit CloseDlpFileAsyncContext(napi_env env) : CommonAsyncContext(env){};
+    explicit CloseDlpFileAsyncContext(napi_env env) : CommonAsyncContext(env) {};
     std::shared_ptr<DlpFile> dlpFileNative = nullptr;
 };
 
 struct DlpSandboxAsyncContext : public CommonAsyncContext {
-    explicit DlpSandboxAsyncContext(napi_env env) : CommonAsyncContext(env){};
+    explicit DlpSandboxAsyncContext(napi_env env) : CommonAsyncContext(env) {};
     std::string bundleName;
     DLPFileAccess dlpFileAccess = NO_PERMISSION;
     int32_t userId = -1;
@@ -188,45 +188,45 @@ struct DlpSandboxAsyncContext : public CommonAsyncContext {
 };
 
 struct GetPermInfoAsyncContext : public CommonAsyncContext {
-    explicit GetPermInfoAsyncContext(napi_env env) : CommonAsyncContext(env){};
+    explicit GetPermInfoAsyncContext(napi_env env) : CommonAsyncContext(env) {};
     DLPPermissionInfo permInfo;
 };
 
 struct IsInSandboxAsyncContext : public CommonAsyncContext {
-    explicit IsInSandboxAsyncContext(napi_env env) : CommonAsyncContext(env){};
+    explicit IsInSandboxAsyncContext(napi_env env) : CommonAsyncContext(env) {};
     bool inSandbox = false;
 };
 
 struct GetOriginalFileAsyncContext : public CommonAsyncContext {
-    explicit GetOriginalFileAsyncContext(napi_env env) : CommonAsyncContext(env){};
+    explicit GetOriginalFileAsyncContext(napi_env env) : CommonAsyncContext(env) {};
     std::string dlpFilename = "";
     std::string oriFilename = "";
 };
 
 struct GetSuffixAsyncContext : public CommonAsyncContext {
-    explicit GetSuffixAsyncContext(napi_env env) : CommonAsyncContext(env){};
+    explicit GetSuffixAsyncContext(napi_env env) : CommonAsyncContext(env) {};
     std::string extension = "";
 };
 
 struct GetDlpSupportFileTypeAsyncContext : public CommonAsyncContext {
-    explicit GetDlpSupportFileTypeAsyncContext(napi_env env) : CommonAsyncContext(env){};
+    explicit GetDlpSupportFileTypeAsyncContext(napi_env env) : CommonAsyncContext(env) {};
     std::vector<std::string> supportFileType;
 };
 
 void UvQueueWorkDeleteRef(uv_work_t *work, int32_t status);
 
 struct GetGatheringPolicyContext : public CommonAsyncContext {
-    explicit GetGatheringPolicyContext(napi_env env) : CommonAsyncContext(env){};
+    explicit GetGatheringPolicyContext(napi_env env) : CommonAsyncContext(env) {};
     bool isGathering = false;
 };
 
 struct RetentionStateAsyncContext : public CommonAsyncContext {
-    explicit RetentionStateAsyncContext(napi_env env) : CommonAsyncContext(env){};
+    explicit RetentionStateAsyncContext(napi_env env) : CommonAsyncContext(env) {};
     std::vector<std::string> docUris;
 };
 
 struct GetRetentionSandboxListAsyncContext : public CommonAsyncContext {
-    explicit GetRetentionSandboxListAsyncContext(napi_env env) : CommonAsyncContext(env){};
+    explicit GetRetentionSandboxListAsyncContext(napi_env env) : CommonAsyncContext(env) {};
     std::string bundleName = "";
     std::vector<RetentionSandBoxInfo> retentionSandBoxInfoVec;
 };

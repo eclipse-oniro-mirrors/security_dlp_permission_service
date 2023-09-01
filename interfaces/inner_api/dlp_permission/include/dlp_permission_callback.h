@@ -24,14 +24,14 @@ namespace Security {
 namespace DlpPermission {
 class GenerateDlpCertificateCallback {
 public:
-    GenerateDlpCertificateCallback(){};
-    virtual ~GenerateDlpCertificateCallback(){};
+    GenerateDlpCertificateCallback() {};
+    virtual ~GenerateDlpCertificateCallback() {};
     virtual void OnGenerateDlpCertificate(int32_t result, const std::vector<uint8_t>& cert) = 0;
 };
 class ParseDlpCertificateCallback {
 public:
-    ParseDlpCertificateCallback(){};
-    virtual ~ParseDlpCertificateCallback(){};
+    ParseDlpCertificateCallback() {};
+    virtual ~ParseDlpCertificateCallback() {};
     virtual void OnParseDlpCertificate(int32_t result, const PermissionPolicy& policy,
         const std::vector<uint8_t>& cert) = 0;
 };

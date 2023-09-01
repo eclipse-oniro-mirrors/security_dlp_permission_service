@@ -36,8 +36,10 @@
 #include "random.h"
 #include "token_setproc.h"
 
+namespace OHOS {
+namespace Security {
+namespace DlpPermission {
 using namespace testing::ext;
-using namespace OHOS::Security::DlpPermission;
 using namespace OHOS::Security::AccessToken;
 
 namespace {
@@ -1265,3 +1267,6 @@ HWTEST_F(DlpFuseTest, ReplaceDlpLinkFile001, TestSize.Level1)
     EXPECT_EQ(DlpLinkManager::GetInstance().ReplaceDlpLinkFile(filePtr, "linkfile"), DLP_FUSE_ERROR_DLP_FILE_NULL);
     delete (node);
 }
+}  // namespace DlpPermission
+}  // namespace Security
+}  // namespace OHOS

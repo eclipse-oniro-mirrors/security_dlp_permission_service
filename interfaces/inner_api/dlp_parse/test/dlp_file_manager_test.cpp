@@ -24,10 +24,11 @@
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
 
+namespace OHOS {
+namespace Security {
+namespace DlpPermission {
 using namespace testing::ext;
-using namespace OHOS::Security::DlpPermission;
 using namespace std;
-
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpFileManagerTest"};
 static int g_fdDlp = -1;
@@ -645,3 +646,6 @@ HWTEST_F(DlpFileManagerTest, RecoverDlpFile001, TestSize.Level1)
     EXPECT_EQ(DLP_PARSE_ERROR_FD_ERROR,
         DlpFileManager::GetInstance().RecoverDlpFile(filePtr, -1));
 }
+}  // namespace DlpPermission
+}  // namespace Security
+}  // namespace OHOS

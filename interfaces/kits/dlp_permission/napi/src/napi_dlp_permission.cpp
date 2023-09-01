@@ -84,7 +84,7 @@ napi_value NapiDlpPermission::GenerateDlpFile(napi_env env, napi_callback_info c
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
         return nullptr;
     }
-    std::unique_ptr<GenerateDlpFileAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<GenerateDlpFileAsyncContext> asyncContextPtr{ asyncContext };
 
     if (!GetGenerateDlpFileParams(env, cbInfo, *asyncContext)) {
         return nullptr;
@@ -129,7 +129,7 @@ void NapiDlpPermission::GenerateDlpFileComplete(napi_env env, napi_status status
         DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
         return;
     }
-    std::unique_ptr<GenerateDlpFileAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<GenerateDlpFileAsyncContext> asyncContextPtr{ asyncContext };
     napi_value resJs = nullptr;
     if (asyncContext->errCode == DLP_OK) {
         napi_value nativeObjJs;
@@ -160,7 +160,7 @@ napi_value NapiDlpPermission::OpenDlpFile(napi_env env, napi_callback_info cbInf
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
         return nullptr;
     }
-    std::unique_ptr<DlpFileAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<DlpFileAsyncContext> asyncContextPtr{ asyncContext };
 
     if (!GetOpenDlpFileParams(env, cbInfo, *asyncContext)) {
         return nullptr;
@@ -234,7 +234,7 @@ void NapiDlpPermission::OpenDlpFileComplete(napi_env env, napi_status status, vo
         DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
         return;
     }
-    std::unique_ptr<DlpFileAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<DlpFileAsyncContext> asyncContextPtr{ asyncContext };
     napi_value resJs = nullptr;
     if (asyncContext->errCode == DLP_OK) {
         napi_value nativeObjJs;
@@ -275,7 +275,7 @@ napi_value NapiDlpPermission::IsDlpFile(napi_env env, napi_callback_info cbInfo)
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
         return nullptr;
     }
-    std::unique_ptr<DlpFileAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<DlpFileAsyncContext> asyncContextPtr{ asyncContext };
 
     if (!GetIsDlpFileParams(env, cbInfo, *asyncContext)) {
         return nullptr;
@@ -319,7 +319,7 @@ void NapiDlpPermission::IsDlpFileComplete(napi_env env, napi_status status, void
         DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
         return;
     }
-    std::unique_ptr<DlpFileAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<DlpFileAsyncContext> asyncContextPtr{ asyncContext };
 
     napi_value isDlpFileJs = nullptr;
     if (asyncContext->errCode == DLP_OK) {
@@ -342,7 +342,7 @@ napi_value NapiDlpPermission::AddDlpLinkFile(napi_env env, napi_callback_info cb
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
         return nullptr;
     }
-    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{ asyncContext };
 
     if (!GetDlpLinkFileParams(env, cbInfo, *asyncContext)) {
         return nullptr;
@@ -387,7 +387,7 @@ void NapiDlpPermission::AddDlpLinkFileComplete(napi_env env, napi_status status,
         DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
         return;
     }
-    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{ asyncContext };
     napi_value resJs = nullptr;
     NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &resJs));
     ProcessCallbackOrPromise(env, asyncContext, resJs);
@@ -406,7 +406,7 @@ napi_value NapiDlpPermission::StopDlpLinkFile(napi_env env, napi_callback_info c
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
         return nullptr;
     }
-    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{ asyncContext };
 
     if (!GetLinkFileStatusParams(env, cbInfo, *asyncContext)) {
         return nullptr;
@@ -450,7 +450,7 @@ void NapiDlpPermission::StopDlpLinkFileComplete(napi_env env, napi_status status
         DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
         return;
     }
-    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{ asyncContext };
     napi_value resJs = nullptr;
     NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &resJs));
     ProcessCallbackOrPromise(env, asyncContext, resJs);
@@ -469,7 +469,7 @@ napi_value NapiDlpPermission::RestartDlpLinkFile(napi_env env, napi_callback_inf
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
         return nullptr;
     }
-    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{ asyncContext };
 
     if (!GetLinkFileStatusParams(env, cbInfo, *asyncContext)) {
         return nullptr;
@@ -513,7 +513,7 @@ void NapiDlpPermission::RestartDlpLinkFileComplete(napi_env env, napi_status sta
         DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
         return;
     }
-    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{ asyncContext };
     napi_value resJs = nullptr;
     NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &resJs));
     ProcessCallbackOrPromise(env, asyncContext, resJs);
@@ -532,7 +532,7 @@ napi_value NapiDlpPermission::ReplaceDlpLinkFile(napi_env env, napi_callback_inf
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
         return nullptr;
     }
-    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{ asyncContext };
 
     if (!GetDlpLinkFileParams(env, cbInfo, *asyncContext)) {
         return nullptr;
@@ -577,7 +577,7 @@ void NapiDlpPermission::ReplaceDlpLinkFileComplete(napi_env env, napi_status sta
         DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
         return;
     }
-    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{ asyncContext };
     napi_value resJs = nullptr;
     NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &resJs));
     ProcessCallbackOrPromise(env, asyncContext, resJs);
@@ -596,7 +596,7 @@ napi_value NapiDlpPermission::DeleteDlpLinkFile(napi_env env, napi_callback_info
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
         return nullptr;
     }
-    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{ asyncContext };
 
     if (!GetDlpLinkFileParams(env, cbInfo, *asyncContext)) {
         return nullptr;
@@ -640,7 +640,7 @@ void NapiDlpPermission::DeleteDlpLinkFileComplete(napi_env env, napi_status stat
         DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
         return;
     }
-    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<DlpLinkFileAsyncContext> asyncContextPtr{ asyncContext };
     napi_value resJs = nullptr;
     NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &resJs));
     ProcessCallbackOrPromise(env, asyncContext, resJs);
@@ -659,7 +659,7 @@ napi_value NapiDlpPermission::RecoverDlpFile(napi_env env, napi_callback_info cb
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
         return nullptr;
     }
-    std::unique_ptr<RecoverDlpFileAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<RecoverDlpFileAsyncContext> asyncContextPtr{ asyncContext };
 
     if (!GetRecoverDlpFileParams(env, cbInfo, *asyncContext)) {
         return nullptr;
@@ -704,7 +704,7 @@ void NapiDlpPermission::RecoverDlpFileComplete(napi_env env, napi_status status,
         DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
         return;
     }
-    std::unique_ptr<RecoverDlpFileAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<RecoverDlpFileAsyncContext> asyncContextPtr{ asyncContext };
     napi_value resJs = nullptr;
     NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &resJs));
     ProcessCallbackOrPromise(env, asyncContext, resJs);
@@ -723,7 +723,7 @@ napi_value NapiDlpPermission::CloseDlpFile(napi_env env, napi_callback_info cbIn
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
         return nullptr;
     }
-    std::unique_ptr<CloseDlpFileAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<CloseDlpFileAsyncContext> asyncContextPtr{ asyncContext };
 
     if (!GetCloseDlpFileParams(env, cbInfo, *asyncContext)) {
         return nullptr;
@@ -767,7 +767,7 @@ void NapiDlpPermission::CloseDlpFileComplete(napi_env env, napi_status status, v
         DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
         return;
     }
-    std::unique_ptr<CloseDlpFileAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<CloseDlpFileAsyncContext> asyncContextPtr{ asyncContext };
     napi_value resJs = nullptr;
     NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &resJs));
     ProcessCallbackOrPromise(env, asyncContext, resJs);
@@ -784,7 +784,7 @@ napi_value NapiDlpPermission::InstallDlpSandbox(napi_env env, napi_callback_info
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
         return nullptr;
     }
-    std::unique_ptr<DlpSandboxAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<DlpSandboxAsyncContext> asyncContextPtr{ asyncContext };
 
     if (!GetInstallDlpSandboxParams(env, cbInfo, *asyncContext)) {
         return nullptr;
@@ -829,7 +829,7 @@ void NapiDlpPermission::InstallDlpSandboxComplete(napi_env env, napi_status stat
         DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
         return;
     }
-    std::unique_ptr<DlpSandboxAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<DlpSandboxAsyncContext> asyncContextPtr{ asyncContext };
     napi_value sandboxInfoJs = nullptr;
     if (asyncContext->errCode == DLP_OK) {
         sandboxInfoJs = SandboxInfoToJs(env, asyncContext->sandboxInfo);
@@ -848,7 +848,7 @@ napi_value NapiDlpPermission::UninstallDlpSandbox(napi_env env, napi_callback_in
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
         return nullptr;
     }
-    std::unique_ptr<DlpSandboxAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<DlpSandboxAsyncContext> asyncContextPtr{ asyncContext };
 
     if (!GetUninstallDlpSandboxParams(env, cbInfo, *asyncContext)) {
         return nullptr;
@@ -893,7 +893,7 @@ void NapiDlpPermission::UninstallDlpSandboxComplete(napi_env env, napi_status st
         DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
         return;
     }
-    std::unique_ptr<DlpSandboxAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<DlpSandboxAsyncContext> asyncContextPtr{ asyncContext };
     napi_value resJs = nullptr;
     NAPI_CALL_RETURN_VOID(env, napi_get_undefined(env, &resJs));
     ProcessCallbackOrPromise(env, asyncContext, resJs);
@@ -906,7 +906,7 @@ napi_value NapiDlpPermission::GetDLPPermissionInfo(napi_env env, napi_callback_i
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
         return nullptr;
     }
-    std::unique_ptr<GetPermInfoAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<GetPermInfoAsyncContext> asyncContextPtr{ asyncContext };
 
     if (!GetThirdInterfaceParams(env, cbInfo, *asyncContext)) {
         return nullptr;
@@ -950,7 +950,7 @@ void NapiDlpPermission::GetDLPPermissionInfoComplete(napi_env env, napi_status s
         DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
         return;
     }
-    std::unique_ptr<GetPermInfoAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<GetPermInfoAsyncContext> asyncContextPtr{ asyncContext };
     napi_value permInfoJs = nullptr;
     if (asyncContext->errCode == DLP_OK) {
         permInfoJs = DlpPermissionInfoToJs(env, asyncContext->permInfo);
@@ -965,7 +965,7 @@ napi_value NapiDlpPermission::IsInSandbox(napi_env env, napi_callback_info cbInf
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
         return nullptr;
     }
-    std::unique_ptr<IsInSandboxAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<IsInSandboxAsyncContext> asyncContextPtr{ asyncContext };
 
     if (!GetThirdInterfaceParams(env, cbInfo, *asyncContext)) {
         return nullptr;
@@ -1009,7 +1009,7 @@ void NapiDlpPermission::IsInSandboxComplete(napi_env env, napi_status status, vo
         DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
         return;
     }
-    std::unique_ptr<IsInSandboxAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<IsInSandboxAsyncContext> asyncContextPtr{ asyncContext };
     napi_value inSandboxJs = nullptr;
     if (asyncContext->errCode == DLP_OK) {
         NAPI_CALL_RETURN_VOID(env, napi_get_boolean(env, asyncContext->inSandbox, &inSandboxJs));
@@ -1024,7 +1024,7 @@ napi_value NapiDlpPermission::GetDlpSupportFileType(napi_env env, napi_callback_
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
         return nullptr;
     }
-    std::unique_ptr<GetDlpSupportFileTypeAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<GetDlpSupportFileTypeAsyncContext> asyncContextPtr{ asyncContext };
 
     if (!GetThirdInterfaceParams(env, cbInfo, *asyncContext)) {
         return nullptr;
@@ -1068,7 +1068,7 @@ void NapiDlpPermission::GetDlpSupportFileTypeComplete(napi_env env, napi_status 
         DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
         return;
     }
-    std::unique_ptr<GetDlpSupportFileTypeAsyncContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<GetDlpSupportFileTypeAsyncContext> asyncContextPtr{ asyncContext };
     napi_value supportFileTypeJs = nullptr;
     if (asyncContext->errCode == DLP_OK) {
         supportFileTypeJs = VectorStringToJs(env, asyncContext->supportFileType);
@@ -1313,7 +1313,7 @@ napi_value NapiDlpPermission::GetDlpGatheringPolicy(napi_env env, napi_callback_
         DLP_LOG_ERROR(LABEL, "insufficient memory for asyncContext!");
         return nullptr;
     }
-    std::unique_ptr<GetGatheringPolicyContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<GetGatheringPolicyContext> asyncContextPtr{ asyncContext };
 
     if (!GetThirdInterfaceParams(env, cbInfo, *asyncContext)) {
         return nullptr;
@@ -1357,7 +1357,7 @@ void NapiDlpPermission::GetDlpGatheringPolicyComplete(napi_env env, napi_status 
         DLP_LOG_ERROR(LABEL, "asyncContext is nullptr");
         return;
     }
-    std::unique_ptr<GetGatheringPolicyContext> asyncContextPtr{asyncContext};
+    std::unique_ptr<GetGatheringPolicyContext> asyncContextPtr{ asyncContext };
     napi_value isGatheringJs = nullptr;
     if (asyncContext->errCode == DLP_OK) {
         GatheringPolicyType policy = asyncContext->isGathering ? GATHERING : NON_GATHERING;

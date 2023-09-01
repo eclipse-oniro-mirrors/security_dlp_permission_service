@@ -37,8 +37,10 @@
 #include "want.h"
 #include "bundle_mgr_client.h"
 
+namespace OHOS {
+namespace Security {
+namespace DlpPermission {
 using namespace testing::ext;
-using namespace OHOS::Security::DlpPermission;
 using namespace OHOS::Security::AccessToken;
 
 namespace {
@@ -1258,3 +1260,6 @@ HWTEST_F(DlpPermissionKitTest, GetDLPFileVisitRecord001, TestSize.Level1)
 
     TestRecoverProcessInfo(uid, selfTokenId);
 }
+}  // namespace DlpPermission
+}  // namespace Security
+}  // namespace OHOS

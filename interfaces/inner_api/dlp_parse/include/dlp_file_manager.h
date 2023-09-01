@@ -30,7 +30,7 @@ namespace DlpPermission {
 class DlpFileManager final {
 public:
     static DlpFileManager& GetInstance();
-    ~DlpFileManager(){};
+    ~DlpFileManager() {};
 
     int32_t GenerateDlpFile(
         int32_t plainFileFd, int32_t dlpFileFd, const DlpProperty& property, std::shared_ptr<DlpFile>& filePtr);
@@ -40,7 +40,7 @@ public:
     int32_t RecoverDlpFile(std::shared_ptr<DlpFile>& file, int32_t plainFd) const;
 
 private:
-    DlpFileManager(){};
+    DlpFileManager() {};
     DISALLOW_COPY_AND_MOVE(DlpFileManager);
 
     int32_t AddDlpFileNode(const std::shared_ptr<DlpFile>& filePtr);

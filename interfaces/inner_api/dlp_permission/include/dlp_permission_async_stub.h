@@ -41,8 +41,8 @@ private:
     int32_t OnGenerateDlpCertificateStub(MessageParcel& data, MessageParcel& reply);
     int32_t OnParseDlpCertificateStub(MessageParcel& data, MessageParcel& reply);
 
-    std::shared_ptr<GenerateDlpCertificateCallback> generateDlpCertificateCallback_{nullptr};
-    std::shared_ptr<ParseDlpCertificateCallback> parseDlpCertificateCallback_{nullptr};
+    std::shared_ptr<GenerateDlpCertificateCallback> generateDlpCertificateCallback_ {nullptr};
+    std::shared_ptr<ParseDlpCertificateCallback> parseDlpCertificateCallback_ {nullptr};
 };
 }  // namespace DlpPermission
 }  // namespace Security
