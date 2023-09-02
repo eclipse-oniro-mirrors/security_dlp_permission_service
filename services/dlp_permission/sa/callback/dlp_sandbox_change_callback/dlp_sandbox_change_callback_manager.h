@@ -19,7 +19,7 @@
 #include <mutex>
 #include <map>
 
-#include "dlp_permission_sandbox_info.h"
+#include "dlp_sandbox_info.h"
 #include "iremote_broker.h"
 
 namespace OHOS {

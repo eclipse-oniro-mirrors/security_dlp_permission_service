@@ -59,7 +59,7 @@ public:
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpCallbackTest, DlpSandboxChangeCallback001, TestSize.Level1)
+HWTEST_F(DlpCallbackTest, DlpSandboxChangeCallback001, TestSize.Level1)
 {
     sptr<DlpTestRemoteObj> callback = new (std::nothrow)IRemoteStub<DlpTestRemoteObj>();
     EXPECT_TRUE(callback != nullptr);
@@ -84,7 +84,7 @@ public:
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpCallbackTest, DlpSandboxChangeCallback002, TestSize.Level1)
+HWTEST_F(DlpCallbackTest, DlpSandboxChangeCallback002, TestSize.Level1)
 {
     int32_t res = DlpSandboxChangeCallbackManager::GetInstance().AddCallback(0, nullptr);
     EXPECT_EQ(res, DLP_SERVICE_ERROR_VALUE_INVALID);
@@ -136,7 +136,7 @@ public:
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpCallbackTest, OpenDlpFileCallbackProxy001, TestSize.Level1)
+HWTEST_F(DlpCallbackTest, OpenDlpFileCallbackProxy001, TestSize.Level1)
 {
     sptr<DlpTestRemoteObj> callback = new (std::nothrow)IRemoteStub<DlpTestRemoteObj>();
     ASSERT_NE(nullptr, callback);
@@ -153,7 +153,7 @@ static HWTEST_F(DlpCallbackTest, OpenDlpFileCallbackProxy001, TestSize.Level1)
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback001, TestSize.Level1)
+HWTEST_F(DlpCallbackTest, OpenDlpFileCallback001, TestSize.Level1)
 {
     OpenDlpFileCallbackManager::GetInstance().openDlpFileCallbackMap_.clear();
     int32_t res =
@@ -167,7 +167,7 @@ static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback001, TestSize.Level1)
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback002, TestSize.Level1)
+HWTEST_F(DlpCallbackTest, OpenDlpFileCallback002, TestSize.Level1)
 {
     OpenDlpFileCallbackManager::GetInstance().openDlpFileCallbackMap_.clear();
     sptr<TestOpenDlpFileCallback> callback = new (std::nothrow) TestOpenDlpFileCallback();
@@ -189,7 +189,7 @@ static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback002, TestSize.Level1)
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback003, TestSize.Level1)
+HWTEST_F(DlpCallbackTest, OpenDlpFileCallback003, TestSize.Level1)
 {
     OpenDlpFileCallbackManager::GetInstance().openDlpFileCallbackMap_.clear();
     uint32_t pid;
@@ -213,7 +213,7 @@ static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback003, TestSize.Level1)
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback004, TestSize.Level1)
+HWTEST_F(DlpCallbackTest, OpenDlpFileCallback004, TestSize.Level1)
 {
     OpenDlpFileCallbackManager::GetInstance().openDlpFileCallbackMap_.clear();
     for (uint32_t index = 0; index < MAX_CALLBACKS; ++index) {
@@ -237,7 +237,7 @@ static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback004, TestSize.Level1)
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback005, TestSize.Level1)
+HWTEST_F(DlpCallbackTest, OpenDlpFileCallback005, TestSize.Level1)
 {
     OpenDlpFileCallbackManager::GetInstance().openDlpFileCallbackMap_.clear();
     int32_t res = OpenDlpFileCallbackManager::GetInstance().RemoveCallback(getpid(), nullptr);
@@ -250,7 +250,7 @@ static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback005, TestSize.Level1)
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback006, TestSize.Level1)
+HWTEST_F(DlpCallbackTest, OpenDlpFileCallback006, TestSize.Level1)
 {
     OpenDlpFileCallbackManager::GetInstance().openDlpFileCallbackMap_.clear();
     sptr<TestOpenDlpFileCallback> callback = new (std::nothrow) TestOpenDlpFileCallback();
@@ -268,7 +268,7 @@ static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback006, TestSize.Level1)
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback007, TestSize.Level1)
+HWTEST_F(DlpCallbackTest, OpenDlpFileCallback007, TestSize.Level1)
 {
     OpenDlpFileCallbackManager::GetInstance().openDlpFileCallbackMap_.clear();
     sptr<TestOpenDlpFileCallback> callback = new (std::nothrow) TestOpenDlpFileCallback();
@@ -286,7 +286,7 @@ static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback007, TestSize.Level1)
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback008, TestSize.Level1)
+HWTEST_F(DlpCallbackTest, OpenDlpFileCallback008, TestSize.Level1)
 {
     OpenDlpFileCallbackManager::GetInstance().openDlpFileCallbackMap_.clear();
     sptr<TestOpenDlpFileCallback> callback = new (std::nothrow) TestOpenDlpFileCallback();
@@ -304,7 +304,7 @@ static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback008, TestSize.Level1)
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback009, TestSize.Level1)
+HWTEST_F(DlpCallbackTest, OpenDlpFileCallback009, TestSize.Level1)
 {
     OpenDlpFileCallbackManager::GetInstance().openDlpFileCallbackMap_.clear();
     sptr<TestOpenDlpFileCallback> callback1 = new (std::nothrow) TestOpenDlpFileCallback();
@@ -327,7 +327,7 @@ static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback009, TestSize.Level1)
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback010, TestSize.Level1)
+HWTEST_F(DlpCallbackTest, OpenDlpFileCallback010, TestSize.Level1)
 {
     OpenDlpFileCallbackManager::GetInstance().openDlpFileCallbackMap_.clear();
     sptr<TestOpenDlpFileCallback> callback1 = new (std::nothrow) TestOpenDlpFileCallback();
@@ -347,7 +347,7 @@ static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback010, TestSize.Level1)
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback011, TestSize.Level1)
+HWTEST_F(DlpCallbackTest, OpenDlpFileCallback011, TestSize.Level1)
 {
     OpenDlpFileCallbackManager::GetInstance().openDlpFileCallbackMap_.clear();
     int32_t res = OpenDlpFileCallbackManager::GetInstance().RemoveCallback(nullptr);
@@ -360,7 +360,7 @@ static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback011, TestSize.Level1)
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback012, TestSize.Level1)
+HWTEST_F(DlpCallbackTest, OpenDlpFileCallback012, TestSize.Level1)
 {
     OpenDlpFileCallbackManager::GetInstance().openDlpFileCallbackMap_.clear();
     sptr<TestOpenDlpFileCallback> callback = new (std::nothrow) TestOpenDlpFileCallback();
@@ -379,7 +379,7 @@ static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback012, TestSize.Level1)
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback013, TestSize.Level1)
+HWTEST_F(DlpCallbackTest, OpenDlpFileCallback013, TestSize.Level1)
 {
     OpenDlpFileCallbackManager::GetInstance().openDlpFileCallbackMap_.clear();
     sptr<TestOpenDlpFileCallback> callback1 = new (std::nothrow) TestOpenDlpFileCallback();
@@ -402,7 +402,7 @@ static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback013, TestSize.Level1)
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback014, TestSize.Level1)
+HWTEST_F(DlpCallbackTest, OpenDlpFileCallback014, TestSize.Level1)
 {
     OpenDlpFileCallbackManager::GetInstance().openDlpFileCallbackMap_.clear();
     sptr<TestOpenDlpFileCallback> callback1 = new (std::nothrow) TestOpenDlpFileCallback();
@@ -422,7 +422,7 @@ static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback014, TestSize.Level1)
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback015, TestSize.Level1)
+HWTEST_F(DlpCallbackTest, OpenDlpFileCallback015, TestSize.Level1)
 {
     OpenDlpFileCallbackManager::GetInstance().openDlpFileCallbackMap_.clear();
     sptr<TestOpenDlpFileCallback> callback = new (std::nothrow) TestOpenDlpFileCallback();
@@ -450,7 +450,7 @@ static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback015, TestSize.Level1)
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpCallbackTest, OpenDlpFileCallback016, TestSize.Level1)
+HWTEST_F(DlpCallbackTest, OpenDlpFileCallback016, TestSize.Level1)
 {
     OpenDlpFileCallbackManager::GetInstance().openDlpFileCallbackMap_.clear();
     sptr<TestOpenDlpFileCallback> callback = new (std::nothrow) TestOpenDlpFileCallback();

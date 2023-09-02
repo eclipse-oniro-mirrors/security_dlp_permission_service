@@ -16,12 +16,12 @@
 #ifndef DLP_PERMISSION_SERVICE_SERVICES_DLP_PERMISSION_SA_APP_STATE_OBSERVER_APP_STATE_OBSERVER_H
 #define DLP_PERMISSION_SERVICE_SERVICES_DLP_PERMISSION_SA_APP_STATE_OBSERVER_APP_STATE_OBSERVER_H
 
-#include "application_state_observer_stub.h"
 #include <unordered_map>
 #include <mutex>
+#include "application_state_observer_stub.h"
 #include "app_mgr_interface.h"
 #include "app_mgr_proxy.h"
-#include "dlp_permission_sandbox_info.h"
+#include "dlp_sandbox_info.h"
 #include "iremote_object.h"
 #include "retention_file_manager.h"
 

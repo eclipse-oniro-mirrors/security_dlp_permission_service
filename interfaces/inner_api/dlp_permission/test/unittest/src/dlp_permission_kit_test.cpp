@@ -252,42 +252,51 @@ static std::string GenerateRandStr(uint32_t len)
     return res;
 }
 
-static void GeneratePolicy(PermissionPolicy& encPolicy, uint32_t ownerAccountLen, uint32_t aeskeyLen, uint32_t ivLen,
-    uint32_t userNum, uint32_t authAccountLen, uint32_t authPerm, int64_t deltaTime)
+typedef struct GeneratePolicyParam {
+    uint32_t ownerAccountLen;
+    uint32_t aeskeyLen;
+    uint32_t ivLen;
+    uint32_t userNum;
+    uint32_t authAccountLen;
+    uint32_t authPerm;
+    int64_t deltaTime;
+};
+
+static void GeneratePolicy(PermissionPolicy& encPolicy, GeneratePolicyParam param)
 {
     uint64_t curTime = static_cast<uint64_t>(
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     auto seed = std::time(nullptr);
     std::srand(seed);
-    encPolicy.ownerAccount_ = GenerateRandStr(ownerAccountLen);
+    encPolicy.ownerAccount_ = GenerateRandStr(param.ownerAccountLen);
     encPolicy.ownerAccountId_ = encPolicy.ownerAccount_;
     encPolicy.ownerAccountType_ = DOMAIN_ACCOUNT;
-    uint8_t* key = GenerateRandArray(aeskeyLen);
-    encPolicy.SetAeskey(key, aeskeyLen);
+    uint8_t* key = GenerateRandArray(param.aeskeyLen);
+    encPolicy.SetAeskey(key, param.aeskeyLen);
     if (key != nullptr) {
         delete[] key;
         key = nullptr;
     }
-    uint8_t* iv = GenerateRandArray(ivLen);
-    encPolicy.SetIv(iv, ivLen);
+    uint8_t* iv = GenerateRandArray(param.ivLen);
+    encPolicy.SetIv(iv, param.ivLen);
     if (iv != nullptr) {
         delete[] iv;
         iv = nullptr;
     }
-    for (uint32_t user = 0; user < userNum; ++user) {
-        AuthUserInfo perminfo = {.authAccount = GenerateRandStr(authAccountLen),
-            .authPerm = static_cast<DLPFileAccess>(authPerm),
-            .permExpiryTime = curTime + deltaTime,
+    for (uint32_t user = 0; user < param.userNum; ++user) {
+        AuthUserInfo perminfo = {.authAccount = GenerateRandStr(param.authAccountLen),
+            .authPerm = static_cast<DLPFileAccess>(param.authPerm),
+            .permExpiryTime = curTime + param.deltaTime,
             .authAccountType = DOMAIN_ACCOUNT};
         encPolicy.authUsers_.emplace_back(perminfo);
     }
 }
 
-static int32_t TestGenerateDlpCertWithInvalidParam(uint32_t ownerAccountLen, uint32_t aeskeyLen, uint32_t ivLen,
-    uint32_t userNum, uint32_t authAccountLen, uint32_t authPerm, int64_t deltaTime)
+static int32_t TestGenerateDlpCertWithInvalidParam(GeneratePolicyParam param)
 {
     PermissionPolicy encPolicy;
-    GeneratePolicy(encPolicy, ownerAccountLen, aeskeyLen, ivLen, userNum, authAccountLen, authPerm, deltaTime);
+    GeneratePolicy(encPolicy, param.ownerAccountLen, param.aeskeyLen, param.ivLen, param.userNum,
+        param.authAccountLen, param.authPerm, param.deltaTime);
     std::vector<uint8_t> cert;
     int32_t res = DlpPermissionKit::GenerateDlpCertificate(encPolicy, cert);
     return res;
@@ -441,43 +450,51 @@ HWTEST_F(DlpPermissionKitTest, OnParseDlpCertificate001, TestSize.Level1)
  */
 HWTEST_F(DlpPermissionKitTest, GenerateDlpCertificate001, TestSize.Level1)
 {
+    GeneratePolicyParam param = {INVALID_ACCOUNT_LENGTH_UPPER, AESKEY_LEN,
+                                             IV_LEN, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME};
     EXPECT_EQ(
-        DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(INVALID_ACCOUNT_LENGTH_UPPER, AESKEY_LEN,
-                                             IV_LEN, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME));
+        DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(param));
+    param.ownerAccountLen = INVALID_ACCOUNT_LENGTH_LOWER;
     EXPECT_EQ(
-        DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(INVALID_ACCOUNT_LENGTH_LOWER, AESKEY_LEN,
-                                             IV_LEN, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME));
+        DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(param));
+    param = {ACCOUNT_LENGTH, INVALID_AESKEY_LEN_UPPER,
+                                             IV_LEN, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME};
     EXPECT_EQ(
-        DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, INVALID_AESKEY_LEN_UPPER,
-                                             IV_LEN, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME));
+        DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(param));
+    param = {ACCOUNT_LENGTH, INVALID_AESKEY_LEN_LOWER,
+                                             IV_LEN, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME};
     EXPECT_EQ(
-        DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, INVALID_AESKEY_LEN_LOWER,
-                                             IV_LEN, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME));
-    EXPECT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID,
-        TestGenerateDlpCertWithInvalidParam(
-            ACCOUNT_LENGTH, AESKEY_LEN, INVALID_IV_LEN_UPPER, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME));
-    EXPECT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID,
-        TestGenerateDlpCertWithInvalidParam(
-            ACCOUNT_LENGTH, AESKEY_LEN, INVALID_IV_LEN_LOWER, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME));
+        DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(param));
+    param = {ACCOUNT_LENGTH, AESKEY_LEN, INVALID_IV_LEN_UPPER, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME};
+    EXPECT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(param));
+    param = {ACCOUNT_LENGTH, AESKEY_LEN, INVALID_IV_LEN_LOWER, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME};
+    EXPECT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(param));
+    param = {ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN,
+                                             INVALID_USER_NUM_UPPER, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME};
     EXPECT_EQ(
-        DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN,
-                                             INVALID_USER_NUM_UPPER, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME));
+        DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(param));
+    param = {ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN,
+                                             USER_NUM, INVALID_ACCOUNT_LENGTH_UPPER, AUTH_PERM, DELTA_EXPIRY_TIME};
     EXPECT_EQ(
-        DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN,
-                                             USER_NUM, INVALID_ACCOUNT_LENGTH_UPPER, AUTH_PERM, DELTA_EXPIRY_TIME));
+        DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(param));
+    param = {ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN,
+                                             USER_NUM, INVALID_ACCOUNT_LENGTH_LOWER, AUTH_PERM, DELTA_EXPIRY_TIME};
     EXPECT_EQ(
-        DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN,
-                                             USER_NUM, INVALID_ACCOUNT_LENGTH_LOWER, AUTH_PERM, DELTA_EXPIRY_TIME));
+        DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(param));
+    param = {ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN,
+                                             USER_NUM, ACCOUNT_LENGTH, INVALID_AUTH_PERM_UPPER, DELTA_EXPIRY_TIME};
     EXPECT_EQ(
-        DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN,
-                                             USER_NUM, ACCOUNT_LENGTH, INVALID_AUTH_PERM_UPPER, DELTA_EXPIRY_TIME));
+        DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(param));
+    param = {ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN,
+                                             USER_NUM, ACCOUNT_LENGTH, INVALID_AUTH_PERM_LOWER, DELTA_EXPIRY_TIME};
     EXPECT_EQ(
-        DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN,
-                                             USER_NUM, ACCOUNT_LENGTH, INVALID_AUTH_PERM_LOWER, DELTA_EXPIRY_TIME));
-    EXPECT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN,
-                                                   USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, INVALID_DELTA_EXPIRY_TIME));
-    EXPECT_NE(DLP_OK, TestGenerateDlpCertWithInvalidParam(ACCOUNT_LENGTH, AESKEY_LEN,
-        AESKEY_LEN, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME));
+        DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(param));
+    param = {ACCOUNT_LENGTH, AESKEY_LEN, IV_LEN,
+                                                   USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, INVALID_DELTA_EXPIRY_TIME};
+    EXPECT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, TestGenerateDlpCertWithInvalidParam(param));
+    param = {ACCOUNT_LENGTH, AESKEY_LEN,
+        AESKEY_LEN, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM, DELTA_EXPIRY_TIME};
+    EXPECT_NE(DLP_OK, TestGenerateDlpCertWithInvalidParam(param));
 }
 
 /**

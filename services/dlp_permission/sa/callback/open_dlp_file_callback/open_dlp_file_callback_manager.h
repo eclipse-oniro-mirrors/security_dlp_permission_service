@@ -21,7 +21,7 @@
 #include <vector>
 #include <string_view>
 
-#include "dlp_permission_sandbox_info.h"
+#include "dlp_sandbox_info.h"
 #include "iremote_broker.h"
 
 namespace OHOS {

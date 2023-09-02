@@ -869,7 +869,7 @@ int32_t DlpFile::WriteFirstBlockData(uint32_t offset, void* buf, uint32_t size)
         }
     } while (false);
 
-    if (memcpy_s(deBuf + prefixingSize, DLP_BLOCK_SIZE, buf, requestSize)) {
+    if (memcpy_s(deBuf + prefixingSize, DLP_BLOCK_SIZE, buf, requestSize) != EOK) {
         DLP_LOG_ERROR(LABEL, "copy write buffer first block failed, %{public}s", strerror(errno));
         return DLP_PARSE_ERROR_MEMORY_OPERATE_FAIL;
     }

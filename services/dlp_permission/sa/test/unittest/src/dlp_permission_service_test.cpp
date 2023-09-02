@@ -139,33 +139,42 @@ std::string GenerateRandStr(uint32_t len)
     return res;
 }
 
-void GeneratePolicy(PermissionPolicy& encPolicy, uint32_t ownerAccountLen, uint32_t aeskeyLen, uint32_t ivLen,
-    uint32_t userNum, uint32_t authAccountLen, uint32_t authPerm, int64_t deltaTime)
+typedef struct GeneratePolicyParam {
+    uint32_t ownerAccountLen;
+    uint32_t aeskeyLen;
+    uint32_t ivLen;
+    uint32_t userNum;
+    uint32_t authAccountLen;
+    uint32_t authPerm;
+    int64_t deltaTime;
+};
+
+void GeneratePolicy(PermissionPolicy& encPolicy, GeneratePolicyParam param)
 {
     uint64_t curTime = static_cast<uint64_t>(
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     auto seed = std::time(nullptr);
     std::srand(seed);
-    encPolicy.ownerAccount_ = GenerateRandStr(ownerAccountLen);
+    encPolicy.ownerAccount_ = GenerateRandStr(param.ownerAccountLen);
     encPolicy.ownerAccountId_ = encPolicy.ownerAccount_;
     encPolicy.ownerAccountType_ = OHOS::Security::DlpPermission::DlpAccountType::DOMAIN_ACCOUNT;
-    uint8_t* key = GenerateRandArray(aeskeyLen);
-    encPolicy.SetAeskey(key, aeskeyLen);
+    uint8_t* key = GenerateRandArray(param.aeskeyLen);
+    encPolicy.SetAeskey(key, param.aeskeyLen);
     if (key != nullptr) {
         delete[] key;
         key = nullptr;
     }
-    uint8_t* iv = GenerateRandArray(ivLen);
-    encPolicy.SetIv(iv, ivLen);
+    uint8_t* iv = GenerateRandArray(param.ivLen);
+    encPolicy.SetIv(iv, param.ivLen);
     if (iv != nullptr) {
         delete[] iv;
         iv = nullptr;
     }
-    for (uint32_t user = 0; user < userNum; ++user) {
+    for (uint32_t user = 0; user < param.userNum; ++user) {
         AuthUserInfo perminfo = {
-            .authAccount = GenerateRandStr(authAccountLen),
-            .authPerm = static_cast<DLPFileAccess>(authPerm),
-            .permExpiryTime = curTime + deltaTime,
+            .authAccount = GenerateRandStr(param.authAccountLen),
+            .authPerm = static_cast<DLPFileAccess>(param.authPerm),
+            .permExpiryTime = curTime + param.deltaTime,
             .authAccountType = OHOS::Security::DlpPermission::DlpAccountType::DOMAIN_ACCOUNT
         };
         encPolicy.authUsers_.emplace_back(perminfo);
@@ -205,7 +214,7 @@ void DlpPermissionServiceTest::TearDown()
  * @tc.type: FUNC
  * @tc.require:AR000HGIH9
  */
-static HWTEST_F(DlpPermissionServiceTest, DumpTest001, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, DumpTest001, TestSize.Level1)
 {
     DLP_LOG_INFO(LABEL, "DumpTest001");
     int fd = -1;
@@ -256,7 +265,7 @@ void DlpSandboxChangeCallbackTest::DlpSandboxStateChangeCallback(DlpSandboxCallb
  * @tc.type: FUNC
  * @tc.require:DTS2023040302317
  */
-static HWTEST_F(DlpPermissionServiceTest, DlpSandboxChangeCallbackDeathRecipient001, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, DlpSandboxChangeCallbackDeathRecipient001, TestSize.Level1)
 {
     auto recipient = std::make_shared<DlpSandboxChangeCallbackDeathRecipient>();
     ASSERT_NE(nullptr, recipient);
@@ -295,7 +304,7 @@ public:
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpPermissionServiceTest, OpenDlpFileCallbackDeathRecipient001, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, OpenDlpFileCallbackDeathRecipient001, TestSize.Level1)
 {
     auto recipient = std::make_shared<OpenDlpFileCallbackDeathRecipient>();
     ASSERT_NE(nullptr, recipient);
@@ -323,7 +332,7 @@ static HWTEST_F(DlpPermissionServiceTest, OpenDlpFileCallbackDeathRecipient001, 
  * @tc.type: FUNC
  * @tc.require:SR000I38N7
  */
-static HWTEST_F(DlpPermissionServiceTest, FileOperator001, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, FileOperator001, TestSize.Level1)
 {
     std::shared_ptr<FileOperator> fileOperator_ = std::make_shared<FileOperator>();
     bool result = fileOperator_->IsExistFile("");
@@ -343,7 +352,7 @@ static HWTEST_F(DlpPermissionServiceTest, FileOperator001, TestSize.Level1)
  * @tc.type: FUNC
  * @tc.require:SR000I38N7
  */
-static HWTEST_F(DlpPermissionServiceTest, SandboxJsonManager001, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, SandboxJsonManager001, TestSize.Level1)
 {
     std::shared_ptr<SandboxJsonManager> sandboxJsonManager_ = std::make_shared<SandboxJsonManager>();
     sandboxJsonManager_->AddSandboxInfo(1, 123456, "test.bundlName", 100);
@@ -364,7 +373,7 @@ static HWTEST_F(DlpPermissionServiceTest, SandboxJsonManager001, TestSize.Level1
  * @tc.type: FUNC
  * @tc.require:DTS2023040302317
  */
-static HWTEST_F(DlpPermissionServiceTest, CallbackManager001, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, CallbackManager001, TestSize.Level1)
 {
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, DlpSandboxChangeCallbackManager::GetInstance().AddCallback(0, nullptr));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, DlpSandboxChangeCallbackManager::GetInstance().RemoveCallback(nullptr));
@@ -393,7 +402,7 @@ static HWTEST_F(DlpPermissionServiceTest, CallbackManager001, TestSize.Level1)
  * @tc.type: FUNC
  * @tc.require:DTS2023040302317
  */
-static HWTEST_F(DlpPermissionServiceTest, SandboxJsonManager002, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, SandboxJsonManager002, TestSize.Level1)
 {
     std::shared_ptr<SandboxJsonManager> sandboxJsonManager_ = std::make_shared<SandboxJsonManager>();
     sandboxJsonManager_->FromJson(NULL);
@@ -425,7 +434,7 @@ static HWTEST_F(DlpPermissionServiceTest, SandboxJsonManager002, TestSize.Level1
  * @tc.type: FUNC
  * @tc.require:DTS2023040302317
  */
-static HWTEST_F(DlpPermissionServiceTest, SandboxJsonManager003, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, SandboxJsonManager003, TestSize.Level1)
 {
     std::shared_ptr<SandboxJsonManager> sandboxJsonManager_ = std::make_shared<SandboxJsonManager>();
     sandboxJsonManager_->AddSandboxInfo(1, 827818, "testbundle1", 10000);
@@ -451,7 +460,7 @@ static HWTEST_F(DlpPermissionServiceTest, SandboxJsonManager003, TestSize.Level1
  * @tc.type: FUNC
  * @tc.require:DTS2023040302317
  */
-static HWTEST_F(DlpPermissionServiceTest, RetentionFileManager001, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, RetentionFileManager001, TestSize.Level1)
 {
     std::shared_ptr<SandboxJsonManager> sandboxJsonManager_ = std::make_shared<SandboxJsonManager>();
     sandboxJsonManager_->AddSandboxInfo(1, 827878, "testbundle", 100);
@@ -483,7 +492,7 @@ static HWTEST_F(DlpPermissionServiceTest, RetentionFileManager001, TestSize.Leve
  * @tc.type: FUNC
  * @tc.require:DTS2023040302317
  */
-static HWTEST_F(DlpPermissionServiceTest, UninstallDlpSandbox001, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, UninstallDlpSandbox001, TestSize.Level1)
 {
     SandboxInfo sandboxInfo;
     uint32_t dlpFileAccess = 5;
@@ -506,7 +515,7 @@ static HWTEST_F(DlpPermissionServiceTest, UninstallDlpSandbox001, TestSize.Level
  * @tc.type: FUNC
  * @tc.require:DTS2023040302317
  */
-static HWTEST_F(DlpPermissionServiceTest, AppUninstallObserver001, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, AppUninstallObserver001, TestSize.Level1)
 {
     EventFwk::CommonEventSubscribeInfo subscribeInfo;
     std::shared_ptr<AppUninstallObserver> observer_ = std::make_shared<AppUninstallObserver>(subscribeInfo);
@@ -540,7 +549,7 @@ public:
  * @tc.type: FUNC
  * @tc.require:SR000I38N7
  */
-static HWTEST_F(DlpPermissionServiceTest, DlpPermissionStub001, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, DlpPermissionStub001, TestSize.Level1)
 {
     sptr<DlpPermissionStub> stub = new (std::nothrow) DlpPermissionService(0, 0);
     ASSERT_TRUE(!(stub == nullptr));
@@ -581,7 +590,7 @@ static HWTEST_F(DlpPermissionServiceTest, DlpPermissionStub001, TestSize.Level1)
  * @tc.type: FUNC
  * @tc.require:SR000I38MU
  */
-static HWTEST_F(DlpPermissionServiceTest, VisitRecordJsonManager001, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, VisitRecordJsonManager001, TestSize.Level1)
 {
     std::shared_ptr<VisitRecordJsonManager> visitRecordJsonManager_ = std::make_shared<VisitRecordJsonManager>();
     std::vector<VisitedDLPFileInfo> infoVec;
@@ -615,7 +624,7 @@ static HWTEST_F(DlpPermissionServiceTest, VisitRecordJsonManager001, TestSize.Le
  * @tc.type: FUNC
  * @tc.require:SR000I38MU
  */
-static HWTEST_F(DlpPermissionServiceTest, VisitRecordJsonManager002, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, VisitRecordJsonManager002, TestSize.Level1)
 {
     std::shared_ptr<VisitRecordJsonManager> visitRecordJsonManager_ = std::make_shared<VisitRecordJsonManager>();
     std::string jsonStr = "{\"test\":[]}";
@@ -658,7 +667,7 @@ static HWTEST_F(DlpPermissionServiceTest, VisitRecordJsonManager002, TestSize.Le
  * @tc.type: FUNC
  * @tc.require:SR000I38MU
  */
-static HWTEST_F(DlpPermissionServiceTest, VisitRecordJsonManager003, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, VisitRecordJsonManager003, TestSize.Level1)
 {
     std::shared_ptr<VisitRecordJsonManager> visitRecordJsonManager_ = std::make_shared<VisitRecordJsonManager>();
     visitRecordJsonManager_->FromJson(NULL);
@@ -698,7 +707,7 @@ static HWTEST_F(DlpPermissionServiceTest, VisitRecordJsonManager003, TestSize.Le
  * @tc.type: FUNC
  * @tc.require:SR000I38MU
  */
-static HWTEST_F(DlpPermissionServiceTest, VisitRecordFileManager001, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, VisitRecordFileManager001, TestSize.Level1)
 {
     std::shared_ptr<VisitRecordFileManager> visitRecordFileManager = std::make_shared<VisitRecordFileManager>();
     std::vector<VisitedDLPFileInfo> infoVec;
@@ -723,7 +732,7 @@ static HWTEST_F(DlpPermissionServiceTest, VisitRecordFileManager001, TestSize.Le
  * @tc.type: FUNC
  * @tc.require:SR000I38MU
  */
-static HWTEST_F(DlpPermissionServiceTest, GetLocalAccountName001, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, GetLocalAccountName001, TestSize.Level1)
 {
     char* account = nullptr;
     uint32_t userId = 0;
@@ -737,7 +746,7 @@ static HWTEST_F(DlpPermissionServiceTest, GetLocalAccountName001, TestSize.Level
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpPermissionServiceTest, OnStart001, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, OnStart001, TestSize.Level1)
 {
     auto state = dlpPermissionService_->state_;
     dlpPermissionService_->state_ = ServiceRunningState::STATE_RUNNING;
@@ -752,7 +761,7 @@ static HWTEST_F(DlpPermissionServiceTest, OnStart001, TestSize.Level1)
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpPermissionServiceTest, ParseDlpCertificate001, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, ParseDlpCertificate001, TestSize.Level1)
 {
     std::vector<uint8_t> cert;
     uint32_t flag = 0;
@@ -766,7 +775,7 @@ static HWTEST_F(DlpPermissionServiceTest, ParseDlpCertificate001, TestSize.Level
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpPermissionServiceTest, InsertDlpSandboxInfo001, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, InsertDlpSandboxInfo001, TestSize.Level1)
 {
     auto appStateObserver = dlpPermissionService_->appStateObserver_;
     DlpSandboxInfo sandboxInfo;
@@ -784,7 +793,7 @@ static HWTEST_F(DlpPermissionServiceTest, InsertDlpSandboxInfo001, TestSize.Leve
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpPermissionServiceTest, GenerateDlpCertificate001, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, GenerateDlpCertificate001, TestSize.Level1)
 {
     DLP_LOG_DEBUG(LABEL, "GenerateDlpCertificate001");
     sptr<DlpPolicyParcel> policyParcel = new (std::nothrow) DlpPolicyParcel();
@@ -814,7 +823,7 @@ static HWTEST_F(DlpPermissionServiceTest, GenerateDlpCertificate001, TestSize.Le
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpPermissionServiceTest, GenerateDlpCertificate002, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, GenerateDlpCertificate002, TestSize.Level1)
 {
     DLP_LOG_DEBUG(LABEL, "GenerateDlpCertificate002");
     sptr<DlpPolicyParcel> policyParcel = new (std::nothrow) DlpPolicyParcel();
@@ -823,8 +832,9 @@ static HWTEST_F(DlpPermissionServiceTest, GenerateDlpCertificate002, TestSize.Le
     sptr<IDlpPermissionCallback> callback = new (std::nothrow) DlpPermissionAsyncStub(callback1);
 
     PermissionPolicy policy;
-    GeneratePolicy(policy, ACCOUNT_LENGTH, AESKEY_LEN, AESKEY_LEN, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM,
-        DELTA_EXPIRY_TIME);
+    GeneratePolicyParam param = {ACCOUNT_LENGTH, AESKEY_LEN, AESKEY_LEN, USER_NUM, ACCOUNT_LENGTH, AUTH_PERM,
+        DELTA_EXPIRY_TIME};
+    GeneratePolicy(policy, param);
     policyParcel->policyParams_.CopyPermissionPolicy(policy);
     int32_t res = dlpPermissionService_->GenerateDlpCertificate(policyParcel, callback);
     ASSERT_EQ(DLP_OK, res);
@@ -836,7 +846,7 @@ static HWTEST_F(DlpPermissionServiceTest, GenerateDlpCertificate002, TestSize.Le
  * @tc.type: FUNC
  * @tc.require:
  */
-static HWTEST_F(DlpPermissionServiceTest, SerializeEncPolicyData001, TestSize.Level1)
+HWTEST_F(DlpPermissionServiceTest, SerializeEncPolicyData001, TestSize.Level1)
 {
     DLP_LOG_DEBUG(LABEL, "SerializeEncPolicyData001");
     uint8_t* encPolicy = const_cast<uint8_t*>(reinterpret_cast<const uint8_t*>(POLICY_CIPHER.c_str()));

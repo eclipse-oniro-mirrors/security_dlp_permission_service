@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "dlp_credential_adapt.h"
+#include "dlp_credential.h"
 #include <thread>
 #include <unistd.h>
 #include <unordered_map>

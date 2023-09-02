@@ -18,11 +18,10 @@
 
 #include <stdbool.h>
 #include <stdint.h>
-
+#include "dlp_credential_client.h"
 #ifdef __cplusplus
 
 #include <string>
-#include "dlp_credential_client_defines.h"
 
 int32_t GetLocalAccountUid(std::string& accountUid);
 

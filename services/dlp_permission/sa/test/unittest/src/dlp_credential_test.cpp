@@ -27,7 +27,7 @@
 #include "dlp_permission_serializer.h"
 #include "dlp_policy.h"
 #include "dlp_policy_parcel.h"
-#include "dlp_credential_adapt.h"
+#include "dlp_credential.h"
 #include "ipc_skeleton.h"
 #include "iremote_broker.h"
 #include "iremote_stub.h"

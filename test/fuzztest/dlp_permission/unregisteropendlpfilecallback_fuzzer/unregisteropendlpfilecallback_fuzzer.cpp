@@ -27,10 +27,10 @@
 using namespace OHOS::Security::DlpPermission;
 using namespace OHOS::Security::AccessToken;
 
-class OpenDlpFileCallbackFuzzTest : public OpenDlpFileCallbackCustomize {
+class UnregisterOpenDlpFileCallbackFuzzer : public OpenDlpFileCallbackCustomize {
 public:
-    OpenDlpFileCallbackFuzzTest() {}
-    ~OpenDlpFileCallbackFuzzTest() override {}
+    UnregisterOpenDlpFileCallbackFuzzer() {}
+    ~UnregisterOpenDlpFileCallbackFuzzer() override {}
 
     void OnOpenDlpFile(OpenDlpFileCallbackInfo& result) override {}
 };
@@ -38,11 +38,11 @@ public:
 namespace OHOS {
 static void FuzzTest(const uint8_t* data, size_t size)
 {
-    std::shared_ptr<OpenDlpFileCallbackCustomize> callback = std::make_shared<OpenDlpFileCallbackFuzzTest>();
+    std::shared_ptr<OpenDlpFileCallbackCustomize> callback = std::make_shared<UnregisterOpenDlpFileCallbackFuzzer>();
     DlpPermissionKit::UnRegisterOpenDlpFileCallback(callback);
 }
 
-bool UnRegisterOpenDlpFileCallbackFuzzTest(const uint8_t* data, size_t size)
+bool UnRegisterUnregisterOpenDlpFileCallbackFuzzer(const uint8_t* data, size_t size)
 {
     int selfTokenId = GetSelfTokenID();
     AccessTokenID tokenId = AccessTokenKit::GetHapTokenID(100, "com.ohos.dlpmanager", 0); // user_id = 100
@@ -57,6 +57,6 @@ bool UnRegisterOpenDlpFileCallbackFuzzTest(const uint8_t* data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
     /* Run your code on data */
-    OHOS::UnRegisterOpenDlpFileCallbackFuzzTest(data, size);
+    OHOS::UnRegisterUnregisterOpenDlpFileCallbackFuzzer(data, size);
     return 0;
 }

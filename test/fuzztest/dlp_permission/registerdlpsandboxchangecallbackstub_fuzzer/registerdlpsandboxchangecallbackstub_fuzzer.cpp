@@ -28,10 +28,10 @@
 using namespace OHOS::Security::DlpPermission;
 using namespace OHOS::Security::AccessToken;
 
-class DlpSandboxChangeCallbackFuzzTest : public DlpSandboxChangeCallbackCustomize {
+class RegisterDlpSandboxChangeCallbackStubFuzzer : public DlpSandboxChangeCallbackCustomize {
 public:
-    explicit DlpSandboxChangeCallbackFuzzTest() {}
-    ~DlpSandboxChangeCallbackFuzzTest() override {}
+    explicit RegisterDlpSandboxChangeCallbackStubFuzzer() {}
+    ~RegisterDlpSandboxChangeCallbackStubFuzzer() override {}
 
     void DlpSandboxChangeCallback(DlpSandboxCallbackInfo& result) override {}
 };
@@ -41,7 +41,8 @@ static void FuzzTest(const uint8_t* data, size_t size)
 {
     MessageParcel datas;
     datas.WriteInterfaceToken(IDlpPermissionService::GetDescriptor());
-    std::shared_ptr<DlpSandboxChangeCallbackCustomize> callback = std::make_shared<DlpSandboxChangeCallbackFuzzTest>();
+    std::shared_ptr<DlpSandboxChangeCallbackCustomize> callback =
+        std::make_shared<RegisterDlpSandboxChangeCallbackStubFuzzer>();
     sptr<DlpSandboxChangeCallback> asyncStub = new (std::nothrow) DlpSandboxChangeCallback(callback);
     if (!datas.WriteRemoteObject(asyncStub->AsObject())) {
         return;
@@ -53,7 +54,7 @@ static void FuzzTest(const uint8_t* data, size_t size)
     service->OnRemoteRequest(code, datas, reply, option);
 }
 
-bool RegisterDlpSandboxChangeCallbackFuzzTest(const uint8_t* data, size_t size)
+bool RegisterRegisterDlpSandboxChangeCallbackStubFuzzer(const uint8_t* data, size_t size)
 {
     int selfTokenId = GetSelfTokenID();
     AccessTokenID tokenId = AccessTokenKit::GetHapTokenID(100, "com.ohos.dlpmanager", 0); // user_id = 100
@@ -68,6 +69,6 @@ bool RegisterDlpSandboxChangeCallbackFuzzTest(const uint8_t* data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
     /* Run your code on data */
-    OHOS::RegisterDlpSandboxChangeCallbackFuzzTest(data, size);
+    OHOS::RegisterRegisterDlpSandboxChangeCallbackStubFuzzer(data, size);
     return 0;
 }

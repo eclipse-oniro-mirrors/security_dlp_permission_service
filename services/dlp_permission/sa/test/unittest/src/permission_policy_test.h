@@ -13,8 +13,8 @@
  * limitations under the License.
  */
 
-#ifndef DLP_POLICY_TEST_H
-#define DLP_POLICY_TEST_H
+#ifndef PERMISSION_POLICY_TEST_H
+#define PERMISSION_POLICY_TEST_H
 
 #include <gtest/gtest.h>
 #define private public
@@ -37,4 +37,4 @@ public:
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS
-#endif  // DLP_POLICY_TEST_H
+#endif  // PERMISSION_POLICY_TEST_H

@@ -12,7 +12,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-#include "dlp_policy_test.h"
+#include "permission_policy_test.h"
 
 #include <string>
 #include "dlp_permission.h"

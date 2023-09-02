@@ -116,7 +116,7 @@ ohos_shared_library("dlp_permission_service") {
     "callback/open_dlp_file_callback/open_dlp_file_callback_manager.cpp",
     "callback/open_dlp_file_callback/open_dlp_file_callback_death_recipient.cpp",
     "callback/open_dlp_file_callback/open_dlp_file_callback_proxy.cpp",
-    "sa_main/dlp_credential_adapt.cpp",
+    "sa_main/dlp_credential.cpp",
     "sa_main/dlp_permission_async_proxy.cpp",
     "sa_main/dlp_permission_service.cpp",
     "sa_main/dlp_permission_stub.cpp",
