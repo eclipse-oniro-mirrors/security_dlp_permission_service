@@ -24,7 +24,6 @@
 #include "dlp_credential_client.h"
 #include "dlp_credential.h"
 #include "dlp_permission.h"
-#include "dlp_policy.h"
 #include "dlp_permission_log.h"
 #include "dlp_permission_serializer.h"
 #include "dlp_sandbox_info.h"
@@ -36,6 +35,7 @@
 #if defined(DLP_DEBUG_ENABLE) && DLP_DEBUG_ENABLE == 1
 #include "parameter.h"
 #endif
+#include "permission_policy.h"
 #include "system_ability_definition.h"
 #include "visit_record_file_manager.h"
 

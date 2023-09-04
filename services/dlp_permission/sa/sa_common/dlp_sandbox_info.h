@@ -16,7 +16,7 @@
 #ifndef DLP_PERMISSION_SANDBOX_INFO_H
 #define DLP_PERMISSION_SANDBOX_INFO_H
 
-#include "dlp_policy.h"
+#include "permission_policy.h"
 
 namespace OHOS {
 namespace Security {

@@ -15,7 +15,7 @@
 
 #include "dlp_policy_parcel.h"
 #include "dlp_permission_log.h"
-#include "dlp_policy.h"
+#include "permission_policy.h"
 #include "securec.h"
 namespace OHOS {
 namespace Security {

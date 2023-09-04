@@ -22,14 +22,14 @@
 #include "accesstoken_kit.h"
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
-#include "dlp_policy.h"
 #include "dlp_sandbox_callback_info.h"
 #include "dlp_sandbox_change_callback_customize.h"
 #define private public
 #include "dlp_sandbox_change_callback.h"
+#include "hex_string.h"
 #include "open_dlp_file_callback.h"
 #undef private
-#include "hex_string.h"
+#include "permission_policy.h"
 #include "random.h"
 #include "securec.h"
 #include "token_setproc.h"

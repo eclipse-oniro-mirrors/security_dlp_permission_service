@@ -34,7 +34,7 @@ ohos_unittest("dlp_fuse_test") {
   ]
 
   sources = [
-    "${dlp_root_dir}/frameworks/common/src/dlp_policy.cpp",
+    "${dlp_root_dir}/frameworks/common/src/permission_policy.cpp",
     "${dlp_root_dir}/frameworks/common/src/random_mbedtls.cpp",
     "${dlp_root_dir}/frameworks/test/mock/c_mock_common.cpp",
     "${dlp_root_dir}/frameworks/test/mock/dlp_permission_kit.cpp",

@@ -25,12 +25,12 @@
 #include "dlp_permission_async_proxy.h"
 #include "dlp_permission_log.h"
 #include "dlp_permission_serializer.h"
-#include "dlp_policy.h"
 #include "dlp_policy_parcel.h"
 #include "dlp_credential.h"
 #include "ipc_skeleton.h"
 #include "iremote_broker.h"
 #include "iremote_stub.h"
+#include "permission_policy.h"
 #include "securec.h"
 
 namespace OHOS {

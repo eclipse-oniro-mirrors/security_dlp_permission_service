@@ -16,12 +16,12 @@
 #include "dlp_permission_client.h"
 #include <unistd.h>
 #include "accesstoken_kit.h"
-#include "dlp_policy.h"
 #include "dlp_permission_async_stub.h"
 #include "dlp_permission_load_callback.h"
 #include "dlp_permission_log.h"
 #include "dlp_permission_proxy.h"
 #include "iservice_registry.h"
+#include "permission_policy.h"
 #include "token_setproc.h"
 
 namespace OHOS {

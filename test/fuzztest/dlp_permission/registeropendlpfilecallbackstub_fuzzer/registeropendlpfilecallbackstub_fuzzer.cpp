@@ -28,10 +28,10 @@
 using namespace OHOS::Security::DlpPermission;
 using namespace OHOS::Security::AccessToken;
 
-class OpenDlpFileCallbackFuzzTest : public OpenDlpFileCallbackCustomize {
+class RegisterOpenDlpFileCallbackStubFuzzer : public OpenDlpFileCallbackCustomize {
 public:
-    OpenDlpFileCallbackFuzzTest() {}
-    ~OpenDlpFileCallbackFuzzTest() override {}
+    RegisterOpenDlpFileCallbackStubFuzzer() {}
+    ~RegisterOpenDlpFileCallbackStubFuzzer() override {}
 
     void OnOpenDlpFile(OpenDlpFileCallbackInfo& result) override {}
 };
@@ -41,7 +41,7 @@ static void FuzzTest(const uint8_t* data, size_t size)
 {
     MessageParcel datas;
     datas.WriteInterfaceToken(IDlpPermissionService::GetDescriptor());
-    std::shared_ptr<OpenDlpFileCallbackCustomize> callback = std::make_shared<OpenDlpFileCallbackFuzzTest>();
+    std::shared_ptr<OpenDlpFileCallbackCustomize> callback = std::make_shared<RegisterOpenDlpFileCallbackStubFuzzer>();
     sptr<OpenDlpFileCallback> asyncStub = new (std::nothrow) OpenDlpFileCallback(callback);
     if (!datas.WriteRemoteObject(asyncStub->AsObject())) {
         return;
@@ -53,7 +53,7 @@ static void FuzzTest(const uint8_t* data, size_t size)
     service->OnRemoteRequest(code, datas, reply, option);
 }
 
-bool RegisterOpenDlpFileCallbackFuzzTest(const uint8_t* data, size_t size)
+bool RegisterRegisterOpenDlpFileCallbackStubFuzzer(const uint8_t* data, size_t size)
 {
     int selfTokenId = GetSelfTokenID();
     AccessTokenID tokenId = AccessTokenKit::GetHapTokenID(100, "com.ohos.dlpmanager", 0); // user_id = 100
@@ -68,6 +68,6 @@ bool RegisterOpenDlpFileCallbackFuzzTest(const uint8_t* data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
     /* Run your code on data */
-    OHOS::RegisterOpenDlpFileCallbackFuzzTest(data, size);
+    OHOS::RegisterRegisterOpenDlpFileCallbackStubFuzzer(data, size);
     return 0;
 }

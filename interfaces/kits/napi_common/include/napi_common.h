@@ -23,10 +23,10 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "dlp_file.h"
-#include "dlp_policy.h"
 #include "dlp_sandbox_callback_info.h"
 #include "dlp_sandbox_change_callback_customize.h"
 #include "open_dlp_file_callback_customize.h"
+#include "permission_policy.h"
 #include "retention_sandbox_info.h"
 #include "visited_dlp_file_info.h"
 

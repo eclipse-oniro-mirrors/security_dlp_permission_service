@@ -17,8 +17,8 @@
 #define DLP_POLICY_PARCEL_H
 
 #include "auth_user_info_parcel.h"
-#include "dlp_policy.h"
 #include "parcel.h"
+#include "permission_policy.h"
 
 namespace OHOS {
 namespace Security {

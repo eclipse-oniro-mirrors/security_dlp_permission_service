@@ -18,7 +18,7 @@
 
 #include <string>
 #include <vector>
-#include "dlp_policy.h"
+#include "permission_policy.h"
 
 namespace OHOS {
 namespace Security {

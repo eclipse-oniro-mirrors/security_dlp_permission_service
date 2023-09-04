@@ -19,9 +19,9 @@
 #include <string>
 #include <vector>
 #include "dlp_credential_client.h"
-#include "dlp_policy.h"
-#include "nlohmann/json.hpp"
 #include "fifo_map.hpp"
+#include "nlohmann/json.hpp"
+#include "permission_policy.h"
 
 namespace OHOS {
 namespace Security {

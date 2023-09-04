@@ -20,11 +20,11 @@
 #include <mutex>
 #include <string>
 #include <vector>
-#include "dlp_policy.h"
 #include "dlp_permission_callback.h"
 #include "dlp_sandbox_change_callback_customize.h"
 #include "open_dlp_file_callback_customize.h"
 #include "parcel.h"
+#include "permission_policy.h"
 #include "retention_sandbox_info.h"
 #include "visited_dlp_file_info.h"
 #include "want.h"

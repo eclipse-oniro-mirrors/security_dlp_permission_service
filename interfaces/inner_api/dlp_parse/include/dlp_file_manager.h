@@ -21,7 +21,7 @@
 #include <string>
 #include "dlp_crypt.h"
 #include "dlp_file.h"
-#include "dlp_policy.h"
+#include "permission_policy.h"
 #include "rwlock.h"
 
 namespace OHOS {

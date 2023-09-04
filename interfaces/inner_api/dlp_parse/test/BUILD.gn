@@ -33,7 +33,7 @@ ohos_unittest("dlp_parse_test") {
   module_out_path = part_name + "/" + part_name
   public_configs = [ ":dlp_unittest_config" ]
   sources = [
-    "${dlp_root_dir}/frameworks/common/src/dlp_policy.cpp",
+    "${dlp_root_dir}/frameworks/common/src/permission_policy.cpp",
     "${dlp_root_dir}/frameworks/test/mock/c_mock_common.cpp",
     "${dlp_root_dir}/frameworks/test/mock/dlp_permission_kit.cpp",
     "${dlp_root_dir}/frameworks/test/mock/file_io_mock.cpp",

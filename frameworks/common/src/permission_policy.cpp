@@ -13,7 +13,7 @@
  * limitations under the License.
  */
 
-#include "dlp_policy.h"
+#include "permission_policy.h"
 #include <chrono>
 #include <set>
 #include "dlp_permission.h"

@@ -27,10 +27,10 @@
 using namespace OHOS::Security::DlpPermission;
 using namespace OHOS::Security::AccessToken;
 
-class DlpSandboxChangeCallbackFuzzTest : public DlpSandboxChangeCallbackCustomize {
+class RegisterDlpSandboxChangeCallbackFuzzer : public DlpSandboxChangeCallbackCustomize {
 public:
-    explicit DlpSandboxChangeCallbackFuzzTest() {}
-    ~DlpSandboxChangeCallbackFuzzTest() override {}
+    explicit RegisterDlpSandboxChangeCallbackFuzzer() {}
+    ~RegisterDlpSandboxChangeCallbackFuzzer() override {}
 
     void DlpSandboxChangeCallback(DlpSandboxCallbackInfo& result) override {}
 };
@@ -38,11 +38,12 @@ public:
 namespace OHOS {
 static void FuzzTest(const uint8_t* data, size_t size)
 {
-    std::shared_ptr<DlpSandboxChangeCallbackCustomize> callback = std::make_shared<DlpSandboxChangeCallbackFuzzTest>();
+    std::shared_ptr<DlpSandboxChangeCallbackCustomize> callback =
+        std::make_shared<RegisterDlpSandboxChangeCallbackFuzzer>();
     DlpPermissionKit::RegisterDlpSandboxChangeCallback(callback);
 }
 
-bool RegisterDlpSandboxChangeCallbackFuzzTest(const uint8_t* data, size_t size)
+bool RegisterRegisterDlpSandboxChangeCallbackFuzzer(const uint8_t* data, size_t size)
 {
     int selfTokenId = GetSelfTokenID();
     AccessTokenID tokenId = AccessTokenKit::GetHapTokenID(100, "com.ohos.dlpmanager", 0); // user_id = 100
@@ -57,6 +58,6 @@ bool RegisterDlpSandboxChangeCallbackFuzzTest(const uint8_t* data, size_t size)
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t* data, size_t size)
 {
     /* Run your code on data */
-    OHOS::RegisterDlpSandboxChangeCallbackFuzzTest(data, size);
+    OHOS::RegisterRegisterDlpSandboxChangeCallbackFuzzer(data, size);
     return 0;
 }

@@ -17,10 +17,10 @@
 #define INTERFACES_KITS_DLP_PERMISSION_NAPI_INCLUDE_NAPI_H
 
 #include "dlp_permission_callback.h"
-#include "dlp_policy.h"
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "parcel.h"
+#include "permission_policy.h"
 
 namespace OHOS {
 namespace Security {

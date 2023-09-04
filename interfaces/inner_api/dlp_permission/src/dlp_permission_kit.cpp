@@ -20,7 +20,7 @@
 #include "datetime_ex.h"
 #include "dlp_permission_client.h"
 #include "dlp_permission_log.h"
-#include "dlp_policy.h"
+#include "permission_policy.h"
 
 namespace OHOS {
 namespace Security {

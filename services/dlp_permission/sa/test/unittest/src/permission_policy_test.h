@@ -18,7 +18,7 @@
 
 #include <gtest/gtest.h>
 #define private public
-#include "dlp_policy.h"
+#include "permission_policy.h"
 #undef private
 
 namespace OHOS {

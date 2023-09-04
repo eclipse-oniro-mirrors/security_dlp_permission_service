@@ -17,9 +17,9 @@
 #define I_DLP_PERMISSION_CALLBACK_H
 
 #include <vector>
-#include "dlp_policy.h"
 #include "iremote_broker.h"
 #include "iremote_object.h"
+#include "permission_policy.h"
 
 namespace OHOS {
 namespace Security {
