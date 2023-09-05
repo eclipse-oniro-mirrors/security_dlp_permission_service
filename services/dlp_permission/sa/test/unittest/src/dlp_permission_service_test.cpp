@@ -139,7 +139,7 @@ std::string GenerateRandStr(uint32_t len)
     return res;
 }
 
-typedef struct GeneratePolicyParam {
+struct GeneratePolicyParam {
     uint32_t ownerAccountLen;
     uint32_t aeskeyLen;
     uint32_t ivLen;
@@ -148,6 +148,8 @@ typedef struct GeneratePolicyParam {
     uint32_t authPerm;
     int64_t deltaTime;
 };
+
+using GeneratePolicyParam = struct GeneratePolicyParam;
 
 void GeneratePolicy(PermissionPolicy& encPolicy, GeneratePolicyParam param)
 {

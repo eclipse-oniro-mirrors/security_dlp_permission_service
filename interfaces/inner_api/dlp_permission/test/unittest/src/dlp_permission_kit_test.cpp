@@ -252,7 +252,7 @@ static std::string GenerateRandStr(uint32_t len)
     return res;
 }
 
-typedef struct GeneratePolicyParam {
+struct GeneratePolicyParam {
     uint32_t ownerAccountLen;
     uint32_t aeskeyLen;
     uint32_t ivLen;
@@ -261,6 +261,8 @@ typedef struct GeneratePolicyParam {
     uint32_t authPerm;
     int64_t deltaTime;
 };
+
+using GeneratePolicyParam = struct GeneratePolicyParam;
 
 static void GeneratePolicy(PermissionPolicy& encPolicy, GeneratePolicyParam param)
 {
@@ -295,8 +297,7 @@ static void GeneratePolicy(PermissionPolicy& encPolicy, GeneratePolicyParam para
 static int32_t TestGenerateDlpCertWithInvalidParam(GeneratePolicyParam param)
 {
     PermissionPolicy encPolicy;
-    GeneratePolicy(encPolicy, param.ownerAccountLen, param.aeskeyLen, param.ivLen, param.userNum,
-        param.authAccountLen, param.authPerm, param.deltaTime);
+    GeneratePolicy(encPolicy, param);
     std::vector<uint8_t> cert;
     int32_t res = DlpPermissionKit::GenerateDlpCertificate(encPolicy, cert);
     return res;
