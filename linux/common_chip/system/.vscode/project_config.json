@@ -1,0 +1,41 @@
+{
+    "product": "",
+    "nativeProduct": "",
+    "module": "",
+    "modules": [],
+    "buildModelBranch": "",
+    "platform": "",
+    "compileDepends": [],
+    "rVersion": "",
+    "compileEnv": "",
+    "accelerateSwitch": false,
+    "binaryReplaceSwitch": false,
+    "testEnv": "",
+    "autoBinaryReplace": false,
+    "binaryReplaceBackUp": false,
+    "binaryReplaceWithDbg": true,
+    "customTasksSwitch": false,
+    "customTasks": [],
+    "downloadTasksSwitch": false,
+    "downloadTasks": [],
+    "syncPathPairs": [
+        {
+            "localPath": "",
+            "remotePath": ""
+        }
+    ],
+    "excludePathSwitch": false,
+    "excludeLocalPaths": [],
+    "excludeRemotePaths": [],
+    "autoSync": true,
+    "autoSyncDeletionConfirm": true,
+    "autoDirectorySwitchover": true,
+    "compileAfterSave": true,
+    "taskLocalSystemPath": "",
+    "testEnvSwitch": false,
+    "testEnvAutoExec": [],
+    "lastStatusLight": {
+        "color": "undefinFF",
+        "tooltip": ""
+    }
+}
