@@ -61,6 +61,7 @@ namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {
     LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionServiceTest"};
 const std::string TEST_URI = "/data/service/el1/public/dlp_permission_service1/retention_sandbox_info_test.json";
+const std::string TEST_FILE_OPERATOR_URI = "/data/test_file_operator_tmp.txt";
 static const int32_t DEFAULT_USERID = 100;
 static const int32_t INCORRECT_UID = 777;
 static constexpr int32_t NO_RIGHT_SA_ID = 4650;
@@ -400,6 +401,47 @@ HWTEST_F(DlpPermissionServiceTest, FileOperator001, TestSize.Level1)
     ASSERT_EQ(DLP_RETENTION_COMMON_FILE_OPEN_FAILED, res);
     res = fileOperator_->GetFileContentByPath(TEST_URI, content);
     ASSERT_EQ(DLP_RETENTION_FILE_FIND_FILE_ERROR, res);
+};
+
+/**
+ * @tc.name:FileOperator002
+ * @tc.desc: FileOperator success path test
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionServiceTest, FileOperator002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "FileOperator002");
+    std::shared_ptr<FileOperator> fileOperator_ = std::make_shared<FileOperator>();
+    bool result = fileOperator_->IsExistDir("/data");
+    ASSERT_TRUE(result);
+    std::string content = "test_content_for_file_operator";
+    int32_t res = fileOperator_->InputFileByPathAndContent(TEST_FILE_OPERATOR_URI, content);
+    ASSERT_EQ(DLP_OK, res);
+    result = fileOperator_->IsExistFile(TEST_FILE_OPERATOR_URI);
+    ASSERT_TRUE(result);
+    std::string readContent;
+    res = fileOperator_->GetFileContentByPath(TEST_FILE_OPERATOR_URI, readContent);
+    ASSERT_EQ(DLP_OK, res);
+    ASSERT_EQ(content, readContent);
+    remove(TEST_FILE_OPERATOR_URI.c_str());
+};
+
+/**
+ * @tc.name:FileOperator003
+ * @tc.desc: FileOperator GetFileContentByPath with non-existent file
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionServiceTest, FileOperator003, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "FileOperator003");
+    std::shared_ptr<FileOperator> fileOperator_ = std::make_shared<FileOperator>();
+    std::string content;
+    int32_t res = fileOperator_->GetFileContentByPath("/data/non_existent_file_tmp.txt", content);
+    ASSERT_EQ(DLP_RETENTION_FILE_FIND_FILE_ERROR, res);
+    bool result = fileOperator_->IsExistFile("/data/non_existent_file_tmp.txt");
+    ASSERT_TRUE(!result);
 };
 
 /**
@@ -973,6 +1015,25 @@ HWTEST_F(DlpPermissionServiceTest, VisitRecordFileManager001, TestSize.Level1)
     visitRecordFileManager->hasInit_ = false;
     res = visitRecordFileManager->GetVisitRecordList(DLP_MANAGER_APP, 100, infoVec);
     ASSERT_EQ(DLP_OK, res);
+}
+
+/**
+ * @tc.name: VisitRecordJsonManager004
+ * @tc.desc: VisitRecordJsonManager ToString and ToJson with non-empty data
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionServiceTest, VisitRecordJsonManager004, TestSize.Level1)
+{
+    std::shared_ptr<VisitRecordJsonManager> mgr = std::make_shared<VisitRecordJsonManager>();
+    int32_t res = mgr->AddVisitRecord(DLP_MANAGER_APP, 100, "testuri", 1000, 1000);
+    ASSERT_EQ(DLP_OK, res);
+    std::string jsonStr = mgr->ToString();
+    ASSERT_FALSE(jsonStr.empty());
+    Json jsonObj = mgr->ToJson();
+    ASSERT_FALSE(jsonObj.empty());
+    ASSERT_TRUE(jsonObj.contains("recordList"));
+    mgr->infoList_.clear();
 }
 
 /**
@@ -1928,6 +1989,50 @@ HWTEST_F(DlpPermissionServiceTest, CriticalHelper001, TestSize.Level1)
     EXPECT_EQ(GetCriticalCnt(), 0);
     NotifyProcessIsStop();
     EXPECT_EQ(GetCriticalCnt(), 0);
+}
+
+/**
+ * @tc.name: CriticalHelper002
+ * @tc.desc: CriticalHandler branch coverage - IncreaseCriticalCnt when count > 0, DecreaseCriticalCnt when count is 0
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionServiceTest, CriticalHelper002, TestSize.Level1)
+{
+    DLP_LOG_DEBUG(LABEL, "CriticalHelper002");
+    NotifyProcessIsActive();
+    IncreaseCriticalCnt();
+    EXPECT_EQ(GetCriticalCnt(), 1);
+    IncreaseCriticalCnt();
+    EXPECT_EQ(GetCriticalCnt(), 2);
+    DecreaseCriticalCnt();
+    EXPECT_EQ(GetCriticalCnt(), 1);
+    DecreaseCriticalCnt();
+    EXPECT_EQ(GetCriticalCnt(), 0);
+    DecreaseCriticalCnt();
+    EXPECT_EQ(GetCriticalCnt(), 0);
+    NotifyProcessIsStop();
+}
+
+/**
+ * @tc.name: CriticalHelper003
+ * @tc.desc: CriticalHandler SetHasBackgroundTask with non-zero count
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionServiceTest, CriticalHelper003, TestSize.Level1)
+{
+    DLP_LOG_DEBUG(LABEL, "CriticalHelper003");
+    NotifyProcessIsActive();
+    IncreaseCriticalCnt();
+    EXPECT_EQ(GetCriticalCnt(), 1);
+    SetHasBackgroundTask(true);
+    EXPECT_EQ(GetHasBackgroundTask(), true);
+    SetHasBackgroundTask(false);
+    EXPECT_EQ(GetHasBackgroundTask(), false);
+    DecreaseCriticalCnt();
+    EXPECT_EQ(GetCriticalCnt(), 0);
+    NotifyProcessIsStop();
 }
 
 /**

@@ -125,6 +125,33 @@ HWTEST_F(DlpCredentialTest, DlpCredentialTest001, TestSize.Level1)
     EXPECT_EQ(true, (cert.size() == 0));
 }
 
+/**
+ * @tc.name: DlpCredentialTestAsyncProxyNullRemote
+ * @tc.desc: DlpPermissionAsyncProxy with null remote object
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpCredentialTest, DlpCredentialTestAsyncProxyNullRemote, TestSize.Level1)
+{
+    sptr<IRemoteObject> nullObj = nullptr;
+    auto proxy = std::make_shared<DlpPermissionAsyncProxy>(nullObj);
+
+    std::vector<uint8_t> cert;
+    proxy->OnGenerateDlpCertificate(0, cert);
+    proxy->OnGenerateDlpCertificate(-1, cert);
+
+    PermissionPolicy policy;
+    proxy->OnParseDlpCertificate(0, policy, cert);
+    proxy->OnParseDlpCertificate(-1, policy, cert);
+
+    GeneralInfo info;
+    proxy->OnGetDlpWaterMark(0, info);
+    proxy->OnGetDlpWaterMark(-1, info);
+    SUCCEED();
+    sptr<DlpTestRemoteObj> callback = new (std::nothrow)IRemoteStub<DlpTestRemoteObj>();
+    EXPECT_TRUE(callback != nullptr);
+}
+
 class DlpPermissionAsyncStubTest : public IRemoteStub<IDlpPermissionCallback> {
 public:
     DISALLOW_COPY_AND_MOVE(DlpPermissionAsyncStubTest);
