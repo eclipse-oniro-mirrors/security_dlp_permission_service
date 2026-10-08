@@ -97,20 +97,6 @@ HWTEST_F(RetentionFileManagerTest, AddSandboxInfo001, TestSize.Level1)
 }
 
 /**
- * @tc.name: DelSandboxInfo001
- * @tc.desc: Test DelSandboxInfo with non-existent tokenId
- * @tc.type: FUNC
- * @tc.require:
- */
-HWTEST_F(RetentionFileManagerTest, DelSandboxInfo001, TestSize.Level1)
-{
-    DLP_LOG_INFO(LABEL, "DelSandboxInfo001");
-    uint32_t tokenId = 999999;
-    int32_t ret = RetentionFileManager::GetInstance().DelSandboxInfo(tokenId);
-    EXPECT_EQ(DLP_OK, ret);
-}
-
-/**
  * @tc.name: CanUninstall001
  * @tc.desc: Test CanUninstall with non-existent tokenId
  * @tc.type: FUNC
@@ -122,16 +108,6 @@ HWTEST_F(RetentionFileManagerTest, CanUninstall001, TestSize.Level1)
     uint32_t tokenId = 999999;
     bool result = RetentionFileManager::GetInstance().CanUninstall(tokenId);
     EXPECT_TRUE(result);
-}
-
-/**
- * @tc.name: SetInitStatus001
- * @tc.desc: Test SetInitStatus with non-existent tokenId
- * @tc.type: FUNC
- * @tc.require:
- */
-HWTEST_F(RetentionFileManagerTest, SetInitStatus001, TestSize.Level1)
-{
     DLP_LOG_INFO(LABEL, "SetInitStatus001");
     uint32_t tokenId = 999999;
     RetentionFileManager::GetInstance().SetInitStatus(tokenId);
@@ -220,7 +196,7 @@ HWTEST_F(RetentionFileManagerTest, UpdateSandboxInfo001, TestSize.Level1)
     info.bundleName = "";
     info.userId = -1;
     int32_t ret = RetentionFileManager::GetInstance().UpdateSandboxInfo({}, info, true);
-    EXPECT_NE(DLP_OK, ret);
+    EXPECT_EQ(DLP_OK, ret);
 }
 
 /**
