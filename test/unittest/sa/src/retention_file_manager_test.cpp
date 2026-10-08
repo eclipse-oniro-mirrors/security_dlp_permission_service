@@ -109,7 +109,7 @@ HWTEST_F(RetentionFileManagerTest, CanUninstall001, TestSize.Level1)
     bool result = RetentionFileManager::GetInstance().CanUninstall(tokenId);
     EXPECT_TRUE(result);
     DLP_LOG_INFO(LABEL, "SetInitStatus001");
-    uint32_t tokenId = 999999;
+    tokenId = 999999;
     RetentionFileManager::GetInstance().SetInitStatus(tokenId);
 }
 
