@@ -88,9 +88,9 @@ HWTEST_F(AccountStatusListenerTest, RegisterAccountEventMonitor002, TestSize.Lev
     int32_t res = RegisterAccountEventMonitor(&callback);
     if (res != DLP_SUCCESS) {
         ASSERT_EQ(DLP_ERROR, res);
-        return;
+    } else {
+        ASSERT_EQ(DLP_SUCCESS, res);
     }
-    ASSERT_EQ(DLP_SUCCESS, res);
 }
 
 /**
@@ -109,11 +109,11 @@ HWTEST_F(AccountStatusListenerTest, RegisterAccountEventMonitor003, TestSize.Lev
     int32_t res = RegisterAccountEventMonitor(&callback);
     if (res != DLP_SUCCESS) {
         ASSERT_EQ(DLP_ERROR, res);
-        return;
+    } else {
+        ASSERT_EQ(DLP_SUCCESS, res);
+        int32_t res2 = RegisterAccountEventMonitor(&callback);
+        EXPECT_EQ(DLP_SUCCESS, res2);
     }
-    ASSERT_EQ(DLP_SUCCESS, res);
-    int32_t res2 = RegisterAccountEventMonitor(&callback);
-    EXPECT_EQ(DLP_SUCCESS, res2);
 }
 
 /**
