@@ -411,7 +411,7 @@ static napi_value UnregisterPlugin(napi_env env, napi_callback_info cbInfo)
     bool hasAccessPerm = AccessToken::AccessTokenKit::VerifyAccessToken(
         GetSelfTokenID(), PERMISSION_ACCESS_DLP_SERVICE) == AccessToken::PERMISSION_GRANTED;
     if (!hasEnterprisePerm && !hasAccessPerm) {
-        DlpNapiThrow(env, ERR_JS_PERMISSION_DENIED);
+        DlpNapiThrow(env, ERR_JS_PERMISSION_DENIED, "Permission denied");
         return nullptr;
     }
     DLP_LOG_INFO(LABEL, "Enter UnregisterPlugin.");
