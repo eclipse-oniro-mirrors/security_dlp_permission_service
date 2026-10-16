@@ -335,7 +335,7 @@ int32_t UnzipSpecificFile(int32_t fd, const char*nameInZip, const char *unZipNam
         return DLP_ZIP_FAIL;
     }
     DlpFdsanMark(outFd);
-    Defer p(nullptr, [&](...) {
+    Defer p(nullptr, [outFd](...) {
         (void)DlpFdsanClose(outFd);
     });
 

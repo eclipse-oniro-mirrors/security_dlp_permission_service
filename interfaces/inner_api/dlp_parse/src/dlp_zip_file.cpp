@@ -260,6 +260,9 @@ bool DlpZipFile::ParseEncData()
         return false;
     }
     DlpFdsanMark(fd);
+    if (encDataFd_ >= 0) {
+        (void)DlpFdsanClose(encDataFd_);
+    }
     encDataFd_ = fd;
     return true;
 }
@@ -483,6 +486,9 @@ int32_t DlpZipFile::GenEncData(int32_t inPlainFileFd)
 
         OPEN_AND_CHECK(encFile, DLP_OPENING_ENC_DATA.c_str(), O_RDWR | O_CREAT | O_TRUNC,
             S_IRUSR | S_IWUSR, DLP_PARSE_ERROR_FILE_OPERATE_FAIL, LABEL);
+        if (encDataFd_ >= 0) {
+            (void)DlpFdsanClose(encDataFd_);
+        }
         encDataFd_ = encFile;
         ret = DoDlpContentCryptyOperation(inPlainFileFd, encFile, 0, fileLen, true);
         CHECK_RET(ret, 0, DLP_PARSE_ERROR_FILE_OPERATE_FAIL, LABEL);
@@ -610,7 +616,7 @@ int32_t DlpZipFile::GenFileInZip(int32_t inPlainFileFd)
     int32_t tmpFile;
     OPEN_AND_CHECK(tmpFile, DLP_GEN_FILE.c_str(), O_RDWR | O_CREAT | O_TRUNC, S_IRUSR | S_IWUSR,
         DLP_PARSE_ERROR_FILE_OPERATE_FAIL, LABEL);
-    Defer p2(nullptr, [&](...) {
+    Defer p2(nullptr, [tmpFile](...) {
         (void)DlpFdsanClose(tmpFile);
         (void)unlink(DLP_GEN_FILE.c_str());
     });
@@ -619,7 +625,7 @@ int32_t DlpZipFile::GenFileInZip(int32_t inPlainFileFd)
     CHECK_RET(ret, 0, DLP_PARSE_ERROR_FILE_OPERATE_FAIL, LABEL);
 
     int32_t encFile = GenEncData(inPlainFileFd);
-    Defer p3(nullptr, [&](...) {
+    Defer p3(nullptr, [encFile, inPlainFileFd](...) {
         if (inPlainFileFd == -1) {
             (void)DlpFdsanClose(encFile);
         }
@@ -681,7 +687,7 @@ int32_t DlpZipFile::RemoveDlpPermissionInZip(int32_t outPlainFileFd)
         return DLP_PARSE_ERROR_FILE_OPERATE_FAIL;
     }
     DlpFdsanMark(encFd);
-    Defer p2(nullptr, [&](...) {
+    Defer p2(nullptr, [encFd](...) {
         if (DlpFdsanClose(encFd) != 0) {
             DLP_LOG_ERROR(LABEL, "close failed, %{public}s", strerror(errno));
         }

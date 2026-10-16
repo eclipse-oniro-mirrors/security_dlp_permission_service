@@ -18,8 +18,8 @@
  
 #include <cstdio>
  
-#ifndef LOG_DOMAIN
-#define LOG_DOMAIN 0xD005A04
+#ifndef DLP_FDSAN_DOMAIN
+#define DLP_FDSAN_DOMAIN 0xD005A04
 #endif
  
 static const uint64_t DLP_FDSAN_OWNER_TAG = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
