@@ -269,6 +269,7 @@ bool DlpZipFile::ParseEncData()
 
 bool DlpZipFile::CleanTmpFile()
 {
+    std::lock_guard<std::recursive_mutex> opLock(opMutex_);
     if (encDataFd_ != -1) {
         (void)DlpFdsanClose(encDataFd_);
     }
