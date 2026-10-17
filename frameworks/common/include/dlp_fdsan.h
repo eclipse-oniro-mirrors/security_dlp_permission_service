@@ -16,13 +16,16 @@
 #ifndef DLP_FDSAN_H
 #define DLP_FDSAN_H
  
-#include <cstdio>
+#include <cstdint>
+#include <unistd.h>
  
-#ifndef LOG_DOMAIN
-#define LOG_DOMAIN 0xD005A04
+#ifndef DLP_FDSAN_DOMAIN
+#define DLP_FDSAN_DOMAIN 0xD005A04
 #endif
  
-static const uint64_t DLP_FDSAN_OWNER_TAG = fdsan_create_owner_tag(FDSAN_OWNER_TYPE_FILE, LOG_DOMAIN);
+constexpr uint64_t DLP_FDSAN_OWNER_TAG =
+    (static_cast<uint64_t>(FDSAN_OWNER_TYPE_FILE) << 56) | DLP_FDSAN_DOMAIN;
+
 static inline void DlpFdsanMark(int fd)
 {
     fdsan_exchange_owner_tag(fd, 0, DLP_FDSAN_OWNER_TAG);
