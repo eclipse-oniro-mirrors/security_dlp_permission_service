@@ -175,6 +175,7 @@ struct DlpSandboxAsyncContext : public CommonAsyncContext {
     int32_t userId = -1;
     SandboxInfo sandboxInfo;
     std::string uri = "";
+    int32_t GetAppIndex() const { return sandboxInfo.appIndex; }
 };
 
 struct GetPermInfoAsyncContext : public CommonAsyncContext {
