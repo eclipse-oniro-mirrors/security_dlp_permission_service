@@ -104,7 +104,7 @@ ohos_shared_library("dlp_permission_service") {
     debug = false
   }
 
-  if (!is_emulator && !use_libfuzzer) {
+  if (!is_emulator && !use_libfuzzer && dlp_credential_enable) {
     version_script = "dlp_permission_service.map"
   }
 
