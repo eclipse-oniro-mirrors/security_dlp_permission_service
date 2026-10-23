@@ -552,15 +552,16 @@ HWTEST_F(AppStateObserverTest, QueryDlpFileAccessByUid001, TestSize.Level1)
 
     AppStateObserver observer;
     DLPFileAccess dlpFileAccess;
+    uint32_t atomicDlpFileAccess = 0;
     DlpSandboxInfo appInfo;
     int32_t uid = 0;
 
-    int32_t ret = observer.QueryDlpFileAccessByUid(dlpFileAccess, uid);
+    int32_t ret = observer.QueryDlpFileAccessByUid(dlpFileAccess, atomicDlpFileAccess, uid);
     ASSERT_EQ(DLP_SERVICE_ERROR_APPOBSERVER_ERROR, ret);
     dlpFileAccess = DLPFileAccess::READ_ONLY;
     appInfo.dlpFileAccess = dlpFileAccess;
     observer.sandboxInfo_[uid] = appInfo;
-    ret = observer.QueryDlpFileAccessByUid(dlpFileAccess, uid);
+    ret = observer.QueryDlpFileAccessByUid(dlpFileAccess, atomicDlpFileAccess, uid);
     ASSERT_EQ(DLP_OK, ret);
 }
 

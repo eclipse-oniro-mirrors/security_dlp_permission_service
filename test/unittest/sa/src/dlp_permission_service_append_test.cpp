@@ -76,6 +76,17 @@ static const uint32_t MAX_CLASSIFICATION_LABEL_SIZE = 255;
 static const uint32_t MAX_ENTERPRISEPOLICY_SIZE = 1024 * 1024 * 4;
 static const uint32_t MAX_CERT_SIZE = 1024 * 1024 * 40 * 2;
 static const std::string CALLER_APP_IDENTIFIER = "1234567890";
+EnterpriseInfo MakeEnterpriseInfo(const std::string& uri, const std::string& fileId,
+    DLPFileAccess dlpFileAccess, const std::string& classificationLabel, const std::string& appIdentifier)
+{
+    EnterpriseInfo info;
+    info.uri = uri;
+    info.fileId = fileId;
+    info.dlpFileAccess = dlpFileAccess;
+    info.classificationLabel = classificationLabel;
+    info.appIdentifier = appIdentifier;
+    return info;
+}
 }
 
 static bool ContainsUri(const std::vector<std::string>& uris, const std::string& uri)
@@ -507,7 +518,7 @@ HWTEST_F(DlpPermissionServiceTest, SetEnterpriseInfos001, TestSize.Level1)
     std::string appIdentifier = CALLER_APP_IDENTIFIER;
 
     int32_t ret = dlpPermissionService_->SetEnterpriseInfos(
-        uri, fileId, DLPFileAccess::READ_ONLY, label, appIdentifier);
+        MakeEnterpriseInfo(uri, fileId, DLPFileAccess::READ_ONLY, label, appIdentifier));
     ASSERT_EQ(DLP_OK, ret);
 
     EnterpriseInfo enterpriseInfo;
@@ -518,12 +529,12 @@ HWTEST_F(DlpPermissionServiceTest, SetEnterpriseInfos001, TestSize.Level1)
 
     std::string longLabel(MAX_CLASSIFICATION_LABEL_SIZE + 1, 'a');
     ret = dlpPermissionService_->SetEnterpriseInfos(
-        "enterprise_uri_002", "file_id_002", DLPFileAccess::READ_ONLY, longLabel, appIdentifier);
+        MakeEnterpriseInfo("enterprise_uri_002", "file_id_002", DLPFileAccess::READ_ONLY, longLabel, appIdentifier));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, ret);
 
     DlpPermissionServiceTest::permType = -1;
     ret = dlpPermissionService_->SetEnterpriseInfos(
-        "enterprise_uri_003", "file_id_003", DLPFileAccess::READ_ONLY, "label", appIdentifier);
+        MakeEnterpriseInfo("enterprise_uri_003", "file_id_003", DLPFileAccess::READ_ONLY, "label", appIdentifier));
     ASSERT_EQ(DLP_SERVICE_ERROR_PERMISSION_DENY, ret);
     DlpPermissionServiceTest::permType = 0;
 }
@@ -542,16 +553,16 @@ HWTEST_F(DlpPermissionServiceTest, SetEnterpriseInfos002, TestSize.Level1)
     std::string appIdentifier = CALLER_APP_IDENTIFIER;
 
     int32_t ret = dlpPermissionService_->SetEnterpriseInfos(
-        "enterprise_uri_uri", fileId, DLPFileAccess::READ_ONLY, label, appIdentifier);
+        MakeEnterpriseInfo("enterprise_uri_uri", fileId, DLPFileAccess::READ_ONLY, label, appIdentifier));
     ASSERT_EQ(DLP_OK, ret);
 
     ret = dlpPermissionService_->SetEnterpriseInfos(
-        "", fileId, DLPFileAccess::READ_ONLY, label, appIdentifier);
+        MakeEnterpriseInfo("", fileId, DLPFileAccess::READ_ONLY, label, appIdentifier));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, ret);
 
     std::string longUri(MAX_URI_SIZE + 1, 'a');
     ret = dlpPermissionService_->SetEnterpriseInfos(
-        longUri, fileId, DLPFileAccess::READ_ONLY, label, appIdentifier);
+        MakeEnterpriseInfo(longUri, fileId, DLPFileAccess::READ_ONLY, label, appIdentifier));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, ret);
 }
 
@@ -569,17 +580,17 @@ HWTEST_F(DlpPermissionServiceTest, SetEnterpriseInfos003, TestSize.Level1)
     std::string appIdentifier = CALLER_APP_IDENTIFIER;
 
     int32_t ret = dlpPermissionService_->SetEnterpriseInfos(
-        uri, "file_id_size", DLPFileAccess::READ_ONLY, label, appIdentifier);
+        MakeEnterpriseInfo(uri, "file_id_size", DLPFileAccess::READ_ONLY, label, appIdentifier));
     ASSERT_EQ(DLP_OK, ret);
 
     std::string longFileId(MAX_FILEID_SIZE + 1, 'b');
     ret = dlpPermissionService_->SetEnterpriseInfos(
-        uri, longFileId, DLPFileAccess::READ_ONLY, label, appIdentifier);
+        MakeEnterpriseInfo(uri, longFileId, DLPFileAccess::READ_ONLY, label, appIdentifier));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, ret);
 
     std::string longAppIdentifier(MAX_APPID_SIZE + 1, 'c');
     ret = dlpPermissionService_->SetEnterpriseInfos(
-        uri, "file_id_size2", DLPFileAccess::READ_ONLY, label, longAppIdentifier);
+        MakeEnterpriseInfo(uri, "file_id_size2", DLPFileAccess::READ_ONLY, label, longAppIdentifier));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, ret);
 }
 
@@ -597,22 +608,22 @@ HWTEST_F(DlpPermissionServiceTest, SetEnterpriseInfos004, TestSize.Level1)
     std::string appIdentifier = CALLER_APP_IDENTIFIER;
 
     int32_t ret = dlpPermissionService_->SetEnterpriseInfos(
-        uri, fileId, DLPFileAccess::FULL_CONTROL, "label_access", appIdentifier);
+        MakeEnterpriseInfo(uri, fileId, DLPFileAccess::FULL_CONTROL, "label_access", appIdentifier));
     ASSERT_EQ(DLP_OK, ret);
 
     std::string longLabel(MAX_CLASSIFICATION_LABEL_SIZE + 1, 'd');
     ret = dlpPermissionService_->SetEnterpriseInfos(
-        uri, fileId, DLPFileAccess::READ_ONLY, longLabel, appIdentifier);
+        MakeEnterpriseInfo(uri, fileId, DLPFileAccess::READ_ONLY, longLabel, appIdentifier));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, ret);
 
     DLPFileAccess tooLargeAccess = static_cast<DLPFileAccess>(
         static_cast<int32_t>(DLPFileAccess::FULL_CONTROL) + 1);
     ret = dlpPermissionService_->SetEnterpriseInfos(
-        uri, fileId, tooLargeAccess, "label_access2", appIdentifier);
+        MakeEnterpriseInfo(uri, fileId, tooLargeAccess, "label_access2", appIdentifier));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, ret);
 
     ret = dlpPermissionService_->SetEnterpriseInfos(
-        uri, fileId, DLPFileAccess::NO_PERMISSION, "label_access3", appIdentifier);
+        MakeEnterpriseInfo(uri, fileId, DLPFileAccess::NO_PERMISSION, "label_access3", appIdentifier));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, ret);
 }
 
@@ -627,11 +638,11 @@ HWTEST_F(DlpPermissionServiceTest, QueryOpenedEnterpriseDlpFiles001, TestSize.Le
     DLP_LOG_DEBUG(LABEL, "QueryOpenedEnterpriseDlpFiles001");
 
     ASSERT_EQ(DLP_OK, dlpPermissionService_->SetEnterpriseInfos(
-        "enterprise_uri_q1", "file_q1", DLPFileAccess::READ_ONLY, "L1", CALLER_APP_IDENTIFIER));
+        MakeEnterpriseInfo("enterprise_uri_q1", "file_q1", DLPFileAccess::READ_ONLY, "L1", CALLER_APP_IDENTIFIER)));
     ASSERT_EQ(DLP_OK, dlpPermissionService_->SetEnterpriseInfos(
-        "enterprise_uri_q2", "file_q2", DLPFileAccess::READ_ONLY, "L2", CALLER_APP_IDENTIFIER));
+        MakeEnterpriseInfo("enterprise_uri_q2", "file_q2", DLPFileAccess::READ_ONLY, "L2", CALLER_APP_IDENTIFIER)));
     ASSERT_EQ(DLP_OK, dlpPermissionService_->SetEnterpriseInfos(
-        "enterprise_uri_q3", "file_q3", DLPFileAccess::READ_ONLY, "L1", "another_app"));
+        MakeEnterpriseInfo("enterprise_uri_q3", "file_q3", DLPFileAccess::READ_ONLY, "L1", "another_app")));
 
     dlpPermissionService_->appStateObserver_->UpdateEnterpriseUidByUri("enterprise_uri_q1", "file_q1", 301);
     dlpPermissionService_->appStateObserver_->UpdateEnterpriseUidByUri("enterprise_uri_q2", "file_q2", 302);

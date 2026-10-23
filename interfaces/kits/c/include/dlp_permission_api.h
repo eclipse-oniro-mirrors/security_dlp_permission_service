@@ -82,7 +82,9 @@ typedef enum {
     /** Edit. */
     CONTENT_EDIT = 2,
     /** Full control. */
-    FULL_CONTROL = 3
+    FULL_CONTROL = 3,
+    /** Atomic control. */
+    ATOMIC_CONTROL = 4
 } DLP_FileAccess;
 
 /**

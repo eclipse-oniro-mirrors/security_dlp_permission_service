@@ -32,20 +32,13 @@ namespace DlpPermission {
 using OHOS::AppExecFwk::RunningProcessInfo;
 enum class CurrentTaskState { IDLE, SHORT_TASK, LONG_TASK };
 
-struct EnterpriseInfo {
-    std::string classificationLabel = "";
-    DLPFileAccess dlpFileAccess = DLPFileAccess::NO_PERMISSION;
-    std::string fileId = "";
-    std::string appIdentifier = "";
-    int32_t uid = -1;
-};
-
 struct InputSandboxInfo {
     const std::string bundleName;
     DLPFileAccess dlpFileAccess;
     int32_t userId;
     const std::string uri;
     const std::string path;
+    uint32_t atomicDlpFileAccess = 0;
 };
 
 class AppStateObserver : public AppExecFwk::ApplicationStateObserverStub {
@@ -56,7 +49,7 @@ public:
     void OnProcessDied(const AppExecFwk::ProcessData& processData) override;
     int32_t QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t tokenId, bool& inDlpsandbox);
     int32_t QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t tokenId);
-    int32_t QueryDlpFileAccessByUid(DLPFileAccess& dlpFileAccess, int32_t uid);
+    int32_t QueryDlpFileAccessByUid(DLPFileAccess& dlpFileAccess, uint32_t& atomicDlpFileAccess, int32_t uid);
     int32_t IsInDlpSandbox(bool& inSandbox, int32_t uid);
     void AddDlpSandboxInfo(const DlpSandboxInfo& appInfo);
     uint32_t EraseDlpSandboxInfo(int uid);

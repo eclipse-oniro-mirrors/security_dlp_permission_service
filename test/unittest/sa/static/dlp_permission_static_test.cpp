@@ -171,8 +171,12 @@ HWTEST_F(DlpPermissionStaticTest, DlpPermissionStaticTest002, TestSize.Level1)
     int32_t userId = 100;
     std::string bundleName = HIPREVIEW_HIGH;
     bool isNeedInstall = false;
-    int32_t ret = InstallDlpSandboxExecute(isNeedInstall,
-        dlpFileAccess, bundleName, userId, appInfo);
+    InputSandboxInfo inputSandboxInfo = {
+        .bundleName = bundleName,
+        .dlpFileAccess = dlpFileAccess,
+        .userId = userId,
+    };
+    int32_t ret = InstallDlpSandboxExecute(isNeedInstall, inputSandboxInfo, appInfo);
     ASSERT_EQ(ret, DLP_OK);
 }
 

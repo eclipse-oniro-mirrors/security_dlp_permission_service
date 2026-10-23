@@ -58,6 +58,8 @@ const std::string POLICY_INDEX = "policy";
 const std::string READ_INDEX = "read";
 const std::string EDIT_INDEX = "edit";
 const std::string FC_INDEX = "fullCtrl";
+const std::string ATOMIC_INDEX = "atomicCtrl";
+const std::string ATOMIC_DLP_FILE_ACCESS_INDEX = "atomicDlpFileAccess";
 const std::string RIGHT_INDEX = "right";
 const std::string EVERYONE_INDEX = "everyone";
 const std::string ENC_POLICY_INDEX = "encPolicy";
@@ -205,6 +207,7 @@ static void SerializeAuthUserInfo(unordered_json& authUsersJson,
     bool read = false;
     bool edit = false;
     bool fullCtrl = false;
+    bool atomicCtrl = false;
 
     switch (userInfo.authPerm) {
         case DLPFileAccess::READ_ONLY: {
@@ -221,6 +224,12 @@ static void SerializeAuthUserInfo(unordered_json& authUsersJson,
             fullCtrl = true;
             break;
         }
+        case DLPFileAccess::ATOMIC_CONTROL: {
+            read = true;
+            edit = true;
+            atomicCtrl = true;
+            break;
+        }
         default:
             break;
     }
@@ -229,6 +238,8 @@ static void SerializeAuthUserInfo(unordered_json& authUsersJson,
     rightInfoJson[READ_INDEX] = read;
     rightInfoJson[EDIT_INDEX] = edit;
     rightInfoJson[FC_INDEX] = fullCtrl;
+    rightInfoJson[ATOMIC_INDEX] = atomicCtrl;
+    rightInfoJson[ATOMIC_DLP_FILE_ACCESS_INDEX] = userInfo.atomicDlpFileAccess;
     unordered_json accountRight;
     accountRight[RIGHT_INDEX] = rightInfoJson;
     authUsersJson[userInfo.authAccount.c_str()] = accountRight;
@@ -245,6 +256,7 @@ int32_t DlpPermissionSerializer::DeserializeAuthUserInfo(const unordered_json& a
 
     bool edit = false;
     bool fullCtrl = false;
+    bool atomicCtrl = false;
 
     if (rightInfoJson.find(EDIT_INDEX) != rightInfoJson.end() && rightInfoJson.at(EDIT_INDEX).is_boolean()) {
         rightInfoJson.at(EDIT_INDEX).get_to(edit);
@@ -253,15 +265,26 @@ int32_t DlpPermissionSerializer::DeserializeAuthUserInfo(const unordered_json& a
     if (rightInfoJson.find(FC_INDEX) != rightInfoJson.end() && rightInfoJson.at(FC_INDEX).is_boolean()) {
         rightInfoJson.at(FC_INDEX).get_to(fullCtrl);
     }
-
+    if (rightInfoJson.find(ATOMIC_INDEX) != rightInfoJson.end() && rightInfoJson.at(ATOMIC_INDEX).is_boolean()) {
+        rightInfoJson.at(ATOMIC_INDEX).get_to(atomicCtrl);
+    }
+ 
+    uint32_t atomicDlpFileAccess = 0;
+    if (rightInfoJson.find(ATOMIC_DLP_FILE_ACCESS_INDEX) != rightInfoJson.end() &&
+        rightInfoJson.at(ATOMIC_DLP_FILE_ACCESS_INDEX).is_number()) {
+        SafeGetUint32(rightInfoJson, ATOMIC_DLP_FILE_ACCESS_INDEX, atomicDlpFileAccess);
+    }
     if (fullCtrl) {
         userInfo.authPerm = DLPFileAccess::FULL_CONTROL;
+    } else if (atomicCtrl) {
+        userInfo.authPerm = DLPFileAccess::ATOMIC_CONTROL;
     } else if (edit) {
         userInfo.authPerm = DLPFileAccess::CONTENT_EDIT;
     } else {
         userInfo.authPerm = DLPFileAccess::READ_ONLY;
     }
 
+    userInfo.atomicDlpFileAccess = atomicDlpFileAccess;
     userInfo.permExpiryTime = VALID_TIME_STAMP;
     userInfo.authAccountType = CLOUD_ACCOUNT;
 
@@ -349,6 +372,7 @@ static void SerializeEveryoneInfo(const PermissionPolicy& policy, unordered_json
         bool read = false;
         bool edit = false;
         bool fullCtrl = false;
+        bool atomicCtrl = false;
 
         switch (policy.everyonePerm_) {
             case DLPFileAccess::READ_ONLY: {
@@ -365,6 +389,12 @@ static void SerializeEveryoneInfo(const PermissionPolicy& policy, unordered_json
                 fullCtrl = true;
                 break;
             }
+            case DLPFileAccess::ATOMIC_CONTROL: {
+                read = true;
+                edit = true;
+                atomicCtrl = true;
+                break;
+            }
             default:
                 break;
         }
@@ -373,6 +403,7 @@ static void SerializeEveryoneInfo(const PermissionPolicy& policy, unordered_json
         rightInfoJson[READ_INDEX] = read;
         rightInfoJson[EDIT_INDEX] = edit;
         rightInfoJson[FC_INDEX] = fullCtrl;
+        rightInfoJson[ATOMIC_INDEX] = atomicCtrl;
         unordered_json everyoneJson;
         everyoneJson[RIGHT_INDEX] = rightInfoJson;
         permInfoJson[EVERYONE_INDEX] = everyoneJson;
@@ -548,6 +579,7 @@ bool DlpPermissionSerializer::DeserializeEveryoneInfo(const unordered_json& poli
 
     bool edit = false;
     bool fullCtrl = false;
+    bool atomicCtrl = false;
 
     if (rightInfoJson.find(EDIT_INDEX) != rightInfoJson.end() && rightInfoJson.at(EDIT_INDEX).is_boolean()) {
         rightInfoJson.at(EDIT_INDEX).get_to(edit);
@@ -556,9 +588,14 @@ bool DlpPermissionSerializer::DeserializeEveryoneInfo(const unordered_json& poli
     if (rightInfoJson.find(FC_INDEX) != rightInfoJson.end() && rightInfoJson.at(FC_INDEX).is_boolean()) {
         rightInfoJson.at(FC_INDEX).get_to(fullCtrl);
     }
+    if (rightInfoJson.find(ATOMIC_INDEX) != rightInfoJson.end() && rightInfoJson.at(ATOMIC_INDEX).is_boolean()) {
+        rightInfoJson.at(ATOMIC_INDEX).get_to(atomicCtrl);
+    }
 
     if (fullCtrl) {
         policy.everyonePerm_ = DLPFileAccess::FULL_CONTROL;
+    } else if (atomicCtrl) {
+        policy.everyonePerm_ = DLPFileAccess::ATOMIC_CONTROL;
     } else if (edit) {
         policy.everyonePerm_ = DLPFileAccess::CONTENT_EDIT;
     } else {

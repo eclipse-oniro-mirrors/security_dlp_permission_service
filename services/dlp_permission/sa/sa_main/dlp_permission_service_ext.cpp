@@ -589,8 +589,7 @@ int32_t DlpPermissionService::CloseOpenedEnterpriseDlpFiles(const std::string& l
     return allUninstalled ? DLP_OK : DLP_PARSE_ERROR_BMS_ERROR;
 }
 
-int32_t DlpPermissionService::SetEnterpriseInfos(const std::string& uri, const std::string& fileId,
-    DLPFileAccess dlpFileAccess, const std::string& classificationLabel, const std::string& appIdentifier)
+int32_t DlpPermissionService::SetEnterpriseInfos(const EnterpriseInfo& enterpriseInfo)
 {
     CriticalHelper criticalHelper("SetEnterpriseInfos");
     auto observer = GetAppStateObserver(CurrentTaskState::SHORT_TASK);
@@ -603,27 +602,21 @@ int32_t DlpPermissionService::SetEnterpriseInfos(const std::string& uri, const s
         return DLP_SERVICE_ERROR_PERMISSION_DENY;
     }
 
-    if (uri.empty() || uri.size() > MAX_URI_SIZE ||
-        fileId.size() > MAX_FILEID_SIZE || appIdentifier.size() > MAX_APPID_SIZE ||
-        classificationLabel.size() > MAX_CLASSIFICATION_LABEL_SIZE ||
-        dlpFileAccess > DLPFileAccess::FULL_CONTROL || dlpFileAccess <= DLPFileAccess::NO_PERMISSION) {
+    if (enterpriseInfo.uri.empty() || enterpriseInfo.uri.size() > MAX_URI_SIZE ||
+        enterpriseInfo.fileId.size() > MAX_FILEID_SIZE || enterpriseInfo.appIdentifier.size() > MAX_APPID_SIZE ||
+        enterpriseInfo.classificationLabel.size() > MAX_CLASSIFICATION_LABEL_SIZE ||
+        enterpriseInfo.dlpFileAccess > DLPFileAccess::ATOMIC_CONTROL ||
+        enterpriseInfo.dlpFileAccess <= DLPFileAccess::NO_PERMISSION) {
         DLP_LOG_ERROR(LABEL, "input param is invalid");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
-    EnterpriseInfo enterpriseInfo;
-    enterpriseInfo.classificationLabel = classificationLabel;
-    enterpriseInfo.dlpFileAccess = dlpFileAccess;
-    enterpriseInfo.fileId = fileId;
-    enterpriseInfo.appIdentifier = appIdentifier;
-
-    bool res = observer->AddUriAndEnterpriseInfo(uri, enterpriseInfo);
+    bool res = observer->AddUriAndEnterpriseInfo(enterpriseInfo.uri, enterpriseInfo);
     if (!res) {
         DLP_LOG_ERROR(LABEL, "AddUriAndEnterpriseInfo error");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
 
-    DLP_LOG_INFO(LABEL, "SetEnterpriseInfos success with uri: %{private}s", uri.c_str());
     return DLP_OK;
 }
 } // namespace DlpPermission

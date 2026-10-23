@@ -928,7 +928,8 @@ int32_t DlpRawFile::RemoveDlpPermission(int32_t outPlainFileFd)
         return DLP_PARSE_ERROR_FILE_LINKING;
     }
 
-    if (authPerm_ != DLPFileAccess::FULL_CONTROL) {
+    if (authPerm_ != DLPFileAccess::FULL_CONTROL &&
+        !(authPerm_ == DLPFileAccess::ATOMIC_CONTROL && CanWrite())) {
         DLP_LOG_ERROR(LABEL, "check permission fail, remove dlp permission failed.");
         return DLP_PARSE_ERROR_FILE_READ_ONLY;
     }
@@ -1295,6 +1296,10 @@ int32_t DlpRawFile::DlpFileWrite(uint64_t offset, void* buf, uint32_t size)
         DLP_LOG_ERROR(LABEL, "Dlp file is readonly, write failed");
         return DLP_PARSE_ERROR_FILE_READ_ONLY;
     }
+    if (authPerm_ == DLPFileAccess::ATOMIC_CONTROL && !CanWrite()) {
+        DLP_LOG_ERROR(LABEL, "Dlp file ATOMIC_CONTROL without ATOMIC_EDIT, write failed");
+        return DLP_PARSE_ERROR_FILE_READ_ONLY;
+    }
     int32_t opFd = dlpFd_;
     if (buf == nullptr || size == 0 || size > DLP_FUSE_MAX_BUFFLEN ||
         (offset >= DLP_MAX_RAW_CONTENT_SIZE - size) ||
@@ -1340,6 +1345,10 @@ int32_t DlpRawFile::Truncate(uint64_t size)
  
     if (authPerm_ == DLPFileAccess::READ_ONLY) {
         DLP_LOG_ERROR(LABEL, "Dlp file is readonly, truncate failed");
+        return DLP_PARSE_ERROR_FILE_READ_ONLY;
+    }
+    if (authPerm_ == DLPFileAccess::ATOMIC_CONTROL && !CanWrite()) {
+        DLP_LOG_ERROR(LABEL, "Dlp file ATOMIC_CONTROL without ATOMIC_EDIT, truncate failed");
         return DLP_PARSE_ERROR_FILE_READ_ONLY;
     }
     int32_t opFd = dlpFd_;

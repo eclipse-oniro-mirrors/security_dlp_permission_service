@@ -100,8 +100,42 @@ static const uint32_t MAX_CERT_SIZE = 1024 * 1024 * 40 * 2;
 static const int32_t HIPREVIEW_SANDBOX_LOW_BOUND = 1000;
 static const int32_t LIBCESFWK_SERVICES_ID = 3299;
 constexpr int32_t PARSE_WAIT_TIME_OUT = 5;
+constexpr uint32_t ATOMIC_READ_BIT = 0x01;
+constexpr uint32_t ATOMIC_EDIT_BIT = 0x02;
+constexpr uint32_t ATOMIC_COPY_BIT = 0x04;
+constexpr uint32_t ATOMIC_SCREENSHOT_BIT = 0x08;
+constexpr uint32_t ATOMIC_PRINT_BIT = 0x10;
+constexpr uint32_t ATOMIC_APP_PERMISSION_BIT = 0x20;
+constexpr int32_t ATOMIC_SANDBOX_TYPE_READ_ONLY = 1;
+constexpr int32_t ATOMIC_SANDBOX_TYPE_CONTENT_EDIT = 2;
+constexpr int32_t ATOMIC_SANDBOX_TYPE_RESTRICTED_CONTENT_EDIT = 5;
+constexpr int32_t ATOMIC_SANDBOX_TYPE_RESTRICTED_READ_ONLY = 6;
 static AccountListenerCallback *g_accountListenerCallback = nullptr;
 static const std::vector<std::string> SANDBOX_WHITELIST = { HIPREVIEW_LOW, SETTINGS_BUNDLE_NAME };
+
+int32_t CalcAtomicSandboxType(uint32_t atomicDlpFileAccess)
+{
+    bool print = (atomicDlpFileAccess & ATOMIC_PRINT_BIT) != 0;
+    bool networkAndSelinux = (atomicDlpFileAccess & ATOMIC_APP_PERMISSION_BIT) != 0;
+    if (print && networkAndSelinux) {
+        return ATOMIC_SANDBOX_TYPE_CONTENT_EDIT;
+    } else if (!print && networkAndSelinux) {
+        return ATOMIC_SANDBOX_TYPE_READ_ONLY;
+    } else if (print && !networkAndSelinux) {
+        return ATOMIC_SANDBOX_TYPE_RESTRICTED_CONTENT_EDIT;
+    }
+    return ATOMIC_SANDBOX_TYPE_RESTRICTED_READ_ONLY;
+}
+ 
+void CalcAtomicSandboxParams(const InputSandboxInfo& input, int32_t& sandboxType, bool& isReadOnly)
+{
+    sandboxType = -1;
+    isReadOnly = input.dlpFileAccess == DLPFileAccess::READ_ONLY;
+    if (input.dlpFileAccess == DLPFileAccess::ATOMIC_CONTROL) {
+        sandboxType = CalcAtomicSandboxType(input.atomicDlpFileAccess);
+        isReadOnly = (input.atomicDlpFileAccess & ATOMIC_EDIT_BIT) == 0;
+    }
+}
 }
 REGISTER_SYSTEM_ABILITY_BY_ID(DlpPermissionService, SA_ID_DLP_PERMISSION_SERVICE, true);
 
@@ -752,6 +786,7 @@ static void FillSandboxInfoFromEnterpriseFileInfo(DlpSandboxInfo& sandboxInfo, c
     sandboxInfo.fileId = enterpriseInfo.fileId;
     sandboxInfo.appIdentifier = enterpriseInfo.appIdentifier;
     sandboxInfo.classificationLabel = enterpriseInfo.classificationLabel;
+    sandboxInfo.atomicDlpFileAccess = enterpriseInfo.atomicDlpFileAccess;
     DLP_LOG_DEBUG(LABEL, "label=%s",
         enterpriseInfo.classificationLabel.c_str());
 }
@@ -799,7 +834,7 @@ static bool FindMatchingSandbox(const RetentionSandBoxInfo& info, const GetAppIn
         return false;
     }
     auto setIter = info.docUriSet_.find(params.uri);
-    if (setIter != info.docUriSet_.end()) {
+    if (setIter != info.docUriSet_.end() && info.dlpFileAccess_ == params.dlpFileAccess) {
         DLP_LOG_INFO(LABEL, "FindMatchingSandbox is success in second stage");
         return true;
     }
@@ -839,7 +874,7 @@ static int32_t CheckWithInstallDlpSandbox(const std::string& bundleName, const s
         return DLP_SERVICE_ERROR_PERMISSION_DENY;
     }
     if (bundleName.empty() || bundleName.size() > MAX_BUNDLENAME_SIZE || uri.size() > MAX_URI_SIZE ||
-        dlpFileAccess > DLPFileAccess::FULL_CONTROL || dlpFileAccess <= DLPFileAccess::NO_PERMISSION) {
+        dlpFileAccess > DLPFileAccess::ATOMIC_CONTROL || dlpFileAccess <= DLPFileAccess::NO_PERMISSION) {
         DLP_LOG_ERROR(LABEL, "param is invalid");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
@@ -877,14 +912,23 @@ int32_t DlpPermissionService::InstallSandboxApp(const std::string& bundleName, D
     return DLP_OK;
 }
 
-static void previewBindInstall(DlpSandboxInfo& sandboxInfo, int32_t userId, DLPFileAccess dlpFileAccess)
+static void previewBindInstall(DlpSandboxInfo& sandboxInfo, int32_t userId, DLPFileAccess dlpFileAccess,
+    int32_t sandboxType = -1)
 {
     if (sandboxInfo.bindAppIndex <= HIPREVIEW_SANDBOX_LOW_BOUND && sandboxInfo.appIndex > HIPREVIEW_SANDBOX_LOW_BOUND) {
         AppExecFwk::BundleMgrClient bundleMgrClient;
-        DLPFileAccess permForBMS =
-            (dlpFileAccess == DLPFileAccess::READ_ONLY) ? DLPFileAccess::READ_ONLY : DLPFileAccess::CONTENT_EDIT;
+        int32_t permForBMS = sandboxType;
+        if (permForBMS < 0) {
+            permForBMS = static_cast<int32_t>(dlpFileAccess);
+            if (dlpFileAccess == DLPFileAccess::READ_ONLY) {
+                permForBMS = ATOMIC_SANDBOX_TYPE_READ_ONLY;
+            } else if (dlpFileAccess == DLPFileAccess::FULL_CONTROL ||
+                dlpFileAccess == DLPFileAccess::CONTENT_EDIT) {
+                permForBMS = ATOMIC_SANDBOX_TYPE_CONTENT_EDIT;
+            }
+        }
         int32_t bundleClientRes = bundleMgrClient.InstallSandboxApp(
-            HIPREVIEW_LOW, static_cast<int32_t>(permForBMS), userId, sandboxInfo.bindAppIndex);
+            HIPREVIEW_LOW, permForBMS, userId, sandboxInfo.bindAppIndex);
         if (bundleClientRes != DLP_OK) {
             DLP_LOG_ERROR(LABEL, "install sandbox %{public}s fail, %{public}d", HIPREVIEW_LOW, bundleClientRes);
         } else {
@@ -896,23 +940,32 @@ static void previewBindInstall(DlpSandboxInfo& sandboxInfo, int32_t userId, DLPF
     }
 }
  
-static int32_t InstallDlpSandboxExecute(bool& isNeedInstall, DLPFileAccess& dlpFileAccess,
-    const std::string& bundleName, int32_t& userId, DlpSandboxInfo& dlpSandboxInfo)
+static int32_t InstallDlpSandboxExecute(bool& isNeedInstall, const InputSandboxInfo& inputSandboxInfo,
+    DlpSandboxInfo& dlpSandboxInfo, int32_t sandboxType = -1)
 {
+    const std::string& bundleName = inputSandboxInfo.bundleName;
     DLP_LOG_INFO(LABEL, "InstallDlpSandbox %s, isNeedInstall=%d", bundleName.c_str(), isNeedInstall);
     if (isNeedInstall) {
         AppExecFwk::BundleMgrClient bundleMgrClient;
-        DLPFileAccess permForBMS =
-            (dlpFileAccess == DLPFileAccess::READ_ONLY) ? DLPFileAccess::READ_ONLY : DLPFileAccess::CONTENT_EDIT;
+        int32_t permForBMS = sandboxType;
+        if (permForBMS < 0) {
+            permForBMS = static_cast<int32_t>(inputSandboxInfo.dlpFileAccess);
+            if (inputSandboxInfo.dlpFileAccess == DLPFileAccess::READ_ONLY) {
+                permForBMS = ATOMIC_SANDBOX_TYPE_READ_ONLY;
+            } else if (inputSandboxInfo.dlpFileAccess == DLPFileAccess::FULL_CONTROL ||
+                inputSandboxInfo.dlpFileAccess == DLPFileAccess::CONTENT_EDIT) {
+                permForBMS = ATOMIC_SANDBOX_TYPE_CONTENT_EDIT;
+            }
+        }
         int32_t bundleClientRes = bundleMgrClient.InstallSandboxApp(bundleName,
-            static_cast<int32_t>(permForBMS), userId, dlpSandboxInfo.appIndex);
+            permForBMS, inputSandboxInfo.userId, dlpSandboxInfo.appIndex);
         if (bundleClientRes != DLP_OK) {
             DLP_LOG_ERROR(LABEL, "install sandbox %{public}s fail, %{public}d", bundleName.c_str(), bundleClientRes);
             return DLP_SERVICE_ERROR_INSTALL_SANDBOX_FAIL;
         }
     }
     if (bundleName == HIPREVIEW_HIGH) {
-        previewBindInstall(dlpSandboxInfo, userId, dlpFileAccess);
+        previewBindInstall(dlpSandboxInfo, inputSandboxInfo.userId, inputSandboxInfo.dlpFileAccess, sandboxType);
         DLP_LOG_INFO(LABEL,
             "InstallDlpSandbox %s, index %d, bindindex %d",
             bundleName.c_str(), dlpSandboxInfo.appIndex, dlpSandboxInfo.bindAppIndex);
@@ -944,12 +997,15 @@ int32_t DlpPermissionService::HandleEnterpriseInstallDlpSandbox(SandboxInfo& san
         return DLP_OK;
     }
 
-    bool isReadOnly = inputSandboxInfo.dlpFileAccess == DLPFileAccess::READ_ONLY;
+    int32_t sandboxType = -1;
+    bool isReadOnly = false;
+    CalcAtomicSandboxParams(inputSandboxInfo, sandboxType, isReadOnly);
     bool isNeedInstall = true;
     DlpSandboxInfo dlpSandboxInfo;
     int32_t res = DLP_OK;
 
-    GetAppIndexParams params = {inputSandboxInfo.bundleName, isReadOnly, inputSandboxInfo.uri, false};
+    GetAppIndexParams params = {inputSandboxInfo.bundleName, isReadOnly, inputSandboxInfo.uri, false,
+        inputSandboxInfo.dlpFileAccess};
     res = GetAppIndexFromRetentionInfo(params, dlpSandboxInfo, isNeedInstall);
     if (res != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "GetAppIndexFromRetentionInfo fail, %{public}d", res);
@@ -962,8 +1018,7 @@ int32_t DlpPermissionService::HandleEnterpriseInstallDlpSandbox(SandboxInfo& san
         isNeedInstall = (dlpSandboxInfo.appIndex != -1) ? false : true;
     }
 
-    res = InstallDlpSandboxExecute(isNeedInstall, inputSandboxInfo.dlpFileAccess,
-        inputSandboxInfo.bundleName, inputSandboxInfo.userId, dlpSandboxInfo);
+    res = InstallDlpSandboxExecute(isNeedInstall, inputSandboxInfo, dlpSandboxInfo, sandboxType);
     if (res != DLP_OK) {
         observer->EraseEnterpriseInfoByUri(inputSandboxInfo.path, enterpriseInfo.fileId);
         return res;
@@ -999,7 +1054,7 @@ int32_t DlpPermissionService::HandleInstallDlpSandbox(SandboxInfo& sandboxInfo,
     bool isNeedInstall = true;
     DlpSandboxInfo dlpSandboxInfo;
     GetAppIndexParams params = {inputSandboxInfo.bundleName, isReadOnly, inputSandboxInfo.uri,
-        fileInfo.isNotOwnerAndReadOnce};
+        fileInfo.isNotOwnerAndReadOnce, inputSandboxInfo.dlpFileAccess};
     int32_t res = GetAppIndexFromRetentionInfo(params, dlpSandboxInfo, isNeedInstall);
     if (res != DLP_OK) {
         DLP_LOG_ERROR(LABEL, "GetAppIndexFromRetentionInfo fail, %{public}d", res);
@@ -1011,8 +1066,7 @@ int32_t DlpPermissionService::HandleInstallDlpSandbox(SandboxInfo& sandboxInfo,
         isNeedInstall = (dlpSandboxInfo.appIndex != -1) ? false : true;
     }
 
-    res = InstallDlpSandboxExecute(isNeedInstall, inputSandboxInfo.dlpFileAccess,
-        inputSandboxInfo.bundleName, inputSandboxInfo.userId, dlpSandboxInfo);
+    res = InstallDlpSandboxExecute(isNeedInstall, inputSandboxInfo, dlpSandboxInfo);
     if (res != DLP_OK) {
         return res;
     }
@@ -1051,6 +1105,7 @@ int32_t DlpPermissionService::InstallDlpSandbox(const std::string& bundleName, D
 
     EnterpriseInfo enterpriseInfo;
     if (observer->GetEnterpriseInfoByUri(path, enterpriseInfo)) {
+        inputSandboxInfo.atomicDlpFileAccess = enterpriseInfo.atomicDlpFileAccess;
         return HandleEnterpriseInstallDlpSandbox(sandboxInfo, inputSandboxInfo, enterpriseInfo);
     }
 
@@ -1271,7 +1326,7 @@ int32_t DlpPermissionService::QueryDlpFileCopyableByTokenId(bool& copyable, uint
     return res;
 }
 
-static ActionFlags GetDlpActionFlag(DLPFileAccess dlpFileAccess)
+static ActionFlags GetDlpActionFlag(DLPFileAccess dlpFileAccess, uint32_t atomicDlpFileAccess = 0)
 {
     switch (dlpFileAccess) {
         case DLPFileAccess::READ_ONLY: {
@@ -1285,6 +1340,26 @@ static ActionFlags GetDlpActionFlag(DLPFileAccess dlpFileAccess)
             return static_cast<ActionFlags>(ACTION_VIEW | ACTION_SAVE | ACTION_SAVE_AS | ACTION_EDIT |
                 ACTION_SCREEN_CAPTURE | ACTION_SCREEN_SHARE | ACTION_SCREEN_RECORD | ACTION_COPY | ACTION_PRINT |
                 ACTION_EXPORT | ACTION_PERMISSION_CHANGE);
+        }
+        case DLPFileAccess::ATOMIC_CONTROL: {
+            ActionFlags flags = ACTION_INVALID;
+            if ((atomicDlpFileAccess & ATOMIC_READ_BIT) != 0) {
+                flags = static_cast<ActionFlags>(flags | ACTION_VIEW);
+            }
+            if ((atomicDlpFileAccess & ATOMIC_EDIT_BIT) != 0) {
+                flags = static_cast<ActionFlags>(flags | ACTION_VIEW | ACTION_SAVE | ACTION_SAVE_AS | ACTION_EDIT);
+            }
+            if ((atomicDlpFileAccess & ATOMIC_SCREENSHOT_BIT) != 0) {
+                flags = static_cast<ActionFlags>(flags | ACTION_SCREEN_CAPTURE |
+                    ACTION_SCREEN_SHARE | ACTION_SCREEN_RECORD);
+            }
+            if ((atomicDlpFileAccess & ATOMIC_COPY_BIT) != 0) {
+                flags = static_cast<ActionFlags>(flags | ACTION_COPY);
+            }
+            if ((atomicDlpFileAccess & ATOMIC_PRINT_BIT) != 0) {
+                flags = static_cast<ActionFlags>(flags | ACTION_PRINT | ACTION_EXPORT);
+            }
+            return flags;
         }
         default:
             return ACTION_INVALID;
@@ -1308,9 +1383,20 @@ int32_t DlpPermissionService::QueryDlpFileAccess(DLPPermissionInfoParcel& permIn
     }
     int32_t uid = IPCSkeleton::GetCallingUid();
     DLPFileAccess dlpFileAccess = DLPFileAccess::NO_PERMISSION;
-    int32_t res = observer->QueryDlpFileAccessByUid(dlpFileAccess, uid);
+    uint32_t atomicDlpFileAccess = 0;
+    int32_t res = observer->QueryDlpFileAccessByUid(dlpFileAccess, atomicDlpFileAccess, uid);
+    DLPFileAccess originalDlpFileAccess = dlpFileAccess;
+    if (dlpFileAccess == DLPFileAccess::ATOMIC_CONTROL) {
+        if ((atomicDlpFileAccess & ATOMIC_EDIT_BIT) != 0) {
+            dlpFileAccess = DLPFileAccess::FULL_CONTROL;
+        } else if ((atomicDlpFileAccess & ATOMIC_READ_BIT) != 0) {
+            dlpFileAccess = DLPFileAccess::READ_ONLY;
+        } else {
+            dlpFileAccess = DLPFileAccess::NO_PERMISSION;
+        }
+    }
     permInfoParcel.permInfo_.dlpFileAccess = dlpFileAccess;
-    permInfoParcel.permInfo_.flags = GetDlpActionFlag(dlpFileAccess);
+    permInfoParcel.permInfo_.flags = GetDlpActionFlag(originalDlpFileAccess, atomicDlpFileAccess);
     return res;
 }
 

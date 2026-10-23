@@ -35,6 +35,7 @@ static const std::string ACCOUNT_TYPE = "accountType";
 static const std::string READ_INDEX = "read";
 static const std::string EDIT_INDEX = "edit";
 static const std::string FC_INDEX = "fullCtrl";
+static const std::string ATOMIC_INDEX = "atomicCtrl";
 static const std::string RIGHT_INDEX = "right";
 static const std::string USER_PERM_EXPIRY = "permExpiryTime";
 static const std::string OWNER_ACCOUNT = "ownerAccount";
@@ -110,6 +111,7 @@ static void SerializePermInfo(DLPFileAccess perm, unordered_json& rightInfoJson)
     bool read = false;
     bool edit = false;
     bool fullCtrl = false;
+    bool atomicCtrl = false;
     switch (perm) {
         case DLPFileAccess::READ_ONLY:
             read = true;
@@ -122,26 +124,39 @@ static void SerializePermInfo(DLPFileAccess perm, unordered_json& rightInfoJson)
             edit = true;
             fullCtrl = true;
             break;
+        case DLPFileAccess::ATOMIC_CONTROL:
+            read = true;
+            edit = true;
+            atomicCtrl = true;
+            break;
         default:
             break;
     }
     rightInfoJson[READ_INDEX] = read;
     rightInfoJson[EDIT_INDEX] = edit;
     rightInfoJson[FC_INDEX] = fullCtrl;
+    rightInfoJson[ATOMIC_INDEX] = atomicCtrl;
 }
 
 static DLPFileAccess DeserializePermInfo(const unordered_json& rightInfoJson)
 {
     bool edit = false;
     bool fullCtrl = false;
+    bool atomicCtrl = false;
     if (rightInfoJson.contains(EDIT_INDEX) && rightInfoJson.at(EDIT_INDEX).is_boolean()) {
         rightInfoJson.at(EDIT_INDEX).get_to(edit);
     }
     if (rightInfoJson.contains(FC_INDEX) && rightInfoJson.at(FC_INDEX).is_boolean()) {
         rightInfoJson.at(FC_INDEX).get_to(fullCtrl);
     }
+    if (rightInfoJson.contains(ATOMIC_INDEX) && rightInfoJson.at(ATOMIC_INDEX).is_boolean()) {
+        rightInfoJson.at(ATOMIC_INDEX).get_to(atomicCtrl);
+    }
     if (fullCtrl) {
         return DLPFileAccess::FULL_CONTROL;
+    }
+    if (atomicCtrl) {
+        return DLPFileAccess::ATOMIC_CONTROL;
     }
     if (edit) {
         return DLPFileAccess::CONTENT_EDIT;

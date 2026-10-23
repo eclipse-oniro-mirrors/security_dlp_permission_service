@@ -73,6 +73,7 @@ typedef struct AuthUserInfo {
     DLPFileAccess authPerm = DLPFileAccess::NO_PERMISSION;
     uint64_t permExpiryTime = 0;
     DlpAccountType authAccountType = INVALID_ACCOUNT;
+    uint32_t atomicDlpFileAccess = 0;
 } AuthUserInfo;
 
 typedef struct SandboxInfo : public Parcelable {
@@ -92,6 +93,18 @@ typedef struct FileInfo : public Parcelable {
     bool Marshalling(Parcel &parcel) const;
     static FileInfo* Unmarshalling(Parcel &data);
 } FileInfo;
+
+struct EnterpriseInfo : public Parcelable {
+    std::string uri;
+    std::string classificationLabel = "";
+    DLPFileAccess dlpFileAccess = DLPFileAccess::NO_PERMISSION;
+    std::string fileId = "";
+    std::string appIdentifier = "";
+    uint32_t atomicDlpFileAccess = 0;
+    int32_t uid = -1;
+    bool Marshalling(Parcel &parcel) const override;
+    static EnterpriseInfo* Unmarshalling(Parcel &data);
+};
 
 enum ActionType : uint32_t {
     NOTOPEN = 0,

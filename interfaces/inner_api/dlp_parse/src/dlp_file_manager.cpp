@@ -735,8 +735,18 @@ static int32_t SetEnterpriseInfoForDlpFile(int32_t dlpFileFd, std::shared_ptr<Dl
             return res;
         }
         DLPFileAccess dlpFileAccess = filePtr->GetAuthPerm();
-        res = DlpPermissionKit::SetEnterpriseInfos(
-            uri, certParcel->fileId, dlpFileAccess, policy.classificationLabel_, policy.appIdentifier_);
+        uint32_t atomicDlpFileAccess = 0;
+        if (!policy.authUsers_.empty()) {
+            atomicDlpFileAccess = policy.authUsers_[0].atomicDlpFileAccess;
+        }
+        EnterpriseInfo enterpriseInfo;
+        enterpriseInfo.uri = uri;
+        enterpriseInfo.classificationLabel = policy.classificationLabel_;
+        enterpriseInfo.dlpFileAccess = dlpFileAccess;
+        enterpriseInfo.fileId = certParcel->fileId;
+        enterpriseInfo.appIdentifier = policy.appIdentifier_;
+        enterpriseInfo.atomicDlpFileAccess = atomicDlpFileAccess;
+        res = DlpPermissionKit::SetEnterpriseInfos(enterpriseInfo);
         if (res != DLP_OK) {
             DLP_LOG_ERROR(LABEL, "SetEnterpriseInfos fail, errno=%d", res);
             return res;

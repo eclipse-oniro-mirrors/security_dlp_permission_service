@@ -421,7 +421,7 @@ static bool ReadParcel(Parcel& in, DlpPolicyParcel* policyParcel)
         DLP_LOG_ERROR(LABEL, "Read everyonePerm_ fail");
         return false;
     }
-    if (everyonePerm > static_cast<uint32_t>(DLPFileAccess::FULL_CONTROL)) {
+    if (everyonePerm > static_cast<uint32_t>(DLPFileAccess::ATOMIC_CONTROL)) {
         DLP_LOG_ERROR(LABEL, "Invalid everyonePerm: %{public}u", everyonePerm);
         return false;
     }
@@ -435,7 +435,7 @@ static bool ReadParcel(Parcel& in, DlpPolicyParcel* policyParcel)
         DLP_LOG_ERROR(LABEL, "Read owner account type fail");
         return false;
     }
-    if (perm > static_cast<uint32_t>(DLPFileAccess::FULL_CONTROL)) {
+    if (perm > static_cast<uint32_t>(DLPFileAccess::ATOMIC_CONTROL)) {
         DLP_LOG_ERROR(LABEL, "Invalid perm: %{public}u", perm);
         return false;
     }

@@ -19,7 +19,8 @@ enum DLPFileAccess: unsigned int {
     NO_PERMISSION = 0,
     READ_ONLY = 1,
     CONTENT_EDIT = 2,
-    FULL_CONTROL = 3
+    FULL_CONTROL = 3,
+    ATOMIC_CONTROL = 4
 };
 
 enum SandBoxExternalAuthorType {

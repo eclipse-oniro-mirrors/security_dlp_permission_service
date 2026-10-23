@@ -52,7 +52,7 @@ DLPPermissionInfoParcel* DLPPermissionInfoParcel::Unmarshalling(Parcel& in)
         permInfoParcel = nullptr;
         return nullptr;
     }
-    if (res > static_cast<uint32_t>(DLPFileAccess::FULL_CONTROL)) {
+    if (res > static_cast<uint32_t>(DLPFileAccess::ATOMIC_CONTROL)) {
         DLP_LOG_ERROR(LABEL, "Invalid dlpFileAccess: %{public}u", res);
         delete permInfoParcel;
         permInfoParcel = nullptr;

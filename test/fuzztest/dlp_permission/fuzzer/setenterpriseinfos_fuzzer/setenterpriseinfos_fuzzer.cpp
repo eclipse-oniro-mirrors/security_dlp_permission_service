@@ -50,7 +50,13 @@ static void FuzzTest(const uint8_t* data, size_t size)
         fdp.ConsumeIntegralInRange<int32_t>(MIN_DLPFILEACCESS, MAX_DLPFILEACCESS));
     std::string classificationLabel = fdp.ConsumeBytesAsString(size / 4);
     std::string appIdentifier = fdp.ConsumeRemainingBytesAsString();
-    DlpPermissionKit::SetEnterpriseInfos(uri, fileId, dlpFileAccess, classificationLabel, appIdentifier);
+    EnterpriseInfo enterpriseInfo;
+    enterpriseInfo.uri = uri;
+    enterpriseInfo.fileId = fileId;
+    enterpriseInfo.dlpFileAccess = dlpFileAccess;
+    enterpriseInfo.classificationLabel = classificationLabel;
+    enterpriseInfo.appIdentifier = appIdentifier;
+    DlpPermissionKit::SetEnterpriseInfos(enterpriseInfo);
 }
 
 bool SetEnterpriseInfosFuzzTest(const uint8_t* data, size_t size)

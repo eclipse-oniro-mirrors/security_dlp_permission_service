@@ -25,6 +25,7 @@ sequenceable retention_sandbox_info..OHOS.Security.DlpPermission.RetentionSandBo
 sequenceable visited_dlp_file_info..OHOS.Security.DlpPermission.VisitedDLPFileInfo;
 sequenceable permission_policy..OHOS.Security.DlpPermission.SandboxInfo;
 sequenceable permission_policy..OHOS.Security.DlpPermission.FileInfo;
+sequenceable permission_policy..OHOS.Security.DlpPermission.EnterpriseInfo;
 interface OHOS.Security.DlpPermission.IDlpPermissionCallback;
 
 interface OHOS.Security.DlpPermission.IDlpPermissionService {
@@ -85,6 +86,5 @@ interface OHOS.Security.DlpPermission.IDlpPermissionService {
     void SetFileInfo([in] String uri, [in] FileInfo fileInfo);
     void QueryOpenedEnterpriseDlpFiles([in] String label, [out] String[] resultUris);
     void CloseOpenedEnterpriseDlpFiles([in] String label);
-    void SetEnterpriseInfos([in] String uri, [in] String fileId, [in] DLPFileAccess dlpFileAccesss,
-        [in] String classificationLabel, [in] String appIdentifier);
+    void SetEnterpriseInfos([in] EnterpriseInfo enterpriseInfo);
 }

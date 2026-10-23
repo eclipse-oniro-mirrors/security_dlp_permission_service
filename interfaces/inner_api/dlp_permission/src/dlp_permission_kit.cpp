@@ -318,11 +318,9 @@ int32_t DlpPermissionKit::CloseOpenedEnterpriseDlpFiles(const std::string& label
     return DlpPermissionClient::GetInstance().CloseOpenedEnterpriseDlpFiles(label);
 }
 
-int32_t DlpPermissionKit::SetEnterpriseInfos(const std::string& uri, const std::string& fileId,
-    DLPFileAccess dlpFileAccess, const std::string& classificationLabel, const std::string& appIdentifier)
+int32_t DlpPermissionKit::SetEnterpriseInfos(const EnterpriseInfo& enterpriseInfo)
 {
-    return DlpPermissionClient::GetInstance().SetEnterpriseInfos(uri, fileId, dlpFileAccess,
-        classificationLabel, appIdentifier);
+    return DlpPermissionClient::GetInstance().SetEnterpriseInfos(enterpriseInfo);
 }
 
 }  // namespace DlpPermission

@@ -46,7 +46,8 @@ const uint32_t FIRST = 1;
 } // namespace
 
 DlpFile::DlpFile(int32_t dlpFd, const std::string &realType)
-    : dlpFd_(dlpFd), realType_(realType), isFuseLink_(false), authPerm_(DLPFileAccess::READ_ONLY)
+    : dlpFd_(dlpFd), realType_(realType), isFuseLink_(false), authPerm_(DLPFileAccess::READ_ONLY),
+      atomicDlpFileAccess_(0)
 {
     cert_.data = nullptr;
     cert_.size = 0;
@@ -191,6 +192,7 @@ bool DlpFile::UpdateDlpFilePermission()
             return false;
         }
         authPerm_ = policy_.authUsers_[0].authPerm;
+        atomicDlpFileAccess_ = policy_.authUsers_[0].atomicDlpFileAccess;
         return true;
     } else if (policy_.ownerAccountType_ == DOMAIN_ACCOUNT) {
         if (GetDomainAccountName(accountName) != DLP_OK) {
