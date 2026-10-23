@@ -73,6 +73,7 @@ typedef struct AuthUserInfo {
     DLPFileAccess authPerm = DLPFileAccess::NO_PERMISSION;
     uint64_t permExpiryTime = 0;
     DlpAccountType authAccountType = INVALID_ACCOUNT;
+    uint32_t atomicDlp
 } AuthUserInfo;
 
 typedef struct SandboxInfo : public Parcelable {
