@@ -44,6 +44,7 @@ public:
     std::string appId = "";
     std::string classificationLabel = "";
     std::string appIdentifier = "";
+    uint32_t atomicDlpFileAccess = 0;
 };
 }  // namespace DlpPermission
 }  // namespace Security

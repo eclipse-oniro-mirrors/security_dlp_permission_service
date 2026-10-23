@@ -199,7 +199,7 @@ int32_t DlpPermissionClient::InstallDlpSandbox(const std::string& bundleName, DL
     int32_t userId, SandboxInfo& sandboxInfo, const std::string& uri)
 {
     if (bundleName.empty() ||
-        dlpFileAccess > DLPFileAccess::FULL_CONTROL || dlpFileAccess <= DLPFileAccess::NO_PERMISSION || uri.empty() ||
+        dlpFileAccess > DLPFileAccess::ATOMIC_CONTROL || dlpFileAccess <= DLPFileAccess::NO_PERMISSION || uri.empty() ||
         userId < 0) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
@@ -814,11 +814,11 @@ int32_t DlpPermissionClient::CloseOpenedEnterpriseDlpFiles(const std::string& la
     return proxy->CloseOpenedEnterpriseDlpFiles(label);
 }
 
-int32_t DlpPermissionClient::SetEnterpriseInfos(const std::string& uri, const std::string& fileId,
-    DLPFileAccess dlpFileAccess, const std::string& classificationLabel, const std::string& appIdentifier)
+int32_t DlpPermissionClient::SetEnterpriseInfos(const EnterpriseInfo& enterpriseInfo)
 {
-    if (dlpFileAccess > DLPFileAccess::FULL_CONTROL || dlpFileAccess <= DLPFileAccess::NO_PERMISSION
-        || uri.empty() || fileId.empty() || appIdentifier.empty()) {
+    if (enterpriseInfo.dlpFileAccess > DLPFileAccess::ATOMIC_CONTROL ||
+        enterpriseInfo.dlpFileAccess <= DLPFileAccess::NO_PERMISSION ||
+        enterpriseInfo.uri.empty() || enterpriseInfo.fileId.empty() || enterpriseInfo.appIdentifier.empty()) {
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
     auto proxy = GetProxy(true);
@@ -826,7 +826,7 @@ int32_t DlpPermissionClient::SetEnterpriseInfos(const std::string& uri, const st
         DLP_LOG_ERROR(LABEL, "Proxy is null");
         return DLP_SERVICE_ERROR_SERVICE_NOT_EXIST;
     }
-    return proxy->SetEnterpriseInfos(uri, fileId, dlpFileAccess, classificationLabel, appIdentifier);
+    return proxy->SetEnterpriseInfos(enterpriseInfo);
 }
 }  // namespace DlpPermission
 }  // namespace Security

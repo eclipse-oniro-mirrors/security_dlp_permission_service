@@ -206,6 +206,38 @@ public:
         return authPerm_;
     };
 
+    uint32_t GetAtomicDlpFileAccess()
+    {
+        std::lock_guard<std::recursive_mutex> lock(opMutex_);
+        return atomicDlpFileAccess_;
+    };
+ 
+    static constexpr uint32_t ATOMIC_READ_BIT = 0x01;
+    static constexpr uint32_t ATOMIC_EDIT_BIT = 0x02;
+ 
+    bool CanRead()
+    {
+        if (authPerm_ == DLPFileAccess::READ_ONLY) {
+            return true;
+        }
+        if (authPerm_ == DLPFileAccess::ATOMIC_CONTROL) {
+            return ((atomicDlpFileAccess_ & ATOMIC_READ_BIT) ||
+                    (atomicDlpFileAccess_ & ATOMIC_EDIT_BIT)) != 0;
+        }
+        return true;
+    };
+ 
+    bool CanWrite()
+    {
+        if (authPerm_ == DLPFileAccess::READ_ONLY) {
+            return false;
+        }
+        if (authPerm_ == DLPFileAccess::ATOMIC_CONTROL) {
+            return (atomicDlpFileAccess_ & ATOMIC_EDIT_BIT) != 0;
+        }
+        return true;
+    };
+
     void SetAppId(std::string appId)
     {
         appId_ = appId;
@@ -317,6 +349,7 @@ private:
     std::string realType_;
     bool isFuseLink_;
     DLPFileAccess authPerm_;
+    uint32_t atomicDlpFileAccess_;
     int32_t encDataFd_;
 
     struct DlpBlob cert_;

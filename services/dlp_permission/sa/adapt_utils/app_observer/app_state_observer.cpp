@@ -47,6 +47,7 @@ const std::string FLAG_OF_MINI = "svr";
 static const std::string TASK_ID = "dlpPermissionServiceUnloadTask";
 constexpr int32_t SA_SHORT_LIFT_TIME = 60 * 1000; // SA life time for short task, in 60 seconds
 constexpr int32_t SA_LONG_LIFT_TIME = 120 * 1000; // SA life time for long task, in 120 seconds
+static constexpr uint32_t ATOMIC_COPY_BIT = 0x04;
 }
 
 AppStateObserver::AppStateObserver()
@@ -456,6 +457,10 @@ bool AppStateObserver::GetOpeningEnterpriseSandboxInfo(SandboxInfo& sandboxInfo,
             appInfo.classificationLabel != enterpriseInfo.classificationLabel) {
             continue;
         }
+        if (appInfo.dlpFileAccess == DLPFileAccess::ATOMIC_CONTROL &&
+            appInfo.atomicDlpFileAccess != enterpriseInfo.atomicDlpFileAccess) {
+            continue;
+        }
         return FillSandboxInfoIfProcessRunning(appInfo, sandboxInfo);
     }
     return false;
@@ -682,6 +687,8 @@ static bool IsCopyable(DLPFileAccess dlpFileAccess)
             return true;
         case DLPFileAccess::FULL_CONTROL:
             return true;
+        case DLPFileAccess::ATOMIC_CONTROL:
+            return (atomicDlpFileAccess & ATOMIC_COPY_BIT) != 0;
         default:
             return false;
     }
@@ -699,24 +706,28 @@ int32_t AppStateObserver::QueryDlpFileCopyableByTokenId(bool& copyable, uint32_t
     }
     inDlpsandbox = true;
     DLPFileAccess dlpFileAccess = DLPFileAccess::NO_PERMISSION;
-    int32_t res = QueryDlpFileAccessByUid(dlpFileAccess, uid);
+    uint32_t atomicDlpFileAccess = 0;
+    int32_t res = QueryDlpFileAccessByUid(dlpFileAccess, atomicDlpFileAccess, uid);
     if (res != DLP_OK) {
         copyable = false;
     } else {
-        copyable = IsCopyable(dlpFileAccess);
+        copyable = IsCopyable(dlpFileAccess, atomicDlpFileAccess);
     }
     return res;
 }
 
-int32_t AppStateObserver::QueryDlpFileAccessByUid(DLPFileAccess& dlpFileAccess, int32_t uid)
+int32_t AppStateObserver::QueryDlpFileAccessByUid(DLPFileAccess& dlpFileAccess, uint32_t& atomicDlpFileAccess,
+    int32_t uid)
 {
     DlpSandboxInfo appInfo;
     if (!GetSandboxInfo(uid, appInfo) || appInfo.dlpFileAccess == DLPFileAccess::NO_PERMISSION) {
         DLP_LOG_ERROR(LABEL, "current uid %{public}d is not a sandbox app", uid);
         dlpFileAccess = DLPFileAccess::NO_PERMISSION;
+        atomicDlpFileAccess = 0;
         return DLP_SERVICE_ERROR_APPOBSERVER_ERROR;
     }
     dlpFileAccess = appInfo.dlpFileAccess;
+    atomicDlpFileAccess = appInfo.atomicDlpFileAccess;
     DLP_LOG_INFO(LABEL, "current dlp sandbox %{public}s%{public}d's perm type is %{public}d",
         appInfo.bundleName.c_str(), appInfo.appIndex, dlpFileAccess);
     return DLP_OK;
@@ -739,9 +750,16 @@ void AppStateObserver::DumpSandbox(int fd)
     dprintf(fd, "DlpSandbox:\n");
     for (auto iter = sandboxInfo_.begin(); iter != sandboxInfo_.end(); iter++) {
         DlpSandboxInfo& appInfo = iter->second;
+        const char* permStr = "Unknown";
+        switch (appInfo.dlpFileAccess) {
+            case DLPFileAccess::READ_ONLY: permStr = "ReadOnly"; break;
+            case DLPFileAccess::CONTENT_EDIT: permStr = "ContentEdit"; break;
+            case DLPFileAccess::FULL_CONTROL: permStr = "FullControl"; break;
+            case DLPFileAccess::ATOMIC_CONTROL: permStr = "AtomicControl"; break;
+            default: break;
+        }
         dprintf(fd, "    userId:%d;bundleName:%s;sandboxIndex:%d;dlpFileAccess:%s\n",
-            appInfo.userId, appInfo.bundleName.c_str(), appInfo.appIndex,
-            appInfo.dlpFileAccess == DLPFileAccess::READ_ONLY ? "ReadOnly" : "FullControl");
+            appInfo.userId, appInfo.bundleName.c_str(), appInfo.appIndex, permStr);
     }
 }
 

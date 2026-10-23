@@ -53,22 +53,16 @@ static void FuzzTest(const uint8_t* data, size_t size)
     std::string classificationLabel = fdp.ConsumeBytesAsString(size / 4);
     std::string appIdentifier = fdp.ConsumeRemainingBytesAsString();
 
+    EnterpriseInfo enterpriseInfo;
+    enterpriseInfo.uri = uri;
+    enterpriseInfo.fileId = fileId;
+    enterpriseInfo.dlpFileAccess = dlpFileAccess;
+    enterpriseInfo.classificationLabel = classificationLabel;
+    enterpriseInfo.appIdentifier = appIdentifier;
+
     MessageParcel datas;
     datas.WriteInterfaceToken(IDlpPermissionService::GetDescriptor());
-    if (!datas.WriteString(uri)) {
-        return;
-    }
-    if (!datas.WriteString(fileId)) {
-        return;
-    }
-    uint32_t type = static_cast<uint32_t>(dlpFileAccess);
-    if (!datas.WriteUint32(type)) {
-        return;
-    }
-    if (!datas.WriteString(classificationLabel)) {
-        return;
-    }
-    if (!datas.WriteString(appIdentifier)) {
+    if (!enterpriseInfo.Marshalling(datas)) {
         return;
     }
 

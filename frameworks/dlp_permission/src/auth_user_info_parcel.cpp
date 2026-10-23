@@ -41,6 +41,10 @@ bool AuthUserInfoParcel::Marshalling(Parcel& out) const
         DLP_LOG_ERROR(LABEL, "Write auth user account type fail");
         return false;
     }
+    if (!(out.WriteUint32(this->authUserInfo_.atomicDlpFileAccess))) {
+        DLP_LOG_ERROR(LABEL, "Write auth user atomic dlp file access fail");
+        return false;
+    }
     return true;
 }
 
@@ -65,7 +69,7 @@ AuthUserInfoParcel* AuthUserInfoParcel::Unmarshalling(Parcel& in)
         authUserInfoParcel = nullptr;
         return nullptr;
     }
-    if (res > static_cast<uint32_t>(DLPFileAccess::FULL_CONTROL)) {
+    if (res > static_cast<uint32_t>(DLPFileAccess::ATOMIC_CONTROL)) {
         DLP_LOG_ERROR(LABEL, "Invalid auth user perm: %{public}u", res);
         delete authUserInfoParcel;
         authUserInfoParcel = nullptr;
@@ -92,6 +96,13 @@ AuthUserInfoParcel* AuthUserInfoParcel::Unmarshalling(Parcel& in)
         return nullptr;
     }
     authUserInfoParcel->authUserInfo_.authAccountType = static_cast<DlpAccountType>(res);
+
+    if (!(in.ReadUint32(authUserInfoParcel->authUserInfo_.atomicDlpFileAccess))) {
+        DLP_LOG_ERROR(LABEL, "Read auth user atomic dlp file access fail");
+        delete authUserInfoParcel;
+        authUserInfoParcel = nullptr;
+        return nullptr;
+    }
 
     return authUserInfoParcel;
 }

@@ -46,6 +46,8 @@ static const std::string EDIT_INDEX = "edit";
 static const std::string ENC_ACCOUNT_TYPE = "accountType";
 static const std::string EVERYONE_INDEX = "everyone";
 static const std::string FC_INDEX = "fullCtrl";
+static const std::string ATOMIC_INDEX = "atomicCtrl";
+static const std::string ATOMIC_DLP_FILE_ACCESS_INDEX = "atomicDlpFileAccess";
 static const std::string NEED_ONLINE = "needOnline";
 static const std::string OWNER_ACCOUNT_NAME = "ownerAccountName";
 static const std::string OWNER_ACCOUNT = "ownerAccount";
@@ -120,11 +122,12 @@ static int32_t PrepareWorkDir(const std::string& path)
     return DLP_OK;
 }
 
-static void SerializePermInfo(DLPFileAccess perm, json& rightInfoJson)
+static void SerializePermInfo(DLPFileAccess perm, uint32_t atomicDlpFileAccess, json& rightInfoJson)
 {
     bool read = false;
     bool edit = false;
     bool fullCtrl = false;
+    bool atomicCtrl = false;
 
     switch (perm) {
         case DLPFileAccess::READ_ONLY: {
@@ -141,19 +144,27 @@ static void SerializePermInfo(DLPFileAccess perm, json& rightInfoJson)
             fullCtrl = true;
             break;
         }
+        case DLPFileAccess::ATOMIC_CONTROL: {
+            read = true;
+            edit = true;
+            atomicCtrl = true;
+            break;
+        }
         default:
             break;
     }
     rightInfoJson[READ_INDEX] = read;
     rightInfoJson[EDIT_INDEX] = edit;
     rightInfoJson[FC_INDEX] = fullCtrl;
+    rightInfoJson[ATOMIC_INDEX] = atomicCtrl;
+    rightInfoJson[ATOMIC_DLP_FILE_ACCESS_INDEX] = atomicDlpFileAccess;
 }
 
 static void SerializeAuthUserList(const std::vector<AuthUserInfo>& authUsers, json& authUsersJson)
 {
     for (const AuthUserInfo& info : authUsers) {
         json rightInfoJson;
-        SerializePermInfo(info.authPerm, rightInfoJson);
+        SerializePermInfo(info.authPerm, info.atomicDlpFileAccess, rightInfoJson);
         authUsersJson[info.authAccount.c_str()][RIGHT_INDEX] = rightInfoJson;
     }
 }
@@ -162,7 +173,7 @@ static void SerializeEveryoneInfo(const PermissionPolicy& policy, json& permInfo
 {
     if (policy.supportEveryone_) {
         json rightInfoJson;
-        SerializePermInfo(policy.everyonePerm_, rightInfoJson);
+        SerializePermInfo(policy.everyonePerm_, 0, rightInfoJson);
         permInfoJson[EVERYONE_INDEX][RIGHT_INDEX] = rightInfoJson;
     }
 }

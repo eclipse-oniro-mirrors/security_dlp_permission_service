@@ -101,8 +101,7 @@ public:
     int32_t SetFileInfo(const std::string& uri, const FileInfo& fileInfo) override;
     int32_t QueryOpenedEnterpriseDlpFiles(const std::string& label, std::vector<std::string>& resultUris) override;
     int32_t CloseOpenedEnterpriseDlpFiles(const std::string& label) override;
-    int32_t SetEnterpriseInfos(const std::string& uri, const std::string& fileId,
-        DLPFileAccess dlpFileAccess, const std::string& classificationLabel, const std::string& appIdentifier) override;
+    int32_t SetEnterpriseInfos(const EnterpriseInfo& enterpriseInfo) override;
     void OnAddSystemAbility(int32_t systemAbilityId, const std::string &deviceId) override;
 
 private:

@@ -928,7 +928,8 @@ int32_t DlpRawFile::RemoveDlpPermission(int32_t outPlainFileFd)
         return DLP_PARSE_ERROR_FILE_LINKING;
     }
 
-    if (authPerm_ != DLPFileAccess::FULL_CONTROL) {
+    if (authPerm_ != DLPFileAccess::FULL_CONTROL &&
+        !(authPerm_ == DLPFileAccess::ATOMIC_CONTROL && CanWrite())) {
         DLP_LOG_ERROR(LABEL, "check permission fail, remove dlp permission failed.");
         return DLP_PARSE_ERROR_FILE_READ_ONLY;
     }
@@ -1293,6 +1294,10 @@ int32_t DlpRawFile::DlpFileWrite(uint64_t offset, void* buf, uint32_t size)
     std::lock_guard<std::recursive_mutex> lock(opMutex_);
     if (authPerm_ == DLPFileAccess::READ_ONLY) {
         DLP_LOG_ERROR(LABEL, "Dlp file is readonly, write failed");
+        return DLP_PARSE_ERROR_FILE_READ_ONLY;
+    }
+    if (authPerm_ == DLPFileAccess::ATOMIC_CONTROL && !CanWrite()) {
+        DLP_LOG_ERROR(LABEL, "Dlp file ATOMIC_CONTROL without ATOMIC_EDIT, write failed");
         return DLP_PARSE_ERROR_FILE_READ_ONLY;
     }
     int32_t opFd = dlpFd_;

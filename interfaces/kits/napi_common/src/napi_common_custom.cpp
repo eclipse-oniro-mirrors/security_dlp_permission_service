@@ -111,7 +111,7 @@ bool GetEveryoneAccessList(napi_env env, napi_value jsObject, DlpProperty& prope
         if (permList.size() > 0) {
             uint32_t maxPerm = *(std::max_element(permList.begin(), permList.end()));
             uint32_t minPerm = *(std::min_element(permList.begin(), permList.end()));
-            if (maxPerm > static_cast<uint32_t>(DLPFileAccess::FULL_CONTROL) ||
+            if (maxPerm > static_cast<uint32_t>(DLPFileAccess::ATOMIC_CONTROL) ||
                 minPerm < static_cast<uint32_t>(DLPFileAccess::NO_PERMISSION)) {
                 property.everyonePerm = DLPFileAccess::NO_PERMISSION;
                 property.supportEveryone = false;

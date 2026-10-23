@@ -44,6 +44,18 @@ sptr<IDlpPermissionService> CreateTestProxy()
     }
     return new (std::nothrow) DlpPermissionServiceProxy(remote->AsObject());
 }
+
+EnterpriseInfo MakeEnterpriseInfo(const std::string& uri, const std::string& fileId,
+    DLPFileAccess dlpFileAccess, const std::string& classificationLabel, const std::string& appIdentifier)
+{
+    EnterpriseInfo info;
+    info.uri = uri;
+    info.fileId = fileId;
+    info.dlpFileAccess = dlpFileAccess;
+    info.classificationLabel = classificationLabel;
+    info.appIdentifier = appIdentifier;
+    return info;
+}
 }
 
 void DlpPermissionClientTest::SetUpTestCase() {}
@@ -242,24 +254,23 @@ HWTEST_F(DlpPermissionClientTest, SetEnterpriseInfos001, TestSize.Level0)
     DLP_LOG_INFO(LABEL, "SetEnterpriseInfos001");
 
     int32_t ret = DlpPermissionClient::GetInstance().SetEnterpriseInfos(
-        "", "file_id", DLPFileAccess::READ_ONLY, "label", "appId");
+        MakeEnterpriseInfo("", "file_id", DLPFileAccess::READ_ONLY, "label", "appId"));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, ret);
 
     ret = DlpPermissionClient::GetInstance().SetEnterpriseInfos(
-        "uri", "", DLPFileAccess::READ_ONLY, "label", "appId");
+        MakeEnterpriseInfo("uri", "", DLPFileAccess::READ_ONLY, "label", "appId"));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, ret);
 
     ret = DlpPermissionClient::GetInstance().SetEnterpriseInfos(
-        "uri", "file_id", DLPFileAccess::NO_PERMISSION, "label", "appId");
+        MakeEnterpriseInfo("uri", "file_id", DLPFileAccess::NO_PERMISSION, "label", "appId"));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, ret);
 
     ret = DlpPermissionClient::GetInstance().SetEnterpriseInfos(
-        "uri", "file_id", static_cast<DLPFileAccess>(4),
-        "label", "appId");
+        MakeEnterpriseInfo("uri", "file_id", static_cast<DLPFileAccess>(5), "label", "appId"));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, ret);
 
     ret = DlpPermissionClient::GetInstance().SetEnterpriseInfos(
-        "uri", "file_id", DLPFileAccess::READ_ONLY, "label", "");
+        MakeEnterpriseInfo("uri", "file_id", DLPFileAccess::READ_ONLY, "label", ""));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, ret);
 }
 
@@ -279,7 +290,7 @@ HWTEST_F(DlpPermissionClientTest, SetEnterpriseInfos002, TestSize.Level0)
     ASSERT_NE(nullptr, client.proxy_);
 
     int32_t ret = client.SetEnterpriseInfos(
-        "uri", "file_id", DLPFileAccess::READ_ONLY, "label", "appId");
+        MakeEnterpriseInfo("uri", "file_id", DLPFileAccess::READ_ONLY, "label", "appId"));
     ASSERT_NE(DLP_SERVICE_ERROR_SERVICE_NOT_EXIST, ret);
 
     client.proxy_ = proxy;

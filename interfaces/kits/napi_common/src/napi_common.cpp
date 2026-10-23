@@ -53,6 +53,8 @@ static constexpr size_t MAX_FILE_NAME_LEN = 255;
 static constexpr size_t MAX_TYPE_LEN = 64;
 static constexpr size_t MAX_URI_LEN = 4095;
 static constexpr int32_t HIPREVIEW_SANDBOX_LOW_BOUND = 1000;
+static constexpr uint32_t ATOMIC_READ_BIT = 0x01;
+static constexpr uint32_t ATOMIC_EDIT_BIT = 0x02;
 
 static bool ConvertDlpSandboxChangeInfo(napi_env env, napi_value value, const DlpSandboxCallbackInfo &result)
 {
@@ -436,6 +438,10 @@ napi_value CreateEnumDLPFileAccess(napi_env env)
     prop = nullptr;
     NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(DLPFileAccess::FULL_CONTROL), &prop));
     NAPI_CALL(env, napi_set_named_property(env, authPerm, "FULL_CONTROL", prop));
+
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(DLPFileAccess::ATOMIC_CONTROL), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, authPerm, "ATOMIC_CONTROL", prop));
 
     return authPerm;
 }
@@ -1483,6 +1489,10 @@ napi_value VectorAuthUserToJs(napi_env env, const std::vector<AuthUserInfo>& use
         NAPI_CALL(env, napi_create_int64(env, item.authAccountType, &authAccountTypeJs));
         NAPI_CALL(env, napi_set_named_property(env, objAuthUserInfo, "authAccountType", authAccountTypeJs));
 
+        napi_value atomicDlpFileAccessJs;
+        NAPI_CALL(env, napi_create_uint32(env, item.atomicDlpFileAccess, &atomicDlpFileAccessJs));
+        NAPI_CALL(env, napi_set_named_property(env, objAuthUserInfo, "atomicDlpFileAccess", atomicDlpFileAccessJs));
+
         NAPI_CALL(env, napi_set_element(env, vectorAuthUserJs, index, objAuthUserInfo));
         index++;
     }
@@ -1729,13 +1739,52 @@ static bool ParseAuthPerm(napi_env env, napi_value obj, AuthUserInfo& userInfo)
         ThrowParamError(env, "property", "DlpProperty");
         return false;
     }
-    if (perm > static_cast<int64_t>(DLPFileAccess::FULL_CONTROL) ||
+    if (perm > static_cast<int64_t>(DLPFileAccess::ATOMIC_CONTROL) ||
         perm < static_cast<int64_t>(DLPFileAccess::NO_PERMISSION)) {
         DLP_LOG_ERROR(LABEL, "wrong auth perm type");
         DlpNapiThrow(env, ERR_JS_PARAMETER_ERROR, "wrong auth perm type");
         return false;
     }
     userInfo.authPerm = static_cast<DLPFileAccess>(perm);
+    return true;
+}
+
+static bool ParseAtomicDlpFileAccess(napi_env env, napi_value obj, AuthUserInfo& userInfo)
+{
+    napi_value val = GetNapiValue(env, obj, "atomicDlpFileAccess");
+    if (val == nullptr) {
+        if (userInfo.authPerm == DLPFileAccess::ATOMIC_CONTROL) {
+            DLP_LOG_ERROR(LABEL, "no atomicDlpFileAccess parameter");
+            DlpNapiThrow(env, ERR_JS_PARAMETER_ERROR, "no atomicDlpFileAccess parameter");
+            return false;
+        }
+        return true;
+    }
+    uint32_t atomic = 0;
+    if (!GetUint32Value(env, val, atomic)) {
+        DLP_LOG_ERROR(LABEL, "atomicDlpFileAccess is not a number");
+        DlpNapiThrow(env, ERR_JS_PARAMETER_ERROR, "atomicDlpFileAccess is not a number");
+        return false;
+    }
+    if (userInfo.authPerm == DLPFileAccess::ATOMIC_CONTROL) {
+        if (atomic == 0) {
+            DLP_LOG_ERROR(LABEL, "atomicDlpFileAccess must be greater than 0 for ATOMIC_CONTROL");
+            DlpNapiThrow(env, ERR_JS_PARAMETER_ERROR, "atomicDlpFileAccess must be greater than 0 for ATOMIC_CONTROL");
+            return false;
+        }
+        bool hasRead = (atomic & ATOMIC_READ_BIT) != 0;
+        bool hasEdit = (atomic & ATOMIC_EDIT_BIT) != 0;
+        if (!hasRead && !hasEdit) {
+            // Neither read nor edit set: default to read.
+            atomic |= ATOMIC_READ_BIT;
+            DLP_LOG_INFO(LABEL, "atomicDlpFileAccess has neither read nor edit, default to read");
+        } else if (hasRead && hasEdit) {
+            // Both read and edit set: keep edit only.
+            atomic &= ~ATOMIC_READ_BIT;
+            DLP_LOG_INFO(LABEL, "atomicDlpFileAccess has both read and edit, keep edit only");
+        }
+    }
+    userInfo.atomicDlpFileAccess = atomic;
     return true;
 }
 
@@ -1775,6 +1824,9 @@ static bool ParseSingleAuthUserInfo(napi_env env, napi_value obj, AuthUserInfo& 
         return false;
     }
     if (!ParseAuthPerm(env, obj, userInfo)) {
+        return false;
+    }
+    if (!ParseAtomicDlpFileAccess(env, obj, userInfo)) {
         return false;
     }
     if (!ParsePermExpiryTime(env, obj, userInfo)) {

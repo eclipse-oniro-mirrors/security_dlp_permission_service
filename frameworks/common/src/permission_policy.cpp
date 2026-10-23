@@ -65,7 +65,7 @@ static bool CheckAccount(const std::string& account)
 static bool CheckPerm(uint32_t perm)
 {
     if (perm <= static_cast<uint32_t>(DLPFileAccess::NO_PERMISSION) ||
-        perm > static_cast<uint32_t>(DLPFileAccess::FULL_CONTROL)) {
+        perm > static_cast<uint32_t>(DLPFileAccess::ATOMIC_CONTROL)) {
         DLP_LOG_ERROR(LABEL, "Auth Perm invalid, perm=%{public}u", perm);
         return false;
     }
@@ -502,6 +502,86 @@ FileInfo* FileInfo::Unmarshalling(Parcel &in)
         delete parcel;
     }
     return nullptr;
+}
+
+bool EnterpriseInfo::Marshalling(Parcel &out) const
+{
+    if (!(out.WriteString(uri))) {
+        DLP_LOG_ERROR(LABEL, "Write uri fail");
+        return false;
+    }
+    if (!(out.WriteString(classificationLabel))) {
+        DLP_LOG_ERROR(LABEL, "Write classificationLabel fail");
+        return false;
+    }
+    if (!(out.WriteUint32(static_cast<uint32_t>(dlpFileAccess)))) {
+        DLP_LOG_ERROR(LABEL, "Write dlpFileAccess fail");
+        return false;
+    }
+    if (!(out.WriteString(fileId))) {
+        DLP_LOG_ERROR(LABEL, "Write fileId fail");
+        return false;
+    }
+    if (!(out.WriteString(appIdentifier))) {
+        DLP_LOG_ERROR(LABEL, "Write appIdentifier fail");
+        return false;
+    }
+    if (!(out.WriteUint32(atomicDlpFileAccess))) {
+        DLP_LOG_ERROR(LABEL, "Write atomicDlpFileAccess fail");
+        return false;
+    }
+    if (!(out.WriteInt32(uid))) {
+        DLP_LOG_ERROR(LABEL, "Write uid fail");
+        return false;
+    }
+    return true;
+}
+ 
+EnterpriseInfo* EnterpriseInfo::Unmarshalling(Parcel &in)
+{
+    auto *parcel = new (std::nothrow) EnterpriseInfo();
+    if (parcel == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Alloc buff for EnterpriseInfo fail");
+        return nullptr;
+    }
+    if (!(in.ReadString(parcel->uri))) {
+        DLP_LOG_ERROR(LABEL, "Read uri fail");
+        delete parcel;
+        return nullptr;
+    }
+    if (!(in.ReadString(parcel->classificationLabel))) {
+        DLP_LOG_ERROR(LABEL, "Read classificationLabel fail");
+        delete parcel;
+        return nullptr;
+    }
+    uint32_t access = 0;
+    if (!(in.ReadUint32(access))) {
+        DLP_LOG_ERROR(LABEL, "Read dlpFileAccess fail");
+        delete parcel;
+        return nullptr;
+    }
+    parcel->dlpFileAccess = static_cast<DLPFileAccess>(access);
+    if (!(in.ReadString(parcel->fileId))) {
+        DLP_LOG_ERROR(LABEL, "Read fileId fail");
+        delete parcel;
+        return nullptr;
+    }
+    if (!(in.ReadString(parcel->appIdentifier))) {
+        DLP_LOG_ERROR(LABEL, "Read appIdentifier fail");
+        delete parcel;
+        return nullptr;
+    }
+    if (!(in.ReadUint32(parcel->atomicDlpFileAccess))) {
+        DLP_LOG_ERROR(LABEL, "Read atomicDlpFileAccess fail");
+        delete parcel;
+        return nullptr;
+    }
+    if (!(in.ReadInt32(parcel->uid))) {
+        DLP_LOG_ERROR(LABEL, "Read uid fail");
+        delete parcel;
+        return nullptr;
+    }
+    return parcel;
 }
 }  // namespace DlpPermission
 }  // namespace Security

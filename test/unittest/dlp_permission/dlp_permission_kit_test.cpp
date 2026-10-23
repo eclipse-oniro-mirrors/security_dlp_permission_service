@@ -93,6 +93,18 @@ const std::string USER_INFO_BASE = "/data/service/el1/public/dlp_permission_serv
 const std::string DLP_VISIT_RECORD_JSON_PATH = USER_INFO_BASE + PATH_SEPARATOR + "dlp_file_visit_record_info.json";
 static bool g_isSetFoundationPerm = false;
 static uint64_t g_foundationTokenId = 0;
+
+EnterpriseInfo MakeEnterpriseInfo(const std::string& uri, const std::string& fileId,
+    DLPFileAccess dlpFileAccess, const std::string& classificationLabel, const std::string& appIdentifier)
+{
+    EnterpriseInfo info;
+    info.uri = uri;
+    info.fileId = fileId;
+    info.dlpFileAccess = dlpFileAccess;
+    info.classificationLabel = classificationLabel;
+    info.appIdentifier = appIdentifier;
+    return info;
+}
 }  // namespace
 
 static uint8_t GetRandNum()
@@ -1910,8 +1922,8 @@ HWTEST_F(DlpPermissionKitTest, SetEnterpriseInfos001, TestSize.Level0)
     std::string classificationLabel = "L1";
     std::string appIdentifier = "com.ohos.test.app";
 
-    int32_t ret = DlpPermissionKit::SetEnterpriseInfos(uri, fileId, dlpFileAccess,
-        classificationLabel, appIdentifier);
+    int32_t ret = DlpPermissionKit::SetEnterpriseInfos(
+        MakeEnterpriseInfo(uri, fileId, dlpFileAccess, classificationLabel, appIdentifier));
     ASSERT_TRUE(ret == DLP_OK || ret == DLP_SERVICE_ERROR_PERMISSION_DENY ||
         ret == DLP_SERVICE_ERROR_SERVICE_NOT_EXIST);
 
@@ -1939,8 +1951,8 @@ HWTEST_F(DlpPermissionKitTest, SetEnterpriseInfos002, TestSize.Level0)
     std::string classificationLabel = "L2";
     std::string appIdentifier = "com.ohos.test.app2";
 
-    int32_t ret = DlpPermissionKit::SetEnterpriseInfos(uri, fileId, dlpFileAccess,
-        classificationLabel, appIdentifier);
+    int32_t ret = DlpPermissionKit::SetEnterpriseInfos(
+        MakeEnterpriseInfo(uri, fileId, dlpFileAccess, classificationLabel, appIdentifier));
     ASSERT_TRUE(ret != DLP_OK || ret == DLP_SERVICE_ERROR_VALUE_INVALID ||
         ret == DLP_SERVICE_ERROR_PERMISSION_DENY);
 
@@ -1974,8 +1986,8 @@ HWTEST_F(DlpPermissionKitTest, SetEnterpriseInfos003, TestSize.Level0)
     };
 
     for (const auto& access : accessLevels) {
-        int32_t ret = DlpPermissionKit::SetEnterpriseInfos(uri, fileId, access,
-            classificationLabel, appIdentifier);
+        int32_t ret = DlpPermissionKit::SetEnterpriseInfos(
+            MakeEnterpriseInfo(uri, fileId, access, classificationLabel, appIdentifier));
         ASSERT_TRUE(ret == DLP_OK || ret == DLP_SERVICE_ERROR_PERMISSION_DENY ||
             ret == DLP_SERVICE_ERROR_SERVICE_NOT_EXIST);
     }
