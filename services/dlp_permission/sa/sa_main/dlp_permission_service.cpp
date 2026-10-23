@@ -874,7 +874,7 @@ static int32_t CheckWithInstallDlpSandbox(const std::string& bundleName, const s
         return DLP_SERVICE_ERROR_PERMISSION_DENY;
     }
     if (bundleName.empty() || bundleName.size() > MAX_BUNDLENAME_SIZE || uri.size() > MAX_URI_SIZE ||
-        dlpFileAccess > DLPFileAccess::FULL_CONTROL || dlpFileAccess <= DLPFileAccess::NO_PERMISSION) {
+        dlpFileAccess > DLPFileAccess::ATOMIC_CONTROL || dlpFileAccess <= DLPFileAccess::NO_PERMISSION) {
         DLP_LOG_ERROR(LABEL, "param is invalid");
         return DLP_SERVICE_ERROR_VALUE_INVALID;
     }
@@ -940,9 +940,8 @@ static void previewBindInstall(DlpSandboxInfo& sandboxInfo, int32_t userId, DLPF
     }
 }
  
-static int32_t InstallDlpSandboxExecute(bool& isNeedInstall, DLPFileAccess& dlpFileAccess,
-    const std::string& bundleName, int32_t& userId, DlpSandboxInfo& dlpSandboxInfo,
-    int32_t sandboxType = -1)
+static int32_t InstallDlpSandboxExecute(bool& isNeedInstall, const InputSandboxInfo& inputSandboxInfo,
+    DlpSandboxInfo& dlpSandboxInfo, int32_t sandboxType = -1)
 {
     DLP_LOG_INFO(LABEL, "InstallDlpSandbox %s, isNeedInstall=%d", bundleName.c_str(), isNeedInstall);
     if (isNeedInstall) {
@@ -958,7 +957,7 @@ static int32_t InstallDlpSandboxExecute(bool& isNeedInstall, DLPFileAccess& dlpF
             }
         }
         int32_t bundleClientRes = bundleMgrClient.InstallSandboxApp(bundleName,
-            permForBMS, userId, dlpSandboxInfo.appIndex);
+            permForBMS, inputSandboxInfo.userId, dlpSandboxInfo.appIndex);
         if (bundleClientRes != DLP_OK) {
             DLP_LOG_ERROR(LABEL, "install sandbox %{public}s fail, %{public}d", bundleName.c_str(), bundleClientRes);
             return DLP_SERVICE_ERROR_INSTALL_SANDBOX_FAIL;
