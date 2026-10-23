@@ -1347,6 +1347,10 @@ int32_t DlpRawFile::Truncate(uint64_t size)
         DLP_LOG_ERROR(LABEL, "Dlp file is readonly, truncate failed");
         return DLP_PARSE_ERROR_FILE_READ_ONLY;
     }
+    if (authPerm_ == DLPFileAccess::ATOMIC_CONTROL && !CanWrite()) {
+        DLP_LOG_ERROR(LABEL, "Dlp file ATOMIC_CONTROL without ATOMIC_EDIT, truncate failed");
+        return DLP_PARSE_ERROR_FILE_READ_ONLY;
+    }
     int32_t opFd = dlpFd_;
     if (opFd < 0 || size >= DLP_MAX_CONTENT_SIZE) {
         DLP_LOG_ERROR(LABEL, "Param invalid");

@@ -552,6 +552,7 @@ HWTEST_F(AppStateObserverTest, QueryDlpFileAccessByUid001, TestSize.Level1)
 
     AppStateObserver observer;
     DLPFileAccess dlpFileAccess;
+    uint32_t atomicDlpFileAccess = 0;
     DlpSandboxInfo appInfo;
     int32_t uid = 0;
 

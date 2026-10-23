@@ -42,6 +42,7 @@ typedef struct GetAppIndexParams {
     bool isReadOnly;
     const std::string uri;
     bool isNotOwnerAndReadOnce;
+    DLPFileAccess dlpFileAccess = DLPFileAccess::NO_PERMISSION;
 } GetAppIndexParams;
 
 class DlpPermissionService final : public SystemAbility, public DlpPermissionServiceStub {

@@ -22,6 +22,12 @@ namespace Security {
 namespace DlpPermission {
 namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionParcel"};
+
+void DeleteAuthUserInfoParcel(AuthUserInfoParcel*& parcel)
+{
+    delete parcel;
+    parcel = nullptr;
+}
 }
 bool AuthUserInfoParcel::Marshalling(Parcel& out) const
 {
@@ -58,49 +64,42 @@ AuthUserInfoParcel* AuthUserInfoParcel::Unmarshalling(Parcel& in)
 
     if (!(in.ReadString(authUserInfoParcel->authUserInfo_.authAccount))) {
         DLP_LOG_ERROR(LABEL, "Read auth user account fail");
-        delete authUserInfoParcel;
-        authUserInfoParcel = nullptr;
+        DeleteAuthUserInfoParcel(authUserInfoParcel);
         return nullptr;
     }
     uint32_t res;
     if (!(in.ReadUint32(res))) {
         DLP_LOG_ERROR(LABEL, "Read auth user perm fail");
-        delete authUserInfoParcel;
-        authUserInfoParcel = nullptr;
+        DeleteAuthUserInfoParcel(authUserInfoParcel);
         return nullptr;
     }
     if (res > static_cast<uint32_t>(DLPFileAccess::ATOMIC_CONTROL)) {
         DLP_LOG_ERROR(LABEL, "Invalid auth user perm: %{public}u", res);
-        delete authUserInfoParcel;
-        authUserInfoParcel = nullptr;
+        DeleteAuthUserInfoParcel(authUserInfoParcel);
         return nullptr;
     }
     authUserInfoParcel->authUserInfo_.authPerm = static_cast<DLPFileAccess>(res);
     if (!(in.ReadUint64(authUserInfoParcel->authUserInfo_.permExpiryTime))) {
         DLP_LOG_ERROR(LABEL, "Read auth user expiry time fail");
-        delete authUserInfoParcel;
-        authUserInfoParcel = nullptr;
+        DeleteAuthUserInfoParcel(authUserInfoParcel);
         return nullptr;
     }
 
     if (!(in.ReadUint32(res))) {
         DLP_LOG_ERROR(LABEL, "Read auth user account type fail");
-        delete authUserInfoParcel;
-        authUserInfoParcel = nullptr;
+        DeleteAuthUserInfoParcel(authUserInfoParcel);
         return nullptr;
     }
     if (res > static_cast<uint32_t>(DlpAccountType::ENTERPRISE_ACCOUNT)) {
         DLP_LOG_ERROR(LABEL, "Invalid auth user account type: %{public}u", res);
-        delete authUserInfoParcel;
-        authUserInfoParcel = nullptr;
+        DeleteAuthUserInfoParcel(authUserInfoParcel);
         return nullptr;
     }
     authUserInfoParcel->authUserInfo_.authAccountType = static_cast<DlpAccountType>(res);
 
     if (!(in.ReadUint32(authUserInfoParcel->authUserInfo_.atomicDlpFileAccess))) {
         DLP_LOG_ERROR(LABEL, "Read auth user atomic dlp file access fail");
-        delete authUserInfoParcel;
-        authUserInfoParcel = nullptr;
+        DeleteAuthUserInfoParcel(authUserInfoParcel);
         return nullptr;
     }
 

@@ -112,6 +112,30 @@ constexpr int32_t ATOMIC_SANDBOX_TYPE_RESTRICTED_CONTENT_EDIT = 5;
 constexpr int32_t ATOMIC_SANDBOX_TYPE_RESTRICTED_READ_ONLY = 6;
 static AccountListenerCallback *g_accountListenerCallback = nullptr;
 static const std::vector<std::string> SANDBOX_WHITELIST = { HIPREVIEW_LOW, SETTINGS_BUNDLE_NAME };
+
+int32_t CalcAtomicSandboxType(uint32_t atomicDlpFileAccess)
+{
+    bool print = (atomicDlpFileAccess & ATOMIC_PRINT_BIT) != 0;
+    bool networkAndSelinux = (atomicDlpFileAccess & ATOMIC_APP_PERMISSION_BIT) != 0;
+    if (print && networkAndSelinux) {
+        return ATOMIC_SANDBOX_TYPE_CONTENT_EDIT;
+    } else if (!print && networkAndSelinux) {
+        return ATOMIC_SANDBOX_TYPE_READ_ONLY;
+    } else if (print && !networkAndSelinux) {
+        return ATOMIC_SANDBOX_TYPE_RESTRICTED_CONTENT_EDIT;
+    }
+    return ATOMIC_SANDBOX_TYPE_RESTRICTED_READ_ONLY;
+}
+ 
+void CalcAtomicSandboxParams(const InputSandboxInfo& input, int32_t& sandboxType, bool& isReadOnly)
+{
+    sandboxType = -1;
+    isReadOnly = input.dlpFileAccess == DLPFileAccess::READ_ONLY;
+    if (input.dlpFileAccess == DLPFileAccess::ATOMIC_CONTROL) {
+        sandboxType = CalcAtomicSandboxType(input.atomicDlpFileAccess);
+        isReadOnly = (input.atomicDlpFileAccess & ATOMIC_EDIT_BIT) == 0;
+    }
+}
 }
 REGISTER_SYSTEM_ABILITY_BY_ID(DlpPermissionService, SA_ID_DLP_PERMISSION_SERVICE, true);
 
@@ -941,7 +965,7 @@ static int32_t InstallDlpSandboxExecute(bool& isNeedInstall, DLPFileAccess& dlpF
         }
     }
     if (bundleName == HIPREVIEW_HIGH) {
-        previewBindInstall(dlpSandboxInfo, userId, dlpFileAccess, sandboxType);
+        previewBindInstall(dlpSandboxInfo, inputSandboxInfo.userId, inputSandboxInfo.dlpFileAccess, sandboxType);
         DLP_LOG_INFO(LABEL,
             "InstallDlpSandbox %s, index %d, bindindex %d",
             bundleName.c_str(), dlpSandboxInfo.appIndex, dlpSandboxInfo.bindAppIndex);
@@ -974,24 +998,8 @@ int32_t DlpPermissionService::HandleEnterpriseInstallDlpSandbox(SandboxInfo& san
     }
 
     int32_t sandboxType = -1;
-    if (inputSandboxInfo.dlpFileAccess == DLPFileAccess::ATOMIC_CONTROL) {
-        uint32_t atomic = inputSandboxInfo.atomicDlpFileAccess;
-        bool print = (atomic & ATOMIC_PRINT_BIT) != 0;
-        bool networkAndSelinux = (atomic & ATOMIC_APP_PERMISSION_BIT) != 0;
-        if (print && networkAndSelinux) {
-            sandboxType = ATOMIC_SANDBOX_TYPE_CONTENT_EDIT;
-        } else if (!print && networkAndSelinux) {
-            sandboxType = ATOMIC_SANDBOX_TYPE_READ_ONLY;
-        } else if (print && !networkAndSelinux) {
-            sandboxType = ATOMIC_SANDBOX_TYPE_RESTRICTED_CONTENT_EDIT;
-        } else {
-            sandboxType = ATOMIC_SANDBOX_TYPE_RESTRICTED_READ_ONLY;
-        }
-    }
-    bool isReadOnly = inputSandboxInfo.dlpFileAccess == DLPFileAccess::READ_ONLY;
-    if (inputSandboxInfo.dlpFileAccess == DLPFileAccess::ATOMIC_CONTROL) {
-        isReadOnly = (inputSandboxInfo.atomicDlpFileAccess & ATOMIC_EDIT_BIT) == 0;
-    }
+    bool isReadOnly = false;
+    CalcAtomicSandboxParams(inputSandboxInfo, sandboxType, isReadOnly);
     bool isNeedInstall = true;
     DlpSandboxInfo dlpSandboxInfo;
     int32_t res = DLP_OK;
@@ -1010,8 +1018,7 @@ int32_t DlpPermissionService::HandleEnterpriseInstallDlpSandbox(SandboxInfo& san
         isNeedInstall = (dlpSandboxInfo.appIndex != -1) ? false : true;
     }
 
-    res = InstallDlpSandboxExecute(isNeedInstall, inputSandboxInfo.dlpFileAccess,
-        inputSandboxInfo.bundleName, inputSandboxInfo.userId, dlpSandboxInfo, sandboxType);
+    res = InstallDlpSandboxExecute(isNeedInstall, inputSandboxInfo, dlpSandboxInfo, sandboxType);
     if (res != DLP_OK) {
         observer->EraseEnterpriseInfoByUri(inputSandboxInfo.path, enterpriseInfo.fileId);
         return res;
@@ -1059,8 +1066,7 @@ int32_t DlpPermissionService::HandleInstallDlpSandbox(SandboxInfo& sandboxInfo,
         isNeedInstall = (dlpSandboxInfo.appIndex != -1) ? false : true;
     }
 
-    res = InstallDlpSandboxExecute(isNeedInstall, inputSandboxInfo.dlpFileAccess,
-        inputSandboxInfo.bundleName, inputSandboxInfo.userId, dlpSandboxInfo);
+    res = InstallDlpSandboxExecute(isNeedInstall, inputSandboxInfo, dlpSandboxInfo);
     if (res != DLP_OK) {
         return res;
     }
