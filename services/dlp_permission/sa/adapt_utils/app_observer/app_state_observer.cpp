@@ -678,7 +678,7 @@ void AppStateObserver::AddCallbackListener(int32_t pid)
     callbackList_[pid]++;
 }
 
-static bool IsCopyable(DLPFileAccess dlpFileAccess)
+static bool IsCopyable(DLPFileAccess dlpFileAccess, uint32_t atomicDlpFileAccess)
 {
     switch (dlpFileAccess) {
         case DLPFileAccess::READ_ONLY:

@@ -943,16 +943,17 @@ static void previewBindInstall(DlpSandboxInfo& sandboxInfo, int32_t userId, DLPF
 static int32_t InstallDlpSandboxExecute(bool& isNeedInstall, const InputSandboxInfo& inputSandboxInfo,
     DlpSandboxInfo& dlpSandboxInfo, int32_t sandboxType = -1)
 {
+    const std::string& bundleName = inputSandboxInfo.bundleName;
     DLP_LOG_INFO(LABEL, "InstallDlpSandbox %s, isNeedInstall=%d", bundleName.c_str(), isNeedInstall);
     if (isNeedInstall) {
         AppExecFwk::BundleMgrClient bundleMgrClient;
         int32_t permForBMS = sandboxType;
         if (permForBMS < 0) {
-            permForBMS = static_cast<int32_t>(dlpFileAccess);
-            if (dlpFileAccess == DLPFileAccess::READ_ONLY) {
+            permForBMS = static_cast<int32_t>(inputSandboxInfo.dlpFileAccess);
+            if (inputSandboxInfo.dlpFileAccess == DLPFileAccess::READ_ONLY) {
                 permForBMS = ATOMIC_SANDBOX_TYPE_READ_ONLY;
-            } else if (dlpFileAccess == DLPFileAccess::FULL_CONTROL ||
-                dlpFileAccess == DLPFileAccess::CONTENT_EDIT) {
+            } else if (inputSandboxInfo.dlpFileAccess == DLPFileAccess::FULL_CONTROL ||
+                inputSandboxInfo.dlpFileAccess == DLPFileAccess::CONTENT_EDIT) {
                 permForBMS = ATOMIC_SANDBOX_TYPE_CONTENT_EDIT;
             }
         }
