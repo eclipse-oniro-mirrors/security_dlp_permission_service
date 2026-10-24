@@ -529,6 +529,105 @@ HWTEST_F(PermissionPolicyTest, IsValid010, TestSize.Level1)
     policy.ownerAccount_ = "test";
     EXPECT_TRUE(policy.IsValid());
 }
+
+/**
+ * @tc.name: CheckPermAtomicControl001
+ * @tc.desc: CheckPerm allows ATOMIC_CONTROL (perm=4) and rejects perm>4
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(PermissionPolicyTest, CheckPermAtomicControl001, TestSize.Level1)
+{
+    PermissionPolicy policy;
+    policy.ownerAccount_ = "test";
+    policy.ownerAccountId_ = "test";
+    policy.ownerAccountType_ = CLOUD_ACCOUNT;
+    uint8_t key[16] = {0};
+    policy.SetAeskey(key, 16);
+    uint8_t iv[16] = {0};
+    policy.SetIv(iv, 16);
+    AuthUserInfo user;
+    user.authAccount = "acct";
+    user.authPerm = DLPFileAccess::ATOMIC_CONTROL;
+    user.permExpiryTime = GetCurrentTimeSec() + EXPIRY_TEN_MINUTE;
+    user.authAccountType = CLOUD_ACCOUNT;
+    policy.authUsers_.emplace_back(user);
+    EXPECT_TRUE(policy.IsValid());
+}
+
+/**
+ * @tc.name: CheckPermAtomicControl002
+ * @tc.desc: CheckPerm rejects perm > ATOMIC_CONTROL (perm=5)
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(PermissionPolicyTest, CheckPermAtomicControl002, TestSize.Level1)
+{
+    PermissionPolicy policy;
+    policy.ownerAccount_ = "test";
+    policy.ownerAccountId_ = "test";
+    policy.ownerAccountType_ = CLOUD_ACCOUNT;
+    uint8_t key[16] = {0};
+    policy.SetAeskey(key, 16);
+    uint8_t iv[16] = {0};
+    policy.SetIv(iv, 16);
+    AuthUserInfo user;
+    user.authAccount = "acct";
+    user.authPerm = static_cast<DLPFileAccess>(5);
+    user.permExpiryTime = GetCurrentTimeSec() + EXPIRY_TEN_MINUTE;
+    user.authAccountType = CLOUD_ACCOUNT;
+    policy.authUsers_.emplace_back(user);
+    EXPECT_FALSE(policy.IsValid());
+}
+
+/**
+ * @tc.name: EnterpriseInfoMarshalling001
+ * @tc.desc: EnterpriseInfo Marshalling and Unmarshalling round-trip
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(PermissionPolicyTest, EnterpriseInfoMarshalling001, TestSize.Level1)
+{
+    EnterpriseInfo info;
+    info.uri = "test_uri";
+    info.classificationLabel = "L1";
+    info.dlpFileAccess = DLPFileAccess::ATOMIC_CONTROL;
+    info.fileId = "file_001";
+    info.appIdentifier = "app_id_001";
+    info.atomicDlpFileAccess = 0x03;
+    info.uid = 100;
+    Parcel out;
+    EXPECT_TRUE(info.Marshalling(out));
+    auto result = EnterpriseInfo::Unmarshalling(out);
+    ASSERT_NE(result, nullptr);
+    EXPECT_EQ(result->uri, "test_uri");
+    EXPECT_EQ(result->classificationLabel, "L1");
+    EXPECT_EQ(result->dlpFileAccess, DLPFileAccess::ATOMIC_CONTROL);
+    EXPECT_EQ(result->fileId, "file_001");
+    EXPECT_EQ(result->appIdentifier, "app_id_001");
+    EXPECT_EQ(result->atomicDlpFileAccess, 0x03u);
+    EXPECT_EQ(result->uid, 100);
+    delete result;
+}
+
+/**
+ * @tc.name: EnterpriseInfoMarshalling002
+ * @tc.desc: EnterpriseInfo Marshalling with default values
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(PermissionPolicyTest, EnterpriseInfoMarshalling002, TestSize.Level1)
+{
+    EnterpriseInfo info;
+    Parcel out;
+    EXPECT_TRUE(info.Marshalling(out));
+    auto result = EnterpriseInfo::Unmarshalling(out);
+    ASSERT_NE(result, nullptr);
+    EXPECT_EQ(result->dlpFileAccess, DLPFileAccess::NO_PERMISSION);
+    EXPECT_EQ(result->atomicDlpFileAccess, 0u);
+    EXPECT_EQ(result->uid, -1);
+    delete result;
+}
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS

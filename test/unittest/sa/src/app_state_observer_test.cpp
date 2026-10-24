@@ -15,6 +15,8 @@
 
 #include "app_state_observer_test.h"
 #include <cerrno>
+#include <fcntl.h>
+#include <unistd.h>
 #include <gtest/gtest.h>
 #include <securec.h>
 #include "dlp_permission.h"
@@ -2103,4 +2105,180 @@ HWTEST_F(AppStateObserverTest, GetEnterpriseFileIdsByUid005, TestSize.Level1)
     ASSERT_EQ(fileIds, "f2");
 
     ASSERT_FALSE(observer.GetEnterpriseFileIdsByUid(999, fileIds));
+}
+
+/**
+ * @tc.name: QueryDlpFileAccessByUidAtomic001
+ * @tc.desc: QueryDlpFileAccessByUid returns ATOMIC_CONTROL and atomicDlpFileAccess
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(AppStateObserverTest, QueryDlpFileAccessByUidAtomic001, TestSize.Level1)
+{
+    AppStateObserver observer;
+    DLPFileAccess dlpFileAccess = DLPFileAccess::NO_PERMISSION;
+    uint32_t atomicDlpFileAccess = 0;
+    int32_t uid = 5001;
+    DlpSandboxInfo appInfo;
+    appInfo.uid = uid;
+    appInfo.dlpFileAccess = DLPFileAccess::ATOMIC_CONTROL;
+    appInfo.atomicDlpFileAccess = 0x07;
+    observer.sandboxInfo_[uid] = appInfo;
+    int32_t ret = observer.QueryDlpFileAccessByUid(dlpFileAccess, atomicDlpFileAccess, uid);
+    ASSERT_EQ(DLP_OK, ret);
+    EXPECT_EQ(dlpFileAccess, DLPFileAccess::ATOMIC_CONTROL);
+    EXPECT_EQ(atomicDlpFileAccess, 0x07u);
+}
+
+/**
+ * @tc.name: QueryDlpFileCopyableByTokenIdAtomic001
+ * @tc.desc: ATOMIC_CONTROL without ATOMIC_COPY_BIT is not copyable
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(AppStateObserverTest, QueryDlpFileCopyableByTokenIdAtomic001, TestSize.Level1)
+{
+    AppStateObserver observer;
+    bool copyable = true;
+    bool inDlpsandbox = false;
+    uint32_t tokenId = 5002;
+    int32_t uid = 5002;
+    observer.AddUidWithTokenId(tokenId, uid);
+    DlpSandboxInfo appInfo = {
+        .uid = uid,
+        .bundleName = "test",
+        .appIndex = 100,
+        .userId = 100,
+        .dlpFileAccess = DLPFileAccess::ATOMIC_CONTROL,
+        .atomicDlpFileAccess = 0x01,
+    };
+    observer.AddSandboxInfo(appInfo);
+    int32_t ret = observer.QueryDlpFileCopyableByTokenId(copyable, tokenId, inDlpsandbox);
+    ASSERT_EQ(DLP_OK, ret);
+    EXPECT_FALSE(copyable);
+}
+
+/**
+ * @tc.name: QueryDlpFileCopyableByTokenIdAtomic002
+ * @tc.desc: ATOMIC_CONTROL with ATOMIC_COPY_BIT (0x04) is copyable
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(AppStateObserverTest, QueryDlpFileCopyableByTokenIdAtomic002, TestSize.Level1)
+{
+    AppStateObserver observer;
+    bool copyable = false;
+    bool inDlpsandbox = false;
+    uint32_t tokenId = 5003;
+    int32_t uid = 5003;
+    observer.AddUidWithTokenId(tokenId, uid);
+    DlpSandboxInfo appInfo = {
+        .uid = uid,
+        .bundleName = "test",
+        .appIndex = 100,
+        .userId = 100,
+        .dlpFileAccess = DLPFileAccess::ATOMIC_CONTROL,
+        .atomicDlpFileAccess = 0x04,
+    };
+    observer.AddSandboxInfo(appInfo);
+    int32_t ret = observer.QueryDlpFileCopyableByTokenId(copyable, tokenId, inDlpsandbox);
+    ASSERT_EQ(DLP_OK, ret);
+    EXPECT_TRUE(copyable);
+}
+
+/**
+ * @tc.name: GetOpeningEnterpriseSandboxInfoAtomic001
+ * @tc.desc: ATOMIC_CONTROL with mismatched atomicDlpFileAccess skips entry
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(AppStateObserverTest, GetOpeningEnterpriseSandboxInfoAtomic001, TestSize.Level1)
+{
+    AppStateObserver observer;
+    int32_t uid = 5004;
+    DlpSandboxInfo appInfo;
+    appInfo.uid = uid;
+    appInfo.userId = 100;
+    appInfo.bundleName = "testBundle";
+    appInfo.uri = "test_uri";
+    appInfo.fileId = "file_001";
+    appInfo.classificationLabel = "L1";
+    appInfo.dlpFileAccess = DLPFileAccess::ATOMIC_CONTROL;
+    appInfo.atomicDlpFileAccess = 0x01;
+    observer.sandboxInfo_[uid] = appInfo;
+    InputSandboxInfo input = {
+        .bundleName = "testBundle",
+        .dlpFileAccess = DLPFileAccess::ATOMIC_CONTROL,
+        .userId = 100,
+        .uri = "test_uri",
+        .path = "test_path",
+        .atomicDlpFileAccess = 0x02,
+    };
+    EnterpriseInfo entInfo;
+    entInfo.fileId = "file_001";
+    entInfo.classificationLabel = "L1";
+    entInfo.atomicDlpFileAccess = 0x02;
+    SandboxInfo sandboxInfo;
+    bool ret = observer.GetOpeningEnterpriseSandboxInfo(sandboxInfo, input, entInfo);
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name: GetOpeningEnterpriseSandboxInfoAtomic002
+ * @tc.desc: Non-ATOMIC_CONTROL entry does not check atomicDlpFileAccess
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(AppStateObserverTest, GetOpeningEnterpriseSandboxInfoAtomic002, TestSize.Level1)
+{
+    AppStateObserver observer;
+    int32_t uid = 5005;
+    DlpSandboxInfo appInfo;
+    appInfo.uid = uid;
+    appInfo.userId = 100;
+    appInfo.bundleName = "testBundle";
+    appInfo.uri = "test_uri2";
+    appInfo.fileId = "file_002";
+    appInfo.classificationLabel = "L2";
+    appInfo.dlpFileAccess = DLPFileAccess::READ_ONLY;
+    appInfo.atomicDlpFileAccess = 0x00;
+    observer.sandboxInfo_[uid] = appInfo;
+    InputSandboxInfo input = {
+        .bundleName = "testBundle",
+        .dlpFileAccess = DLPFileAccess::READ_ONLY,
+        .userId = 100,
+        .uri = "test_uri2",
+        .path = "test_path2",
+        .atomicDlpFileAccess = 0xFF,
+    };
+    EnterpriseInfo entInfo;
+    entInfo.fileId = "file_002";
+    entInfo.classificationLabel = "L2";
+    entInfo.atomicDlpFileAccess = 0xFF;
+    SandboxInfo sandboxInfo;
+    bool ret = observer.GetOpeningEnterpriseSandboxInfo(sandboxInfo, input, entInfo);
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name: DumpSandboxAtomic001
+ * @tc.desc: DumpSandbox with ATOMIC_CONTROL entry does not crash
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(AppStateObserverTest, DumpSandboxAtomic001, TestSize.Level1)
+{
+    AppStateObserver observer;
+    int32_t uid = 5006;
+    DlpSandboxInfo appInfo;
+    appInfo.uid = uid;
+    appInfo.userId = 100;
+    appInfo.bundleName = "testBundle";
+    appInfo.appIndex = 100;
+    appInfo.dlpFileAccess = DLPFileAccess::ATOMIC_CONTROL;
+    observer.sandboxInfo_[uid] = appInfo;
+    int fd = open("/dev/null", O_WRONLY);
+    ASSERT_GE(fd, 0);
+    observer.DumpSandbox(fd);
+    close(fd);
 }
