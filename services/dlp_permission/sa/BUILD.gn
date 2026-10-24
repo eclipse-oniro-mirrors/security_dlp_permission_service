@@ -209,14 +209,9 @@ ohos_shared_library("dlp_permission_service") {
     ":dlp_hex_string_static",
     ":dlp_permission_serializer_static",
     "${dlp_permission_public_config_path}/:dlp_permission_stub",
+    ":dlp_permission_service.rc",
+    "etc:param_files",
   ]
-
-  if (!is_emulator) {
-    deps += [
-      ":dlp_permission_service.rc",
-      "etc:param_files",
-    ]
-  }
 
   configs = [
     "${dlp_root_dir}/config:coverage_flags",
