@@ -2823,3 +2823,89 @@ HWTEST_F(DlpFileTest, DestructorOfflineCertMemsetFix001, TestSize.Level0)
     close(fd);
     unlink("/data/fuse_test_dlp_offline_memset.txt");
 }
+
+/**
+ * @tc.name: DlpFileCanReadWrite001
+ * @tc.desc: CanRead/CanWrite with READ_ONLY
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileTest, DlpFileCanReadWrite001, TestSize.Level1)
+{
+    DlpRawFile testFile(1000, "txt");
+    testFile.authPerm_ = DLPFileAccess::READ_ONLY;
+    EXPECT_TRUE(testFile.CanRead());
+    EXPECT_FALSE(testFile.CanWrite());
+}
+
+/**
+ * @tc.name: DlpFileCanReadWrite002
+ * @tc.desc: CanRead/CanWrite with FULL_CONTROL
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileTest, DlpFileCanReadWrite002, TestSize.Level1)
+{
+    DlpRawFile testFile(1000, "txt");
+    testFile.authPerm_ = DLPFileAccess::FULL_CONTROL;
+    EXPECT_TRUE(testFile.CanRead());
+    EXPECT_TRUE(testFile.CanWrite());
+}
+
+/**
+ * @tc.name: DlpFileCanReadWrite003
+ * @tc.desc: CanRead/CanWrite with ATOMIC_CONTROL + read bit only
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileTest, DlpFileCanReadWrite003, TestSize.Level1)
+{
+    DlpRawFile testFile(1000, "txt");
+    testFile.authPerm_ = DLPFileAccess::ATOMIC_CONTROL;
+    testFile.atomicDlpFileAccess_ = DlpFile::ATOMIC_READ_BIT;
+    EXPECT_TRUE(testFile.CanRead());
+    EXPECT_FALSE(testFile.CanWrite());
+}
+
+/**
+ * @tc.name: DlpFileCanReadWrite004
+ * @tc.desc: CanRead/CanWrite with ATOMIC_CONTROL + edit bit only
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileTest, DlpFileCanReadWrite004, TestSize.Level1)
+{
+    DlpRawFile testFile(1000, "txt");
+    testFile.authPerm_ = DLPFileAccess::ATOMIC_CONTROL;
+    testFile.atomicDlpFileAccess_ = DlpFile::ATOMIC_EDIT_BIT;
+    EXPECT_TRUE(testFile.CanRead());
+    EXPECT_TRUE(testFile.CanWrite());
+}
+
+/**
+ * @tc.name: DlpFileCanReadWrite005
+ * @tc.desc: CanRead/CanWrite with ATOMIC_CONTROL + no bits
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileTest, DlpFileCanReadWrite005, TestSize.Level1)
+{
+    DlpRawFile testFile(1000, "txt");
+    testFile.authPerm_ = DLPFileAccess::ATOMIC_CONTROL;
+    testFile.atomicDlpFileAccess_ = 0;
+    EXPECT_FALSE(testFile.CanRead());
+    EXPECT_FALSE(testFile.CanWrite());
+}
+
+/**
+ * @tc.name: DlpFileGetAtomicDlpFileAccess001
+ * @tc.desc: GetAtomicDlpFileAccess returns the set value
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileTest, DlpFileGetAtomicDlpFileAccess001, TestSize.Level1)
+{
+    DlpRawFile testFile(1000, "txt");
+    testFile.atomicDlpFileAccess_ = 0x1F;
+    EXPECT_EQ(testFile.GetAtomicDlpFileAccess(), 0x1Fu);
+}

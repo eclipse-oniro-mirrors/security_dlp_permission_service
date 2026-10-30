@@ -14,6 +14,7 @@
  */
 #include "dlp_parcel_test.h"
 #include <string>
+#include "dlp_permission_info_parcel.h"
 #include "dlp_permission_log.h"
 
 namespace OHOS {
@@ -220,6 +221,109 @@ HWTEST_F(DlpParcelTest, VisitedDLPFileInfo001, TestSize.Level1)
     EXPECT_EQ(0, result->docUri.compare("abc"));
     delete result;
     result = nullptr;
+}
+
+/**
+ * @tc.name: AuthUserInfoParcelAtomic001
+ * @tc.desc: AuthUserInfoParcel ATOMIC_CONTROL round-trip
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpParcelTest, AuthUserInfoParcelAtomic001, TestSize.Level1)
+{
+    AuthUserInfoParcel info;
+    info.authUserInfo_.authAccount = "atomic_user";
+    info.authUserInfo_.authPerm = DLPFileAccess::ATOMIC_CONTROL;
+    info.authUserInfo_.atomicDlpFileAccess = 0x07;
+    info.authUserInfo_.authAccountType = DlpAccountType::CLOUD_ACCOUNT;
+    info.authUserInfo_.permExpiryTime = 100;
+    Parcel out;
+
+    EXPECT_EQ(true, info.Marshalling(out));
+    auto result = AuthUserInfoParcel::Unmarshalling(out);
+    ASSERT_NE(result, nullptr);
+    EXPECT_EQ(result->authUserInfo_.authPerm, DLPFileAccess::ATOMIC_CONTROL);
+    EXPECT_EQ(result->authUserInfo_.atomicDlpFileAccess, 0x07u);
+    delete result;
+}
+
+/**
+ * @tc.name: AuthUserInfoParcelAtomic002
+ * @tc.desc: AuthUserInfoParcel invalid perm > ATOMIC_CONTROL
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpParcelTest, AuthUserInfoParcelAtomic002, TestSize.Level1)
+{
+    Parcel out;
+    EXPECT_EQ(true, out.WriteString("user"));
+    EXPECT_EQ(true, out.WriteUint32(
+        static_cast<uint32_t>(DLPFileAccess::ATOMIC_CONTROL) + 1));
+    auto result = AuthUserInfoParcel::Unmarshalling(out);
+    EXPECT_EQ(result, nullptr);
+}
+
+/**
+ * @tc.name: DLPPermissionInfoParcelAtomic001
+ * @tc.desc: DLPPermissionInfoParcel ATOMIC_CONTROL round-trip
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpParcelTest, DLPPermissionInfoParcelAtomic001, TestSize.Level1)
+{
+    DLPPermissionInfoParcel info;
+    info.permInfo_.dlpFileAccess = DLPFileAccess::ATOMIC_CONTROL;
+    info.permInfo_.flags = ACTION_VIEW;
+    Parcel out;
+
+    EXPECT_EQ(true, info.Marshalling(out));
+    auto result = DLPPermissionInfoParcel::Unmarshalling(out);
+    ASSERT_NE(result, nullptr);
+    EXPECT_EQ(result->permInfo_.dlpFileAccess, DLPFileAccess::ATOMIC_CONTROL);
+    delete result;
+}
+
+/**
+ * @tc.name: DLPPermissionInfoParcelAtomic002
+ * @tc.desc: DLPPermissionInfoParcel invalid perm > ATOMIC_CONTROL
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpParcelTest, DLPPermissionInfoParcelAtomic002, TestSize.Level1)
+{
+    Parcel out;
+    EXPECT_EQ(true, out.WriteUint32(
+        static_cast<uint32_t>(DLPFileAccess::ATOMIC_CONTROL) + 1));
+    auto result = DLPPermissionInfoParcel::Unmarshalling(out);
+    EXPECT_EQ(result, nullptr);
+}
+
+/**
+ * @tc.name: DlpPolicyParcelAtomic001
+ * @tc.desc: DlpPolicyParcel everyonePerm=ATOMIC_CONTROL round-trip
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpParcelTest, DlpPolicyParcelAtomic001, TestSize.Level1)
+{
+    DlpPolicyParcel info;
+    info.policyParams_.ownerAccount_ = "owner";
+    info.policyParams_.ownerAccountId_ = "ownerId";
+    info.policyParams_.ownerAccountType_ = DlpAccountType::CLOUD_ACCOUNT;
+    uint8_t key[16] = {0};
+    info.policyParams_.SetAeskey(key, sizeof(key));
+    info.policyParams_.SetIv(key, sizeof(key));
+    info.policyParams_.supportEveryone_ = true;
+    info.policyParams_.everyonePerm_ = DLPFileAccess::ATOMIC_CONTROL;
+    info.policyParams_.perm_ = DLPFileAccess::ATOMIC_CONTROL;
+    Parcel out;
+
+    EXPECT_EQ(true, info.Marshalling(out));
+    auto result = DlpPolicyParcel::Unmarshalling(out);
+    ASSERT_NE(result, nullptr);
+    EXPECT_EQ(result->policyParams_.everyonePerm_, DLPFileAccess::ATOMIC_CONTROL);
+    EXPECT_EQ(result->policyParams_.perm_, DLPFileAccess::ATOMIC_CONTROL);
+    delete result;
 }
 }  // namespace DlpPermission
 }  // namespace Security

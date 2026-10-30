@@ -354,6 +354,267 @@ HWTEST_F(DlpPermissionStaticTest, CheckAllowAbilityListTest001, TestSize.Level1)
     bool ret = CheckAllowAbilityList(want);
     ASSERT_EQ(ret, false);
 }
+
+/**
+ * @tc.name: CalcAtomicSandboxType001
+ * @tc.desc: print && networkAndSelinux -> CONTENT_EDIT (2)
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionStaticTest, CalcAtomicSandboxType001, TestSize.Level1)
+{
+    uint32_t access = 0x10 | 0x20;
+    EXPECT_EQ(CalcAtomicSandboxType(access), 2);
+}
+
+/**
+ * @tc.name: CalcAtomicSandboxType002
+ * @tc.desc: !print && networkAndSelinux -> READ_ONLY (1)
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionStaticTest, CalcAtomicSandboxType002, TestSize.Level1)
+{
+    uint32_t access = 0x20;
+    EXPECT_EQ(CalcAtomicSandboxType(access), 1);
+}
+
+/**
+ * @tc.name: CalcAtomicSandboxType003
+ * @tc.desc: print && !networkAndSelinux -> RESTRICTED_CONTENT_EDIT (5)
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionStaticTest, CalcAtomicSandboxType003, TestSize.Level1)
+{
+    uint32_t access = 0x10;
+    EXPECT_EQ(CalcAtomicSandboxType(access), 5);
+}
+
+/**
+ * @tc.name: CalcAtomicSandboxType004
+ * @tc.desc: !print && !networkAndSelinux -> RESTRICTED_READ_ONLY (6)
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionStaticTest, CalcAtomicSandboxType004, TestSize.Level1)
+{
+    uint32_t access = 0x01;
+    EXPECT_EQ(CalcAtomicSandboxType(access), 6);
+}
+
+/**
+ * @tc.name: CalcAtomicSandboxParams001
+ * @tc.desc: ATOMIC_CONTROL with edit bit -> isReadOnly=false
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionStaticTest, CalcAtomicSandboxParams001, TestSize.Level1)
+{
+    InputSandboxInfo input = {
+        .bundleName = "test",
+        .dlpFileAccess = DLPFileAccess::ATOMIC_CONTROL,
+        .userId = 100,
+        .uri = "uri",
+        .path = "path",
+        .atomicDlpFileAccess = 0x02,
+    };
+    int32_t sandboxType = -1;
+    bool isReadOnly = true;
+    CalcAtomicSandboxParams(input, sandboxType, isReadOnly);
+    EXPECT_FALSE(isReadOnly);
+    EXPECT_EQ(sandboxType, CalcAtomicSandboxType(0x02));
+}
+
+/**
+ * @tc.name: CalcAtomicSandboxParams002
+ * @tc.desc: ATOMIC_CONTROL without edit bit -> isReadOnly=true
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionStaticTest, CalcAtomicSandboxParams002, TestSize.Level1)
+{
+    InputSandboxInfo input = {
+        .bundleName = "test",
+        .dlpFileAccess = DLPFileAccess::ATOMIC_CONTROL,
+        .userId = 100,
+        .uri = "uri",
+        .path = "path",
+        .atomicDlpFileAccess = 0x01,
+    };
+    int32_t sandboxType = -1;
+    bool isReadOnly = false;
+    CalcAtomicSandboxParams(input, sandboxType, isReadOnly);
+    EXPECT_TRUE(isReadOnly);
+}
+
+/**
+ * @tc.name: CalcAtomicSandboxParams003
+ * @tc.desc: READ_ONLY (non-ATOMIC) -> isReadOnly=true, sandboxType=-1
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionStaticTest, CalcAtomicSandboxParams003, TestSize.Level1)
+{
+    InputSandboxInfo input = {
+        .bundleName = "test",
+        .dlpFileAccess = DLPFileAccess::READ_ONLY,
+        .userId = 100,
+        .uri = "uri",
+        .path = "path",
+        .atomicDlpFileAccess = 0,
+    };
+    int32_t sandboxType = -1;
+    bool isReadOnly = false;
+    CalcAtomicSandboxParams(input, sandboxType, isReadOnly);
+    EXPECT_TRUE(isReadOnly);
+    EXPECT_EQ(sandboxType, -1);
+}
+
+/**
+ * @tc.name: CalcAtomicSandboxParams004
+ * @tc.desc: FULL_CONTROL (non-ATOMIC) -> isReadOnly=false, sandboxType=-1
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionStaticTest, CalcAtomicSandboxParams004, TestSize.Level1)
+{
+    InputSandboxInfo input = {
+        .bundleName = "test",
+        .dlpFileAccess = DLPFileAccess::FULL_CONTROL,
+        .userId = 100,
+        .uri = "uri",
+        .path = "path",
+        .atomicDlpFileAccess = 0,
+    };
+    int32_t sandboxType = -1;
+    bool isReadOnly = true;
+    CalcAtomicSandboxParams(input, sandboxType, isReadOnly);
+    EXPECT_FALSE(isReadOnly);
+    EXPECT_EQ(sandboxType, -1);
+}
+
+/**
+ * @tc.name: GetDlpActionFlagAtomic001
+ * @tc.desc: ATOMIC_CONTROL with all bits set has expected flags
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionStaticTest, GetDlpActionFlagAtomic001, TestSize.Level1)
+{
+    uint32_t atomic = 0x01 | 0x02 | 0x04 | 0x08 | 0x10;
+    ActionFlags flags = GetDlpActionFlag(DLPFileAccess::ATOMIC_CONTROL, atomic);
+    EXPECT_NE(flags, ACTION_INVALID);
+}
+
+/**
+ * @tc.name: GetDlpActionFlagAtomic002
+ * @tc.desc: ATOMIC_CONTROL with no bits set returns ACTION_INVALID
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionStaticTest, GetDlpActionFlagAtomic002, TestSize.Level1)
+{
+    ActionFlags flags = GetDlpActionFlag(DLPFileAccess::ATOMIC_CONTROL, 0);
+    EXPECT_EQ(flags, ACTION_INVALID);
+}
+
+/**
+ * @tc.name: GetDlpActionFlagAtomic003
+ * @tc.desc: ATOMIC_CONTROL with only read bit has ACTION_VIEW
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionStaticTest, GetDlpActionFlagAtomic003, TestSize.Level1)
+{
+    ActionFlags flags = GetDlpActionFlag(DLPFileAccess::ATOMIC_CONTROL, 0x01);
+    EXPECT_NE(static_cast<int32_t>(flags) & static_cast<int32_t>(ACTION_VIEW), 0);
+}
+
+/**
+ * @tc.name: GetDlpActionFlagAtomic004
+ * @tc.desc: ATOMIC_CONTROL with only edit bit has ACTION_EDIT and ACTION_VIEW
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionStaticTest, GetDlpActionFlagAtomic004, TestSize.Level1)
+{
+    ActionFlags flags = GetDlpActionFlag(DLPFileAccess::ATOMIC_CONTROL, 0x02);
+    int32_t val = static_cast<int32_t>(flags);
+    EXPECT_NE(val & static_cast<int32_t>(ACTION_VIEW), 0);
+    EXPECT_NE(val & static_cast<int32_t>(ACTION_EDIT), 0);
+    EXPECT_NE(val & static_cast<int32_t>(ACTION_SAVE), 0);
+}
+
+/**
+ * @tc.name: FindMatchingSandboxAtomic001
+ * @tc.desc: FindMatchingSandbox checks dlpFileAccess match
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionStaticTest, FindMatchingSandboxAtomic001, TestSize.Level1)
+{
+    RetentionSandBoxInfo info;
+    info.isReadOnce_ = false;
+    info.dlpFileAccess_ = DLPFileAccess::ATOMIC_CONTROL;
+    info.docUriSet_.insert("test_uri");
+    GetAppIndexParams params = {
+        .bundleName = "",
+        .isReadOnly = false,
+        .uri = "test_uri",
+        .isNotOwnerAndReadOnce = false,
+        .dlpFileAccess = DLPFileAccess::ATOMIC_CONTROL,
+    };
+    bool ret = FindMatchingSandbox(info, params);
+    EXPECT_TRUE(ret);
+}
+
+/**
+ * @tc.name: FindMatchingSandboxAtomic002
+ * @tc.desc: FindMatchingSandbox returns false when dlpFileAccess mismatch
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionStaticTest, FindMatchingSandboxAtomic002, TestSize.Level1)
+{
+    RetentionSandBoxInfo info;
+    info.isReadOnce_ = false;
+    info.dlpFileAccess_ = DLPFileAccess::READ_ONLY;
+    info.docUriSet_.insert("test_uri2");
+    GetAppIndexParams params = {
+        .bundleName = "",
+        .isReadOnly = false,
+        .uri = "test_uri2",
+        .isNotOwnerAndReadOnce = false,
+        .dlpFileAccess = DLPFileAccess::ATOMIC_CONTROL,
+    };
+    bool ret = FindMatchingSandbox(info, params);
+    EXPECT_FALSE(ret);
+}
+
+/**
+ * @tc.name: CheckWithInstallDlpSandboxAtomic001
+ * @tc.desc: ATOMIC_CONTROL passes validation in CheckWithInstallDlpSandbox
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionStaticTest, CheckWithInstallDlpSandboxAtomic001, TestSize.Level1)
+{
+    int32_t ret = CheckWithInstallDlpSandbox("bundle", "uri", DLPFileAccess::ATOMIC_CONTROL);
+    EXPECT_EQ(ret, DLP_OK);
+}
+
+/**
+ * @tc.name: CheckWithInstallDlpSandboxAtomic002
+ * @tc.desc: perm > ATOMIC_CONTROL fails validation
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionStaticTest, CheckWithInstallDlpSandboxAtomic002, TestSize.Level1)
+{
+    int32_t ret = CheckWithInstallDlpSandbox("bundle", "uri", static_cast<DLPFileAccess>(5));
+    EXPECT_EQ(ret, DLP_SERVICE_ERROR_VALUE_INVALID);
+}
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS

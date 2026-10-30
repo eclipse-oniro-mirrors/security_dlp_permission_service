@@ -645,3 +645,149 @@ HWTEST_F(DlpPermissionSerializerTest, DeserializeEveryoneInfoSupportEveryoneMove
         EXPECT_EQ(policy.everyonePerm_, DLPFileAccess::NO_PERMISSION);
     }
 }
+
+/**
+ * @tc.name: SerializeDlpPermissionAtomicControl001
+ * @tc.desc: Serialize ATOMIC_CONTROL auth user and verify atomicCtrl flag
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionSerializerTest, SerializeDlpPermissionAtomicControl001, TestSize.Level1)
+{
+    char aesKey[AESKEY_STR_LEN] = "1234567890123456789012345678901234567890123456789012345678901234";
+    char ivKey[IVKEY_STR_LEN] = "12345678901234567890123456789012";
+    char hmacKey[HMACKEY_STR_LEN] = "1234567890123456789012345678901234567890123456789012345678901234";
+    PermissionPolicy policy;
+    policy.ownerAccount_ = "owner";
+    policy.ownerAccountId_ = "ownerId";
+    policy.ownerAccountType_ = OHOS::Security::DlpPermission::CLOUD_ACCOUNT;
+    policy.SetAeskey(reinterpret_cast<uint8_t*>(aesKey), AESKEY_LEN);
+    policy.SetIv(reinterpret_cast<uint8_t*>(ivKey), IVKEY_LEN);
+    policy.SetHmacKey(reinterpret_cast<uint8_t*>(hmacKey), HMACKEY_LEN);
+    AuthUserInfo user;
+    user.authAccount = "atomicUser";
+    user.authPerm = DLPFileAccess::ATOMIC_CONTROL;
+    user.atomicDlpFileAccess = 0x03;
+    policy.authUsers_.emplace_back(user);
+    unordered_json permInfoJson;
+    int32_t ret = DlpPermissionSerializer::GetInstance().SerializeDlpPermission(policy, permInfoJson);
+    ASSERT_EQ(DLP_OK, ret);
+    std::string jsonStr = permInfoJson.dump();
+    EXPECT_NE(jsonStr.find("atomicCtrl"), std::string::npos);
+    EXPECT_NE(jsonStr.find("atomicDlpFileAccess"), std::string::npos);
+}
+
+/**
+ * @tc.name: DeserializeAuthUserInfoAtomicControl001
+ * @tc.desc: Deserialize auth user with atomicCtrl=true yields ATOMIC_CONTROL
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionSerializerTest, DeserializeAuthUserInfoAtomicControl001, TestSize.Level1)
+{
+    unordered_json accountJson = unordered_json::parse(
+        "{\"right\":{\"read\":true,\"edit\":true,\"fullCtrl\":false,"
+        "\"atomicCtrl\":true,\"atomicDlpFileAccess\":3}}");
+    AuthUserInfo userInfo;
+    int32_t ret = DlpPermissionSerializer::GetInstance().DeserializeAuthUserInfo(accountJson, userInfo);
+    ASSERT_EQ(DLP_OK, ret);
+    EXPECT_EQ(userInfo.authPerm, DLPFileAccess::ATOMIC_CONTROL);
+    EXPECT_EQ(userInfo.atomicDlpFileAccess, 3u);
+}
+
+/**
+ * @tc.name: DeserializeAuthUserInfoAtomicControl002
+ * @tc.desc: Deserialize auth user fullCtrl takes priority over atomicCtrl
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionSerializerTest, DeserializeAuthUserInfoAtomicControl002, TestSize.Level1)
+{
+    unordered_json accountJson = unordered_json::parse(
+        "{\"right\":{\"read\":true,\"edit\":true,\"fullCtrl\":true,"
+        "\"atomicCtrl\":true,\"atomicDlpFileAccess\":1}}");
+    AuthUserInfo userInfo;
+    int32_t ret = DlpPermissionSerializer::GetInstance().DeserializeAuthUserInfo(accountJson, userInfo);
+    ASSERT_EQ(DLP_OK, ret);
+    EXPECT_EQ(userInfo.authPerm, DLPFileAccess::FULL_CONTROL);
+}
+
+/**
+ * @tc.name: DeserializeAuthUserInfoAtomicControl003
+ * @tc.desc: Deserialize auth user without atomicCtrl and without fullCtrl
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionSerializerTest, DeserializeAuthUserInfoAtomicControl003, TestSize.Level1)
+{
+    unordered_json accountJson = unordered_json::parse(
+        "{\"right\":{\"read\":true,\"edit\":false,\"fullCtrl\":false,"
+        "\"atomicCtrl\":false,\"atomicDlpFileAccess\":0}}");
+    AuthUserInfo userInfo;
+    int32_t ret = DlpPermissionSerializer::GetInstance().DeserializeAuthUserInfo(accountJson, userInfo);
+    ASSERT_EQ(DLP_OK, ret);
+    EXPECT_EQ(userInfo.authPerm, DLPFileAccess::READ_ONLY);
+    EXPECT_EQ(userInfo.atomicDlpFileAccess, 0u);
+}
+
+/**
+ * @tc.name: SerializeEveryoneInfoAtomicControl001
+ * @tc.desc: Serialize everyone perm as ATOMIC_CONTROL and deserialize back
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionSerializerTest, SerializeEveryoneInfoAtomicControl001, TestSize.Level1)
+{
+    char aesKey[AESKEY_STR_LEN] = "1234567890123456789012345678901234567890123456789012345678901234";
+    char ivKey[IVKEY_STR_LEN] = "12345678901234567890123456789012";
+    char hmacKey[HMACKEY_STR_LEN] = "1234567890123456789012345678901234567890123456789012345678901234";
+    PermissionPolicy policy;
+    policy.ownerAccount_ = "owner";
+    policy.ownerAccountId_ = "ownerId";
+    policy.ownerAccountType_ = OHOS::Security::DlpPermission::CLOUD_ACCOUNT;
+    policy.SetAeskey(reinterpret_cast<uint8_t*>(aesKey), AESKEY_LEN);
+    policy.SetIv(reinterpret_cast<uint8_t*>(ivKey), IVKEY_LEN);
+    policy.SetHmacKey(reinterpret_cast<uint8_t*>(hmacKey), HMACKEY_LEN);
+    policy.supportEveryone_ = true;
+    policy.everyonePerm_ = DLPFileAccess::ATOMIC_CONTROL;
+    unordered_json permInfoJson;
+    int32_t ret = DlpPermissionSerializer::GetInstance().SerializeDlpPermission(policy, permInfoJson);
+    ASSERT_EQ(DLP_OK, ret);
+    std::string jsonStr = permInfoJson.dump();
+    EXPECT_NE(jsonStr.find("atomicCtrl"), std::string::npos);
+}
+
+/**
+ * @tc.name: DeserializeEveryoneInfoAtomicControl001
+ * @tc.desc: Deserialize everyone info with atomicCtrl=true yields ATOMIC_CONTROL
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionSerializerTest, DeserializeEveryoneInfoAtomicControl001, TestSize.Level1)
+{
+    unordered_json policyJson = unordered_json::parse(
+        "{\"everyone\":{\"right\":{\"read\":true,\"edit\":true,"
+        "\"fullCtrl\":false,\"atomicCtrl\":true}}}");
+    PermissionPolicy policy;
+    bool ret = DlpPermissionSerializer::GetInstance().DeserializeEveryoneInfo(policyJson, policy);
+    EXPECT_TRUE(ret);
+    EXPECT_EQ(policy.everyonePerm_, DLPFileAccess::ATOMIC_CONTROL);
+    EXPECT_TRUE(policy.supportEveryone_);
+}
+
+/**
+ * @tc.name: DeserializeEveryoneInfoAtomicControl002
+ * @tc.desc: Deserialize everyone info fullCtrl priority over atomicCtrl
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpPermissionSerializerTest, DeserializeEveryoneInfoAtomicControl002, TestSize.Level1)
+{
+    unordered_json policyJson = unordered_json::parse(
+        "{\"everyone\":{\"right\":{\"read\":true,\"edit\":true,"
+        "\"fullCtrl\":true,\"atomicCtrl\":true}}}");
+    PermissionPolicy policy;
+    bool ret = DlpPermissionSerializer::GetInstance().DeserializeEveryoneInfo(policyJson, policy);
+    EXPECT_TRUE(ret);
+    EXPECT_EQ(policy.everyonePerm_, DLPFileAccess::FULL_CONTROL);
+}

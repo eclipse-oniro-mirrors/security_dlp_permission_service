@@ -617,7 +617,7 @@ HWTEST_F(DlpPermissionServiceTest, SetEnterpriseInfos004, TestSize.Level1)
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, ret);
 
     DLPFileAccess tooLargeAccess = static_cast<DLPFileAccess>(
-        static_cast<int32_t>(DLPFileAccess::FULL_CONTROL) + 1);
+        static_cast<int32_t>(DLPFileAccess::ATOMIC_CONTROL) + 1);
     ret = dlpPermissionService_->SetEnterpriseInfos(
         MakeEnterpriseInfo(uri, fileId, tooLargeAccess, "label_access2", appIdentifier));
     ASSERT_EQ(DLP_SERVICE_ERROR_VALUE_INVALID, ret);

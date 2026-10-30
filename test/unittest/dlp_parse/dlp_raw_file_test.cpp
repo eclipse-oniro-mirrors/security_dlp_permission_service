@@ -694,3 +694,64 @@ HWTEST_F(DlpRawFileTest, WriteRawFileTailAndHeaderTest_InvalidFd, TestSize.Level
     // WriteRawFileTailAndHeader should return error when ftruncate fails on invalid fd
     ASSERT_EQ(filePtr->WriteRawFileTailAndHeader(hmacStr, hmacStr.size()), DLP_PARSE_ERROR_FILE_OPERATE_FAIL);
 }
+
+/**
+ * @tc.name: DlpRawFileWriteAtomic001
+ * @tc.desc: ATOMIC_CONTROL without ATOMIC_EDIT bit fails write
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpRawFileTest, DlpRawFileWriteAtomic001, TestSize.Level1)
+{
+    DlpRawFile testFile(1000, "txt");
+    testFile.authPerm_ = DLPFileAccess::ATOMIC_CONTROL;
+    testFile.atomicDlpFileAccess_ = DlpFile::ATOMIC_READ_BIT;
+    uint8_t buf[16] = {0};
+    int32_t ret = testFile.DlpFileWrite(0, buf, sizeof(buf));
+    EXPECT_EQ(ret, DLP_PARSE_ERROR_FILE_READ_ONLY);
+}
+
+/**
+ * @tc.name: DlpRawFileTruncateAtomic001
+ * @tc.desc: ATOMIC_CONTROL without ATOMIC_EDIT bit fails truncate
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpRawFileTest, DlpRawFileTruncateAtomic001, TestSize.Level1)
+{
+    DlpRawFile testFile(1000, "txt");
+    testFile.authPerm_ = DLPFileAccess::ATOMIC_CONTROL;
+    testFile.atomicDlpFileAccess_ = DlpFile::ATOMIC_READ_BIT;
+    int32_t ret = testFile.Truncate(100);
+    EXPECT_EQ(ret, DLP_PARSE_ERROR_FILE_READ_ONLY);
+}
+
+/**
+ * @tc.name: DlpRawFileRemoveDlpPermAtomic001
+ * @tc.desc: ATOMIC_CONTROL without CanWrite fails RemoveDlpPermission
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpRawFileTest, DlpRawFileRemoveDlpPermAtomic001, TestSize.Level1)
+{
+    DlpRawFile testFile(1000, "txt");
+    testFile.authPerm_ = DLPFileAccess::ATOMIC_CONTROL;
+    testFile.atomicDlpFileAccess_ = DlpFile::ATOMIC_READ_BIT;
+    int32_t ret = testFile.RemoveDlpPermission(1);
+    EXPECT_EQ(ret, DLP_PARSE_ERROR_FILE_READ_ONLY);
+}
+
+/**
+ * @tc.name: DlpRawFileRemoveDlpPermAtomic002
+ * @tc.desc: ATOMIC_CONTROL with CanWrite passes permission check
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpRawFileTest, DlpRawFileRemoveDlpPermAtomic002, TestSize.Level1)
+{
+    DlpRawFile testFile(1000, "txt");
+    testFile.authPerm_ = DLPFileAccess::ATOMIC_CONTROL;
+    testFile.atomicDlpFileAccess_ = DlpFile::ATOMIC_EDIT_BIT;
+    int32_t ret = testFile.RemoveDlpPermission(1);
+    EXPECT_NE(ret, DLP_PARSE_ERROR_FILE_READ_ONLY);
+}
