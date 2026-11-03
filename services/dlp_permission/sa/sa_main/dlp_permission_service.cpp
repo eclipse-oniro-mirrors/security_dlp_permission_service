@@ -116,15 +116,15 @@ static const std::vector<std::string> SANDBOX_WHITELIST = { HIPREVIEW_LOW, SETTI
 int32_t CalcAtomicSandboxType(uint32_t atomicDlpFileAccess)
 {
     bool print = (atomicDlpFileAccess & ATOMIC_PRINT_BIT) != 0;
-    bool networkAndSelinux = (atomicDlpFileAccess & ATOMIC_APP_PERMISSION_BIT) != 0;
-    if (print && networkAndSelinux) {
-        return ATOMIC_SANDBOX_TYPE_CONTENT_EDIT;
-    } else if (!print && networkAndSelinux) {
-        return ATOMIC_SANDBOX_TYPE_READ_ONLY;
-    } else if (print && !networkAndSelinux) {
+    bool appPermission = (atomicDlpFileAccess & ATOMIC_APP_PERMISSION_BIT) != 0;
+    if (print && appPermission) {
+        return ATOMIC_SANDBOX_TYPE_RESTRICTED_READ_ONLY;
+    } else if (!print && appPermission) {
         return ATOMIC_SANDBOX_TYPE_RESTRICTED_CONTENT_EDIT;
+    } else if (print && !appPermission) {
+        return ATOMIC_SANDBOX_TYPE_CONTENT_EDIT;
     }
-    return ATOMIC_SANDBOX_TYPE_RESTRICTED_READ_ONLY;
+    return ATOMIC_SANDBOX_TYPE_READ_ONLY;
 }
  
 void CalcAtomicSandboxParams(const InputSandboxInfo& input, int32_t& sandboxType, bool& isReadOnly)

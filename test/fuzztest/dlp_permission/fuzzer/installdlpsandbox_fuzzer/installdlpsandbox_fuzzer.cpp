@@ -35,6 +35,8 @@ static const int32_t DEFAULT_USER_ID = 100;
 
 namespace OHOS {
 const int32_t TWO = 2;
+const int32_t MIN_DLPFILEACCESS = 0;
+const int32_t MAX_DLPFILEACCESS = 4; // ATOMIC_CONTROL = 4
 static void FuzzTest(const uint8_t* data, size_t size)
 {
     if ((data == nullptr) || (size < sizeof(int32_t) + sizeof(int32_t) + sizeof(int32_t))) {
@@ -42,7 +44,8 @@ static void FuzzTest(const uint8_t* data, size_t size)
     }
     FuzzedDataProvider fdp(data, size);
     int32_t userId = fdp.ConsumeIntegral<int32_t>();
-    DLPFileAccess dlpFileAccess = *(reinterpret_cast<const DLPFileAccess *>(data));
+    DLPFileAccess dlpFileAccess = static_cast<DLPFileAccess>(
+        fdp.ConsumeIntegralInRange<int32_t>(MIN_DLPFILEACCESS, MAX_DLPFILEACCESS));
     std::string bundleName = fdp.ConsumeBytesAsString(size / TWO);
     std::string uri = fdp.ConsumeBytesAsString(size / TWO);
     SandboxInfo sandboxInfo;
