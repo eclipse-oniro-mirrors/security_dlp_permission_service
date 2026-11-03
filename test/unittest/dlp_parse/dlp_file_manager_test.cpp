@@ -1292,6 +1292,109 @@ HWTEST_F(DlpFileManagerTest, GenRawDlpFile_PrepareDirsFail, TestSize.Level0)
     close(plainFileFd);
 }
 
+/**
+ * @tc.name: GetDlpFileByPtr001
+ * @tc.desc: test GetDlpFileByPtr with nullptr input, returns nullptr
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileManagerTest, GetDlpFileByPtr001, TestSize.Level0)
+{
+    DLP_LOG_INFO(LABEL, "GetDlpFileByPtr001");
+    // branch: rawPtr == nullptr -> return nullptr
+    DlpFile* rawPtr = nullptr;
+    EXPECT_EQ(DlpFileManager::GetInstance().GetDlpFileByPtr(rawPtr), nullptr);
+}
+
+/**
+ * @tc.name: GetDlpFileByPtr002
+ * @tc.desc: test GetDlpFileByPtr with matching pointer in map, returns the shared_ptr
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileManagerTest, GetDlpFileByPtr002, TestSize.Level0)
+{
+    DLP_LOG_INFO(LABEL, "GetDlpFileByPtr002");
+    // branch: iter->second.get() == rawPtr -> return iter->second
+    std::shared_ptr<DlpFile> filePtr = std::make_shared<DlpZipFile>(100, DLP_TEST_DIR, 0, "txt");
+    ASSERT_NE(filePtr, nullptr);
+    DlpFileManager::GetInstance().g_DlpFileMap_[100] = filePtr;
+
+    DlpFile* rawPtr = filePtr.get();
+    std::shared_ptr<DlpFile> result = DlpFileManager::GetInstance().GetDlpFileByPtr(rawPtr);
+    EXPECT_EQ(result, filePtr);
+
+    DlpFileManager::GetInstance().g_DlpFileMap_.clear();
+}
+
+/**
+ * @tc.name: GetDlpFileByPtr003
+ * @tc.desc: test GetDlpFileByPtr with non-matching pointer (ptr not in map), returns nullptr
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileManagerTest, GetDlpFileByPtr003, TestSize.Level0)
+{
+    DLP_LOG_INFO(LABEL, "GetDlpFileByPtr003");
+    // branch: ptr not exist in map -> return nullptr
+    std::shared_ptr<DlpFile> filePtrInMap = std::make_shared<DlpZipFile>(200, DLP_TEST_DIR, 0, "txt");
+    ASSERT_NE(filePtrInMap, nullptr);
+    DlpFileManager::GetInstance().g_DlpFileMap_[200] = filePtrInMap;
+
+    std::shared_ptr<DlpFile> filePtrNotInMap = std::make_shared<DlpZipFile>(201, DLP_TEST_DIR, 0, "txt");
+    ASSERT_NE(filePtrNotInMap, nullptr);
+    DlpFile* rawPtr = filePtrNotInMap.get();
+    EXPECT_EQ(DlpFileManager::GetInstance().GetDlpFileByPtr(rawPtr), nullptr);
+
+    DlpFileManager::GetInstance().g_DlpFileMap_.clear();
+}
+
+/**
+ * @tc.name: GetDlpFileByPtr004
+ * @tc.desc: test GetDlpFileByPtr with empty map and non-null ptr, returns nullptr
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileManagerTest, GetDlpFileByPtr004, TestSize.Level0)
+{
+    DLP_LOG_INFO(LABEL, "GetDlpFileByPtr004");
+    // branch: map is empty, no match found -> return nullptr
+    DlpFileManager::GetInstance().g_DlpFileMap_.clear();
+
+    std::shared_ptr<DlpFile> filePtr = std::make_shared<DlpZipFile>(300, DLP_TEST_DIR, 0, "txt");
+    ASSERT_NE(filePtr, nullptr);
+    DlpFile* rawPtr = filePtr.get();
+    EXPECT_EQ(DlpFileManager::GetInstance().GetDlpFileByPtr(rawPtr), nullptr);
+}
+
+/**
+ * @tc.name: GetDlpFileByPtr005
+ * @tc.desc: test GetDlpFileByPtr with multiple entries in map, finds the correct one
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileManagerTest, GetDlpFileByPtr005, TestSize.Level0)
+{
+    DLP_LOG_INFO(LABEL, "GetDlpFileByPtr005");
+    // branch: multiple entries, iterates to find the matching ptr
+    std::shared_ptr<DlpFile> filePtr1 = std::make_shared<DlpZipFile>(400, DLP_TEST_DIR, 0, "txt");
+    std::shared_ptr<DlpFile> filePtr2 = std::make_shared<DlpZipFile>(401, DLP_TEST_DIR, 0, "txt");
+    std::shared_ptr<DlpFile> filePtr3 = std::make_shared<DlpZipFile>(402, DLP_TEST_DIR, 0, "txt");
+    ASSERT_NE(filePtr1, nullptr);
+    ASSERT_NE(filePtr2, nullptr);
+    ASSERT_NE(filePtr3, nullptr);
+    DlpFileManager::GetInstance().g_DlpFileMap_[400] = filePtr1;
+    DlpFileManager::GetInstance().g_DlpFileMap_[401] = filePtr2;
+    DlpFileManager::GetInstance().g_DlpFileMap_[402] = filePtr3;
+
+    // query the middle entry
+    DlpFile* rawPtr = filePtr2.get();
+    std::shared_ptr<DlpFile> result = DlpFileManager::GetInstance().GetDlpFileByPtr(rawPtr);
+    EXPECT_EQ(result, filePtr2);
+
+    DlpFileManager::GetInstance().g_DlpFileMap_.clear();
+}
+
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS

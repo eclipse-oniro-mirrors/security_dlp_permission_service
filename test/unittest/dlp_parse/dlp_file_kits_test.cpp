@@ -1006,3 +1006,32 @@ HWTEST_F(DlpFileKitsTest, ConvertAbilityInfoWithSupportDlp012, TestSize.Level0)
  
     EXPECT_EQ(abilityInfos.size(), 0);
 }
+
+/**
+ * @tc.name: IsDlpFileBySuffix001
+ * @tc.desc: test IsDlpFileBySuffix with true cases
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileKitsTest, IsDlpFileBySuffix002, TestSize.Level0)
+{
+    DLP_LOG_INFO(LABEL, "IsDlpFileBySuffix001");
+    EXPECT_TRUE(DlpFileKits::IsDlpFileBySuffix(".dlp"));
+    EXPECT_TRUE(DlpFileKits::IsDlpFileBySuffix(".DLP"));
+    EXPECT_TRUE(DlpFileKits::IsDlpFileBySuffix(".DlP"));
+}
+
+/**
+ * @tc.name: IsDlpFileBySuffix002
+ * @tc.desc: test IsDlpFileBySuffix with false cases
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileKitsTest, IsDlpFileBySuffix007, TestSize.Level0)
+{
+    DLP_LOG_INFO(LABEL, "IsDlpFileBySuffix002");
+    EXPECT_FALSE(DlpFileKits::IsDlpFileBySuffix(""));
+    EXPECT_FALSE(DlpFileKits::IsDlpFileBySuffix(".dlpx"));
+    EXPECT_FALSE(DlpFileKits::IsDlpFileBySuffix(".TXT"));
+    EXPECT_FALSE(DlpFileKits::IsDlpFileBySuffix(".dl"));
+}
