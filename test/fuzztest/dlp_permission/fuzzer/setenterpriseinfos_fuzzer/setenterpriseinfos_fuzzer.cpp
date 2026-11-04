@@ -33,7 +33,7 @@ static const int32_t DEFAULT_USER_ID = 100;
 static const size_t MIN_INT32_COUNT = 4;
 static const size_t MAX_SAFE_SIZE = 1024;
 static const int32_t MIN_DLPFILEACCESS = 0;
-static const int32_t MAX_DLPFILEACCESS = 3;
+static const int32_t MAX_DLPFILEACCESS = 4; // ATOMIC_CONTROL = 4
 } // namespace
 
 namespace OHOS {
@@ -44,18 +44,20 @@ static void FuzzTest(const uint8_t* data, size_t size)
         return;
     }
     FuzzedDataProvider fdp(data, size);
-    std::string uri = fdp.ConsumeBytesAsString(size / 4);
-    std::string fileId = fdp.ConsumeBytesAsString(size / 4);
+    std::string uri = fdp.ConsumeBytesAsString(size / 5);
+    std::string fileId = fdp.ConsumeBytesAsString(size / 5);
     DLPFileAccess dlpFileAccess = static_cast<DLPFileAccess>(
         fdp.ConsumeIntegralInRange<int32_t>(MIN_DLPFILEACCESS, MAX_DLPFILEACCESS));
-    std::string classificationLabel = fdp.ConsumeBytesAsString(size / 4);
-    std::string appIdentifier = fdp.ConsumeRemainingBytesAsString();
+    std::string classificationLabel = fdp.ConsumeBytesAsString(size / 5);
+    std::string appIdentifier = fdp.ConsumeBytesAsString(size / 5);
+    uint32_t atomicDlpFileAccess = fdp.ConsumeIntegral<uint32_t>();
     EnterpriseInfo enterpriseInfo;
     enterpriseInfo.uri = uri;
     enterpriseInfo.fileId = fileId;
     enterpriseInfo.dlpFileAccess = dlpFileAccess;
     enterpriseInfo.classificationLabel = classificationLabel;
     enterpriseInfo.appIdentifier = appIdentifier;
+    enterpriseInfo.atomicDlpFileAccess = atomicDlpFileAccess;
     DlpPermissionKit::SetEnterpriseInfos(enterpriseInfo);
 }
 

@@ -42,6 +42,7 @@ static std::string g_accountName = "ohosAnonymousName";
 static const std::string DLP_SUFFIX = ".dlp";
 static const uint64_t SYSTEM_APP_MASK = 0x100000000;
 static const int32_t DEFAULT_USER_ID = 100;
+static const int32_t TWO = 2;
 }
 
 static void GenerateRandStr(uint32_t len, const uint8_t *data, std::string& res)
@@ -101,13 +102,15 @@ static DlpAccountType GenerateDlpAccountType(const uint8_t* data)
 
 static DLPFileAccess GenerateDLPFileAccess(const uint8_t* data)
 {
-    int8_t fileAccess = (data[0]/TWO + data[1]/TWO) % (sizeof(DLPFileAccess) / sizeof(DLPFileAccess::NO_PERMISSION));
+    int8_t fileAccess = (data[0] / TWO + data[1] / TWO) % FIVE;
     if (fileAccess == 0) {
         return DLPFileAccess::NO_PERMISSION;
     } else if (fileAccess == 1) {
         return DLPFileAccess::READ_ONLY;
     } else if (fileAccess == TWO) {
         return DLPFileAccess::CONTENT_EDIT;
+    } else if (fileAccess == FOUR) {
+        return DLPFileAccess::ATOMIC_CONTROL;
     } else {
         return DLPFileAccess::FULL_CONTROL;
     }
@@ -160,6 +163,9 @@ static void GenerateRandProperty(struct DlpProperty& encProp, const uint8_t* dat
 
 static void GenerateRandPropertyRand(struct DlpProperty& encProp, const uint8_t* data, size_t size)
 {
+    if (data == nullptr || size == 0) {
+        return;
+    }
     uint64_t curTime = static_cast<uint64_t>(
         std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     std::string account;
@@ -188,7 +194,8 @@ static void GenerateRandPropertyRand(struct DlpProperty& encProp, const uint8_t*
         AuthUserInfo perminfo = {.authAccount = strdup(const_cast<char *>(accountName.c_str())),
             .authPerm = GenerateDLPFileAccess(data),
             .permExpiryTime = curTime + EXPIRT_TIME,
-            .authAccountType = GenerateDlpAccountType(data)};
+            .authAccountType = GenerateDlpAccountType(data),
+            .atomicDlpFileAccess = static_cast<uint32_t>(data[offset % size] << (user * TWO))};
         encProp.authUsers.emplace_back(perminfo);
     }
 }
@@ -205,6 +212,9 @@ static void GDlpFileFuzzTest()
     g_Dlpfile->NeedAdapter();
     g_Dlpfile->GetFsContentSize();
     g_Dlpfile->HmacCheck();
+    g_Dlpfile->GetAtomicDlpFileAccess();
+    g_Dlpfile->CanRead();
+    g_Dlpfile->CanWrite();
 }
 
 static void UnzipSpecificFileFUZZ(const uint8_t* data, size_t size)

@@ -357,50 +357,50 @@ HWTEST_F(DlpPermissionStaticTest, CheckAllowAbilityListTest001, TestSize.Level1)
 
 /**
  * @tc.name: CalcAtomicSandboxType001
- * @tc.desc: print && networkAndSelinux -> CONTENT_EDIT (2)
+ * @tc.desc: print && appPermission -> RESTRICTED_READ_ONLY (6)
  * @tc.type: FUNC
  * @tc.require:
  */
 HWTEST_F(DlpPermissionStaticTest, CalcAtomicSandboxType001, TestSize.Level1)
 {
     uint32_t access = 0x10 | 0x20;
-    EXPECT_EQ(CalcAtomicSandboxType(access), 2);
+    EXPECT_EQ(CalcAtomicSandboxType(access), 6);
 }
 
 /**
  * @tc.name: CalcAtomicSandboxType002
- * @tc.desc: !print && networkAndSelinux -> READ_ONLY (1)
+ * @tc.desc: !print && appPermission -> RESTRICTED_CONTENT_EDIT (5)
  * @tc.type: FUNC
  * @tc.require:
  */
 HWTEST_F(DlpPermissionStaticTest, CalcAtomicSandboxType002, TestSize.Level1)
 {
     uint32_t access = 0x20;
-    EXPECT_EQ(CalcAtomicSandboxType(access), 1);
+    EXPECT_EQ(CalcAtomicSandboxType(access), 5);
 }
 
 /**
  * @tc.name: CalcAtomicSandboxType003
- * @tc.desc: print && !networkAndSelinux -> RESTRICTED_CONTENT_EDIT (5)
+ * @tc.desc: print && !appPermission -> CONTENT_EDIT (2)
  * @tc.type: FUNC
  * @tc.require:
  */
 HWTEST_F(DlpPermissionStaticTest, CalcAtomicSandboxType003, TestSize.Level1)
 {
     uint32_t access = 0x10;
-    EXPECT_EQ(CalcAtomicSandboxType(access), 5);
+    EXPECT_EQ(CalcAtomicSandboxType(access), 2);
 }
 
 /**
  * @tc.name: CalcAtomicSandboxType004
- * @tc.desc: !print && !networkAndSelinux -> RESTRICTED_READ_ONLY (6)
+ * @tc.desc: !print && !appPermission -> READ_ONLY (1)
  * @tc.type: FUNC
  * @tc.require:
  */
 HWTEST_F(DlpPermissionStaticTest, CalcAtomicSandboxType004, TestSize.Level1)
 {
     uint32_t access = 0x01;
-    EXPECT_EQ(CalcAtomicSandboxType(access), 6);
+    EXPECT_EQ(CalcAtomicSandboxType(access), 1);
 }
 
 /**
