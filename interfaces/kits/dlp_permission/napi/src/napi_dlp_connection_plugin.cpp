@@ -356,10 +356,7 @@ static void* DlpStaticHandle(napi_env env)
 
 static napi_value RegisterPlugin(napi_env env, napi_callback_info cbInfo)
 {
-    if (CheckDevice(env)) {
-        return nullptr;
-    }
-    if (CheckOverseaNotSupported(env)) {
+    if (CheckDevice(env) || CheckOverseaNotSupported(env)) {
         return nullptr;
     }
     JsDlpConnPlugin jsPlugin;
