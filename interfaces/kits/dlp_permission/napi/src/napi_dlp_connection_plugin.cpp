@@ -53,6 +53,7 @@ NapiDlpConnectionPlugin::NapiDlpConnectionPlugin(napi_env env, const JsDlpConnPl
 {}
 
 using OHOS::Security::DlpPermission::CheckDevice;
+using OHOS::Security::DlpPermission::CheckOverseaNotSupported;
 
 static void ReleaseNapiRefArray(napi_env env, const std::vector<napi_ref> &napiRefVec)
 {
@@ -238,6 +239,9 @@ static void ConnectServerWork(JsDlpConnectionParam *param)
 void NapiDlpConnectionPlugin::ConnectServer(const std::string requestId, const std::string requestData,
     const std::shared_ptr<DlpConnectionCallback> &callback)
 {
+    if (CheckOverseaNotSupported(env_)) {
+        return;
+    }
     std::unique_lock<std::mutex> lock(lockInfo_.mutex);
     if (lockInfo_.count < 0) {
         DLP_LOG_ERROR(LABEL, "the plugin has been released");
@@ -355,6 +359,9 @@ static napi_value RegisterPlugin(napi_env env, napi_callback_info cbInfo)
     if (CheckDevice(env)) {
         return nullptr;
     }
+    if (CheckOverseaNotSupported(env)) {
+        return nullptr;
+    }
     JsDlpConnPlugin jsPlugin;
     if (!ParseContextForRegisterPlugin(env, cbInfo, jsPlugin)) {
         DlpNapiThrow(env, ERR_JS_PARAMETER_ERROR);
@@ -406,6 +413,9 @@ static napi_value UnregisterPlugin(napi_env env, napi_callback_info cbInfo)
     if (CheckDevice(env)) {
         return nullptr;
     }
+    if (CheckOverseaNotSupported(env)) {
+        return nullptr;
+    }
     bool hasEnterprisePerm = AccessToken::AccessTokenKit::VerifyAccessToken(
         GetSelfTokenID(), PERMISSION_ENTERPRISE_ACCESS_DLP_FILE) == AccessToken::PERMISSION_GRANTED;
     bool hasAccessPerm = AccessToken::AccessTokenKit::VerifyAccessToken(
@@ -429,6 +439,9 @@ static napi_value UnregisterPlugin(napi_env env, napi_callback_info cbInfo)
 static napi_value JsConstructor(napi_env env, napi_callback_info cbinfo)
 {
     if (CheckDevice(env)) {
+        return nullptr;
+    }
+    if (CheckOverseaNotSupported(env)) {
         return nullptr;
     }
     napi_value thisVar = nullptr;

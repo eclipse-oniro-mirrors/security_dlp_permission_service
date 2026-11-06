@@ -189,6 +189,9 @@ napi_value SetControlledAppLists(napi_env env, napi_callback_info cbInfo)
         DlpNapiThrow(env, deviceError);
         return nullptr;
     }
+    if (CheckOverseaNotSupported(env)) {
+        return nullptr;
+    }
     if (!CheckPermission(env, PERMISSION_DLP_POLICY_MANAGER)) {
         return nullptr;
     }
@@ -351,6 +354,9 @@ napi_value GetControlledAppLists(napi_env env, napi_callback_info cbInfo)
     int32_t deviceError = CheckDeviceForTransparentEnc();
     if (deviceError != DLP_OK) {
         DlpNapiThrow(env, deviceError);
+        return nullptr;
+    }
+    if (CheckOverseaNotSupported(env)) {
         return nullptr;
     }
     if (!CheckPermission(env, PERMISSION_DLP_POLICY_MANAGER)) {
