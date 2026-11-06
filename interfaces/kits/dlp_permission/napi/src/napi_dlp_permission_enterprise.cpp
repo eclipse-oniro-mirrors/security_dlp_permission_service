@@ -61,6 +61,9 @@ static int32_t CheckDeviceForEnterprise()
 
 napi_value NapiDlpPermission::CloseOpenedEnterpriseDlpFiles(napi_env env, napi_callback_info cbInfo)
 {
+    if (CheckOverseaNotSupported(env)) {
+        return nullptr;
+    }
     int32_t deviceError = CheckDeviceForEnterprise();
     if (deviceError != DLP_OK) {
         DlpNapiThrow(env, deviceError);
@@ -131,6 +134,9 @@ napi_value NapiDlpPermission::QueryOpenedEnterpriseDlpFiles(napi_env env, napi_c
     int32_t deviceError = CheckDeviceForEnterprise();
     if (deviceError != DLP_OK) {
         DlpNapiThrow(env, deviceError);
+        return nullptr;
+    }
+    if (CheckOverseaNotSupported(env)) {
         return nullptr;
     }
     if (!CheckPermission(env, PERMISSION_ENTERPRISE_ACCESS_DLP_FILE)) {
@@ -223,6 +229,9 @@ napi_value NapiDlpPermission::GenerateDlpFileForEnterprise(napi_env env, napi_ca
     if (CheckDevice(env)) {
         return nullptr;
     }
+    if (CheckOverseaNotSupported(env)) {
+        return nullptr;
+    }
     auto asyncContextPtr = std::make_unique<GenerateDlpFileForEnterpriseAsyncContext>(env);
     if (!GetAccountTypeInEnterpriseParam(env, cbInfo, *asyncContextPtr)) {
         return nullptr;
@@ -266,6 +275,9 @@ void NapiDlpPermission::GenerateDlpFileForEnterpriseComplete(napi_env env, napi_
 napi_value NapiDlpPermission::DecryptDlpFile(napi_env env, napi_callback_info cbInfo)
 {
     if (CheckDevice(env)) {
+        return nullptr;
+    }
+    if (CheckOverseaNotSupported(env)) {
         return nullptr;
     }
     auto asyncContextPtr = std::make_unique<DecryptDlpFileAsyncContext>(env);
@@ -325,6 +337,9 @@ napi_value NapiDlpPermission::QueryDlpPolicy(napi_env env, napi_callback_info cb
     if (CheckDevice(env)) {
         return nullptr;
     }
+    if (CheckOverseaNotSupported(env)) {
+        return nullptr;
+    }
     auto asyncContextPtr = std::make_unique<QueryDlpPolicyAsyncContext>(env);
 
     if (!GetQueryDlpPolicyParam(env, cbInfo, *asyncContextPtr)) {
@@ -381,6 +396,9 @@ void NapiDlpPermission::QueryDlpPolicyComplete(napi_env env, napi_status status,
 napi_value NapiDlpPermission::SetEnterprisePolicy(napi_env env, napi_callback_info cbInfo)
 {
     if (CheckDevice(env)) {
+        return nullptr;
+    }
+    if (CheckOverseaNotSupported(env)) {
         return nullptr;
     }
     DLP_LOG_INFO(LABEL, "Enter SetEnterprisePolicy.");
