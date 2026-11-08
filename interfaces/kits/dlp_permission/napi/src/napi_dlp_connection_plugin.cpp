@@ -356,7 +356,7 @@ static void* DlpStaticHandle(napi_env env)
 
 static napi_value RegisterPlugin(napi_env env, napi_callback_info cbInfo)
 {
-    if (CheckDevice(env) || CheckOverseaNotSupported(env)) {
+    if (CheckOverseaNotSupported(env) || CheckDevice(env)) {
         return nullptr;
     }
     JsDlpConnPlugin jsPlugin;
@@ -407,10 +407,10 @@ static napi_value RegisterPlugin(napi_env env, napi_callback_info cbInfo)
 
 static napi_value UnregisterPlugin(napi_env env, napi_callback_info cbInfo)
 {
-    if (CheckDevice(env)) {
+    if (CheckOverseaNotSupported(env)) {
         return nullptr;
     }
-    if (CheckOverseaNotSupported(env)) {
+    if (CheckDevice(env)) {
         return nullptr;
     }
     bool hasEnterprisePerm = AccessToken::AccessTokenKit::VerifyAccessToken(
@@ -435,10 +435,10 @@ static napi_value UnregisterPlugin(napi_env env, napi_callback_info cbInfo)
 
 static napi_value JsConstructor(napi_env env, napi_callback_info cbinfo)
 {
-    if (CheckDevice(env)) {
+    if (CheckOverseaNotSupported(env)) {
         return nullptr;
     }
-    if (CheckOverseaNotSupported(env)) {
+    if (CheckDevice(env)) {
         return nullptr;
     }
     napi_value thisVar = nullptr;

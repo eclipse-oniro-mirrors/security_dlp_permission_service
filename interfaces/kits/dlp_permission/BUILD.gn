@@ -189,6 +189,7 @@ ohos_shared_library("libdlpsetdlpfeature_napi") {
     "ace_engine:ace_uicontent",
     "bundle_framework:appexecfwk_base",
     "graphic_2d:color_manager",
+    "init:libbegetutil",
     "napi:ace_napi",
     "ipc:ipc_single",
     "image_framework:image_native",
