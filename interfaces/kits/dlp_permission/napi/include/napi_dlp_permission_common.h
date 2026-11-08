@@ -67,7 +67,7 @@ inline bool CheckOverseaNotSupported(napi_env env)
         LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionNapi"
     };
     if (!IsOversea()) {
-        DLP_LOG_INFO(OVERSEA_LABEL, "is not oversea, support DLP feature");
+        DLP_LOG_INFO(OVERSEA_LABEL, "is not oversea");
         return false;
     }
     std::string jsErrMsg = "Capability not supported. Possible causes: the car does not support DLP feature.";
