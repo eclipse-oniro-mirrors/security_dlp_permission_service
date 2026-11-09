@@ -53,6 +53,7 @@ NapiDlpConnectionPlugin::NapiDlpConnectionPlugin(napi_env env, const JsDlpConnPl
 {}
 
 using OHOS::Security::DlpPermission::CheckDevice;
+using OHOS::Security::DlpPermission::CheckOverseaNotSupported;
 
 static void ReleaseNapiRefArray(napi_env env, const std::vector<napi_ref> &napiRefVec)
 {
@@ -238,6 +239,9 @@ static void ConnectServerWork(JsDlpConnectionParam *param)
 void NapiDlpConnectionPlugin::ConnectServer(const std::string requestId, const std::string requestData,
     const std::shared_ptr<DlpConnectionCallback> &callback)
 {
+    if (CheckOverseaNotSupported(env_)) {
+        return;
+    }
     std::unique_lock<std::mutex> lock(lockInfo_.mutex);
     if (lockInfo_.count < 0) {
         DLP_LOG_ERROR(LABEL, "the plugin has been released");
@@ -352,7 +356,7 @@ static void* DlpStaticHandle(napi_env env)
 
 static napi_value RegisterPlugin(napi_env env, napi_callback_info cbInfo)
 {
-    if (CheckDevice(env)) {
+    if (CheckOverseaNotSupported(env) || CheckDevice(env)) {
         return nullptr;
     }
     JsDlpConnPlugin jsPlugin;
@@ -403,6 +407,9 @@ static napi_value RegisterPlugin(napi_env env, napi_callback_info cbInfo)
 
 static napi_value UnregisterPlugin(napi_env env, napi_callback_info cbInfo)
 {
+    if (CheckOverseaNotSupported(env)) {
+        return nullptr;
+    }
     if (CheckDevice(env)) {
         return nullptr;
     }
@@ -428,6 +435,9 @@ static napi_value UnregisterPlugin(napi_env env, napi_callback_info cbInfo)
 
 static napi_value JsConstructor(napi_env env, napi_callback_info cbinfo)
 {
+    if (CheckOverseaNotSupported(env)) {
+        return nullptr;
+    }
     if (CheckDevice(env)) {
         return nullptr;
     }

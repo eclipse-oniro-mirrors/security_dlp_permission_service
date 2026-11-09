@@ -184,6 +184,9 @@ void SetControlledAppListsComplete(napi_env env, napi_status status, void *data)
 
 napi_value SetControlledAppLists(napi_env env, napi_callback_info cbInfo)
 {
+    if (CheckOverseaNotSupported(env)) {
+        return nullptr;
+    }
     int32_t deviceError = CheckDeviceForTransparentEnc();
     if (deviceError != DLP_OK) {
         DlpNapiThrow(env, deviceError);
@@ -348,6 +351,9 @@ void GetControlledAppListsComplete(napi_env env, napi_status status, void *data)
 
 napi_value GetControlledAppLists(napi_env env, napi_callback_info cbInfo)
 {
+    if (CheckOverseaNotSupported(env)) {
+        return nullptr;
+    }
     int32_t deviceError = CheckDeviceForTransparentEnc();
     if (deviceError != DLP_OK) {
         DlpNapiThrow(env, deviceError);

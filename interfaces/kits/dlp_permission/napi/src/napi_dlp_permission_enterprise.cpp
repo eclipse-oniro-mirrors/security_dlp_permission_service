@@ -61,6 +61,9 @@ static int32_t CheckDeviceForEnterprise()
 
 napi_value NapiDlpPermission::CloseOpenedEnterpriseDlpFiles(napi_env env, napi_callback_info cbInfo)
 {
+    if (CheckOverseaNotSupported(env)) {
+        return nullptr;
+    }
     int32_t deviceError = CheckDeviceForEnterprise();
     if (deviceError != DLP_OK) {
         DlpNapiThrow(env, deviceError);
@@ -128,6 +131,9 @@ void NapiDlpPermission::CloseOpenedEnterpriseDlpFilesComplete(napi_env env, napi
 
 napi_value NapiDlpPermission::QueryOpenedEnterpriseDlpFiles(napi_env env, napi_callback_info cbInfo)
 {
+    if (CheckOverseaNotSupported(env)) {
+        return nullptr;
+    }
     int32_t deviceError = CheckDeviceForEnterprise();
     if (deviceError != DLP_OK) {
         DlpNapiThrow(env, deviceError);
@@ -220,6 +226,9 @@ napi_value NapiDlpPermission::ProcessDomainAccount(napi_env env, napi_callback_i
 
 napi_value NapiDlpPermission::GenerateDlpFileForEnterprise(napi_env env, napi_callback_info cbInfo)
 {
+    if (CheckOverseaNotSupported(env)) {
+        return nullptr;
+    }
     if (CheckDevice(env)) {
         return nullptr;
     }
@@ -265,6 +274,9 @@ void NapiDlpPermission::GenerateDlpFileForEnterpriseComplete(napi_env env, napi_
 
 napi_value NapiDlpPermission::DecryptDlpFile(napi_env env, napi_callback_info cbInfo)
 {
+    if (CheckOverseaNotSupported(env)) {
+        return nullptr;
+    }
     if (CheckDevice(env)) {
         return nullptr;
     }
@@ -322,6 +334,9 @@ void NapiDlpPermission::DecryptDlpFileComplete(napi_env env, napi_status status,
 
 napi_value NapiDlpPermission::QueryDlpPolicy(napi_env env, napi_callback_info cbInfo)
 {
+    if (CheckOverseaNotSupported(env)) {
+        return nullptr;
+    }
     if (CheckDevice(env)) {
         return nullptr;
     }
@@ -380,6 +395,9 @@ void NapiDlpPermission::QueryDlpPolicyComplete(napi_env env, napi_status status,
 
 napi_value NapiDlpPermission::SetEnterprisePolicy(napi_env env, napi_callback_info cbInfo)
 {
+    if (CheckOverseaNotSupported(env)) {
+        return nullptr;
+    }
     if (CheckDevice(env)) {
         return nullptr;
     }

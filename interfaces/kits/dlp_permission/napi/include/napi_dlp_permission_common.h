@@ -19,7 +19,10 @@
 #include "napi/native_api.h"
 #include "napi/native_node_api.h"
 #include "dlp_permission.h"
+#include "dlp_permission_log.h"
 #include "napi_common.h"
+#include "napi_error_msg.h"
+#include "parameters.h"
 
 namespace OHOS {
 namespace Security {
@@ -51,6 +54,25 @@ inline int32_t CheckDevice()
     return DLP_DEVICE_ERROR_CAPABILITY_NOT_SUPPORTED_EMULATOR;
 #endif
     return DLP_OK;
+}
+
+inline bool IsOversea()
+{
+    return OHOS::system::GetParameter("const.cust.is_oversea", "true") == "true";
+}
+
+inline bool CheckOverseaNotSupported(napi_env env)
+{
+    static constexpr OHOS::HiviewDFX::HiLogLabel OVERSEA_LABEL = {
+        LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionNapi"
+    };
+    if (!IsOversea()) {
+        return false;
+    }
+    std::string jsErrMsg = "Capability not supported. Possible causes: the car does not support DLP feature.";
+    DLP_LOG_ERROR(OVERSEA_LABEL, "%{public}s", jsErrMsg.c_str());
+    DlpNapiThrow(env, ERR_JS_CAPABILITY_NOT_SUPPORTED, jsErrMsg);
+    return true;
 }
 
 }  // namespace DlpPermission
