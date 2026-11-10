@@ -125,11 +125,11 @@ DLP_ErrCode OH_DLP_GetOriginalFileName(const char *fileName, char **originalFile
     if (deviceError != ERR_OH_SUCCESS) {
         return deviceError;
     }
-    *originalFileName = nullptr;
-    if (fileName == nullptr) {
+    if (originalFileName == nullptr || fileName == nullptr) {
         DLP_LOG_ERROR(LABEL, "Invalid parameter.");
         return ERR_OH_INVALID_PARAMETER;
     }
+    *originalFileName = nullptr;
 
     uint32_t suffixLen = strlen(DLP_FILE_SUFFIX);
     uint32_t fileNameLen = strlen(fileName);
@@ -194,6 +194,10 @@ DLP_ErrCode OH_DLP_GetSandboxAppConfig(char **configInfo)
     DLP_ErrCode deviceError = CheckDevice();
     if (deviceError != ERR_OH_SUCCESS) {
         return deviceError;
+    }
+    if (configInfo == nullptr) {
+        DLP_LOG_ERROR(LABEL, "Invalid parameter.");
+        return ERR_OH_INVALID_PARAMETER;
     }
     *configInfo = nullptr;
     std::string strConfigInfo = "";
