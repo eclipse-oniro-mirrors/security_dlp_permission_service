@@ -464,6 +464,7 @@ napi_value NapiDlpPermission::Init(napi_env env, napi_value exports)
         DECLARE_NAPI_PROPERTY("AccountType", CreateEnumAccountType(env)),
         DECLARE_NAPI_PROPERTY("GatheringPolicyType", CreateEnumGatheringPolicy(env)),
         DECLARE_NAPI_PROPERTY("ActionType", CreateEnumActionType(env)),
+        DECLARE_NAPI_PROPERTY("DlpAtomicPermissionType", CreateEnumDlpAtomicPermissionType(env)),
     };
     napi_define_properties(env, exports, sizeof(descriptors) / sizeof(napi_property_descriptor), descriptors);
 

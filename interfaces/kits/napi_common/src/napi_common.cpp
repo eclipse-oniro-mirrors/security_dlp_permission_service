@@ -557,6 +557,37 @@ napi_value CreateEnumActionType(napi_env env)
     return actionType;
 }
 
+napi_value CreateEnumDlpAtomicPermissionType(napi_env env)
+{
+    napi_value atomicType = nullptr;
+    NAPI_CALL(env, napi_create_object(env, &atomicType));
+
+    napi_value prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ATOMIC_READ), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, atomicType, "ATOMIC_READ", prop));
+
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ATOMIC_EDIT), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, atomicType, "ATOMIC_EDIT", prop));
+
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ATOMIC_COPY), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, atomicType, "ATOMIC_COPY", prop));
+
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ATOMIC_SCREENSHOT), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, atomicType, "ATOMIC_SCREENSHOT", prop));
+
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ATOMIC_PRINT), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, atomicType, "ATOMIC_PRINT", prop));
+
+    prop = nullptr;
+    NAPI_CALL(env, napi_create_int32(env, static_cast<int32_t>(ATOMIC_APP_PERMISSION), &prop));
+    NAPI_CALL(env, napi_set_named_property(env, atomicType, "ATOMIC_APP_PERMISSION", prop));
+    return atomicType;
+}
+
 void ProcessCallbackOrPromise(napi_env env, const CommonAsyncContext* asyncContext, napi_value data)
 {
     size_t argc = PARAM_SIZE_TWO;

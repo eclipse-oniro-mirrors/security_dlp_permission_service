@@ -63,6 +63,15 @@ enum ActionFlags : uint32_t {
     ACTION_PERMISSION_CHANGE = 1 << 10
 };
 
+enum AtomicType : uint32_t {
+    ATOMIC_READ = 1,
+    ATOMIC_EDIT = 2,
+    ATOMIC_COPY = 4,
+    ATOMIC_SCREENSHOT = 8,
+    ATOMIC_PRINT = 16,
+    ATOMIC_APP_PERMISSION = 32
+};
+
 typedef struct DLPPermissionInfo {
     DLPFileAccess dlpFileAccess = DLPFileAccess::NO_PERMISSION;
     ActionFlags flags = ACTION_INVALID;
