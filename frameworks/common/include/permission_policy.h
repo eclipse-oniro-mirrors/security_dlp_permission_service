@@ -29,6 +29,12 @@ static const uint32_t DLP_MAX_EXTRA_INFO_LEN = 100 * 1024; // 100K
 
 #define DLP_CERT_UPDATED 0xff56
 
+enum AreaCode : int32_t {
+    AREA_CODE_OTHER = -1,
+    AREA_CODE_CHINA = 1,
+    AREA_CODE_HK_MO = 5,
+};
+
 enum DlpAccountType : uint32_t {
     INVALID_ACCOUNT = 0,
     CLOUD_ACCOUNT = 1,
@@ -145,6 +151,7 @@ struct DlpProperty {
     bool waterMarkConfig = false;
     int32_t countdown = 0;
     std::string nickNameMask;
+    int32_t areaCode = AREA_CODE_OTHER;
 };
 
 class PermissionPolicy final {
@@ -173,6 +180,7 @@ public:
     bool GetwaterMarkConfig() const;
     int32_t GetCountdown() const;
     std::string GetNickNameMask() const;
+    int32_t GetAreaCode() const;
 
     std::string ownerAccount_;
     std::string ownerAccountId_;
@@ -200,6 +208,7 @@ public:
     bool canFindCountdown_ = false;
     std::string nickNameMask_ = "";
     std::string appIdentifier_ = "";
+    int32_t areaCode_ = AREA_CODE_CHINA;
 
 private:
     uint8_t* aeskey_ = nullptr;

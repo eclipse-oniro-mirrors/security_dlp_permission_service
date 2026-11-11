@@ -70,6 +70,7 @@ const std::string ALLOWED_OPEN_COUNT = "allowedOpenCount";
 const std::string WATERMARK_CONFIG = "waterMarkConfig";
 const std::string COUNTDOWN = "countdown";
 const std::string NICK_NAME_MASK = "nickNameMask";
+const std::string AREA_CODE = "areaCode";
 
 static const uint32_t FILE_HEAD = 8;
 static const uint32_t MAX_DLP_HEAD_SIZE = 1024;
@@ -195,6 +196,7 @@ static int32_t SerializePermissionPolicy(const PermissionPolicy& policy, std::st
     policyJson[WATERMARK_CONFIG] = policy.waterMarkConfig_;
     policyJson[COUNTDOWN] = policy.countdown_;
     policyJson[NICK_NAME_MASK] = policy.nickNameMask_;
+    policyJson[AREA_CODE] = policy.areaCode_;
     SerializeEveryoneInfo(policy, policyJson);
     policyString = policyJson.dump();
     return DLP_OK;

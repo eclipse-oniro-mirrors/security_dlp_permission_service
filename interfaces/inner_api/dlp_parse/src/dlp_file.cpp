@@ -75,6 +75,7 @@ DlpFile::DlpFile(int32_t dlpFd, const std::string &realType)
     waterMarkConfig_ = false;
     countdown_ = false;
     nickNameMask_ = "";
+    areaCode_ = AREA_CODE_CHINA;
 }
 
 DlpFile::~DlpFile() = default;

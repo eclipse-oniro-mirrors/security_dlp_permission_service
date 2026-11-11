@@ -168,6 +168,7 @@ PermissionPolicy::PermissionPolicy()
     canFindCountdown_ = false;
     nickNameMask_ = "";
     appIdentifier_ = "";
+    areaCode_ = AREA_CODE_CHINA;
 }
 
 PermissionPolicy::PermissionPolicy(const DlpProperty& property)
@@ -198,6 +199,7 @@ PermissionPolicy::PermissionPolicy(const DlpProperty& property)
     canFindWaterMarkConfig_ = false;
     canFindCountdown_ = false;
     nickNameMask_ = property.nickNameMask;
+    areaCode_ = property.areaCode;
 }
 
 PermissionPolicy::~PermissionPolicy()
@@ -322,6 +324,11 @@ std::string PermissionPolicy::GetNickNameMask() const
     return nickNameMask_;
 }
 
+int32_t PermissionPolicy::GetAreaCode() const
+{
+    return areaCode_;
+}
+
 void PermissionPolicy::CopyPolicyHmac(const PermissionPolicy& srcPolicy)
 {
     if (srcPolicy.hmacKeyLen_ == 0 || srcPolicy.hmacKey_ == nullptr) {
@@ -363,6 +370,7 @@ void PermissionPolicy::CopyPermissionPolicy(const PermissionPolicy& srcPolicy)
     canFindCountdown_ = srcPolicy.canFindCountdown_;
     nickNameMask_ = srcPolicy.nickNameMask_;
     appIdentifier_ = srcPolicy.appIdentifier_;
+    areaCode_ = srcPolicy.areaCode_;
 }
 
 int32_t PermissionPolicy::CheckActionUponExpiry()

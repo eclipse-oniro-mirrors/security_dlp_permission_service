@@ -19,6 +19,7 @@
 #include <string>
 #include <vector>
 #include "nlohmann/json.hpp"
+#include "permission_policy.h"
 
 namespace OHOS {
 namespace Security {
@@ -39,6 +40,7 @@ struct GenerateInfoParams {
     bool waterMarkConfig;
     int32_t countdown;
     std::string nickNameMask;
+    int32_t areaCode = AREA_CODE_OTHER;
 };
 
 int32_t GenerateDlpGeneralInfo(const GenerateInfoParams& params, std::string& generalInfo);

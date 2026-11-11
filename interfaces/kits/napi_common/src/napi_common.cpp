@@ -390,6 +390,7 @@ void GetDlpProperty(std::shared_ptr<DlpFile>& dlpFileNative, DlpProperty& proper
         .waterMarkConfig = policy.waterMarkConfig_,
         .countdown = policy.countdown_,
         .nickNameMask = policy.nickNameMask_,
+        .areaCode = policy.areaCode_,
     };
 }
 
@@ -1363,6 +1364,34 @@ napi_value VisitInfoToJs(napi_env env, const std::vector<VisitedDLPFileInfo>& in
     return vectorJs;
 }
 
+static napi_value SetDlpPropertyExtensionFields(napi_env env, napi_value dlpPropertyJs, const DlpProperty& property)
+{
+    napi_value fileIdJs;
+    NAPI_CALL(env, napi_create_string_utf8(env, property.fileId.c_str(), NAPI_AUTO_LENGTH, &fileIdJs));
+    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "fileId", fileIdJs));
+
+    napi_value allowedOpenCountJs;
+    NAPI_CALL(env, napi_create_int32(env, property.allowedOpenCount, &allowedOpenCountJs));
+    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "allowedOpenCount", allowedOpenCountJs));
+
+    napi_value waterMarkConfigJs = nullptr;
+    NAPI_CALL(env, napi_get_boolean(env, property.waterMarkConfig, &waterMarkConfigJs));
+    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "waterMarkConfig", waterMarkConfigJs));
+
+    napi_value countdownJs;
+    NAPI_CALL(env, napi_create_int32(env, property.countdown, &countdownJs));
+    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "countdown", countdownJs));
+
+    napi_value nickNameMaskJs;
+    NAPI_CALL(env, napi_create_string_utf8(env, property.nickNameMask.c_str(), NAPI_AUTO_LENGTH, &nickNameMaskJs));
+    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "nickNameMask", nickNameMaskJs));
+
+    napi_value areaCodeJs;
+    NAPI_CALL(env, napi_create_int32(env, property.areaCode, &areaCodeJs));
+    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "areaCode", areaCodeJs));
+    return dlpPropertyJs;
+}
+
 napi_value DlpPropertyToJs(napi_env env, const DlpProperty& property)
 {
     napi_value dlpPropertyJs = nullptr;
@@ -1404,25 +1433,7 @@ napi_value DlpPropertyToJs(napi_env env, const DlpProperty& property)
     NAPI_CALL(env, napi_create_int64(env, property.ownerAccountType, &ownerAccountTypeJs));
     NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "ownerAccountType", ownerAccountTypeJs));
 
-    napi_value fileIdJs;
-    NAPI_CALL(env, napi_create_string_utf8(env, property.fileId.c_str(), NAPI_AUTO_LENGTH, &fileIdJs));
-    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "fileId", fileIdJs));
-
-    napi_value allowedOpenCountJs;
-    NAPI_CALL(env, napi_create_int32(env, property.allowedOpenCount, &allowedOpenCountJs));
-    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "allowedOpenCount", allowedOpenCountJs));
-
-    napi_value waterMarkConfigJs = nullptr;
-    NAPI_CALL(env, napi_get_boolean(env, property.waterMarkConfig, &waterMarkConfigJs));
-    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "waterMarkConfig", waterMarkConfigJs));
-
-    napi_value countdownJs;
-    NAPI_CALL(env, napi_create_int32(env, property.countdown, &countdownJs));
-    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "countdown", countdownJs));
-
-    napi_value nickNameMaskJs;
-    NAPI_CALL(env, napi_create_string_utf8(env, property.nickNameMask.c_str(), NAPI_AUTO_LENGTH, &nickNameMaskJs));
-    NAPI_CALL(env, napi_set_named_property(env, dlpPropertyJs, "nickNameMask", nickNameMaskJs));
+    SetDlpPropertyExtensionFields(env, dlpPropertyJs, property);
     return dlpPropertyJs;
 }
 
