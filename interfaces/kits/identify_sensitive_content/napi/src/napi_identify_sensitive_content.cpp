@@ -21,6 +21,7 @@
 #include "accesstoken_kit.h"
 #include "ipc_skeleton.h"
 #include "token_setproc.h"
+#include "parameters.h"
 
 namespace OHOS::Security::DIA {
 const std::string PERMISSION_ENTERPRISE_DATA_IDENTIFY_FILE = "ohos.permission.ENTERPRISE_DATA_IDENTIFY_FILE";
@@ -225,6 +226,11 @@ void NapiIdentifySensitiveFileComplete(napi_env env, napi_status status, void *d
 napi_value NapiIdentifySensitiveContent::ScanFile(napi_env env, napi_callback_info info)
 {
     if (!CheckPermission(env, PERMISSION_ENTERPRISE_DATA_IDENTIFY_FILE)) {
+        return NapiGetNull(env);
+    }
+    if (OHOS::system::GetParameter("const.cust.is_oversea", "true") == "true") {
+        LOG_INFO("is oversea");
+        DIANapiThrow(env, ERR_DIA_JS_CAPABILITY_NOT_SUPPORTED, GetDIAJsErrMsg(ERR_DIA_JS_CAPABILITY_NOT_SUPPORTED));
         return NapiGetNull(env);
     }
     napi_value result = nullptr;
