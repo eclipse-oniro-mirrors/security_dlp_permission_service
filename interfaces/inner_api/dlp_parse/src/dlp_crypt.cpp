@@ -215,7 +215,7 @@ static bool HIAEParamCheck(const struct DlpBlob *key, const struct DlpUsageSpec 
     return true;
 }
 
-int32_t DlpHIAEEncrypt(const struct DlpBlob *key, const struct DlpUsageSpec *usageSpec, const uint32_t inLen,
+int32_t DlpHIAEEncrypt(const struct DlpBlob *key, const struct DlpUsageSpec *usageSpec, const uint32_t messageLen,
     const uint8_t *message, uint8_t *cipherText)
 {
     if (!HIAEParamCheck(key, usageSpec, message, cipherText)) {
@@ -231,8 +231,8 @@ int32_t DlpHIAEEncrypt(const struct DlpBlob *key, const struct DlpUsageSpec *usa
             break;
         }
 
-        uint32_t outLen = inLen;
-        ret = AlgHIAEEncryptUpdate(&ctx, message, inLen, cipherText, &outLen);
+        uint32_t outLen = messageLen;
+        ret = AlgHIAEEncryptUpdate(&ctx, message, messageLen, cipherText, &outLen);
         if (ret != DLP_OK) {
             DLP_LOG_ERROR(LABEL, "Alg HIAE encrypt update failed, ret = %{public}d", ret);
             break;
@@ -243,7 +243,7 @@ int32_t DlpHIAEEncrypt(const struct DlpBlob *key, const struct DlpUsageSpec *usa
     return ret;
 }
 
-int32_t DlpHIAEDecrypt(const struct DlpBlob *key, const struct DlpUsageSpec *usageSpec, const uint32_t inLen,
+int32_t DlpHIAEDecrypt(const struct DlpBlob *key, const struct DlpUsageSpec *usageSpec, const uint32_t messageLen,
     const uint8_t *message, uint8_t *plainText)
 {
     if (!HIAEParamCheck(key, usageSpec, message, plainText)) {
@@ -259,8 +259,8 @@ int32_t DlpHIAEDecrypt(const struct DlpBlob *key, const struct DlpUsageSpec *usa
             break;
         }
 
-        uint32_t outLen = inLen;
-        ret = AlgHIAEDecryptUpdate(&ctx, message, inLen, plainText, &outLen);
+        uint32_t outLen = messageLen;
+        ret = AlgHIAEDecryptUpdate(&ctx, message, messageLen, plainText, &outLen);
         if (ret != DLP_OK) {
             DLP_LOG_ERROR(LABEL, "Alg HIAE decrypt update failed, ret = %{public}d", ret);
             break;

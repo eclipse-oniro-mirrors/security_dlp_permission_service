@@ -127,10 +127,10 @@ int32_t InitDlpHIAEMgr(void);
 
 void ClearDlpHIAEMgr(void);
 
-int32_t DlpHIAEEncrypt(const struct DlpBlob *key, const struct DlpUsageSpec *usageSpec, const uint32_t inLen,
+int32_t DlpHIAEEncrypt(const struct DlpBlob *key, const struct DlpUsageSpec *usageSpec, const uint32_t messageLen,
     const uint8_t *message, uint8_t *cipherText);
 
-int32_t DlpHIAEDecrypt(const struct DlpBlob *key, const struct DlpUsageSpec *usageSpec, const uint32_t inLen,
+int32_t DlpHIAEDecrypt(const struct DlpBlob *key, const struct DlpUsageSpec *usageSpec, const uint32_t messageLen,
     const uint8_t *message, uint8_t *plainText);
 
 #ifdef __cplusplus
