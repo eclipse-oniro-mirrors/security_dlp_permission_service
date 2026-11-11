@@ -44,6 +44,7 @@ ohos_shared_library("identifysensitivecontent_napi") {
     "libuv:uv",
     "c_utils:utils",
     "node:node_header_notice",
+    "init:libbegetutil",
   ]
 
   if(target_platform == "pc" && data_identify_anonymize_service_enable) {
