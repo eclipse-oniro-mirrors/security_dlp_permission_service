@@ -328,6 +328,16 @@ public:
         return nickNameMask_;
     };
 
+    void SetAreaCode(int32_t areaCode)
+    {
+        areaCode_ = areaCode;
+    };
+
+    int32_t GetAreaCode()
+    {
+        return areaCode_;
+    };
+
     int32_t dlpFd_;
     friend class DlpRawFile;
     friend class DlpZipFile;
@@ -370,6 +380,7 @@ private:
     int32_t countdown_;
     std::string nickNameMask_;
     std::string eventId_;
+    int32_t areaCode_;
 };
 }  // namespace DlpPermission
 }  // namespace Security

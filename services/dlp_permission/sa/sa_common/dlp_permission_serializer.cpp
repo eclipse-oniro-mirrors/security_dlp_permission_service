@@ -85,6 +85,7 @@ const std::string CLIENT_POLICY = "clientPolicy";
 const std::string COLLABORATIVE_POLICY = "collaborativePolicy";
 const std::string NICK_NAME_MASK = "nickNameMask";
 const std::string APPIDENTIFIER = "appIdentifier";
+const std::string AREA_CODE = "areaCode";
 constexpr uint64_t  VALID_TIME_STAMP = 2147483647;
 static const uint32_t DOMAIN_VERSION = 2;
 static const uint32_t CLOUD_VERSION = 1;
@@ -485,6 +486,7 @@ static int32_t SerializeCloudAccountPolicy(const PermissionPolicy& policy, unord
     clientPolicyJson[WATERMARK_CONFIG] = policy.waterMarkConfig_;
     clientPolicyJson[COUNTDOWN] = policy.countdown_;
     clientPolicyJson[NICK_NAME_MASK] = policy.nickNameMask_;
+    clientPolicyJson[AREA_CODE] = policy.areaCode_;
     unordered_json fileEnc;
     int32_t res = SerializeFileEncInfo(policy, clientPolicyJson);
     if (res != DLP_OK) {
@@ -699,6 +701,9 @@ static void ParseClientJson(PermissionPolicy& policy, unordered_json clientJson)
     }
     if (clientJson.find(NICK_NAME_MASK) != clientJson.end() && clientJson.at(NICK_NAME_MASK).is_string()) {
         clientJson.at(NICK_NAME_MASK).get_to(policy.nickNameMask_);
+    }
+    if (clientJson.find(AREA_CODE) != clientJson.end() && clientJson.at(AREA_CODE).is_number_integer()) {
+        clientJson.at(AREA_CODE).get_to(policy.areaCode_);
     }
 }
 

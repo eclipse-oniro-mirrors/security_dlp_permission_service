@@ -84,19 +84,23 @@ void GetWaterMarkConfig(napi_env env, napi_value jsObject, DlpProperty& property
 
 void GetExtensionFields(napi_env env, napi_value jsObject, DlpProperty& property)
 {
-    std::string nickNameMask = "";
     napi_value extensionFields = GetNapiValue(env, jsObject, "extensionFields");
     if (extensionFields == nullptr) {
         DLP_LOG_INFO(LABEL, "get extensionFields null");
         return;
     }
+    std::string nickNameMask = "";
     bool ret = GetStringValueByKey(env, extensionFields, "nickNameMask", nickNameMask) &&
         IsStringLengthValid(nickNameMask, MAX_FILE_NAME_LEN);
     if (!ret || nickNameMask.empty()) {
         DLP_LOG_INFO(LABEL, "get nickNameMask empty");
-        return;
+    } else {
+        property.nickNameMask = nickNameMask;
     }
-    property.nickNameMask = nickNameMask;
+    if (!GetInt32ValueByKey(env, extensionFields, "areaCode", property.areaCode)) {
+        DLP_LOG_INFO(LABEL, "get areaCode fail, will set default 1");
+        property.areaCode = AREA_CODE_CHINA;
+    }
 }
 
 bool GetEveryoneAccessList(napi_env env, napi_value jsObject, DlpProperty& property)

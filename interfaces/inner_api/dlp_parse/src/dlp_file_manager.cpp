@@ -330,6 +330,8 @@ static int32_t SetDlpParams(const std::shared_ptr<DlpFile>& filePtr, const DlpPr
     filePtr->SetWaterMarkConfig(property.waterMarkConfig);
     filePtr->SetCountdown(property.countdown);
     filePtr->SetNickNameMask(property.nickNameMask);
+    policy.areaCode_ = property.areaCode;
+    filePtr->SetAreaCode(property.areaCode);
     return DLP_OK;
 }
 

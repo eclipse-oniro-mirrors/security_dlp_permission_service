@@ -102,12 +102,21 @@ bool DlpPolicyParcel::MarshallingDlpPolicy(Parcel& out) const
         DLP_LOG_ERROR(LABEL, "Write canFindCountdown_ fail");
         return false;
     }
+    return MarshallingDlpPolicyExtension(out);
+}
+
+bool DlpPolicyParcel::MarshallingDlpPolicyExtension(Parcel& out) const
+{
     if (!(out.WriteString(this->policyParams_.nickNameMask_))) {
         DLP_LOG_ERROR(LABEL, "Write owner nickNameMask fail");
         return false;
     }
     if (!(out.WriteString(this->policyParams_.appIdentifier_))) {
         DLP_LOG_ERROR(LABEL, "Write appIdentifier fail");
+        return false;
+    }
+    if (!(out.WriteInt32(this->policyParams_.areaCode_))) {
+        DLP_LOG_ERROR(LABEL, "Write areaCode fail");
         return false;
     }
     return true;
@@ -402,6 +411,10 @@ static bool ReadPropertyParcel(Parcel& in, DlpPolicyParcel* policyParcel)
     }
     if (!(in.ReadString(policyParcel->policyParams_.appIdentifier_))) {
         DLP_LOG_ERROR(LABEL, "Read appIdentifier fail");
+        return false;
+    }
+    if (!(in.ReadInt32(policyParcel->policyParams_.areaCode_))) {
+        DLP_LOG_ERROR(LABEL, "Read areaCode fail");
         return false;
     }
     return true;

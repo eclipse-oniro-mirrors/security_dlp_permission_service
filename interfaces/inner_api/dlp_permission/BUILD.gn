@@ -74,7 +74,11 @@ ohos_shared_library("libdlp_permission_common_interface") {
     "${dlp_root_dir}/config:common_build_options_flags",
   ]
 
-  external_deps = [ "json:nlohmann_json_static" ]
+  external_deps = [
+    "c_utils:utils",
+    "ipc:ipc_core",
+    "json:nlohmann_json_static"
+    ]
 }
 
 ohos_shared_library("libdlp_permission_sdk") {

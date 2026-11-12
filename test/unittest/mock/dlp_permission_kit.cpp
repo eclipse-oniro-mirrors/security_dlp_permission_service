@@ -52,6 +52,7 @@ static const std::string ALLOWED_OPEN_COUNT = "allowedOpenCount";
 static const std::string WATERMARK_CONFIG = "waterMarkConfig";
 static const std::string COUNTDOWN = "countdown";
 static const std::string NICK_NAME_MASK = "nickNameMask";
+static const std::string AREA_CODE = "areaCode";
 static const std::string AES_KEY = "aesKey";
 static const std::string IV_KEY = "ivKey";
 static const std::string HMAC_KEY = "hmacKey";
@@ -203,6 +204,7 @@ static void SerializeBasePolicy(const PermissionPolicy& policy, unordered_json& 
     jsonObj[WATERMARK_CONFIG] = policy.waterMarkConfig_;
     jsonObj[COUNTDOWN] = policy.countdown_;
     jsonObj[NICK_NAME_MASK] = policy.nickNameMask_;
+    jsonObj[AREA_CODE] = policy.areaCode_;
 }
 
 static void SerializeCryptoPolicy(const PermissionPolicy& policy, unordered_json& jsonObj)
@@ -253,6 +255,7 @@ static void ResetPolicyForMockDeserialize(PermissionPolicy& policy)
     policy.canFindWaterMarkConfig_ = false;
     policy.canFindCountdown_ = false;
     policy.nickNameMask_ = "";
+    policy.areaCode_ = AREA_CODE_CHINA;
     policy.fileId = "";
     policy.allowedOpenCount_ = 0;
 }
@@ -306,6 +309,9 @@ static void DeserializeExtraPolicy(const unordered_json& jsonObj, PermissionPoli
     }
     if (jsonObj.contains(NICK_NAME_MASK) && jsonObj.at(NICK_NAME_MASK).is_string()) {
         jsonObj.at(NICK_NAME_MASK).get_to(policy.nickNameMask_);
+    }
+    if (jsonObj.contains(AREA_CODE) && jsonObj.at(AREA_CODE).is_number_integer()) {
+        jsonObj.at(AREA_CODE).get_to(policy.areaCode_);
     }
 }
 
