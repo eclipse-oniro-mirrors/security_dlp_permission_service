@@ -98,7 +98,7 @@ void GetExtensionFields(napi_env env, napi_value jsObject, DlpProperty& property
         property.nickNameMask = nickNameMask;
     }
     if (!GetInt32ValueByKey(env, extensionFields, "areaCode", property.areaCode)) {
-        DLP_LOG_INFO(LABEL, "get areaCode fail, will set default 1");
+        DLP_LOG_INFO(LABEL, "get areaCode fail, will set default");
         property.areaCode = AREA_CODE_CHINA;
     }
 }
