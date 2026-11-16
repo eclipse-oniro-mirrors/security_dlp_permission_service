@@ -42,7 +42,8 @@ static bool CheckPermission(napi_env env, const std::string &permission)
         LOG_INFO("check permission %{public}s pass", permission.c_str());
         return true;
     }
-    LOG_ERROR("check permission %{public}s fail", permission.c_str());
+    LOG_ERROR(
+        "check permission %{public}s fail, errorCode: %{public}d", permission.c_str(), ERR_DIA_JS_PERMISSION_DENIED);
     NAPI_CALL_BASE(env, napi_throw(env,
         GenerateBusinessError(env, ERR_DIA_JS_PERMISSION_DENIED, GetDIAJsErrMsg(ERR_DIA_JS_PERMISSION_DENIED))), false);
     return false;
@@ -97,7 +98,7 @@ bool ParseFileOperationContext(napi_env env, napi_callback_info info, ScanFileAs
         }
         return true;
     }
-    LOG_ERROR("parameter number error");
+    LOG_ERROR("parameter number error, errorCode: %{public}d", ERR_DIA_JS_PARAMETER_ERROR);
     return false;
 }
 
@@ -216,7 +217,7 @@ void NapiIdentifySensitiveFileComplete(napi_env env, napi_status status, void *d
         result = NapiComposeMatchResultArray(env, asyncContextPtr->matchResultList);
         NAPI_CALL_RETURN_VOID(env, napi_resolve_deferred(env, asyncContextPtr->deferred, result));
     } else {
-        LOG_ERROR("identify sensitive file error");
+        LOG_ERROR("errorMessage: %{public}s, errorCode: %{public}d", GetDIAJsErrMsg(errCode).c_str(), errCode);
         result = GenerateBusinessError(env, errCode, GetDIAJsErrMsg(errCode));
         NAPI_CALL_RETURN_VOID(env, napi_reject_deferred(env, asyncContextPtr->deferred, result));
     }
@@ -238,7 +239,7 @@ napi_value NapiIdentifySensitiveContent::ScanFile(napi_env env, napi_callback_in
     LOG_INFO("scan file start");
     ScanFileAsyncContext *asyncContext = new (std::nothrow) ScanFileAsyncContext(env);
     if (!asyncContext) {
-        LOG_ERROR("insufficient memory for asyncContext!");
+        LOG_ERROR("insufficient memory for asyncContext, errorCode: %{public}d", ERR_DIA_JS_SYSTEM_SERVICE_EXCEPTION);
         DIANapiThrow(env, ERR_DIA_JS_SYSTEM_SERVICE_EXCEPTION, GetDIAJsErrMsg(ERR_DIA_JS_SYSTEM_SERVICE_EXCEPTION));
         return NapiGetNull(env);
     }
@@ -256,7 +257,7 @@ napi_value NapiIdentifySensitiveContent::ScanFile(napi_env env, napi_callback_in
     NAPI_CALL(env, napi_queue_async_work(env, asyncContext->work));
     asyncContextPtr.release();
 #else
-    LOG_ERROR("capability not supported");
+    LOG_ERROR("capability not supported, errorCode: %{public}d", ERR_DIA_JS_CAPABILITY_NOT_SUPPORTED);
     DIANapiThrow(env, ERR_DIA_JS_CAPABILITY_NOT_SUPPORTED, GetDIAJsErrMsg(ERR_DIA_JS_CAPABILITY_NOT_SUPPORTED));
 #endif
     return result;
