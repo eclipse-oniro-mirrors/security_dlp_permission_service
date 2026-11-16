@@ -175,7 +175,8 @@ bool NapiParsePolicyArray(napi_env env, std::vector<Policy> &policies, napi_valu
         return false;
     }
     if (length < 1 || length > MAX_POLICY_SIZE) {
-        LOG_ERROR("policies length error!");
+        LOG_ERROR("policies length error, the length of identifyPolicies must be between 1 and 1024, errorCode: %{public}d",
+            ERR_DIA_JS_INVALID_PARAMETER);
         DIANapiThrow(env, ERR_DIA_JS_INVALID_PARAMETER, GetDIAJsErrMsg(ERR_DIA_JS_INVALID_PARAMETER));
         return false;
     }
