@@ -14,7 +14,7 @@
 - `test/`：`unittest/`（按模块分组：`dlp_permission/`、`dlp_parse/`、`dlp_fuse/`、`sa/`、`mock/`）与 `fuzztest/dlp_permission/fuzzer/`（对每个服务方法与其 Stub 侧做 fuzz，40+ fuzzer 目标）。
 - `config/`：公共编译选项与覆盖标志。
 - `dlp_permission_service.gni`、`identify_sensitive_content.gni`：特性开关。`bundle.json`：部件声明与依赖。
-- `hisysevent.yaml`、`hisysevent-DLP_UE.yaml`：DFX 事件定义（domain：`DLP` 故障、`DLP_UE` 用户行为），硬性合约。
+- `hisysevent.yaml`：DFX 事件定义（domain：`DLP` 故障），硬性合约。
 
 ### 按任务类型定位代码
 
@@ -44,7 +44,7 @@
 | 修改 DLP 应用 clone 权限配置　　| `frameworks/access_config/clone_app_permission.json` |
 | 修改特性开关　　　　　　　　　　| `dlp_permission_service.gni`、`identify_sensitive_content.gni`（见"构建开关"表） |
 | 修改构建/部件声明　　　　　　　| `bundle.json`、`BUILD.gn`、`config/` |
-| 修改 DFX 事件　　　　　　　　　| `hisysevent.yaml`（domain `DLP`，FAULT/CRITICAL）、`hisysevent-DLP_UE.yaml`（domain `DLP_UE`，BEHAVIOR/MINOR，preserve: true） |
+| 修改 DFX 事件　　　　　　　　　| `hisysevent.yaml`（domain `DLP`，FAULT/CRITICAL） |
 | 修改单元测试　　　　　　　　　　| `test/unittest/dlp_permission/`、`test/unittest/dlp_parse/`、`test/unittest/dlp_fuse/`、`test/unittest/sa/`（见"关键测试目标"） |
 | 修改 fuzz 目标　　　　　　　　　| `test/fuzztest/dlp_permission/fuzzer/`（40+ 目标，按服务方法/Stub 分组） |
 
@@ -132,7 +132,7 @@
 | 支持文件类型白名单 | `sa/etc/dlp_config.json` 中 `support_file_type` 数组 |
 | Gathering / 采集策略 | `dlp_permission_service.gni` 中 `dlp_permission_service_gathering_policy`；运行期参数 `sa/etc/dlp_permission.para`（`dlp.permission.gathering.policy`） |
 | DAC 权限 | `sa/etc/dlp_permission.para.dac`（0774，修改需安全评审） |
-| HiSysEvent domain DLP / DLP_UE | `hisysevent.yaml`（domain `DLP`，FAULT/CRITICAL）、`hisysevent-DLP_UE.yaml`（domain `DLP_UE`，BEHAVIOR/MINOR，preserve: true）—— 硬性合约 |
+| HiSysEvent domain DLP / DLP_UE | `hisysevent.yaml`（domain `DLP`，FAULT/CRITICAL）—— 硬性合约 |
 | DFX 定义 | `frameworks/common/include/dlp_dfx_define.h` |
 | 日志宏 | `frameworks/common/include/dlp_permission_log.h` |
 | SetDlpFeature / dlpSetDlpFeature | `interfaces/kits/dlp_permission/napi/include/napi_dlp_feature.h`（"是否具备 DLP 能力/是否启用"的系统级特性位设置） |
