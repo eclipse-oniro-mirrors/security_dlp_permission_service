@@ -42,7 +42,8 @@ static bool CheckPermission(napi_env env, const std::string &permission)
         LOG_INFO("check permission %{public}s pass", permission.c_str());
         return true;
     }
-    LOG_ERROR("check permission %{public}s fail, errorCode: %{public}d", permission.c_str(), ERR_DIA_JS_PERMISSION_DENIED);
+    LOG_ERROR(
+        "check permission %{public}s fail, errorCode: %{public}d", permission.c_str(), ERR_DIA_JS_PERMISSION_DENIED);
     NAPI_CALL_BASE(env, napi_throw(env,
         GenerateBusinessError(env, ERR_DIA_JS_PERMISSION_DENIED, GetDIAJsErrMsg(ERR_DIA_JS_PERMISSION_DENIED))), false);
     return false;
