@@ -2909,3 +2909,35 @@ HWTEST_F(DlpFileTest, DlpFileGetAtomicDlpFileAccess001, TestSize.Level1)
     testFile.atomicDlpFileAccess_ = 0x1F;
     EXPECT_EQ(testFile.GetAtomicDlpFileAccess(), 0x1Fu);
 }
+
+/**
+ * @tc.name: DlpFileGetAreaCode001
+ * @tc.desc: GetAreaCode returns the default area code
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileTest, DlpFileGetAreaCode001, TestSize.Level1)
+{
+    DlpRawFile testFile(1000, "txt");
+    // default area code is AREA_CODE_CHINA
+    EXPECT_EQ(testFile.GetAreaCode(), AREA_CODE_CHINA);
+}
+
+/**
+ * @tc.name: DlpFileGetAreaCode002
+ * @tc.desc: GetAreaCode returns the value set by SetAreaCode
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFileTest, DlpFileGetAreaCode002, TestSize.Level1)
+{
+    DlpRawFile testFile(1000, "txt");
+    testFile.SetAreaCode(AREA_CODE_HK_MO);
+    EXPECT_EQ(testFile.GetAreaCode(), AREA_CODE_HK_MO);
+
+    testFile.SetAreaCode(AREA_CODE_OTHER);
+    EXPECT_EQ(testFile.GetAreaCode(), AREA_CODE_OTHER);
+
+    testFile.SetAreaCode(AREA_CODE_CHINA);
+    EXPECT_EQ(testFile.GetAreaCode(), AREA_CODE_CHINA);
+}

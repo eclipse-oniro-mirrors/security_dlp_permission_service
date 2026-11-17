@@ -438,6 +438,59 @@ HWTEST_F(PermissionPolicyTest, GetAllowedOpenCount001, TestSize.Level1)
 }
 
 /**
+ * @tc.name: GetAreaCode001
+ * @tc.desc: GetAreaCode default value test
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(PermissionPolicyTest, GetAreaCode001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "GetAreaCode001");
+    std::shared_ptr<PermissionPolicy> policy = std::make_shared<PermissionPolicy>();
+    ASSERT_NE(policy, nullptr);
+
+    // default area code is AREA_CODE_CHINA
+    EXPECT_EQ(policy->GetAreaCode(), AREA_CODE_CHINA);
+}
+
+/**
+ * @tc.name: GetAreaCode002
+ * @tc.desc: GetAreaCode with property construct test
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(PermissionPolicyTest, GetAreaCode002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "GetAreaCode002");
+    DlpProperty property;
+    property.areaCode = AREA_CODE_HK_MO;
+    std::shared_ptr<PermissionPolicy> policy = std::make_shared<PermissionPolicy>(property);
+    ASSERT_NE(policy, nullptr);
+
+    EXPECT_EQ(policy->GetAreaCode(), AREA_CODE_HK_MO);
+}
+
+/**
+ * @tc.name: GetAreaCode003
+ * @tc.desc: GetAreaCode with modified member test
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(PermissionPolicyTest, GetAreaCode003, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "GetAreaCode003");
+    DlpProperty property;
+    property.areaCode = AREA_CODE_OTHER;
+    std::shared_ptr<PermissionPolicy> policy = std::make_shared<PermissionPolicy>(property);
+    ASSERT_NE(policy, nullptr);
+
+    EXPECT_EQ(policy->GetAreaCode(), AREA_CODE_OTHER);
+
+    policy->areaCode_ = AREA_CODE_HK_MO;
+    EXPECT_EQ(policy->GetAreaCode(), AREA_CODE_HK_MO);
+}
+
+/**
  * @tc.name: CopyPermissionPolicy001
  * @tc.desc: SetIv test
  * @tc.type: FUNC
