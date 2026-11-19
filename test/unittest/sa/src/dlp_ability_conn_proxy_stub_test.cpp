@@ -13,8 +13,10 @@
  * limitations under the License.
  */
 
+#include <atomic>
 #include <functional>
 #include <iremote_broker.h>
+#include <thread>
 
 #include "gtest/gtest.h"
 
@@ -225,6 +227,80 @@ HWTEST_F(DlpAbilityConnProxyStubTest, DlpAbilityConnection004, TestSize.Level1)
 
     connection.OnAbilityDisconnectDone(element, DLP_OK);
     EXPECT_FALSE(connection.IsConnected());
+}
+
+/**
+ * @tc.name: DlpAbilityConnection005
+ * @tc.desc: destroy flag set: connect/disconnect callbacks must not be invoked after SetIsDestroyFlag(true).
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpAbilityConnProxyStubTest, DlpAbilityConnection005, TestSize.Level1)
+{
+    g_disconnectCalled = false;
+    bool connectCalled = false;
+    DlpAbilityConnection connection(
+        [&connectCalled](sptr<IRemoteObject> remote) {
+            (void)remote;
+            connectCalled = true;
+        },
+        TestDisconnectCallback);
+
+    connection.SetIsDestroyFlag(true);
+    AppExecFwk::ElementName element;
+    sptr<TestRemoteObj> remoteObj = new (std::nothrow) IRemoteStub<TestRemoteObj>();
+    ASSERT_NE(remoteObj, nullptr);
+    connection.OnAbilityConnectDone(element, remoteObj->AsObject(), DLP_OK);
+    EXPECT_FALSE(connectCalled);
+    EXPECT_FALSE(connection.IsConnected());
+
+    connection.OnAbilityDisconnectDone(element, DLP_OK);
+    EXPECT_FALSE(g_disconnectCalled);
+}
+
+/**
+ * @tc.name: DlpAbilityConnection006
+ * @tc.desc: concurrency regression for AB-BA deadlock fix
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpAbilityConnProxyStubTest, DlpAbilityConnection006, TestSize.Level1)
+{
+    g_disconnectCalled = false;
+    std::atomic<uint32_t> connectCnt(0);
+    DlpAbilityConnection connection(
+        [&connectCnt](sptr<IRemoteObject> remote) {
+            (void)remote;
+            connectCnt++;
+        },
+        TestDisconnectCallback);
+
+    AppExecFwk::ElementName element;
+    sptr<TestRemoteObj> remoteObj = new (std::nothrow) IRemoteStub<TestRemoteObj>();
+    ASSERT_NE(remoteObj, nullptr);
+    sptr<IRemoteObject> obj = remoteObj->AsObject();
+
+    const int loopCount = 50;
+    std::thread connectThread([&connection, &element, &obj, loopCount]() {
+        for (int i = 0; i < loopCount; ++i) {
+            connection.OnAbilityConnectDone(element, obj, DLP_OK);
+        }
+    });
+    std::thread disconnectThread([&connection, &element, loopCount]() {
+        for (int i = 0; i < loopCount; ++i) {
+            connection.OnAbilityDisconnectDone(element, DLP_OK);
+        }
+    });
+    std::thread queryThread([&connection, loopCount]() {
+        for (int i = 0; i < loopCount; ++i) {
+            (void)connection.IsConnected();
+            (void)connection.GetProxy();
+        }
+    });
+    connectThread.join();
+    disconnectThread.join();
+    queryThread.join();
+    EXPECT_EQ(connectCnt.load(), static_cast<uint32_t>(loopCount));
 }
 
 /**

@@ -47,6 +47,7 @@ namespace {
 static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {LOG_CORE, SECURITY_DOMAIN_DLP_PERMISSION, "DlpPermissionNapi"};
 std::mutex g_lockForOpenDlpFileSubscriber;
 std::set<OpenDlpFileSubscriberContext*> g_openDlpFileSubscribers;
+std::mutex g_lockForSandboxChangeInfoRegister;
 RegisterDlpSandboxChangeInfo *g_dlpSandboxChangeInfoRegister = nullptr;
 static constexpr size_t MAX_TYPE_LEN = 64;
 }  // namespace
@@ -68,6 +69,7 @@ napi_value NapiDlpPermission::RegisterSandboxChangeCallback(napi_env env, napi_c
         DlpNapiThrow(env, result);
         return nullptr;
     }
+    std::lock_guard<std::mutex> lock(g_lockForSandboxChangeInfoRegister);
     if (g_dlpSandboxChangeInfoRegister != nullptr) {
         delete g_dlpSandboxChangeInfoRegister;
         g_dlpSandboxChangeInfoRegister = nullptr;
@@ -94,6 +96,7 @@ napi_value NapiDlpPermission::UnregisterSandboxChangeCallback(napi_env env, napi
         DlpNapiThrow(env, result);
         return nullptr;
     }
+    std::lock_guard<std::mutex> lock(g_lockForSandboxChangeInfoRegister);
     if (g_dlpSandboxChangeInfoRegister != nullptr) {
         delete g_dlpSandboxChangeInfoRegister;
         g_dlpSandboxChangeInfoRegister = nullptr;
@@ -151,7 +154,7 @@ napi_value NapiDlpPermission::SubscribeOpenDlpFile(const napi_env env, const nap
     }
     int32_t result = DlpPermissionKit::RegisterOpenDlpFileCallback(syncContextPtr->subscriber);
     if (result != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "RegisterSandboxChangeCallback failed");
+        DLP_LOG_ERROR(LABEL, "RegisterOpenDlpFileCallback failed");
         DlpNapiThrow(env, result);
         return nullptr;
     }

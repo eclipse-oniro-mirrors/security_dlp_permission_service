@@ -273,22 +273,6 @@ bool AppStateObserver::CheckSandboxInfo(const std::string& bundleName, int32_t a
     return false;
 }
 
-void AppStateObserver::EraseSandboxInfo(int32_t uid)
-{
-    std::lock_guard<std::mutex> lock(sandboxInfoLock_);
-    auto iter = sandboxInfo_.find(uid);
-    if (iter != sandboxInfo_.end()) {
-        AppFileService::ModuleFileUri::FileUri fileUri(iter->second.uri);
-        std::string path = fileUri.GetRealPath();
-        EraseFileInfoByUri(path);
-        DecMaskInfoCnt(iter->second);
-        EraseEnterpriseInfoByUid({iter->second});
-        DLP_LOG_INFO(LABEL, "sandbox app %{public}s%{public}d info delete success, uid: %{public}d",
-            iter->second.bundleName.c_str(), iter->second.appIndex, iter->second.uid);
-        sandboxInfo_.erase(iter);
-    }
-}
-
 void AppStateObserver::AddSandboxInfo(const DlpSandboxInfo& appInfo)
 {
     std::lock_guard<std::mutex> lock(sandboxInfoLock_);
@@ -536,13 +520,26 @@ void AppStateObserver::GetOpeningEnterpriseReadOnlySandbox(const InputSandboxInf
 uint32_t AppStateObserver::EraseDlpSandboxInfo(int uid)
 {
     DlpSandboxInfo appInfo;
-    if (!GetSandboxInfo(uid, appInfo)) {
-        return 0;
+    uint32_t tokenId = 0;
+    {
+        std::lock_guard<std::mutex> lock(sandboxInfoLock_);
+        auto iter = sandboxInfo_.find(uid);
+        if (iter == sandboxInfo_.end()) {
+            return 0;
+        }
+        appInfo = iter->second;
+        tokenId = appInfo.tokenId;
+        AppFileService::ModuleFileUri::FileUri fileUri(appInfo.uri);
+        std::string path = fileUri.GetRealPath();
+        EraseFileInfoByUri(path);
+        DecMaskInfoCnt(appInfo);
+        EraseEnterpriseInfoByUid({appInfo});
+        DLP_LOG_INFO(LABEL, "sandbox app %{public}s%{public}d info delete success, uid: %{public}d",
+            appInfo.bundleName.c_str(), appInfo.appIndex, appInfo.uid);
+        sandboxInfo_.erase(iter);
     }
-
-    EraseSandboxInfo(appInfo.uid);
-    EraseUidTokenIdMap(appInfo.tokenId);
-    return appInfo.tokenId;
+    EraseUidTokenIdMap(tokenId);
+    return tokenId;
 }
 
 void AppStateObserver::OnDlpmanagerDied(const AppExecFwk::ProcessData& processData)
@@ -559,6 +556,48 @@ void AppStateObserver::OnDlpmanagerDied(const AppExecFwk::ProcessData& processDa
     PostDelayUnloadTask(CurrentTaskState::SHORT_TASK);
 }
 
+void AppStateObserver::HandleSandboxDied(const AppExecFwk::ProcessData& processData)
+{
+    DlpSandboxInfo appInfo;
+    if (!GetSandboxInfo(processData.uid, appInfo)) {
+        return;
+    }
+    uint32_t snapshotTokenId = appInfo.tokenId;
+    // ipc过程不持锁
+    if (!CanUninstallByGid(appInfo, processData)) {
+        DLP_LOG_INFO(LABEL, "Can not uninstall dlp sandbox by gid");
+        return;
+    }
+    RetentionFileManager::GetInstance().SetInitStatus(appInfo.tokenId);
+    if (RetentionFileManager::GetInstance().CanUninstall(appInfo.tokenId)) {
+        UninstallDlpSandbox(appInfo);
+    }
+    // 重新持锁，以快照 tokenId 校验沙箱未被并发重装，确认后擦除
+    bool erased = false;
+    {
+        std::lock_guard<std::mutex> lock(sandboxInfoLock_);
+        auto iter = sandboxInfo_.find(processData.uid);
+        if (iter != sandboxInfo_.end() && iter->second.tokenId == snapshotTokenId) {
+            AppFileService::ModuleFileUri::FileUri fileUri(iter->second.uri);
+            std::string path = fileUri.GetRealPath();
+            EraseFileInfoByUri(path);
+            DecMaskInfoCnt(iter->second);
+            EraseEnterpriseInfoByUid({iter->second});
+            DLP_LOG_INFO(LABEL, "sandbox app %{public}s%{public}d info delete success, uid: %{public}d",
+                iter->second.bundleName.c_str(), iter->second.appIndex, iter->second.uid);
+            sandboxInfo_.erase(iter);
+            erased = true;
+        }
+    }
+    EraseUidTokenIdMap(snapshotTokenId);
+    if (!erased) {
+        DLP_LOG_INFO(LABEL, "Sandbox erased or changed by concurrent operation, skip callback");
+        return;
+    }
+    DLP_LOG_INFO(LABEL, "ExecuteCallbackAsync appInfo bundleName:%{public}s,appIndex:%{public}d,pid:%{public}d",
+        appInfo.bundleName.c_str(), appInfo.appIndex, appInfo.pid);
+    DlpSandboxChangeCallbackManager::GetInstance().ExecuteCallbackAsync(appInfo);
+}
 
 void AppStateObserver::OnProcessDied(const AppExecFwk::ProcessData& processData)
 {
@@ -595,23 +634,7 @@ void AppStateObserver::OnProcessDied(const AppExecFwk::ProcessData& processData)
         DLP_LOG_INFO(LABEL, "Ignore render process death, renderUid: %{public}d", processData.renderUid);
         return;
     }
-    // current died process is dlp sandbox app
-    DlpSandboxInfo appInfo;
-    if (!GetSandboxInfo(processData.uid, appInfo)) {
-        return;
-    }
-    if (!CanUninstallByGid(appInfo, processData)) {
-        DLP_LOG_INFO(LABEL, "Can not uninstall dlp sandbox by gid");
-        return;
-    }
-    RetentionFileManager::GetInstance().SetInitStatus(appInfo.tokenId);
-    if (RetentionFileManager::GetInstance().CanUninstall(appInfo.tokenId)) {
-        UninstallDlpSandbox(appInfo);
-    }
-    EraseDlpSandboxInfo(appInfo.uid);
-    DLP_LOG_INFO(LABEL, "ExecuteCallbackAsync appInfo bundleName:%{public}s,appIndex:%{public}d,pid:%{public}d",
-        appInfo.bundleName.c_str(), appInfo.appIndex, appInfo.pid);
-    DlpSandboxChangeCallbackManager::GetInstance().ExecuteCallbackAsync(appInfo);
+    HandleSandboxDied(processData);
 }
 
 void AppStateObserver::EraseUidTokenIdMap(uint32_t tokenId)
@@ -916,7 +939,12 @@ void AppStateObserver::PostDelayUnloadTask(CurrentTaskState newTaskState)
     }
     taskState_ = newTaskState;
     auto task = [this]() {
-        if (taskState_ == CurrentTaskState::SHORT_TASK || taskState_ == CurrentTaskState::LONG_TASK) {
+        CurrentTaskState snapshot;
+        {
+            std::lock_guard<std::mutex> lock(unloadHandlerMutex_);
+            snapshot = taskState_;
+        }
+        if (snapshot == CurrentTaskState::SHORT_TASK || snapshot == CurrentTaskState::LONG_TASK) {
             PostDelayUnloadTask(CurrentTaskState::IDLE);
             return;
         }

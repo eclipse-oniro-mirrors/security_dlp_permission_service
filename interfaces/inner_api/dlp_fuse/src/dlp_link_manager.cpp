@@ -205,14 +205,31 @@ void DlpLinkManager::ReleaseDlpLinkFile(DlpLinkFile* node)
     if (node == nullptr) {
         return;
     }
+    // 仅释放本次查找新增的临时引用，节点仍由 map 与内核引用管理，不能在此移除 map 条目
+    if (node->SubAndCheckZeroRef(1)) {
+        delete node;
+    }
+}
 
+void DlpLinkManager::ForgetDlpLinkFile(DlpLinkFile* node, uint64_t nlookup)
+{
+    if (node == nullptr) {
+        return;
+    }
     Utils::UniqueWriteGuard<Utils::RWLock> infoGuard(dlpLinkMapLock_);
+    if (!node->SubAndCheckZeroRef(nlookup)) {
+        // 内核 FORGET 仅抵消瞬时 lookup 引用；注册态（AddDlpLinkFile 持有的引用）未释放时，
+        // 节点必须保留在 map 中，否则仍在使用的链接文件会被提前注销
+        return;
+    }
+    // 引用计数归零才会删除节点：删除前按指针从 map 中 erase，避免 map 留悬空指针
     for (auto iter = dlpLinkFileNameMap_.begin(); iter != dlpLinkFileNameMap_.end(); iter++) {
-        if (node == iter->second) {
+        if (iter->second == node) {
             dlpLinkFileNameMap_.erase(iter);
             break;
         }
     }
+    DLP_LOG_INFO(LABEL, "Forget link file, reference is zero, delete link file ok");
     delete node;
 }
 
@@ -245,6 +262,10 @@ DlpLinkFile* DlpLinkManager::LookUpDlpLinkFileByIno(fuse_ino_t ino)
     Utils::UniqueReadGuard<Utils::RWLock> infoGuard(dlpLinkMapLock_);
     for (auto& [name, node] : dlpLinkFileNameMap_) {
         if (node == target) {
+            if (!node->IncreaseRef()) {
+                DLP_LOG_ERROR(LABEL, "Look up link file by ino fail, increase ref failed");
+                return nullptr;
+            }
             return node;
         }
     }

@@ -103,7 +103,6 @@ private:
     void AddUserId(int32_t userId);
 
     void AddSandboxInfo(const DlpSandboxInfo& appInfo);
-    void EraseSandboxInfo(int32_t uid);
 
     void AddUidWithTokenId(uint32_t tokenId, int32_t uid);
     bool GetUidByTokenId(uint32_t tokenId, int32_t& uid);
@@ -112,6 +111,7 @@ private:
     bool FillSandboxInfoIfProcessRunning(const DlpSandboxInfo& appInfo, SandboxInfo& sandboxInfo);
     bool CanUninstallByGid(DlpSandboxInfo& appInfo, const AppExecFwk::ProcessData& processData);
     void OnDlpmanagerDied(const AppExecFwk::ProcessData& processData);
+    void HandleSandboxDied(const AppExecFwk::ProcessData& processData);
     bool InitUnloadHandler();
     void CheckHasBackgroundTask();
 

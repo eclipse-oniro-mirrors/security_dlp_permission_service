@@ -98,6 +98,7 @@ int32_t RetentionFileManager::UpdateFile(const int32_t& jsonRes)
 
 int32_t RetentionFileManager::AddSandboxInfo(const RetentionInfo& retentionInfo)
 {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (!Init()) {
         DLP_LOG_ERROR(LABEL, "Init failed!");
         return DLP_RETENTION_UPDATE_ERROR;
@@ -108,6 +109,7 @@ int32_t RetentionFileManager::AddSandboxInfo(const RetentionInfo& retentionInfo)
 
 int32_t RetentionFileManager::DelSandboxInfo(uint32_t tokenId)
 {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (!Init()) {
         DLP_LOG_ERROR(LABEL, "Init failed!");
         return DLP_RETENTION_UPDATE_ERROR;
@@ -137,6 +139,7 @@ void RetentionFileManager::SetInitStatus(const uint32_t& tokenId)
 int32_t RetentionFileManager::UpdateSandboxInfo(const std::set<std::string>& docUriSet, RetentionInfo& info,
     bool isRetention)
 {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (!Init()) {
         DLP_LOG_ERROR(LABEL, "Init failed!");
         return DLP_RETENTION_UPDATE_ERROR;
@@ -147,6 +150,7 @@ int32_t RetentionFileManager::UpdateSandboxInfo(const std::set<std::string>& doc
 
 int32_t RetentionFileManager::RemoveRetentionState(const std::string& bundleName, const int32_t& appIndex)
 {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (!Init()) {
         DLP_LOG_ERROR(LABEL, "Init failed!");
         return DLP_RETENTION_UPDATE_ERROR;
@@ -157,6 +161,7 @@ int32_t RetentionFileManager::RemoveRetentionState(const std::string& bundleName
 
 int32_t RetentionFileManager::ClearUnreservedSandbox(int32_t isNotMatch)
 {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (!Init()) {
         DLP_LOG_ERROR(LABEL, "Init failed!");
         return DLP_RETENTION_UPDATE_ERROR;
@@ -187,6 +192,7 @@ int32_t RetentionFileManager::GetBundleNameSetByUserId(const int32_t userId, std
 int32_t RetentionFileManager::RemoveRetentionInfoByUserId(const int32_t userId,
     const std::set<std::string>& bundleNameSet)
 {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (!Init()) {
         DLP_LOG_ERROR(LABEL, "Init failed!");
         return DLP_RETENTION_UPDATE_ERROR;
@@ -197,6 +203,7 @@ int32_t RetentionFileManager::RemoveRetentionInfoByUserId(const int32_t userId,
 
 int32_t RetentionFileManager::UpdateReadFlag(uint32_t tokenId)
 {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (!Init()) {
         DLP_LOG_ERROR(LABEL, "Init failed!");
         return DLP_RETENTION_UPDATE_ERROR;

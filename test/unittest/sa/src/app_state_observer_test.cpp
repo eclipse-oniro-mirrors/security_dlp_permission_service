@@ -854,24 +854,24 @@ HWTEST_F(AppStateObserverTest, GetOpeningReadOnlyBindSandbox001, TestSize.Level1
     appInfo.isReadOnce = false;
     observer.AddSandboxInfo(appInfo);
     observer.GetOpeningReadOnlySandbox(DLP_BUNDLENAME, DEFAULT_USERID, appIndex, bindAppIndex);
-    observer.EraseSandboxInfo(appInfo.uid);
+    observer.EraseDlpSandboxInfo(appInfo.uid);
     ASSERT_EQ(bindAppIndex, appInfo.bindAppIndex);
     appInfo.dlpFileAccess = DLPFileAccess::CONTENT_EDIT;
     observer.AddSandboxInfo(appInfo);
     observer.GetOpeningReadOnlySandbox(DLP_BUNDLENAME, DEFAULT_USERID, appIndex, bindAppIndex);
-    observer.EraseSandboxInfo(appInfo.uid);
+    observer.EraseDlpSandboxInfo(appInfo.uid);
     ASSERT_EQ(bindAppIndex, -1);
     appInfo.dlpFileAccess = DLPFileAccess::READ_ONLY;
     appInfo.bundleName = "";
     observer.AddSandboxInfo(appInfo);
     observer.GetOpeningReadOnlySandbox(DLP_BUNDLENAME, DEFAULT_USERID, appIndex, bindAppIndex);
-    observer.EraseSandboxInfo(appInfo.uid);
+    observer.EraseDlpSandboxInfo(appInfo.uid);
     ASSERT_EQ(bindAppIndex, -1);
     appInfo.userId = 0;
     appInfo.bundleName = DLP_BUNDLENAME;
     observer.AddSandboxInfo(appInfo);
     observer.GetOpeningReadOnlySandbox(DLP_BUNDLENAME, DEFAULT_USERID, appIndex, bindAppIndex);
-    observer.EraseSandboxInfo(appInfo.uid);
+    observer.EraseDlpSandboxInfo(appInfo.uid);
     ASSERT_EQ(bindAppIndex, -1);
     observer.sandboxInfo_.clear();
 }
@@ -1078,7 +1078,7 @@ HWTEST_F(AppStateObserverTest, GetOpeningReadOnlySandbox002, TestSize.Level1)
     observer.GetOpeningReadOnlySandbox(bundleName, userId, appIndex, bindAppIndex);
     userId = 123;
 
-    observer.EraseSandboxInfo(1);
+    observer.EraseDlpSandboxInfo(1);
 
     appInfo = {
         .uid = 1,
@@ -1132,7 +1132,7 @@ HWTEST_F(AppStateObserverTest, GetOpeningReadOnlyBindSandbox002, TestSize.Level1
     observer.GetOpeningReadOnlySandbox(bundleName, userId, appIndex, appIndex);
     userId = 123;
  
-    observer.EraseSandboxInfo(1);
+    observer.EraseDlpSandboxInfo(1);
  
     appInfo = {
         .uid = 1,
@@ -1801,7 +1801,7 @@ HWTEST_F(AppStateObserverTest, GetOpeningEnterpriseSandboxInfo002, TestSize.Leve
     ASSERT_EQ(runningInfo.bindAppIndex, sandboxInfo.bindAppIndex);
     ASSERT_EQ(runningInfo.tokenId, sandboxInfo.tokenId);
 
-    observer.EraseSandboxInfo(runningInfo.uid);
+    observer.EraseDlpSandboxInfo(runningInfo.uid);
     DlpSandboxInfo wrongLabel = MakeEnterpriseSandboxInfo({
         UID_WRONG_LABEL,
         200,
@@ -1856,7 +1856,7 @@ HWTEST_F(AppStateObserverTest, VerifyGetOpeningEnterpriseReadOnlySandboxNoMatch,
     ASSERT_EQ(-1, dlpSandboxInfo.appIndex);
     ASSERT_EQ(-1, dlpSandboxInfo.bindAppIndex);
 
-    observer.EraseSandboxInfo(wrongAccessInfo.uid);
+    observer.EraseDlpSandboxInfo(wrongAccessInfo.uid);
     DlpSandboxInfo readOnceInfo = wrongAccessInfo;
     readOnceInfo.uid = UID_READ_ONCE;
     readOnceInfo.dlpFileAccess = DLPFileAccess::READ_ONLY;
@@ -2281,4 +2281,134 @@ HWTEST_F(AppStateObserverTest, DumpSandboxAtomic001, TestSize.Level1)
     ASSERT_GE(fd, 0);
     observer.DumpSandbox(fd);
     close(fd);
+}
+
+/**
+ * @tc.name: EraseDlpSandboxInfo002
+ * @tc.desc: Bug5-Fix: EraseDlpSandboxInfo erases exactly the entry read under the lock and
+ *           returns its tokenId.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(AppStateObserverTest, EraseDlpSandboxInfo002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "EraseDlpSandboxInfo002");
+    AppStateObserver observer;
+    const int32_t uid = 5007;
+    const uint32_t tokenId = 777;
+    DlpSandboxInfo appInfo;
+    appInfo.uid = uid;
+    appInfo.userId = DEFAULT_USERID;
+    appInfo.bundleName = "testBundle";
+    appInfo.appIndex = 2;
+    appInfo.tokenId = tokenId;
+    appInfo.uri = "test_uri_erase";
+    observer.sandboxInfo_[uid] = appInfo;
+
+    uint32_t ret = observer.EraseDlpSandboxInfo(uid);
+    EXPECT_EQ(tokenId, ret);
+    DlpSandboxInfo out;
+    EXPECT_FALSE(observer.GetSandboxInfo(uid, out));
+    EXPECT_FALSE(observer.GetSandboxInfoByTokenId(tokenId, out));
+}
+
+/**
+ * @tc.name: EraseDlpSandboxInfo003
+ * @tc.desc: Bug5-Fix: concurrent EraseDlpSandboxInfo calls on distinct uids erase all
+ *           matching entries exactly once without crash or data race.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(AppStateObserverTest, EraseDlpSandboxInfo003, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "EraseDlpSandboxInfo003");
+    AppStateObserver observer;
+    std::vector<int32_t> uids;
+    for (int32_t i = 0; i < 8; i++) {
+        int32_t uid = 6000 + i;
+        uids.push_back(uid);
+        DlpSandboxInfo appInfo;
+        appInfo.uid = uid;
+        appInfo.userId = DEFAULT_USERID;
+        appInfo.bundleName = "testBundle";
+        appInfo.appIndex = i;
+        appInfo.tokenId = static_cast<uint32_t>(8000 + i);
+        appInfo.uri = "test_uri_concurrent";
+        observer.sandboxInfo_[uid] = appInfo;
+    }
+
+    std::vector<std::thread> threads;
+    for (size_t i = 0; i < uids.size(); i++) {
+        threads.emplace_back([&observer, i, &uids]() {
+            uint32_t ret = observer.EraseDlpSandboxInfo(uids[i]);
+            EXPECT_EQ(static_cast<uint32_t>(8000 + i), ret);
+        });
+    }
+    for (auto& t : threads) {
+        t.join();
+    }
+    DlpSandboxInfo out;
+    for (size_t i = 0; i < uids.size(); i++) {
+        EXPECT_FALSE(observer.GetSandboxInfo(uids[i], out));
+        EXPECT_FALSE(observer.GetSandboxInfoByTokenId(static_cast<uint32_t>(8000 + i), out));
+    }
+}
+
+/**
+ * @tc.name: OnProcessDied005
+ * @tc.desc: Bug6-Fix: OnProcessDied snapshot + double-check flow still erases the sandbox
+ *           entry and uid-tokenId map when the entry is unchanged during the IPC sequence.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(AppStateObserverTest, OnProcessDied005, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "OnProcessDied005");
+    AppStateObserver observer;
+    const int32_t uid = 1;
+    const uint32_t tokenId = 777;
+    OHOS::AppExecFwk::ProcessData processData;
+    processData.bundleName = "com.ohos.dlpmanager";
+    processData.processName = "com.ohos.dlpmanager";
+    processData.uid = uid;
+    processData.renderUid = -1;
+
+    DlpSandboxInfo appInfo = {
+        .uid = uid,
+        .userId = 123,
+        .appIndex = 2,
+        .bundleName = "testbundle1",
+        .hasRead = false,
+        .tokenId = tokenId,
+        .uri = "test_uri_onprocessdied"
+    };
+    observer.AddSandboxInfo(appInfo);
+    observer.AddUidWithTokenId(tokenId, uid);
+
+    observer.OnProcessDied(processData);
+
+    // Step 4/5: entry matched by snapshot tokenId must be erased, uid-tokenId map cleaned
+    DlpSandboxInfo out;
+    EXPECT_FALSE(observer.GetSandboxInfo(uid, out));
+    EXPECT_FALSE(observer.GetSandboxInfoByTokenId(tokenId, out));
+}
+
+/**
+ * @tc.name: PostDelayUnloadTask002
+ * @tc.desc: Bug10-Fix: PostDelayUnloadTask reads taskState_ under unloadHandlerMutex_ snapshot;
+ *           calling with null unload handler must not crash or corrupt taskState_.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(AppStateObserverTest, PostDelayUnloadTask002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "PostDelayUnloadTask002");
+    AppStateObserver observer;
+    CurrentTaskState before = observer.taskState_;
+    observer.unloadHandler_ = nullptr;
+    observer.PostDelayUnloadTask(CurrentTaskState::IDLE);
+    // handler is null: task state must stay untouched, no crash
+    EXPECT_EQ(before, observer.taskState_);
+    observer.PostDelayUnloadTask(CurrentTaskState::SHORT_TASK);
+    EXPECT_NO_FATAL_FAILURE();
 }

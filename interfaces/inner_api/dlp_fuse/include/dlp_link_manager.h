@@ -41,6 +41,7 @@ public:
     DlpLinkFile* LookUpDlpLinkFileByIno(fuse_ino_t ino);
     void DumpDlpLinkFile(std::vector<DlpLinkFileInfo>& linkList);
     void ReleaseDlpLinkFile(DlpLinkFile* node);
+    void ForgetDlpLinkFile(DlpLinkFile* node, uint64_t nlookup);
 
 private:
     DlpLinkManager();

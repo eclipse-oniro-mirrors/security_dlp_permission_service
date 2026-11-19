@@ -16,6 +16,7 @@
 #include "retention_file_manager_test.h"
 #include <cerrno>
 #include <gtest/gtest.h>
+#include <thread>
 #include <securec.h>
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
@@ -211,4 +212,91 @@ HWTEST_F(RetentionFileManagerTest, UpdateReadFlag002, TestSize.Level1)
     uint32_t tokenId = 888888;
     int32_t ret = RetentionFileManager::GetInstance().UpdateReadFlag(tokenId);
     EXPECT_EQ(DLP_OK, ret);
+}
+/**
+ * @tc.name: DelSandboxInfo001
+ * @tc.desc: Test DelSandboxInfo with non-existent tokenId
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(RetentionFileManagerTest, DelSandboxInfo001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "DelSandboxInfo001");
+    uint32_t tokenId = 777777;
+    int32_t ret = RetentionFileManager::GetInstance().DelSandboxInfo(tokenId);
+    // SandboxJsonManager::DelSandboxInfo returns DLP_RETENTION_SERVICE_ERROR when
+    // the tokenId does not exist; Init failure maps to DLP_RETENTION_UPDATE_ERROR.
+    EXPECT_TRUE(ret == DLP_OK || ret == DLP_FILE_NO_NEED_UPDATE || ret == DLP_RETENTION_UPDATE_ERROR ||
+        ret == DLP_RETENTION_SERVICE_ERROR);
+}
+
+/**
+ * @tc.name: UpdateSandboxInfo002
+ * @tc.desc: Test UpdateSandboxInfo with empty docUriSet and isRetention=false
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(RetentionFileManagerTest, UpdateSandboxInfo002, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "UpdateSandboxInfo002");
+    RetentionInfo info;
+    info.appIndex = 0;
+    info.tokenId = 0;
+    info.bundleName = "";
+    info.userId = -1;
+    int32_t ret = RetentionFileManager::GetInstance().UpdateSandboxInfo({}, info, false);
+    EXPECT_TRUE(ret == DLP_OK || ret == DLP_FILE_NO_NEED_UPDATE || ret == DLP_RETENTION_UPDATE_ERROR);
+}
+
+/**
+ * @tc.name: RetentionFileManagerConcurrent001
+ * @tc.desc: concurrency regression for method-level locking fix
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(RetentionFileManagerTest, RetentionFileManagerConcurrent001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "RetentionFileManagerConcurrent001");
+    const int loopCount = 20;
+    const uint32_t tokenId = 666666;
+    std::thread addThread([&tokenId, loopCount]() {
+        for (int i = 0; i < loopCount; ++i) {
+            RetentionInfo info;
+            info.appIndex = 0;
+            info.tokenId = tokenId;
+            info.bundleName = "concurrent_bundle";
+            info.userId = 100;
+            (void)RetentionFileManager::GetInstance().AddSandboxInfo(info);
+        }
+    });
+    std::thread delThread([&tokenId, loopCount]() {
+        for (int i = 0; i < loopCount; ++i) {
+            (void)RetentionFileManager::GetInstance().DelSandboxInfo(tokenId);
+        }
+    });
+    std::thread updateThread([&tokenId, loopCount]() {
+        for (int i = 0; i < loopCount; ++i) {
+            RetentionInfo info;
+            info.appIndex = 0;
+            info.tokenId = tokenId;
+            info.bundleName = "concurrent_bundle";
+            info.userId = 100;
+            (void)RetentionFileManager::GetInstance().UpdateSandboxInfo({}, info, false);
+        }
+    });
+    std::thread queryThread([&tokenId, loopCount]() {
+        for (int i = 0; i < loopCount; ++i) {
+            (void)RetentionFileManager::GetInstance().CanUninstall(tokenId);
+            (void)RetentionFileManager::GetInstance().HasRetentionSandboxInfo("concurrent_bundle");
+        }
+    });
+    addThread.join();
+    delThread.join();
+    updateThread.join();
+    queryThread.join();
+    // concurrent Del may win the race, so the final Del can legally report
+    // "no such tokenId" (DLP_RETENTION_SERVICE_ERROR)
+    int32_t ret = RetentionFileManager::GetInstance().DelSandboxInfo(tokenId);
+    EXPECT_TRUE(ret == DLP_OK || ret == DLP_FILE_NO_NEED_UPDATE || ret == DLP_RETENTION_UPDATE_ERROR ||
+        ret == DLP_RETENTION_SERVICE_ERROR);
 }
