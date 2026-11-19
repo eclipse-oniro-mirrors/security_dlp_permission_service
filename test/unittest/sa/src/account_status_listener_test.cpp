@@ -15,6 +15,7 @@
 
 #include "account_status_listener_test.h"
 #include <gtest/gtest.h>
+#include <thread>
 #include "account_status_listener.h"
 #include "dlp_permission.h"
 #include "dlp_permission_log.h"
@@ -171,4 +172,80 @@ HWTEST_F(AccountStatusListenerTest, RegisterAndUnRegisterFlow001, TestSize.Level
     } else {
         ASSERT_EQ(DLP_SUCCESS, res2);
     }
+}
+
+/**
+ * @tc.name: RegisterAccountEventMonitor004
+ * @tc.desc: when already registered, null callback returns DLP_SUCCESS without touching subscriber
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(AccountStatusListenerTest, RegisterAccountEventMonitor004, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "RegisterAccountEventMonitor004");
+
+    AccountListenerCallback callback;
+    callback.registerAccount = RegisterAccount;
+    callback.unregisterAccount = UnregisterAccount;
+    int32_t res = RegisterAccountEventMonitor(&callback);
+    if (res != DLP_SUCCESS) {
+        ASSERT_EQ(DLP_ERROR, res);
+        return;
+    }
+    ASSERT_EQ(DLP_SUCCESS, res);
+    // already registered: null callback must be ignored and return DLP_SUCCESS
+    int32_t res2 = RegisterAccountEventMonitor(nullptr);
+    EXPECT_EQ(DLP_SUCCESS, res2);
+    UnRegisterAccountMonitor();
+}
+
+/**
+ * @tc.name: UnRegisterAccountMonitor003
+ * @tc.desc: UnRegisterAccountMonitor without any registration returns silently, no crash
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(AccountStatusListenerTest, UnRegisterAccountMonitor003, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "UnRegisterAccountMonitor003");
+
+    UnRegisterAccountMonitor();
+    UnRegisterAccountMonitor();
+}
+
+/**
+ * @tc.name: ConcurrentRegisterAndUnregister001
+ * @tc.desc: concurrency regression for subscriber pointer race fix
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(AccountStatusListenerTest, ConcurrentRegisterAndUnregister001, TestSize.Level1)
+{
+    DLP_LOG_INFO(LABEL, "ConcurrentRegisterAndUnregister001");
+
+    const int loopCount = 20;
+    std::thread nullThread([]() {
+        for (int i = 0; i < loopCount; ++i) {
+            (void)RegisterAccountEventMonitor(nullptr);
+        }
+    });
+    std::thread registerThread([]() {
+        AccountListenerCallback callback;
+        callback.registerAccount = RegisterAccount;
+        callback.unregisterAccount = UnregisterAccount;
+        for (int i = 0; i < loopCount; ++i) {
+            (void)RegisterAccountEventMonitor(&callback);
+        }
+    });
+    std::thread unregisterThread([]() {
+        for (int i = 0; i < loopCount; ++i) {
+            UnRegisterAccountMonitor();
+        }
+    });
+    nullThread.join();
+    registerThread.join();
+    unregisterThread.join();
+    UnRegisterAccountMonitor();
+    int32_t res = RegisterAccountEventMonitor(nullptr);
+    EXPECT_TRUE(res == DLP_SUCCESS || res == DLP_ERROR);
 }

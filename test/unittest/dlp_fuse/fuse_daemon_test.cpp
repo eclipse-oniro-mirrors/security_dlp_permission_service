@@ -560,6 +560,56 @@ HWTEST_F(FuseDaemonTest, FuseDaemonForget001, TestSize.Level0)
 }
 
 /**
+ * @tc.name: FuseDaemonForget002
+ * @tc.desc: Bug9-Fix: FuseDaemonForget must release the link file through DlpLinkManager
+ *           (ForgetDlpLinkFile) instead of deleting it directly, reply_none is still sent.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(FuseDaemonTest, FuseDaemonForget002, TestSize.Level0)
+{
+    DLP_LOG_INFO(LABEL, "FuseDaemonForget002");
+    fuse_req_t req = nullptr;
+    ASSERT_TRUE(GetDlpLinkManager(1));
+    std::shared_ptr<DlpFile> dlpFile = std::make_shared<DlpZipFile>(-1, DLP_TEST_DIR, 0, "txt");
+    ASSERT_NE(dlpFile, nullptr);
+    DlpLinkFile* linkfile = AddLinkFileToManager("test_forget_link", dlpFile);
+    ASSERT_NE(linkfile, nullptr);
+    fuse_ino_t ino = static_cast<fuse_ino_t>(reinterpret_cast<uintptr_t>(linkfile));
+
+    DlpCMockCondition condition;
+    condition.mockSequence = { true };
+    SetMockConditions("fuse_reply_none", condition);
+    SetMockCallback("fuse_reply_none", reinterpret_cast<CommonMockFuncT>(FuseReplyNoneMock));
+    g_fuseReplyNoneCalled = false;
+    // forget with exact nlookup: refcount drops to zero, node deleted via manager
+    FuseDaemon::fuseDaemonOper_.forget(req, ino, 1);
+    EXPECT_TRUE(g_fuseReplyNoneCalled);
+    CleanMockConditions();
+    // node freed through ForgetDlpLinkFile and removed from manager map
+    EXPECT_EQ(dlpLinkManager->LookUpDlpLinkFile("test_forget_link"), nullptr);
+
+    // forget with nlookup larger than refcount: underflow refused, node stays registered in map
+    DlpLinkFile* linkfile2 = AddLinkFileToManager("test_forget_link2", dlpFile);
+    ASSERT_NE(linkfile2, nullptr);
+    fuse_ino_t ino2 = static_cast<fuse_ino_t>(reinterpret_cast<uintptr_t>(linkfile2));
+
+    condition.mockSequence = { true };
+    SetMockConditions("fuse_reply_none", condition);
+    SetMockCallback("fuse_reply_none", reinterpret_cast<CommonMockFuncT>(FuseReplyNoneMock));
+    g_fuseReplyNoneCalled = false;
+    FuseDaemon::fuseDaemonOper_.forget(req, ino2, 2);
+    EXPECT_TRUE(g_fuseReplyNoneCalled);
+    CleanMockConditions();
+    EXPECT_EQ(linkfile2->refcount_, 1);
+    EXPECT_NE(dlpLinkManager->dlpLinkFileNameMap_.find("test_forget_link2"),
+        dlpLinkManager->dlpLinkFileNameMap_.end());
+    // cleanup: unregister then release, node deleted via manager at refcount zero
+    dlpLinkManager->dlpLinkFileNameMap_.erase("test_forget_link2");
+    dlpLinkManager->ReleaseDlpLinkFile(linkfile2);
+}
+
+/**
  * @tc.name: FuseDaemonReadDir001
  * @tc.desc: test fuse read dir callback abnormal branch
  * @tc.type: FUNC

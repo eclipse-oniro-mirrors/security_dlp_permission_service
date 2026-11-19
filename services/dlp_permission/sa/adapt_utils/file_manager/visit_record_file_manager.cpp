@@ -86,6 +86,7 @@ int32_t VisitRecordFileManager::UpdateFile(const int32_t& jsonRes)
 int32_t VisitRecordFileManager::AddVisitRecord(const std::string& bundleName, const int32_t& userId,
     const std::string& docUri)
 {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (!Init()) {
         DLP_LOG_ERROR(LABEL, "Init failed!");
         return DLP_RETENTION_UPDATE_ERROR;
@@ -97,6 +98,7 @@ int32_t VisitRecordFileManager::AddVisitRecord(const std::string& bundleName, co
 int32_t VisitRecordFileManager::GetVisitRecordList(const std::string& bundleName, const int32_t& userId,
     std::vector<VisitedDLPFileInfo>& infoVec)
 {
+    std::lock_guard<std::recursive_mutex> lock(mutex_);
     if (!Init()) {
         DLP_LOG_ERROR(LABEL, "Init failed!");
         return DLP_RETENTION_UPDATE_ERROR;

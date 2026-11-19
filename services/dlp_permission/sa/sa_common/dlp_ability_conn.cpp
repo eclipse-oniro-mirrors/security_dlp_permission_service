@@ -65,15 +65,20 @@ void DlpAbilityConnection::OnAbilityConnectDone(const AppExecFwk::ElementName &e
         DLP_LOG_ERROR(LABEL, "Invaild Ability Connection.");
         return;
     }
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    if (isDestroyFlag_) {
-        DLP_LOG_ERROR(LABEL, "Object is destroying, ignore connect callback.");
-        return;
+    ConnectCallback cb;
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        if (isDestroyFlag_) {
+            DLP_LOG_ERROR(LABEL, "Object is destroying, ignore connect callback.");
+            return;
+        }
+        remoteObj_ = remoteObj;
+        DLP_LOG_INFO(LABEL, "Get Ability Connection.");
+        cb = connectCallback_;
     }
-    remoteObj_ = remoteObj;
-    DLP_LOG_INFO(LABEL, "Get Ability Connection.");
-    if (connectCallback_ != nullptr) {
-        connectCallback_(remoteObj_);
+    // 释放 connection mutex 后再 invoke，避免反向请求 adapter mutex 导致 AB-BA 死锁
+    if (cb != nullptr) {
+        cb(remoteObj_);
         return;
     }
     DLP_LOG_ERROR(LABEL, "connectCallback is nullptr.");
@@ -82,14 +87,28 @@ void DlpAbilityConnection::OnAbilityConnectDone(const AppExecFwk::ElementName &e
 void DlpAbilityConnection::OnAbilityDisconnectDone(const AppExecFwk::ElementName &element, int res)
 {
     (void)res;
-    std::lock_guard<std::recursive_mutex> lock(mutex_);
-    if (disconnectCallback_ != nullptr && isDestroyFlag_ == false) {
-        disconnectCallback_(DDLP_HAP_DISCONN_ERROR, 0, nullptr, 0);
-    } else {
-        DLP_LOG_ERROR(LABEL, "disConnectCallback is nullptr or be destroyed.");
+    DisconnectCallback cb;
+    bool shouldCall = false;
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        if (disconnectCallback_ != nullptr && isDestroyFlag_ == false) {
+            cb = disconnectCallback_;
+            shouldCall = true;
+        } else {
+            DLP_LOG_ERROR(LABEL, "disConnectCallback is nullptr or be destroyed.");
+        }
+    }
+    // 释放 connection mutex 后再 invoke，避免反向请求 adapter mutex 导致 AB-BA 死锁
+    if (shouldCall && cb != nullptr) {
+        cb(DDLP_HAP_DISCONN_ERROR, 0, nullptr, 0);
     }
     ClearProxy();
-    DLP_LOG_INFO(LABEL, "Disconnect ability, DestroyFlag is %{public}d", isDestroyFlag_);
+    bool destroyFlag;
+    {
+        std::lock_guard<std::recursive_mutex> lock(mutex_);
+        destroyFlag = isDestroyFlag_;
+    }
+    DLP_LOG_INFO(LABEL, "Disconnect ability, DestroyFlag is %{public}d", destroyFlag);
 }
 
 bool DlpAbilityConnection::IsConnected()

@@ -30,31 +30,39 @@ static constexpr OHOS::HiviewDFX::HiLogLabel LABEL = {
 }
 
 static std::shared_ptr<AccountEventSubscriber> g_eventSubscriber = nullptr;
+static std::mutex g_eventSubscriberMutex;
 
 int32_t RegisterAccountEventMonitor(AccountListenerCallback *callback)
 {
-    if (g_eventSubscriber != nullptr) {
-        return DLP_SUCCESS;
+    std::shared_ptr<AccountEventSubscriber> subscriberToSubscribe;
+    {
+        std::lock_guard<std::mutex> lock(g_eventSubscriberMutex);
+        if (g_eventSubscriber != nullptr) {
+            return DLP_SUCCESS;
+        }
+
+        if (callback == nullptr) {
+            DLP_LOG_ERROR(LABEL, "Invalid callback");
+            return DLP_ERROR;
+        }
+
+        using OHOS::EventFwk::CommonEventSubscribeInfo;
+        using OHOS::EventFwk::CommonEventSupport;
+        using OHOS::EventFwk::MatchingSkills;
+
+        MatchingSkills matchingSkills;
+        matchingSkills.AddEvent(CommonEventSupport::COMMON_EVENT_DISTRIBUTED_ACCOUNT_LOGIN);
+        matchingSkills.AddEvent(CommonEventSupport::COMMON_EVENT_DISTRIBUTED_ACCOUNT_LOGOUT);
+        matchingSkills.AddEvent(CommonEventSupport::COMMON_EVENT_DISTRIBUTED_ACCOUNT_LOGOFF);
+        CommonEventSubscribeInfo subscribeInfo(matchingSkills);
+
+        g_eventSubscriber = std::make_shared<AccountEventSubscriber>(subscribeInfo, *callback);
+        subscriberToSubscribe = g_eventSubscriber;
     }
-
-    if (callback == nullptr) {
-        DLP_LOG_ERROR(LABEL, "Invalid callback");
-        return DLP_ERROR;
-    }
-
-    using OHOS::EventFwk::CommonEventSubscribeInfo;
-    using OHOS::EventFwk::CommonEventSupport;
-    using OHOS::EventFwk::MatchingSkills;
-
-    MatchingSkills matchingSkills;
-    matchingSkills.AddEvent(CommonEventSupport::COMMON_EVENT_DISTRIBUTED_ACCOUNT_LOGIN);
-    matchingSkills.AddEvent(CommonEventSupport::COMMON_EVENT_DISTRIBUTED_ACCOUNT_LOGOUT);
-    matchingSkills.AddEvent(CommonEventSupport::COMMON_EVENT_DISTRIBUTED_ACCOUNT_LOGOFF);
-    CommonEventSubscribeInfo subscribeInfo(matchingSkills);
-
-    g_eventSubscriber = std::make_shared<AccountEventSubscriber>(subscribeInfo, *callback);
-    if (!CommonEventManager::SubscribeCommonEvent(g_eventSubscriber)) {
+    // 锁外调用 SubscribeCommonEvent，避免持锁回调导致重入死锁
+    if (!CommonEventManager::SubscribeCommonEvent(subscriberToSubscribe)) {
         DLP_LOG_ERROR(LABEL, "SubscribeCommonEvent failed.");
+        std::lock_guard<std::mutex> lock(g_eventSubscriberMutex);
         g_eventSubscriber = nullptr;
         return DLP_ERROR;
     }
@@ -63,10 +71,17 @@ int32_t RegisterAccountEventMonitor(AccountListenerCallback *callback)
 
 void UnRegisterAccountMonitor(void)
 {
-    if (g_eventSubscriber != nullptr) {
-        if (!CommonEventManager::UnSubscribeCommonEvent(g_eventSubscriber)) {
-            DLP_LOG_ERROR(LABEL, "Unregister account common event listener failed");
+    std::shared_ptr<AccountEventSubscriber> subscriberToUnsubscribe;
+    {
+        std::lock_guard<std::mutex> lock(g_eventSubscriberMutex);
+        if (g_eventSubscriber == nullptr) {
+            return;
         }
+        subscriberToUnsubscribe = g_eventSubscriber;
         g_eventSubscriber = nullptr;
+    }
+    // 锁外调用 UnSubscribeCommonEvent，避免持锁回调导致重入死锁
+    if (!CommonEventManager::UnSubscribeCommonEvent(subscriberToUnsubscribe)) {
+        DLP_LOG_ERROR(LABEL, "Unregister account common event listener failed");
     }
 }

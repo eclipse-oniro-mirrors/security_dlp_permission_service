@@ -1121,6 +1121,188 @@ HWTEST_F(DlpFuseTest, CloseDlpFuseFile001, TestSize.Level0)
     EXPECT_NE(ret, -1);
     CloseDlpFuseFd();
 }
+
+/**
+ * @tc.name: LookUpDlpLinkFileByIno001
+ * @tc.desc: Bug8-Fix: LookUpDlpLinkFileByIno must IncreaseRef before returning the node,
+ *           caller holds one more reference after lookup.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFuseTest, LookUpDlpLinkFileByIno001, TestSize.Level0)
+{
+    DLP_LOG_INFO(LABEL, "LookUpDlpLinkFileByIno001");
+    DlpLinkManager* mgr = DlpLinkManager::GetInstance();
+    ASSERT_NE(mgr, nullptr);
+    std::shared_ptr<DlpFile> filePtr = std::make_shared<DlpZipFile>(1000, DLP_TEST_DIR, 0, "txt");
+    ASSERT_NE(filePtr, nullptr);
+    DlpLinkFile* node = new (std::nothrow) DlpLinkFile("linkfile_byino", filePtr);
+    ASSERT_NE(node, nullptr);
+    node->refcount_ = 1;
+    mgr->dlpLinkFileNameMap_["linkfile_byino"] = node;
+
+    fuse_ino_t ino = static_cast<fuse_ino_t>(reinterpret_cast<uintptr_t>(node));
+    DlpLinkFile* found = mgr->LookUpDlpLinkFileByIno(ino);
+    ASSERT_EQ(found, node);
+    // Bug8-Fix: lookup by ino must hold one extra reference for the caller
+    EXPECT_EQ(node->refcount_, 2);
+
+    // cleanup: release the extra reference taken by lookup, node keeps initial ref and stays in map
+    mgr->ReleaseDlpLinkFile(node);
+    EXPECT_EQ(node->refcount_, 1);
+    DlpLinkFile* foundByName = mgr->LookUpDlpLinkFile("linkfile_byino");
+    ASSERT_EQ(foundByName, node);
+    mgr->ReleaseDlpLinkFile(foundByName);
+    EXPECT_EQ(node->refcount_, 1);
+    mgr->dlpLinkFileNameMap_.erase("linkfile_byino");
+    delete node;
+}
+
+/**
+ * @tc.name: LookUpDlpLinkFileByIno002
+ * @tc.desc: Bug8-Fix: LookUpDlpLinkFileByIno returns nullptr when ino is not in map
+ *           or when IncreaseRef fails (refcount <= 0).
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFuseTest, LookUpDlpLinkFileByIno002, TestSize.Level0)
+{
+    DLP_LOG_INFO(LABEL, "LookUpDlpLinkFileByIno002");
+    DlpLinkManager* mgr = DlpLinkManager::GetInstance();
+    ASSERT_NE(mgr, nullptr);
+
+    // ino not present in map
+    fuse_ino_t badIno = static_cast<fuse_ino_t>(0x12345678);
+    EXPECT_EQ(mgr->LookUpDlpLinkFileByIno(badIno), nullptr);
+
+    // node present but refcount invalid: IncreaseRef must fail and return nullptr
+    std::shared_ptr<DlpFile> filePtr = std::make_shared<DlpZipFile>(1000, DLP_TEST_DIR, 0, "txt");
+    ASSERT_NE(filePtr, nullptr);
+    DlpLinkFile* node = new (std::nothrow) DlpLinkFile("linkfile_byino_zero", filePtr);
+    ASSERT_NE(node, nullptr);
+    node->refcount_ = 0;
+    mgr->dlpLinkFileNameMap_["linkfile_byino_zero"] = node;
+    fuse_ino_t ino = static_cast<fuse_ino_t>(reinterpret_cast<uintptr_t>(node));
+    EXPECT_EQ(mgr->LookUpDlpLinkFileByIno(ino), nullptr);
+    EXPECT_EQ(node->refcount_, 0);
+
+    mgr->dlpLinkFileNameMap_.erase("linkfile_byino_zero");
+    delete node;
+}
+
+/**
+ * @tc.name: ReleaseDlpLinkFile001
+ * @tc.desc: Bug8-Fix: ReleaseDlpLinkFile only releases the transient reference taken by lookup;
+ *           node stays alive and remains in map while the manager reference is held.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFuseTest, ReleaseDlpLinkFile001, TestSize.Level0)
+{
+    DLP_LOG_INFO(LABEL, "ReleaseDlpLinkFile001");
+    DlpLinkManager* mgr = DlpLinkManager::GetInstance();
+    ASSERT_NE(mgr, nullptr);
+    std::shared_ptr<DlpFile> filePtr = std::make_shared<DlpZipFile>(1000, DLP_TEST_DIR, 0, "txt");
+    ASSERT_NE(filePtr, nullptr);
+    DlpLinkFile* node = new (std::nothrow) DlpLinkFile("linkfile_release", filePtr);
+    ASSERT_NE(node, nullptr);
+    node->refcount_ = 2; // one for map, one for concurrent ino user
+    mgr->dlpLinkFileNameMap_["linkfile_release"] = node;
+
+    mgr->ReleaseDlpLinkFile(node);
+    // refcount not zero: node must NOT be deleted and must stay in map
+    EXPECT_EQ(node->refcount_, 1);
+    DlpLinkFile* found = mgr->LookUpDlpLinkFile("linkfile_release");
+    ASSERT_EQ(found, node);
+    mgr->ReleaseDlpLinkFile(found);
+    EXPECT_EQ(node->refcount_, 1);
+
+    // zero path: map entry is removed by Delete/Forget first, then the last reference deletes the node
+    mgr->dlpLinkFileNameMap_.erase("linkfile_release");
+    mgr->ReleaseDlpLinkFile(node);
+}
+
+/**
+ * @tc.name: ForgetDlpLinkFile001
+ * @tc.desc: Bug9-Fix: ForgetDlpLinkFile with null node must be a no-op without crash.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFuseTest, ForgetDlpLinkFile001, TestSize.Level0)
+{
+    DLP_LOG_INFO(LABEL, "ForgetDlpLinkFile001");
+    DlpLinkManager* mgr = DlpLinkManager::GetInstance();
+    ASSERT_NE(mgr, nullptr);
+    // null node: no-op
+    mgr->ForgetDlpLinkFile(nullptr, 1);
+    EXPECT_EQ(mgr->LookUpDlpLinkFile("linkfile_forget_null"), nullptr);
+}
+
+/**
+ * @tc.name: ForgetDlpLinkFile002
+ * @tc.desc: Bug9-Fix: ForgetDlpLinkFile removes map entry under write lock; when refcount
+ *           does not reach zero the node stays alive for other references.
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFuseTest, ForgetDlpLinkFile002, TestSize.Level0)
+{
+    DLP_LOG_INFO(LABEL, "ForgetDlpLinkFile002");
+    DlpLinkManager* mgr = DlpLinkManager::GetInstance();
+    ASSERT_NE(mgr, nullptr);
+    std::shared_ptr<DlpFile> filePtr = std::make_shared<DlpZipFile>(1000, DLP_TEST_DIR, 0, "txt");
+    ASSERT_NE(filePtr, nullptr);
+    DlpLinkFile* node = new (std::nothrow) DlpLinkFile("linkfile_forget_alive", filePtr);
+    ASSERT_NE(node, nullptr);
+    node->refcount_ = 2;
+    mgr->dlpLinkFileNameMap_["linkfile_forget_alive"] = node;
+
+    mgr->ForgetDlpLinkFile(node, 1);
+    // one reference left: node alive and still registered in map, only lookup ref is released
+    EXPECT_EQ(node->refcount_, 1);
+    DlpLinkFile* found = mgr->LookUpDlpLinkFile("linkfile_forget_alive");
+    EXPECT_EQ(found, node);
+    // cleanup: unregister then release the registration reference, node deleted at refcount zero
+    mgr->dlpLinkFileNameMap_.erase("linkfile_forget_alive");
+    mgr->ReleaseDlpLinkFile(node);
+}
+
+/**
+ * @tc.name: ForgetDlpLinkFile003
+ * @tc.desc: Bug9-Fix: ForgetDlpLinkFile deletes node when the forget count drops refcount
+ *           to zero, and the delete happens via DlpLinkManager (map write lock held).
+ * @tc.type: FUNC
+ * @tc.require:
+ */
+HWTEST_F(DlpFuseTest, ForgetDlpLinkFile003, TestSize.Level0)
+{
+    DLP_LOG_INFO(LABEL, "ForgetDlpLinkFile003");
+    DlpLinkManager* mgr = DlpLinkManager::GetInstance();
+    ASSERT_NE(mgr, nullptr);
+    std::shared_ptr<DlpFile> filePtr = std::make_shared<DlpZipFile>(1000, DLP_TEST_DIR, 0, "txt");
+    ASSERT_NE(filePtr, nullptr);
+    DlpLinkFile* node = new (std::nothrow) DlpLinkFile("linkfile_forget_del", filePtr);
+    ASSERT_NE(node, nullptr);
+    node->refcount_ = 1;
+    mgr->dlpLinkFileNameMap_["linkfile_forget_del"] = node;
+
+    // refcount drops to zero: node is deleted by manager, map entry erased, no dangling pointer
+    mgr->ForgetDlpLinkFile(node, 1);
+    EXPECT_EQ(mgr->LookUpDlpLinkFile("linkfile_forget_del"), nullptr);
+
+    // forget count larger than refcount: SubAndCheckZeroRef refuses underflow, node not deleted
+    DlpLinkFile* node2 = new (std::nothrow) DlpLinkFile("linkfile_forget_of", filePtr);
+    ASSERT_NE(node2, nullptr);
+    node2->refcount_ = 1;
+    mgr->dlpLinkFileNameMap_["linkfile_forget_of"] = node2;
+    mgr->ForgetDlpLinkFile(node2, 2);
+    EXPECT_EQ(node2->refcount_, 1);
+    // underflow refused: node still registered in map
+    EXPECT_NE(mgr->dlpLinkFileNameMap_.find("linkfile_forget_of"), mgr->dlpLinkFileNameMap_.end());
+    // cleanup: unregister then release the registration reference, node deleted at refcount zero
+    mgr->dlpLinkFileNameMap_.erase("linkfile_forget_of");
+    mgr->ReleaseDlpLinkFile(node2);
+}
 }  // namespace DlpPermission
 }  // namespace Security
 }  // namespace OHOS

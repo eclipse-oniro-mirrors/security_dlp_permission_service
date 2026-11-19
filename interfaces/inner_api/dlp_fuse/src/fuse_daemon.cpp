@@ -128,6 +128,10 @@ static void FuseDaemonGetattr(fuse_req_t req, fuse_ino_t ino, struct fuse_file_i
 
     struct stat fileStat = dlp->GetLinkStat();
     fuse_reply_attr(req, &fileStat, DEFAULT_ATTR_TIMEOUT);
+    DlpLinkManager* manager = DlpFuseHelper::GetDlpLinkManagerInstance();
+    if (manager != nullptr) {
+        manager->ReleaseDlpLinkFile(dlp);
+    }
 }
 
 // we will handle open flag later
@@ -150,6 +154,10 @@ static void FuseDaemonOpen(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info
         if (ret != DLP_OK) {
             DLP_LOG_ERROR(LABEL, "Open link file with truncate fail, ret=%{public}d", ret);
             fuse_reply_err(req, EINVAL);
+            DlpLinkManager* manager = DlpFuseHelper::GetDlpLinkManagerInstance();
+            if (manager != nullptr) {
+                manager->ReleaseDlpLinkFile(dlp);
+            }
             return;
         }
         DLP_LOG_INFO(LABEL, "Open link file with truncate succ");
@@ -157,6 +165,10 @@ static void FuseDaemonOpen(fuse_req_t req, fuse_ino_t ino, struct fuse_file_info
 
     fuse_reply_open(req, fi);
     dlp->UpdateAtimeStat();
+    DlpLinkManager* manager = DlpFuseHelper::GetDlpLinkManagerInstance();
+    if (manager != nullptr) {
+        manager->ReleaseDlpLinkFile(dlp);
+    }
 }
 
 static DlpLinkFile* GetValidFileNode(fuse_req_t req, fuse_ino_t ino)
@@ -200,6 +212,10 @@ static void FuseDaemonRead(fuse_req_t req, fuse_ino_t ino, size_t size, off_t of
     if (buf == nullptr) {
         DLP_LOG_ERROR(LABEL, "Read link file fail, malloc %{public}zu buff fail", size);
         fuse_reply_err(req, EINVAL);
+        DlpLinkManager* manager = DlpFuseHelper::GetDlpLinkManagerInstance();
+        if (manager != nullptr) {
+            manager->ReleaseDlpLinkFile(dlp);
+        }
         return;
     }
     (void)memset_s(buf, size, 0, size);
@@ -212,6 +228,10 @@ static void FuseDaemonRead(fuse_req_t req, fuse_ino_t ino, size_t size, off_t of
     DLP_LOG_DEBUG(LABEL, "Read file name %{private}s offset %{public}u size %{public}u res %{public}d",
         dlp->GetLinkName().c_str(), static_cast<uint32_t>(offset), static_cast<uint32_t>(size), res);
     free(buf);
+    DlpLinkManager* manager = DlpFuseHelper::GetDlpLinkManagerInstance();
+    if (manager != nullptr) {
+        manager->ReleaseDlpLinkFile(dlp);
+    }
 }
 
 static void FuseDaemonWrite(
@@ -241,6 +261,10 @@ static void FuseDaemonWrite(
     }
     DLP_LOG_DEBUG(LABEL, "Write file name %{private}s offset %{public}u size %{public}u res %{public}d",
         dlp->GetLinkName().c_str(), static_cast<uint32_t>(off), static_cast<uint32_t>(size), res);
+    DlpLinkManager* manager = DlpFuseHelper::GetDlpLinkManagerInstance();
+    if (manager != nullptr) {
+        manager->ReleaseDlpLinkFile(dlp);
+    }
 }
 
 static void FuseDaemonForget(fuse_req_t req, fuse_ino_t ino, uint64_t nlookup)
@@ -257,12 +281,15 @@ static void FuseDaemonForget(fuse_req_t req, fuse_ino_t ino, uint64_t nlookup)
         fuse_reply_none(req);
         return;
     }
-    DLP_LOG_DEBUG(LABEL, "Forget link file name %{private}s nlookup %{public}u",
-        dlp->GetLinkName().c_str(), static_cast<uint32_t>(nlookup));
-    if (dlp->SubAndCheckZeroRef(nlookup)) {
-        DLP_LOG_INFO(LABEL, "Link file reference is less than 0, delete link file ok");
-        delete dlp;
+    DLP_LOG_DEBUG(LABEL, "Forget link file nlookup %{public}u", static_cast<uint32_t>(nlookup));
+    DlpLinkManager* manager = DlpFuseHelper::GetDlpLinkManagerInstance();
+    if (manager == nullptr) {
+        DLP_LOG_ERROR(LABEL, "DlpLinkManager is nullptr in FuseDaemonForget");
+        fuse_reply_none(req);
+        return;
     }
+    // 通过 DlpLinkManager 在 map 写锁下操作，确保与 DeleteDlpLinkFile 互斥
+    manager->ForgetDlpLinkFile(dlp, nlookup);
     fuse_reply_none(req);
 }
 
@@ -393,6 +420,32 @@ bool FuseDaemonUpdateTime(fuse_req_t req, int toSet, DlpLinkFile* dlpLink)
     return true;
 }
 
+static void FuseDaemonSetAttrSize(fuse_req_t req, struct stat *attr, int toSet, DlpLinkFile *dlpLink)
+{
+    if ((static_cast<uint32_t>(toSet) & FUSE_SET_ATTR_SIZE) == 0) {
+        DLP_LOG_ERROR(LABEL, "Set link file attr fail, type %{public}d not support", toSet);
+        fuse_reply_err(req, EACCES);
+        return;
+    }
+
+    if (attr->st_size < 0 || attr->st_size > static_cast<off_t>(DLP_MAX_CONTENT_SIZE)) {
+        DLP_LOG_ERROR(LABEL, "Set link file attr fail, file size too large");
+        fuse_reply_err(req, EINVAL);
+        return;
+    }
+
+    int32_t ret = dlpLink->Truncate(static_cast<uint32_t>(attr->st_size));
+    if (ret != DLP_OK) {
+        DLP_LOG_ERROR(LABEL, "Set link file attr fail, errno is %{public}d", ret);
+        fuse_reply_err(req, EINVAL);
+        return;
+    }
+
+    DLP_LOG_INFO(LABEL, "Set link file attr succ");
+    struct stat fileStat = dlpLink->GetLinkStat();
+    fuse_reply_attr(req, &fileStat, DEFAULT_ATTR_TIMEOUT);
+}
+
 void FuseDaemonSetAttr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int toSet, struct fuse_file_info *fi)
 {
     (void)fi;
@@ -415,31 +468,14 @@ void FuseDaemonSetAttr(fuse_req_t req, fuse_ino_t ino, struct stat *attr, int to
         return;
     }
 
-    if (!FuseDaemonUpdateTime(req, toSet, dlpLink)) {
-        return;
+    if (FuseDaemonUpdateTime(req, toSet, dlpLink)) {
+        FuseDaemonSetAttrSize(req, attr, toSet, dlpLink);
     }
 
-    if ((static_cast<uint32_t>(toSet) & FUSE_SET_ATTR_SIZE) == 0) {
-        DLP_LOG_ERROR(LABEL, "Set link file attr fail, type %{public}d not support", toSet);
-        fuse_reply_err(req, EACCES);
-        return;
+    DlpLinkManager* manager = DlpFuseHelper::GetDlpLinkManagerInstance();
+    if (manager != nullptr) {
+        manager->ReleaseDlpLinkFile(dlpLink);
     }
-
-    if (attr->st_size < 0 || attr->st_size > static_cast<off_t>(DLP_MAX_CONTENT_SIZE)) {
-        DLP_LOG_ERROR(LABEL, "Set link file attr fail, file size too large");
-        fuse_reply_err(req, EINVAL);
-        return;
-    }
-    int32_t ret = dlpLink->Truncate(static_cast<uint32_t>(attr->st_size));
-    if (ret != DLP_OK) {
-        DLP_LOG_ERROR(LABEL, "Set link file attr fail, errno is %{public}d", ret);
-        fuse_reply_err(req, EINVAL);
-        return;
-    }
-
-    DLP_LOG_INFO(LABEL, "Set link file attr succ");
-    struct stat fileStat = dlpLink->GetLinkStat();
-    fuse_reply_attr(req, &fileStat, DEFAULT_ATTR_TIMEOUT);
 }
 
 static void FuseDaemonInit(void *userdata, struct fuse_conn_info *conn)
