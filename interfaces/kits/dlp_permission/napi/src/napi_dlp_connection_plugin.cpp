@@ -441,6 +441,14 @@ static napi_value JsConstructor(napi_env env, napi_callback_info cbinfo)
     if (CheckDevice(env)) {
         return nullptr;
     }
+    bool hasEnterprisePerm = AccessToken::AccessTokenKit::VerifyAccessToken(
+        GetSelfTokenID(), PERMISSION_ENTERPRISE_ACCESS_DLP_FILE) == AccessToken::PERMISSION_GRANTED;
+    bool hasAccessPerm = AccessToken::AccessTokenKit::VerifyAccessToken(
+        GetSelfTokenID(), PERMISSION_ACCESS_DLP_SERVICE) == AccessToken::PERMISSION_GRANTED;
+    if (!hasEnterprisePerm && !hasAccessPerm) {
+        DlpNapiThrow(env, ERR_JS_PERMISSION_DENIED, "Permission denied");
+        return nullptr;
+    }
     napi_value thisVar = nullptr;
     NAPI_CALL(env, napi_get_cb_info(env, cbinfo, nullptr, nullptr, &thisVar, nullptr));
     return thisVar;
