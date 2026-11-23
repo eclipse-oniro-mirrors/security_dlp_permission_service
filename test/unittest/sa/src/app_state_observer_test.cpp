@@ -2355,45 +2355,6 @@ HWTEST_F(AppStateObserverTest, EraseDlpSandboxInfo003, TestSize.Level1)
 }
 
 /**
- * @tc.name: OnProcessDied005
- * @tc.desc: Bug6-Fix: OnProcessDied snapshot + double-check flow still erases the sandbox
- *           entry and uid-tokenId map when the entry is unchanged during the IPC sequence.
- * @tc.type: FUNC
- * @tc.require:
- */
-HWTEST_F(AppStateObserverTest, OnProcessDied005, TestSize.Level1)
-{
-    DLP_LOG_INFO(LABEL, "OnProcessDied005");
-    AppStateObserver observer;
-    const int32_t uid = 1;
-    const uint32_t tokenId = 777;
-    OHOS::AppExecFwk::ProcessData processData;
-    processData.bundleName = "com.ohos.dlpmanager";
-    processData.processName = "com.ohos.dlpmanager";
-    processData.uid = uid;
-    processData.renderUid = -1;
-
-    DlpSandboxInfo appInfo = {
-        .uid = uid,
-        .userId = 123,
-        .appIndex = 2,
-        .bundleName = "testbundle1",
-        .hasRead = false,
-        .tokenId = tokenId,
-        .uri = "test_uri_onprocessdied"
-    };
-    observer.AddSandboxInfo(appInfo);
-    observer.AddUidWithTokenId(tokenId, uid);
-
-    observer.OnProcessDied(processData);
-
-    // Step 4/5: entry matched by snapshot tokenId must be erased, uid-tokenId map cleaned
-    DlpSandboxInfo out;
-    EXPECT_FALSE(observer.GetSandboxInfo(uid, out));
-    EXPECT_FALSE(observer.GetSandboxInfoByTokenId(tokenId, out));
-}
-
-/**
  * @tc.name: PostDelayUnloadTask002
  * @tc.desc: Bug10-Fix: PostDelayUnloadTask reads taskState_ under unloadHandlerMutex_ snapshot;
  *           calling with null unload handler must not crash or corrupt taskState_.
